@@ -1,7 +1,7 @@
 name: flutter_scope
 description: "A package for creating scopes in a widget tree and providing dependencies"
 version: 0.1.0
-# homepage:
+homepage: https://github.com/vi-k/flutter_scope
 
 environment:
   sdk: ^3.1.0
