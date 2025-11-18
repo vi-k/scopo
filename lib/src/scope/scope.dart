@@ -11,8 +11,8 @@ part 'scope_content.dart';
 part 'scope_log.dart';
 
 typedef ScopeOnInitCallback<P extends Object?> = Widget Function(P progress);
-typedef ScopeOnErrorCallback =
-    Widget Function(Object error, StackTrace stackTrace);
+typedef ScopeOnErrorCallback = Widget Function(
+    Object error, StackTrace stackTrace);
 
 /// Scope.
 ///
@@ -78,32 +78,28 @@ typedef ScopeOnErrorCallback =
 /// }
 /// ```
 abstract base class Scope<
-  S extends Scope<S, P, D, C>,
-  P extends Object?,
-  D extends ScopeDeps,
-  C extends ScopeContent<S, P, D, C>
->
-    extends StatefulWidget {
+    S extends Scope<S, P, D, C>,
+    P extends Object?,
+    D extends ScopeDeps,
+    C extends ScopeContent<S, P, D, C>> extends StatefulWidget {
   final P initialStep;
   final Stream<ScopeInitState<P, D>> Function(BuildContext context) init;
 
   const Scope({super.key, required this.initialStep, required this.init});
 
   static C of<
-    S extends Scope<S, P, D, C>,
-    P extends Object?,
-    D extends ScopeDeps,
-    C extends ScopeContent<S, P, D, C>
-  >(BuildContext context) =>
+          S extends Scope<S, P, D, C>,
+          P extends Object?,
+          D extends ScopeDeps,
+          C extends ScopeContent<S, P, D, C>>(BuildContext context) =>
       maybeOf<S, P, D, C>(context) ??
       (throw Exception('$C not found in the context'));
 
   static C? maybeOf<
-    S extends Scope<S, P, D, C>,
-    P extends Object?,
-    D extends ScopeDeps,
-    C extends ScopeContent<S, P, D, C>
-  >(BuildContext context) =>
+          S extends Scope<S, P, D, C>,
+          P extends Object?,
+          D extends ScopeDeps,
+          C extends ScopeContent<S, P, D, C>>(BuildContext context) =>
       _Scope.maybeOf<S, P, D, C>(
         context,
         listen: false,
@@ -120,11 +116,11 @@ abstract base class Scope<
   //     Scope.paramsOf<$YourScope, $YourScopeDeps>(context, listen: listen);
   // ```
   static S paramsOf<
-    S extends Scope<S, P, D, C>,
-    P extends Object?,
-    D extends ScopeDeps,
-    C extends ScopeContent<S, P, D, C>
-  >(BuildContext context, {bool listen = true}) =>
+              S extends Scope<S, P, D, C>,
+              P extends Object?,
+              D extends ScopeDeps,
+              C extends ScopeContent<S, P, D, C>>(BuildContext context,
+          {bool listen = true}) =>
       _Scope.maybeOf<S, P, D, C>(context, listen: listen)?.widget ??
       (throw Exception('$S not found in the context'));
 
@@ -136,7 +132,7 @@ abstract base class Scope<
 
   C createContent();
 
-  Widget wrap(ScopeDepsState<P, D> state, Widget child) => child;
+  Widget wrapContent(D deps, Widget child) => child;
 
   @override
   @nonVirtual
@@ -160,13 +156,8 @@ abstract base class Scope<
   String toStringShort() => objectRuntimeType(this, '${Scope<S, P, D, C>}');
 }
 
-base class _ScopeState<
-  S extends Scope<S, P, D, C>,
-  P extends Object?,
-  D extends ScopeDeps,
-  C extends ScopeContent<S, P, D, C>
->
-    extends State<S> {
+base class _ScopeState<S extends Scope<S, P, D, C>, P extends Object?,
+    D extends ScopeDeps, C extends ScopeContent<S, P, D, C>> extends State<S> {
   final _contentKey = GlobalKey<C>();
   late final StreamSubscription<void> _subscription;
   late ScopeDepsState<P, D> _state;
@@ -177,38 +168,36 @@ base class _ScopeState<
 
     _state = ScopeProgress(widget.initialStep);
 
-    _subscription = widget
-        .init(context)
-        .listen(
-          (state) {
-            switch (state) {
-              case ScopeProgress<P, D>(:final value):
-                _debug('$S.init', value);
+    _subscription = widget.init(context).listen(
+      (state) {
+        switch (state) {
+          case ScopeProgress<P, D>(:final value):
+            _debug('$S.init', value);
 
-              case ScopeReady<P, D>():
-                _debug('$S.init', '$D is ready');
-            }
+          case ScopeReady<P, D>():
+            _debug('$S.init', '$D is ready');
+        }
 
-            setState(() {
-              _state = state;
-            });
-          },
-          onError: (Object error, StackTrace stackTrace) {
-            _debugError(
-              '$S.init',
-              'failed',
-              error: error,
-              stackTrace: stackTrace,
-            );
-
-            setState(() {
-              _state = ScopeError(error, stackTrace);
-            });
-          },
-          onDone: () {
-            _debug('$S.init', 'done');
-          },
+        setState(() {
+          _state = state;
+        });
+      },
+      onError: (Object error, StackTrace stackTrace) {
+        _debugError(
+          '$S.init',
+          'failed',
+          error: error,
+          stackTrace: stackTrace,
         );
+
+        setState(() {
+          _state = ScopeError(error, stackTrace);
+        });
+      },
+      onDone: () {
+        _debug('$S.init', 'done');
+      },
+    );
   }
 
   @override
@@ -228,18 +217,21 @@ base class _ScopeState<
   Widget build(BuildContext _) {
     return _Scope<S, P, D, C>(
       scopeState: this,
-      child: widget.wrap(_state, switch (_state) {
+      child: switch (_state) {
         ScopeProgress(:final value) => widget.onInit(value),
         ScopeError(:final error, :final stackTrace) => widget.onError(
-          error,
-          stackTrace,
-        ),
-        ScopeReady(:final deps) => _ScopeContent<S, P, D, C>(
-          key: _contentKey,
-          deps: deps,
-          createContent: widget.createContent,
-        ),
-      }),
+            error,
+            stackTrace,
+          ),
+        ScopeReady(:final deps) => widget.wrapContent(
+            deps,
+            _ScopeContent<S, P, D, C>(
+              key: _contentKey,
+              deps: deps,
+              createContent: widget.createContent,
+            ),
+          ),
+      },
     );
   }
 
@@ -248,24 +240,22 @@ base class _ScopeState<
 }
 
 class _Scope<
-  S extends Scope<S, P, D, C>,
-  P extends Object?,
-  D extends ScopeDeps,
-  C extends ScopeContent<S, P, D, C>
->
-    extends InheritedWidget {
+    S extends Scope<S, P, D, C>,
+    P extends Object?,
+    D extends ScopeDeps,
+    C extends ScopeContent<S, P, D, C>> extends InheritedWidget {
   final _ScopeState<S, P, D, C> scopeState;
   final S scope;
 
   _Scope({super.key, required this.scopeState, required super.child})
-    : scope = scopeState.widget;
+      : scope = scopeState.widget;
 
   static _ScopeState<S, P, D, C>? maybeOf<
-    S extends Scope<S, P, D, C>,
-    P extends Object?,
-    D extends ScopeDeps,
-    C extends ScopeContent<S, P, D, C>
-  >(BuildContext context, {required bool listen}) =>
+              S extends Scope<S, P, D, C>,
+              P extends Object?,
+              D extends ScopeDeps,
+              C extends ScopeContent<S, P, D, C>>(BuildContext context,
+          {required bool listen}) =>
       listen
           ? context
               .dependOnInheritedWidgetOfExactType<_Scope<S, P, D, C>>()

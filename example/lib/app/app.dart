@@ -26,64 +26,59 @@ final class App extends Scope<App, double, AppDeps, AppContent> {
   static AppContent? maybeOf(BuildContext context) =>
       Scope.maybeOf<App, double, AppDeps, AppContent>(context);
 
+  Widget _app({
+    ThemeMode mode = ThemeMode.system,
+    ThemeData? light,
+    ThemeData? dark,
+    required Widget child,
+  }) => MaterialApp(
+    title: 'Scope demo',
+    themeMode: mode,
+    theme: light ?? ThemeManager.defaultLightTheme,
+    darkTheme: dark ?? ThemeManager.defaultDarkTheme,
+    debugShowCheckedModeBanner: false,
+    home: child,
+  );
+
   @override
-  Widget onInit(double progress) => _onInit(progress);
+  Widget onInit(double progress) => _app(child: _onInit(progress));
 
   @override
   Widget onError(Object error, StackTrace stackTrace) =>
-      AppError(error, stackTrace);
+      _app(child: AppError(error, stackTrace));
+
+  @override
+  Widget wrapContent(AppDeps deps, Widget child) {
+    return ThemeManager(
+      builder: (context) {
+        final themeManager = ThemeManager.of(context);
+
+        return Directionality(
+          textDirection: TextDirection.ltr,
+          child: Banner(
+            message: 'scopo demo',
+            location: BannerLocation.bottomEnd,
+            color: themeManager.theme.colorScheme.primary,
+            textStyle: TextStyle(
+              color: themeManager.theme.colorScheme.onPrimary,
+              fontSize: 9,
+              fontWeight: FontWeight.normal,
+              height: 1.0,
+            ),
+            child: _app(
+              mode: themeManager.mode,
+              light: themeManager.lightTheme,
+              dark: themeManager.darkTheme,
+              child: child,
+            ),
+          ),
+        );
+      },
+    );
+  }
 
   @override
   AppContent createContent() => AppContent();
-
-  @override
-  Widget wrap(ScopeDepsState<double, AppDeps> state, Widget child) {
-    Widget app({
-      required ThemeMode mode,
-      required ThemeData light,
-      required ThemeData dark,
-    }) => MaterialApp(
-      title: 'Scope demo',
-      themeMode: mode,
-      theme: light,
-      darkTheme: dark,
-      debugShowCheckedModeBanner: false,
-      home: child,
-    );
-
-    return switch (state) {
-      ScopeProgress() || ScopeError() => app(
-        mode: ThemeMode.system,
-        light: ThemeManager.defaultLightTheme,
-        dark: ThemeManager.defaultDarkTheme,
-      ),
-      ScopeReady() => ThemeManager(
-        builder: (context) {
-          final themeManager = ThemeManager.of(context);
-
-          return Directionality(
-            textDirection: TextDirection.ltr,
-            child: Banner(
-              message: 'scopo demo',
-              location: BannerLocation.bottomEnd,
-              color: themeManager.theme.colorScheme.primary,
-              textStyle: TextStyle(
-                color: themeManager.theme.colorScheme.onPrimary,
-                fontSize: 9,
-                fontWeight: FontWeight.normal,
-                height: 1.0,
-              ),
-              child: app(
-                mode: themeManager.mode,
-                light: themeManager.lightTheme,
-                dark: themeManager.darkTheme,
-              ),
-            ),
-          );
-        },
-      ),
-    };
-  }
 
   @override
   bool updateParamsShouldNotify(App oldWidget) => false;

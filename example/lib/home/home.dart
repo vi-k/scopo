@@ -26,11 +26,11 @@ final class Home extends Scope<Home, double, HomeDeps, HomeContent> {
       AppError(error, stackTrace);
 
   @override
-  HomeContent createContent() => HomeContent();
+  Widget wrapContent(HomeDeps deps, Widget child) =>
+      NavigationNode(isRoot: true, child: child);
 
   @override
-  Widget wrap(ScopeDepsState<double, HomeDeps> state, Widget child) =>
-      NavigationNode(isRoot: true, child: child);
+  HomeContent createContent() => HomeContent();
 }
 
 class HomeAppBar extends AppBar {
@@ -99,11 +99,6 @@ final class HomeContent
     with ChangeNotifier {
   var _counter = 0;
   int get counter => _counter;
-
-  @override
-  void dispose() {
-    super.dispose();
-  }
 
   void increment() {
     _counter++;

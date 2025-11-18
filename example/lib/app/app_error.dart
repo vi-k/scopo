@@ -19,7 +19,7 @@ class AppError extends StatelessWidget {
 
     return Scaffold(
       appBar: AppBar(
-        title: Text('Somethimg went wrong'),
+        title: Text('Something went wrong'),
         backgroundColor: Colors.deepOrange,
       ),
       backgroundColor: Colors.deepOrangeAccent,
