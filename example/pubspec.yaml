@@ -1,5 +1,5 @@
-name: scope_example
-description: "A new Flutter project."
+name: scopo_demo
+description: "A demo for scopo"
 publish_to: 'none'
 version: 1.0.0+1
 
@@ -9,7 +9,7 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
-  flutter_scope:
+  scopo:
     path: ..
   cupertino_icons: ^1.0.8
   bloc: ^9.1.0

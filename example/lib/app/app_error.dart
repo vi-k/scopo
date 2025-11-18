@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:scope_example/common/fake_exception.dart';
+
+import '../common/fake_exception.dart';
 
 class AppError extends StatelessWidget {
   final Object error;

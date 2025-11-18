@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_scope/flutter_scope.dart';
-import 'package:scope_example/app/theme_manager.dart';
+import 'package:scopo/scopo.dart';
 
 import '../app/app.dart';
 import '../app/app_error.dart';
+import '../app/theme_manager.dart';
 import '../common/animated_progress_indicator.dart';
 import 'home_counter.dart';
 import 'home_deps.dart';

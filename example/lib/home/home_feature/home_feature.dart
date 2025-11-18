@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_scope/flutter_scope.dart';
+import 'package:scopo/scopo.dart';
 
 import '../home_counter.dart';
 import '../home_navigation_block.dart';

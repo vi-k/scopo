@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_scope/flutter_scope.dart';
-import 'package:scope_example/app/theme_manager.dart';
+import 'package:scopo/scopo.dart';
 
 import 'app_deps.dart';
 import 'app_error.dart';
+import 'theme_manager.dart';
 
 final class App extends Scope<App, double, AppDeps, AppContent> {
   final ScopeOnInitCallback<double> _onInit;
@@ -64,11 +64,11 @@ final class App extends Scope<App, double, AppDeps, AppContent> {
           return Directionality(
             textDirection: TextDirection.ltr,
             child: Banner(
-              message: 'Scope demo',
-              location: BannerLocation.topStart,
-              color: themeManager.theme.colorScheme.primaryContainer,
+              message: 'scopo demo',
+              location: BannerLocation.bottomEnd,
+              color: themeManager.theme.colorScheme.primary,
               textStyle: TextStyle(
-                color: themeManager.theme.colorScheme.onPrimaryContainer,
+                color: themeManager.theme.colorScheme.onPrimary,
                 fontSize: 9,
                 fontWeight: FontWeight.normal,
                 height: 1.0,

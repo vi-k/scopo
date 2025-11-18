@@ -1,6 +1,6 @@
 {
-    "name": "scope_example",
-    "short_name": "scope_example",
+    "name": "scopo_demo",
+    "short_name": "scopo_demo",
     "start_url": ".",
     "display": "standalone",
     "background_color": "#0175C2",

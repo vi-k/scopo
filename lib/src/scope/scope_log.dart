@@ -1,20 +1,18 @@
 part of 'scope.dart';
 
-typedef ScopeLogCallback =
-    void Function(
-      String? source,
-      String? message, {
-      Object? error,
-      StackTrace? stackTrace,
-    });
+typedef ScopeLogCallback = void Function(
+  String? source,
+  String? message, {
+  Object? error,
+  StackTrace? stackTrace,
+});
 
-typedef _ScopeLogCallback =
-    void Function(
-      Object? source,
-      Object? message, {
-      Object? error,
-      StackTrace? stackTrace,
-    });
+typedef _ScopeLogCallback = void Function(
+  Object? source,
+  Object? message, {
+  Object? error,
+  StackTrace? stackTrace,
+});
 
 final class ScopeLog {
   bool _isEnabled = false;
@@ -47,12 +45,13 @@ final class ScopeLog {
     Object? message, {
     Object? error,
     StackTrace? stackTrace,
-  }) => _userLog(
-    _objToStr(source),
-    _objToStr(message),
-    error: error,
-    stackTrace: stackTrace,
-  );
+  }) =>
+      _userLog(
+        _objToStr(source),
+        _objToStr(message),
+        error: error,
+        stackTrace: stackTrace,
+      );
 
   static void _defaultLog(
     String? source,
@@ -62,7 +61,7 @@ final class ScopeLog {
   }) {
     // ignore: avoid_print
     print(
-      '[flutter_scope]'
+      '[scopo]'
       '${source == null ? '' : ' $source:'}'
       ' ${message ?? 'null'}'
       '${error == null ? '' : '\n$error'}'

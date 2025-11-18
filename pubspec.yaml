@@ -1,7 +1,7 @@
-name: flutter_scope
+name: scopo
 description: "A package for creating scopes in a widget tree and providing dependencies"
 version: 0.1.0
-homepage: https://github.com/vi-k/flutter_scope
+homepage: https://github.com/vi-k/scopo
 
 environment:
   sdk: ^3.1.0
