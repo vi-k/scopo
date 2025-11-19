@@ -9,6 +9,8 @@ import 'home_counter.dart';
 import 'home_deps.dart';
 import 'home_navigation_block.dart';
 
+typedef HomeConsumer = ScopeConsumer<Home, double, HomeDeps, HomeContent>;
+
 final class Home extends Scope<Home, double, HomeDeps, HomeContent> {
   const Home({super.key, required super.init}) : super(initialStep: 0);
 

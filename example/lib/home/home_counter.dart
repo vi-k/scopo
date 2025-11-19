@@ -1,14 +1,22 @@
 import 'package:flutter/material.dart';
+import 'package:scopo/scopo.dart';
 
 import 'home.dart';
+import 'home_deps.dart';
 
-class HomeCounter extends StatelessWidget {
+class HomeCounter extends StatefulWidget {
   const HomeCounter({super.key});
 
   @override
+  State<HomeCounter> createState() => _HomeCounterState();
+}
+
+class _HomeCounterState extends State<HomeCounter>
+    with ScopeConsumer<Home, double, HomeDeps, HomeContent> {
+  @override
   Widget build(BuildContext context) {
     return ListenableBuilder(
-      listenable: Home.of(context),
+      listenable: scope,
       builder:
           (context, _) => Row(
             mainAxisSize: MainAxisSize.min,
@@ -16,16 +24,16 @@ class HomeCounter extends StatelessWidget {
             children: [
               IconButton(
                 color: Theme.of(context).colorScheme.primary,
-                onPressed: () => Home.of(context).decrement(),
+                onPressed: () => scope.decrement(),
                 icon: const Icon(Icons.remove_circle),
               ),
               Text(
-                '${Home.of(context).counter}',
+                '${scope.counter}',
                 style: Theme.of(context).textTheme.headlineMedium,
               ),
               IconButton(
                 color: Theme.of(context).colorScheme.primary,
-                onPressed: () => Home.of(context).increment(),
+                onPressed: () => scope.increment(),
                 icon: const Icon(Icons.add_circle),
               ),
             ],

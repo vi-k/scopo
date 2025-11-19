@@ -45,7 +45,7 @@ class Connectivity extends ValueNotifier<bool> {
   @override
   Future<void> dispose() async {
     assert(_subscription != null, '$Connectivity is not initialized');
-    await _subscription?.cancel();
+    _subscription?.cancel();
 
     super.dispose();
   }

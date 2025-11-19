@@ -159,7 +159,7 @@ abstract base class Scope<
 base class _ScopeState<S extends Scope<S, P, D, C>, P extends Object?,
     D extends ScopeDeps, C extends ScopeContent<S, P, D, C>> extends State<S> {
   final _contentKey = GlobalKey<C>();
-  late final StreamSubscription<void> _subscription;
+  StreamSubscription<void>? _subscription;
   late ScopeDepsState<P, D> _state;
 
   @override
@@ -175,6 +175,7 @@ base class _ScopeState<S extends Scope<S, P, D, C>, P extends Object?,
             _debug('$S.init', value);
 
           case ScopeReady<P, D>():
+            _unsubscribe();
             _debug('$S.init', '$D is ready');
         }
 
@@ -183,6 +184,8 @@ base class _ScopeState<S extends Scope<S, P, D, C>, P extends Object?,
         });
       },
       onError: (Object error, StackTrace stackTrace) {
+        _unsubscribe();
+
         _debugError(
           '$S.init',
           'failed',
@@ -200,9 +203,15 @@ base class _ScopeState<S extends Scope<S, P, D, C>, P extends Object?,
     );
   }
 
+  void _unsubscribe() {
+    _subscription?.cancel();
+    _subscription = null;
+  }
+
   @override
   void dispose() {
-    _subscription.cancel();
+    _unsubscribe();
+
     if (_state case ScopeReady(:final deps)) {
       _debug('$S.dispose', 'start');
       deps.dispose().then((_) {

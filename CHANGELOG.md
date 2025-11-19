@@ -1,3 +1,8 @@
+## 0.1.2
+
+* `yield ScopeReady` closes `init`
+* add ScopeConsumer
+
 ## 0.1.1
 
 * remove wrap

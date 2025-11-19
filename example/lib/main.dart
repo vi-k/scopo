@@ -1,6 +1,7 @@
 import 'package:ansi_escape_codes/ansi_escape_codes.dart' as ansi;
 import 'package:flutter/material.dart';
 import 'package:scopo/scopo.dart';
+import 'package:scopo_demo/utils/app_environment.dart';
 
 import 'app/app.dart';
 import 'app/app_deps.dart';
