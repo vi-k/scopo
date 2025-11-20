@@ -1,8 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:scopo/scopo.dart';
 
 import 'home.dart';
-import 'home_deps.dart';
 
 class HomeCounter extends StatefulWidget {
   const HomeCounter({super.key});
@@ -11,8 +9,7 @@ class HomeCounter extends StatefulWidget {
   State<HomeCounter> createState() => _HomeCounterState();
 }
 
-class _HomeCounterState extends State<HomeCounter>
-    with ScopeConsumer<Home, double, HomeDeps, HomeContent> {
+class _HomeCounterState extends State<HomeCounter> with HomeConsumer {
   @override
   Widget build(BuildContext context) {
     return ListenableBuilder(

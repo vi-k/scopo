@@ -5,26 +5,25 @@ import 'app_deps.dart';
 import 'app_error.dart';
 import 'theme_manager.dart';
 
-final class App extends Scope<App, double, AppDeps, AppContent> {
+final class App extends Scope<App, AppDeps, AppContent> {
   final ScopeOnInitCallback<double> _onInit;
   final Widget Function(BuildContext context) builder;
 
   const App({
     super.key,
-    required super.init,
+    required ScopeInitFunction<double, AppDeps> super.init,
     required ScopeOnInitCallback<double> onInit,
     required this.builder,
-  }) : _onInit = onInit,
-       super(initialStep: 0);
+  }) : _onInit = onInit;
 
   static App paramsOf(BuildContext context, {bool listen = true}) =>
-      Scope.paramsOf<App, double, AppDeps, AppContent>(context, listen: listen);
+      Scope.paramsOf<App, AppDeps, AppContent>(context, listen: listen);
 
   static AppContent of(BuildContext context) =>
-      Scope.of<App, double, AppDeps, AppContent>(context);
+      Scope.of<App, AppDeps, AppContent>(context);
 
   static AppContent? maybeOf(BuildContext context) =>
-      Scope.maybeOf<App, double, AppDeps, AppContent>(context);
+      Scope.maybeOf<App, AppDeps, AppContent>(context);
 
   Widget _app({
     ThemeMode mode = ThemeMode.system,
@@ -41,7 +40,7 @@ final class App extends Scope<App, double, AppDeps, AppContent> {
   );
 
   @override
-  Widget onInit(double progress) => _app(child: _onInit(progress));
+  Widget onInit(Object? progress) => _app(child: _onInit(progress as double?));
 
   @override
   Widget onError(Object error, StackTrace stackTrace) =>
@@ -84,7 +83,7 @@ final class App extends Scope<App, double, AppDeps, AppContent> {
   bool updateParamsShouldNotify(App oldWidget) => false;
 }
 
-final class AppContent extends ScopeContent<App, double, AppDeps, AppContent> {
+final class AppContent extends ScopeContent<App, AppDeps, AppContent> {
   @override
   void initState() {
     super.initState();

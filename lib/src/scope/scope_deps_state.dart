@@ -1,16 +1,16 @@
-import 'scope_deps.dart';
+part of 'scope.dart';
 
-sealed class ScopeDepsState<P extends Object?, D extends ScopeDeps> {}
+sealed class _ScopeDepsState<P extends Object, D extends ScopeDeps> {}
 
-sealed class ScopeInitState<P extends Object?, D extends ScopeDeps>
-    extends ScopeDepsState<P, D> {}
+sealed class ScopeInitState<P extends Object, D extends ScopeDeps>
+    extends _ScopeDepsState<P, D> {}
 
-base class ScopeError<P extends Object?, D extends ScopeDeps>
-    extends ScopeDepsState<P, D> {
+final class _ScopeError<P extends Object, D extends ScopeDeps>
+    extends _ScopeDepsState<P, D> {
   final Object error;
   final StackTrace stackTrace;
 
-  ScopeError(this.error, this.stackTrace);
+  _ScopeError(this.error, this.stackTrace);
 
   @override
   int get hashCode => Object.hash(error, stackTrace);
@@ -18,15 +18,20 @@ base class ScopeError<P extends Object?, D extends ScopeDeps>
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
-      other is ScopeError<P, D> &&
+      other is _ScopeError<P, D> &&
           error == other.error &&
           stackTrace == other.stackTrace;
 
   @override
-  String toString() => '${ScopeError<P, D>}($error)';
+  String toString() => '${_ScopeError<P, D>}($error)';
 }
 
-base class ScopeProgress<P extends Object?, D extends ScopeDeps>
+final class _ScopeInitial<P extends Object, D extends ScopeDeps>
+    extends _ScopeDepsState<P, D> {
+  P? get value => null;
+}
+
+final class ScopeProgress<P extends Object, D extends ScopeDeps>
     extends ScopeInitState<P, D> {
   final P value;
 
@@ -44,7 +49,7 @@ base class ScopeProgress<P extends Object?, D extends ScopeDeps>
   String toString() => '${ScopeProgress<P, D>}($value)';
 }
 
-base class ScopeReady<P extends Object?, D extends ScopeDeps>
+final class ScopeReady<P extends Object, D extends ScopeDeps>
     extends ScopeInitState<P, D> {
   final D deps;
 

@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 
 class AnimatedProgressIndicator extends StatefulWidget {
-  final double value;
+  final double? value;
   final Duration stepDuration;
   final Curve curve;
-  final Widget Function(double value) builder;
+  final Widget Function(double? value) builder;
 
   const AnimatedProgressIndicator({
     super.key,
@@ -21,16 +21,15 @@ class AnimatedProgressIndicator extends StatefulWidget {
 
 class _AnimatedProgressIndicatorState extends State<AnimatedProgressIndicator>
     with SingleTickerProviderStateMixin {
-  late final AnimationController _animationController;
+  AnimationController? _animationController;
 
   @override
   void initState() {
     super.initState();
-    _animationController = AnimationController(vsync: this)..animateTo(
-      widget.value,
-      duration: widget.stepDuration,
-      curve: widget.curve,
-    );
+
+    if (widget.value case final value?) {
+      _updateAnimationController(value);
+    }
   }
 
   @override
@@ -38,25 +37,42 @@ class _AnimatedProgressIndicatorState extends State<AnimatedProgressIndicator>
     super.didUpdateWidget(oldWidget);
 
     if (widget.value != oldWidget.value) {
-      _animationController
-        ..stop()
-        ..animateTo(
-          widget.value,
-          duration: widget.stepDuration,
-          curve: widget.curve,
-        );
+      _updateAnimationController(widget.value);
+    }
+  }
+
+  void _updateAnimationController(double? value) {
+    if (value == null) {
+      _animationController?.dispose();
+      _animationController = null;
+    } else {
+      var animationController = _animationController;
+      if (animationController == null) {
+        animationController = AnimationController(vsync: this, value: 0);
+        _animationController = animationController;
+      }
+
+      animationController.animateTo(
+        value,
+        duration: widget.stepDuration,
+        curve: widget.curve,
+      );
     }
   }
 
   @override
   void dispose() {
-    _animationController.dispose();
+    _animationController?.dispose();
+    _animationController = null;
     super.dispose();
   }
 
   @override
-  Widget build(BuildContext context) => AnimatedBuilder(
-    animation: _animationController,
-    builder: (_, _) => widget.builder(_animationController.value),
-  );
+  Widget build(BuildContext context) => switch (_animationController) {
+    null => widget.builder(null),
+    final AnimationController controller => AnimatedBuilder(
+      animation: controller,
+      builder: (_, _) => widget.builder(controller.value),
+    ),
+  };
 }

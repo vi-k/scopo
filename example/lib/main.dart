@@ -1,7 +1,6 @@
 import 'package:ansi_escape_codes/ansi_escape_codes.dart' as ansi;
 import 'package:flutter/material.dart';
 import 'package:scopo/scopo.dart';
-import 'package:scopo_demo/utils/app_environment.dart';
 
 import 'app/app.dart';
 import 'app/app_deps.dart';
@@ -33,8 +32,8 @@ void main() {
     );
   };
 
-  // AppEnvironment.probabilityOfAppRandomError = 0.0;
-  // AppEnvironment.probabilityOfHomeRandomError = 0.0;
+  // AppEnvironment.probabilityOfAppRandomError = 0.3;
+  // AppEnvironment.probabilityOfHomeRandomError = 0.3;
   // AppEnvironment.enabledConnectionDuration = (5, 10);
   // AppEnvironment.disabledConnectionDuration = (5, 10);
 

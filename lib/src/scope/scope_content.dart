@@ -1,10 +1,7 @@
 part of 'scope.dart';
 
-final class _ScopeContent<
-    S extends Scope<S, P, D, C>,
-    P extends Object?,
-    D extends ScopeDeps,
-    C extends ScopeContent<S, P, D, C>> extends StatefulWidget {
+final class _ScopeContent<S extends Scope<S, D, C>, D extends ScopeDeps,
+    C extends ScopeContent<S, D, C>> extends StatefulWidget {
   final D deps;
   final C Function() createContent;
 
@@ -16,15 +13,14 @@ final class _ScopeContent<
 
   @override
   // ignore: no_logic_in_create_state
-  State<_ScopeContent<S, P, D, C>> createState() => createContent();
+  State<_ScopeContent<S, D, C>> createState() => createContent();
 
   @override
   String toStringShort() => '$C';
 }
 
-abstract base class ScopeContent<S extends Scope<S, P, D, C>, P extends Object?,
-        D extends ScopeDeps, C extends ScopeContent<S, P, D, C>>
-    extends State<_ScopeContent<S, P, D, C>> {
+abstract base class ScopeContent<S extends Scope<S, D, C>, D extends ScopeDeps,
+    C extends ScopeContent<S, D, C>> extends State<_ScopeContent<S, D, C>> {
   @override
   Never get widget => throw UnimplementedError();
 

@@ -2,6 +2,7 @@
 
 * `yield ScopeReady` closes `init`
 * add ScopeConsumer
+* remove type for progress from Scope definition
 
 ## 0.1.1
 

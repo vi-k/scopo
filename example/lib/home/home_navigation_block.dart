@@ -11,6 +11,16 @@ class HomeNavigationBlock extends StatelessWidget {
     return Column(
       children: [
         ElevatedButton(
+          onPressed: () => Home.of(context).openDialog(context),
+          child: Text('Dialog'),
+        ),
+        SizedBox(height: 20),
+        ElevatedButton(
+          onPressed: () => Home.of(context).openBottomSheet(context),
+          child: Text('Bottom sheet'),
+        ),
+        SizedBox(height: 20),
+        ElevatedButton(
           onPressed: () {
             Navigator.push(
               context,
@@ -28,16 +38,6 @@ class HomeNavigationBlock extends StatelessWidget {
             );
           },
           child: Text('Feature w/o navigation node'),
-        ),
-        SizedBox(height: 20),
-        ElevatedButton(
-          onPressed: () => Home.of(context).openDialog(context),
-          child: Text('Dialog'),
-        ),
-        SizedBox(height: 20),
-        ElevatedButton(
-          onPressed: () => Home.of(context).openBottomSheet(context),
-          child: Text('Bottom sheet'),
         ),
         SizedBox(height: 20),
         ElevatedButton(

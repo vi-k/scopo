@@ -9,19 +9,22 @@ import 'home_counter.dart';
 import 'home_deps.dart';
 import 'home_navigation_block.dart';
 
-typedef HomeConsumer = ScopeConsumer<Home, double, HomeDeps, HomeContent>;
+typedef HomeConsumer = ScopeConsumer<Home, HomeDeps, HomeContent>;
 
-final class Home extends Scope<Home, double, HomeDeps, HomeContent> {
-  const Home({super.key, required super.init}) : super(initialStep: 0);
+final class Home extends Scope<Home, HomeDeps, HomeContent> {
+  const Home({
+    super.key,
+    required ScopeInitFunction<double, HomeDeps> super.init,
+  });
 
   static HomeContent of(BuildContext context) =>
-      Scope.of<Home, double, HomeDeps, HomeContent>(context);
+      Scope.of<Home, HomeDeps, HomeContent>(context);
 
   @override
   bool updateParamsShouldNotify(Home oldWidget) => false;
 
   @override
-  Widget onInit(double progress) => _FakeContent(progress);
+  Widget onInit(Object? progress) => _FakeContent(progress as double?);
 
   @override
   Widget onError(Object error, StackTrace stackTrace) =>
@@ -68,7 +71,7 @@ class HomeAppBar extends AppBar {
 }
 
 class _FakeContent extends StatefulWidget {
-  final double progress;
+  final double? progress;
 
   const _FakeContent(this.progress);
 
@@ -86,9 +89,7 @@ class _FakeContentState extends State<_FakeContent> {
         child: Center(
           child: AnimatedProgressIndicator(
             value: widget.progress,
-            builder:
-                (value) =>
-                    CircularProgressIndicator(value: value == 0 ? null : value),
+            builder: (value) => CircularProgressIndicator(value: value),
           ),
         ),
       ),
@@ -96,8 +97,7 @@ class _FakeContentState extends State<_FakeContent> {
   }
 }
 
-final class HomeContent
-    extends ScopeContent<Home, double, HomeDeps, HomeContent>
+final class HomeContent extends ScopeContent<Home, HomeDeps, HomeContent>
     with ChangeNotifier {
   var _counter = 0;
   int get counter => _counter;
