@@ -7,11 +7,13 @@ final class NavigationNode extends StatefulWidget {
   final bool isRoot;
   final Widget child;
   final GlobalKey<NodeNavigatorState>? navigatorKey;
+  final FutureOr<bool> Function(BuildContext context, Object? result)? onPop;
 
   const NavigationNode({
     super.key,
     this.navigatorKey,
     this.isRoot = false,
+    this.onPop,
     required this.child,
   });
 
@@ -24,13 +26,44 @@ final class _NavigationNodeState extends State<NavigationNode> {
       widget.navigatorKey ?? GlobalKey<NodeNavigatorState>();
   late final _observer = _NodeNavigatorObserver(this);
 
+  NodeNavigatorState get _navigator => _navigatorKey.currentState!;
+
   @override
-  Widget build(BuildContext context) => _NodeNavigator(
-    key: _navigatorKey,
-    node: this,
-    pages: [MaterialPage<void>(child: widget.child)],
-    onDidRemovePage: (route) {},
-  );
+  Widget build(BuildContext context) => PopScope(
+        canPop: widget.onPop == null,
+        onPopInvokedWithResult: (didPop, result) {
+          if (didPop) return;
+
+          void restoreMarker() {
+            _observer._addHook();
+          }
+
+          if (_navigator.previous case final previous?) {
+            switch (widget.onPop?.call(context, result)) {
+              case final Future<bool> future:
+                future.then((canPop) {
+                  if (canPop) {
+                    previous.pop(result);
+                  } else {
+                    restoreMarker();
+                  }
+                });
+              case final bool? canPop:
+                if (canPop ?? true) {
+                  previous.pop(result);
+                } else {
+                  restoreMarker();
+                }
+            }
+          }
+        },
+        child: _NodeNavigator(
+          key: _navigatorKey,
+          node: this,
+          pages: [MaterialPage<void>(child: widget.child)],
+          onDidRemovePage: (_) {},
+        ),
+      );
 }
 
 final class _NodeNavigator extends Navigator {
@@ -48,7 +81,13 @@ final class _NodeNavigator extends Navigator {
 }
 
 final class NodeNavigatorState extends NavigatorState {
-  // For the future.
+  Object? _interceptedResult;
+
+  @override
+  void pop<T extends Object?>([T? result]) {
+    _interceptedResult = result;
+    super.pop(result);
+  }
 }
 
 extension PreviousNavigatorExtension on NavigatorState {
@@ -68,29 +107,32 @@ extension PreviousNavigatorExtension on NavigatorState {
 
 final class _NodeNavigatorObserver extends NavigatorObserver {
   final _NavigationNodeState node;
-  Route<void>? _firstRoute;
+  Route<void>? _topRoute;
 
   _NodeNavigatorObserver(this.node);
 
+  void _addHook() {
+    final topRoute = _topRoute;
+    if (!node.widget.isRoot && topRoute is ModalRoute<void>) {
+      topRoute.addLocalHistoryEntry(
+        _HookEntry(
+          onRemove: () {
+            navigator?.previous?.maybePop(node._navigator._interceptedResult);
+          },
+        ),
+      );
+    }
+  }
+
   @override
   void didPush(Route<void> route, Route<void>? previousRoute) {
-    if (_firstRoute == null) {
-      _firstRoute = route;
-      if (!node.widget.isRoot && route is ModalRoute<void>) {
-        route.addLocalHistoryEntry(
-          NavigationNodeFirstEntry(
-            onRemove: () {
-              scheduleMicrotask(() {
-                navigator?.previous?.pop();
-              });
-            },
-          ),
-        );
-      }
+    if (_topRoute == null) {
+      _topRoute = route;
+      _addHook();
     }
   }
 }
 
-final class NavigationNodeFirstEntry extends LocalHistoryEntry {
-  NavigationNodeFirstEntry({required super.onRemove});
+final class _HookEntry extends LocalHistoryEntry {
+  _HookEntry({required super.onRemove});
 }

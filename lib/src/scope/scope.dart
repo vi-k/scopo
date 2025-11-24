@@ -24,9 +24,11 @@ typedef ScopeOnErrorCallback = Widget Function(
 /// necessary initialized dependencies for widgets will exist.
 abstract base class Scope<S extends Scope<S, D, C>, D extends ScopeDeps,
     C extends ScopeContent<S, D, C>> extends StatefulWidget {
+  final Object? tag;
   final ScopeInitFunction<Object, D> _init;
 
-  const Scope({super.key, required final ScopeInitFunction<Object, D> init})
+  const Scope(
+      {super.key, this.tag, required final ScopeInitFunction<Object, D> init})
       : _init = init;
 
   /// Quick access to parameters passed in scope.
@@ -45,6 +47,8 @@ abstract base class Scope<S extends Scope<S, D, C>, D extends ScopeDeps,
       _Scope.maybeOf<S, D, C>(context, listen: listen)?.widget ??
       (throw Exception('$S not found in the context'));
 
+  /// Method to check whether changes in parameters need to be notified to
+  /// those who subscribed using `paramsOf(listened: true)`.
   bool updateParamsShouldNotify(S oldWidget);
 
   /// Quick access to the scope.
@@ -54,61 +58,62 @@ abstract base class Scope<S extends Scope<S, D, C>, D extends ScopeDeps,
   // Insert the following code into your scope for more convenient use:
   //
   // ```dart
-  // static $YourScopeContent of(BuildContext context) =>
-  //     Scope.of<$YourScope, $YourScopeDeps, $YourScopeContent>(context);
+  // static YourScopeContent of(BuildContext context) =>
+  //     Scope.of<YourScope, YourScopeDeps, YourScopeContent>(context);
   // ```
   static C of<S extends Scope<S, D, C>, D extends ScopeDeps,
           C extends ScopeContent<S, D, C>>(BuildContext context) =>
       maybeOf<S, D, C>(context) ??
       (throw Exception('$C not found in the context'));
 
+  /// Quick access to the scoop, if available.
   static C? maybeOf<S extends Scope<S, D, C>, D extends ScopeDeps,
           C extends ScopeContent<S, D, C>>(BuildContext context) =>
-      _Scope.maybeOf<S, D, C>(
-        context,
-        listen: false,
-      )?._contentKey.currentState;
+      _Scope.maybeOf<S, D, C>(context, listen: false)?._contentKey.currentState;
 
-  /// Метод для построения виджета прогресса инициализации.
+  /// Method for constructing a subtree during dependency initialization.
   ///
-  /// Чтобы не вносить тип прогресса в определение [Scope] и, соответственно,
-  /// всех остальных виджетов, зависящих от него, тип прогресса сделан
-  /// универсальным: [Object]. Т.е. может быть любым типом, кроме `null`.
+  /// To avoid specifying the progress type in the definition of [Scope] and
+  /// [ScopeContent], the progress type is made universal: [Object]. That is,
+  /// it can be any type except `null`.
   ///
-  /// [!WARNING] `null` оставлен для первого запуска [Scope.onInit]
-  /// и обязательно должен быть отработан как этап до начала инициализации.
+  /// [!WARNING] `null` is left for the first run of [Scope.onInit] and must be
+  /// handled as a step before initialization begins.
   ///
-  /// В функции инициализации тип указывается в описании класса
-  /// [ScopeInitState]:
+  /// In the initialization function, the type is specified in the
+  /// [ScopeInitState] definition:
   ///
   /// ```dart
-  /// Stream<ScopeInitState<double, MyDeps>> init(BuildContext context) {...}
+  /// Stream<ScopeInitState<double, MyFeatureDeps>> init(BuildContext context) {...}
   /// ```
   ///
-  /// Но метод [onInit] не может автоматически принять этот тип. Необходимо
-  /// самостоятельно конвертировать значение в нужный тип, не забывая про
-  /// первый `null`:
+  /// However, the [onInit] method cannot automatically accept this type. You
+  /// must cast the value to the desired type yourself, remembering the first
+  /// `null`:
   ///
   /// ```dart
   /// Widget onInit(Object? progress) =>
   ///     LinearProgressIndicator(value: value as double?)
-  ///
   /// ```
   Widget onInit(Object? progress);
 
-  /// Метод для построения виджета ошибки инициализации.
+  /// Method for constructing a subtree in case of initialization error.
   Widget onError(Object error, StackTrace stackTrace);
 
+  /// Method that should create your [ScopeContent].
   C createContent();
 
+  /// Wraps [ScopeContent].
   Widget wrapContent(D deps, Widget child) => child;
 
   @override
   @nonVirtual
+  @visibleForTesting
   State<S> createState() => _ScopeState<S, D, C>();
 
   @override
-  String toStringShort() => objectRuntimeType(this, '${Scope<S, D, C>}');
+  String toStringShort() => '${objectRuntimeType(this, '${Scope<S, D, C>}')}'
+      '${tag == null ? '' : '($tag)'}';
 }
 
 base class _ScopeState<S extends Scope<S, D, C>, D extends ScopeDeps,
@@ -116,20 +121,35 @@ base class _ScopeState<S extends Scope<S, D, C>, D extends ScopeDeps,
   final _contentKey = GlobalKey<C>();
   StreamSubscription<void>? _subscription;
   _ScopeDepsState<Object, D> _state = _ScopeInitial();
+  Completer<void>? _closeCompleter;
 
   @override
   void initState() {
     super.initState();
 
+    String method() => '${widget.toStringShort()}.init';
+
     _subscription = widget._init(context).listen(
       (state) {
+        switch (_state) {
+          case _ScopeInitial<Object, D>():
+          case ScopeProgress<Object, D>():
+            break;
+
+          case _ScopeError<Object, D>():
+            throw StateError(
+                'Initialization of $D has already ended with an error');
+
+          case ScopeReady<Object, D>():
+            throw StateError('Initialization of $D has already ended');
+        }
+
         switch (state) {
           case ScopeProgress(:final value):
-            _debug('$S.init', value);
+            _debug(method, () => 'progress=$value');
 
           case ScopeReady():
-            _unsubscribe();
-            _debug('$S.init', '$D is ready');
+            _debug(method, '$D is ready');
         }
 
         setState(() {
@@ -140,7 +160,7 @@ base class _ScopeState<S extends Scope<S, D, C>, D extends ScopeDeps,
         _unsubscribe();
 
         _debugError(
-          '$S.init',
+          method,
           'failed',
           error: error,
           stackTrace: stackTrace,
@@ -151,7 +171,7 @@ base class _ScopeState<S extends Scope<S, D, C>, D extends ScopeDeps,
         });
       },
       onDone: () {
-        _debug('$S.init', 'done');
+        _debug(method, 'done');
       },
     );
   }
@@ -161,17 +181,43 @@ base class _ScopeState<S extends Scope<S, D, C>, D extends ScopeDeps,
     _subscription = null;
   }
 
-  @override
-  void dispose() {
-    _unsubscribe();
+  Future<void> _close() async {
+    String method() => '${widget.toStringShort()}.close';
 
-    if (_state case ScopeReady(:final deps)) {
-      _debug('$S.dispose', 'start');
-      deps.dispose().then((_) {
-        _debug('$S.dispose', 'done');
-      });
+    if (_closeCompleter case final completer?) {
+      return completer.future;
     }
 
+    _debug(method, 'start');
+
+    _unsubscribe();
+
+    var completer = Completer();
+    _closeCompleter = completer;
+    if (mounted) {
+      setState(() {});
+    }
+
+    if (_state case ScopeReady(:final deps)) {
+      try {
+        await deps.dispose();
+      } on Object catch (e, s) {
+        completer.completeError(e, s);
+      }
+    }
+
+    if (!completer.isCompleted) {
+      completer.complete();
+    }
+
+    _debug(method, 'done');
+
+    return completer.future;
+  }
+
+  @override
+  void dispose() {
+    scheduleMicrotask(_close);
     super.dispose();
   }
 
@@ -189,10 +235,22 @@ base class _ScopeState<S extends Scope<S, D, C>, D extends ScopeDeps,
           ),
         ScopeReady(:final deps) => widget.wrapContent(
             deps,
-            _ScopeContent<S, D, C>(
-              key: _contentKey,
-              deps: deps,
-              createContent: widget.createContent,
+            Stack(
+              children: [
+                _ScopeContent<S, D, C>(
+                  key: _contentKey,
+                  deps: deps,
+                  createContent: widget.createContent,
+                ),
+                if (_closeCompleter != null)
+                  Positioned.fill(
+                    child: ColoredBox(
+                      color:
+                          Theme.of(context).canvasColor.withValues(alpha: 0.5),
+                      child: Center(child: CircularProgressIndicator()),
+                    ),
+                  ),
+              ],
             ),
           ),
       },
@@ -231,3 +289,39 @@ class _Scope<S extends Scope<S, D, C>, D extends ScopeDeps,
   @override
   String toStringShort() => '${_Scope<S, D, C>}';
 }
+
+// class _Scope2<S extends Scope<S, D, C>, D extends ScopeDeps,
+//     C extends ScopeContent<S, D, C>> extends InheritedModel<int> {
+//   final C content;
+
+//   _Scope2({super.key, required this.content, required super.child});
+
+//   static _ScopeState<S, D, C>? maybeOf<S extends Scope<S, D, C>,
+//           D extends ScopeDeps, C extends ScopeContent<S, D, C>>(
+//     BuildContext context, {
+//     required bool listen,
+//     // Object? Function(C content) aspect,
+//   }) =>
+//       // InheritedModel.inheritFrom<_Scope2<S, D, C>>(context)?.scopeState;
+//       listen
+//           ? context
+//               .dependOnInheritedWidgetOfExactType<_Scope<S, D, C>>()
+//               ?.scopeState
+//           : context
+//               .getInheritedWidgetOfExactType<_Scope<S, D, C>>()
+//               ?.scopeState;
+
+//   @override
+//   bool updateShouldNotifyDependent(
+//       covariant InheritedModel<int> oldWidget, Set<int> dependencies) {
+//     // TODO: implement updateShouldNotifyDependent
+//     throw UnimplementedError();
+//   }
+
+//   @override
+//   bool updateShouldNotify(_Scope<S, D, C> oldWidget) =>
+//       scope.updateParamsShouldNotify(oldWidget.scope);
+
+//   @override
+//   String toStringShort() => '${_Scope<S, D, C>}';
+// }

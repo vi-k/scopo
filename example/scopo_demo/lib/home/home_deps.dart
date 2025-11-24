@@ -1,0 +1,115 @@
+import 'dart:async';
+import 'dart:math';
+
+import 'package:flutter/material.dart';
+import 'package:scopo/scopo.dart';
+
+import '../common/fake_exception.dart';
+import '../fake_dependencies/http_client.dart';
+import '../fake_dependencies/some_bloc.dart';
+import '../fake_dependencies/some_controller.dart';
+import '../utils/app_environment.dart';
+
+class HomeDeps implements ScopeDeps {
+  final HttpClient httpClient;
+  final SomeBloc someBloc;
+  final SomeController someController;
+
+  HomeDeps({
+    required this.httpClient,
+    required this.someBloc,
+    required this.someController,
+  });
+
+  static Stream<ScopeInitState<double, HomeDeps>> init(
+    BuildContext context,
+  ) async* {
+    HttpClient? httpClient;
+    SomeBloc? someBloc;
+    SomeController? someController;
+    var isInitialized = false;
+
+    final progressIterator = DoubleProgressIterator(count: 3);
+
+    // Fake error block
+    final random = Random();
+    final throwFakeError =
+        random.nextDouble() < AppEnvironment.probabilityOfHomeRandomError;
+    final depWithFakeError = random.nextInt(progressIterator.count);
+    // ignore: avoid_print
+    print(
+      '[$HomeDeps] '
+      '${throwFakeError ? 'throw fake error on dep #${depWithFakeError + 1}' : 'no throw fake error'}',
+    );
+    void randomFakeError(String text) {
+      if (throwFakeError && depWithFakeError == progressIterator.currentStep) {
+        throw FakeException(text);
+      }
+    }
+
+    try {
+      httpClient = HttpClient();
+      await httpClient.init();
+      randomFakeError('$HttpClient initialization error');
+      yield ScopeProgress(progressIterator.nextProgress());
+
+      final someBlocCompleter = Completer<void>();
+      someBloc =
+          SomeBloc()..add(
+            SomeBlocLoad(
+              fakeError:
+                  throwFakeError &&
+                  depWithFakeError == progressIterator.currentStep,
+            ),
+          );
+      someBloc.stream.listen((state) {
+        switch (state) {
+          case SomeBlocInitial():
+          case SomeBlocInProgress():
+            break;
+          case SomeBlocSuccess():
+            someBlocCompleter.complete();
+          case SomeBlocError():
+            someBlocCompleter.complete();
+        }
+      });
+      await someBlocCompleter.future;
+      yield ScopeProgress(progressIterator.nextProgress());
+
+      someController = SomeController();
+      await someController.init();
+      randomFakeError('$SomeController initialization error');
+      yield ScopeProgress(progressIterator.nextProgress());
+
+      // Показываем пользователю 100%
+      await Future<void>.delayed(const Duration(milliseconds: 500));
+
+      yield ScopeReady(
+        HomeDeps(
+          httpClient: httpClient,
+          someBloc: someBloc,
+          someController: someController,
+        ),
+      );
+
+      isInitialized = true;
+    } finally {
+      if (!isInitialized) {
+        await [
+          httpClient?.dispose(),
+          someBloc?.close(),
+          someController?.dispose(),
+        ].nonNulls.wait;
+      }
+    }
+  }
+
+  @override
+  Future<void> dispose() async {
+    await [
+      httpClient.dispose(),
+      someBloc.close(),
+      someController.dispose(),
+    ].wait;
+  }
+}
