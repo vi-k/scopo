@@ -5,23 +5,30 @@
     "version": "0.2.0",
     "configurations": [
         {
-            "name": "example",
-            "cwd": "example",
+            "name": "minimal",
+            "cwd": "example/minimal",
             "request": "launch",
             "type": "dart",
             "program": "lib/main.dart"
         },
         {
-            "name": "example (profile mode)",
-            "cwd": "example",
+            "name": "scopo demo",
+            "cwd": "example/scopo_demo",
+            "request": "launch",
+            "type": "dart",
+            "program": "lib/main.dart"
+        },
+        {
+            "name": "scopo demo (profile mode)",
+            "cwd": "example/scopo_demo",
             "request": "launch",
             "type": "dart",
             "flutterMode": "profile",
             "program": "lib/main.dart"
         },
         {
-            "name": "example (release mode)",
-            "cwd": "example",
+            "name": "scopo demo (release mode)",
+            "cwd": "example/scopo_demo",
             "request": "launch",
             "type": "dart",
             "flutterMode": "release",

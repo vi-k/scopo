@@ -1,6 +1,6 @@
 name: scopo
 description: "A package for creating scopes in a widget tree and providing dependencies"
-version: 0.1.2
+version: 0.1.3
 homepage: https://github.com/vi-k/scopo
 
 environment:
