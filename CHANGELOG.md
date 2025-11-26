@@ -1,6 +1,6 @@
-## 0.2.0
+## 0.2.0-0.2.1
 
-* breaking changes: `init` now passes a helper and does not pass a context.
+* breaking changes: remove context from `init`.
 
 ## 0.1.3
 

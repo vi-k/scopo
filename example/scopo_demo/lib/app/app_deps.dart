@@ -31,13 +31,12 @@ class AppDeps implements ScopeDeps {
   ///
   /// It simulates random initialization errors using [AppEnvironment]
   /// probabilities.
-  static Stream<ScopeInitState<double, AppDeps>> init(
-    ScopeHelper helper,
-  ) async* {
+  static Stream<ScopeInitState<double, AppDeps>> init() async* {
     HttpClient? httpClient;
     Connectivity? connectivity;
     Analytics? analytics;
     SomeController? someController;
+    var isInitialized = false;
 
     final progressIterator = DoubleProgressIterator(count: 4);
 
@@ -78,9 +77,6 @@ class AppDeps implements ScopeDeps {
       randomFakeError('$SomeController initialization error');
       yield ScopeProgress(progressIterator.nextProgress());
 
-      // Даём пользователю увидеть 100%.
-      await Future<void>.delayed(const Duration(milliseconds: 500));
-
       yield ScopeReady(
         AppDeps(
           httpClient: httpClient,
@@ -89,8 +85,10 @@ class AppDeps implements ScopeDeps {
           someController: someController,
         ),
       );
+
+      isInitialized = true;
     } finally {
-      if (helper.initializationNotCompleted) {
+      if (!isInitialized) {
         await [
           httpClient?.dispose(),
           connectivity?.dispose(),

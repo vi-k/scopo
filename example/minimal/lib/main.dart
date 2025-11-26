@@ -92,9 +92,7 @@ class AppDeps implements ScopeDeps {
     required this.sharedPreferences,
   });
 
-  static Stream<ScopeInitState<String, AppDeps>> init(
-    ScopeHelper helper,
-  ) async* {
+  static Stream<ScopeInitState<String, AppDeps>> init() async* {
     SharedPreferences? sharedPreferences;
 
     yield ScopeProgress('init $SharedPreferences');

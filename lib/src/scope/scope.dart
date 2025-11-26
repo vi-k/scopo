@@ -8,11 +8,10 @@ import 'scope_deps.dart';
 part 'scope_config.dart';
 part 'scope_content.dart';
 part 'scope_deps_state.dart';
-part 'scope_helper.dart';
 part 'scope_log.dart';
 
 typedef ScopeInitFunction<P extends Object, D extends ScopeDeps>
-    = Stream<ScopeInitState<P, D>> Function(ScopeHelper helper);
+    = Stream<ScopeInitState<P, D>> Function();
 
 typedef ScopeOnInitCallback<P extends Object> = Widget Function(P? progress);
 
@@ -30,11 +29,13 @@ abstract base class Scope<S extends Scope<S, D, C>, D extends ScopeDeps,
     C extends ScopeContent<S, D, C>> extends StatefulWidget {
   final Object? tag;
   final ScopeInitFunction<Object, D> _init;
+  final Duration pauseAfterInitialization;
 
   const Scope({
     super.key,
     this.tag,
     required final ScopeInitFunction<Object, D> init,
+    this.pauseAfterInitialization = const Duration(milliseconds: 500),
   }) : _init = init;
 
   /// Quick access to parameters passed in scope.
@@ -127,17 +128,18 @@ base class _ScopeState<S extends Scope<S, D, C>, D extends ScopeDeps,
   final _contentKey = GlobalKey<C>();
   StreamSubscription<void>? _subscription;
   _ScopeDepsState<Object, D> _state = _ScopeInitial();
+  _ScopeDepsState<Object, D>? _pauseState;
   Completer<void>? _closeCompleter;
-  late final ScopeHelper _helper;
+
+  String _method(String method) => '${widget.toStringShort()}.$method';
 
   @override
   void initState() {
     super.initState();
 
-    String method() => '${widget.toStringShort()}.init';
+    String method() => _method('init');
 
-    _helper = ScopeHelper();
-    _subscription = widget._init(_helper).listen(
+    _subscription = widget._init().listen(
       (state) {
         switch (_state) {
           case _ScopeInitial<Object, D>():
@@ -156,15 +158,22 @@ base class _ScopeState<S extends Scope<S, D, C>, D extends ScopeDeps,
         switch (state) {
           case ScopeProgress(:final value):
             _debug(method, () => 'progress=$value');
+            setState(() {
+              _state = state;
+            });
 
           case ScopeReady():
-            _helper._initializationNotCompleted = false;
             _debug(method, '$D is ready');
+            _pauseState = _state;
+            _state = state;
+            Timer(widget.pauseAfterInitialization, () {
+              if (mounted) {
+                setState(() {
+                  _pauseState = null;
+                });
+              }
+            });
         }
-
-        setState(() {
-          _state = state;
-        });
       },
       onError: (Object error, StackTrace stackTrace) {
         _unsubscribe();
@@ -235,7 +244,7 @@ base class _ScopeState<S extends Scope<S, D, C>, D extends ScopeDeps,
   Widget build(BuildContext _) {
     return _Scope<S, D, C>(
       scopeState: this,
-      child: switch (_state) {
+      child: switch (_pauseState ?? _state) {
         _ScopeInitial(:final value) ||
         ScopeProgress(:final Object? value) =>
           widget.onInit(value),

@@ -29,12 +29,11 @@ class HomeDeps implements ScopeDeps {
   ///
   /// It simulates random initialization errors using [AppEnvironment]
   /// probabilities.
-  static Stream<ScopeInitState<double, HomeDeps>> init(
-    ScopeHelper helper,
-  ) async* {
+  static Stream<ScopeInitState<double, HomeDeps>> init() async* {
     HttpClient? httpClient;
     SomeBloc? someBloc;
     SomeController? someController;
+    var isInitialized = false;
 
     final progressIterator = DoubleProgressIterator(count: 3);
 
@@ -87,9 +86,6 @@ class HomeDeps implements ScopeDeps {
       randomFakeError('$SomeController initialization error');
       yield ScopeProgress(progressIterator.nextProgress());
 
-      // Показываем пользователю 100%
-      await Future<void>.delayed(const Duration(milliseconds: 500));
-
       yield ScopeReady(
         HomeDeps(
           httpClient: httpClient,
@@ -97,8 +93,10 @@ class HomeDeps implements ScopeDeps {
           someController: someController,
         ),
       );
+
+      isInitialized = true;
     } finally {
-      if (helper.initializationNotCompleted) {
+      if (!isInitialized) {
         await [
           httpClient?.dispose(),
           someBloc?.close(),
