@@ -8,17 +8,21 @@ import 'scope_deps.dart';
 part 'scope_config.dart';
 part 'scope_content.dart';
 part 'scope_deps_state.dart';
+part 'scope_helper.dart';
 part 'scope_log.dart';
 
 typedef ScopeInitFunction<P extends Object, D extends ScopeDeps>
-    = Stream<ScopeInitState<P, D>> Function(BuildContext);
+    = Stream<ScopeInitState<P, D>> Function(ScopeHelper helper);
 
 typedef ScopeOnInitCallback<P extends Object> = Widget Function(P? progress);
 
 typedef ScopeOnErrorCallback = Widget Function(
     Object error, StackTrace stackTrace);
 
-/// Scope.
+/// The main widget that creates a scope.
+///
+/// It manages the lifecycle of dependencies (initialization, error handling,
+/// disposal).
 ///
 /// Used to create a subtree in the widget tree that guarantees that all
 /// necessary initialized dependencies for widgets will exist.
@@ -27,9 +31,11 @@ abstract base class Scope<S extends Scope<S, D, C>, D extends ScopeDeps,
   final Object? tag;
   final ScopeInitFunction<Object, D> _init;
 
-  const Scope(
-      {super.key, this.tag, required final ScopeInitFunction<Object, D> init})
-      : _init = init;
+  const Scope({
+    super.key,
+    this.tag,
+    required final ScopeInitFunction<Object, D> init,
+  }) : _init = init;
 
   /// Quick access to parameters passed in scope.
   ///
@@ -122,6 +128,7 @@ base class _ScopeState<S extends Scope<S, D, C>, D extends ScopeDeps,
   StreamSubscription<void>? _subscription;
   _ScopeDepsState<Object, D> _state = _ScopeInitial();
   Completer<void>? _closeCompleter;
+  late final ScopeHelper _helper;
 
   @override
   void initState() {
@@ -129,7 +136,8 @@ base class _ScopeState<S extends Scope<S, D, C>, D extends ScopeDeps,
 
     String method() => '${widget.toStringShort()}.init';
 
-    _subscription = widget._init(context).listen(
+    _helper = ScopeHelper();
+    _subscription = widget._init(_helper).listen(
       (state) {
         switch (_state) {
           case _ScopeInitial<Object, D>():
@@ -138,7 +146,8 @@ base class _ScopeState<S extends Scope<S, D, C>, D extends ScopeDeps,
 
           case _ScopeError<Object, D>():
             throw StateError(
-                'Initialization of $D has already ended with an error');
+              'Initialization of $D has already ended with an error',
+            );
 
           case ScopeReady<Object, D>():
             throw StateError('Initialization of $D has already ended');
@@ -149,6 +158,7 @@ base class _ScopeState<S extends Scope<S, D, C>, D extends ScopeDeps,
             _debug(method, () => 'progress=$value');
 
           case ScopeReady():
+            _helper._initializationNotCompleted = false;
             _debug(method, '$D is ready');
         }
 
@@ -289,39 +299,3 @@ class _Scope<S extends Scope<S, D, C>, D extends ScopeDeps,
   @override
   String toStringShort() => '${_Scope<S, D, C>}';
 }
-
-// class _Scope2<S extends Scope<S, D, C>, D extends ScopeDeps,
-//     C extends ScopeContent<S, D, C>> extends InheritedModel<int> {
-//   final C content;
-
-//   _Scope2({super.key, required this.content, required super.child});
-
-//   static _ScopeState<S, D, C>? maybeOf<S extends Scope<S, D, C>,
-//           D extends ScopeDeps, C extends ScopeContent<S, D, C>>(
-//     BuildContext context, {
-//     required bool listen,
-//     // Object? Function(C content) aspect,
-//   }) =>
-//       // InheritedModel.inheritFrom<_Scope2<S, D, C>>(context)?.scopeState;
-//       listen
-//           ? context
-//               .dependOnInheritedWidgetOfExactType<_Scope<S, D, C>>()
-//               ?.scopeState
-//           : context
-//               .getInheritedWidgetOfExactType<_Scope<S, D, C>>()
-//               ?.scopeState;
-
-//   @override
-//   bool updateShouldNotifyDependent(
-//       covariant InheritedModel<int> oldWidget, Set<int> dependencies) {
-//     // TODO: implement updateShouldNotifyDependent
-//     throw UnimplementedError();
-//   }
-
-//   @override
-//   bool updateShouldNotify(_Scope<S, D, C> oldWidget) =>
-//       scope.updateParamsShouldNotify(oldWidget.scope);
-
-//   @override
-//   String toStringShort() => '${_Scope<S, D, C>}';
-// }

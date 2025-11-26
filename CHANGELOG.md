@@ -1,3 +1,7 @@
+## 0.2.0
+
+* breaking changes: `init` now passes a helper and does not pass a context.
+
 ## 0.1.3
 
 * implement `ScopeContent` from `Listenable`

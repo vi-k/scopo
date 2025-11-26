@@ -1,6 +1,5 @@
 import 'dart:math';
 
-import 'package:flutter/material.dart';
 import 'package:scopo/scopo.dart';
 
 import '../common/fake_exception.dart';
@@ -9,7 +8,11 @@ import '../fake_dependencies/connectivity.dart';
 import '../fake_dependencies/http_client.dart';
 import '../fake_dependencies/some_controller.dart';
 import '../utils/app_environment.dart';
+import 'app.dart';
 
+/// Dependencies for [App] scope.
+///
+/// They are initialized asynchronously in the [init] stream.
 class AppDeps implements ScopeDeps {
   final HttpClient httpClient;
   final Connectivity connectivity;
@@ -23,14 +26,18 @@ class AppDeps implements ScopeDeps {
     required this.someController,
   });
 
+  /// Method uses [DoubleProgressIterator] to track and report granular
+  /// initialization progress ([double] 0.0 to 1.0).
+  ///
+  /// It simulates random initialization errors using [AppEnvironment]
+  /// probabilities.
   static Stream<ScopeInitState<double, AppDeps>> init(
-    BuildContext context,
+    ScopeHelper helper,
   ) async* {
     HttpClient? httpClient;
     Connectivity? connectivity;
     Analytics? analytics;
     SomeController? someController;
-    var isInitialized = false;
 
     final progressIterator = DoubleProgressIterator(count: 4);
 
@@ -82,10 +89,8 @@ class AppDeps implements ScopeDeps {
           someController: someController,
         ),
       );
-
-      isInitialized = true;
     } finally {
-      if (!isInitialized) {
+      if (helper.initializationNotCompleted) {
         await [
           httpClient?.dispose(),
           connectivity?.dispose(),

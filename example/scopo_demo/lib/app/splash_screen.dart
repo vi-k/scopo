@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../common/animated_progress_indicator.dart';
 
+/// The screen shows the progress of dependency initialization.
 class SplashScreen extends StatelessWidget {
   final double? progress;
 

@@ -1,3 +1,10 @@
+The minimal example demonstrates a simple counter app where SharedPreferences is
+initialized asynchronously before the UI is shown. It handles loading states and
+errors gracefully.
+
+See also [full demo](https://github.com/vi-k/scopo/tree/main/example/scopo_demo).
+
+```dart
 import 'package:flutter/material.dart';
 import 'package:scopo/scopo.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -151,3 +158,4 @@ class HomeScreen extends StatelessWidget {
     );
   }
 }
+```

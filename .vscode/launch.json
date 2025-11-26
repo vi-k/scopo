@@ -5,7 +5,7 @@
     "version": "0.2.0",
     "configurations": [
         {
-            "name": "minimal",
+            "name": "scopo minimal example",
             "cwd": "example/minimal",
             "request": "launch",
             "type": "dart",

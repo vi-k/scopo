@@ -7,6 +7,7 @@ import 'app/app_deps.dart';
 import 'app/splash_screen.dart';
 import 'home/home.dart';
 import 'home/home_deps.dart';
+import 'utils/app_environment.dart';
 
 void main() {
   final errorPrinter = ansi.AnsiPrinter(
@@ -19,21 +20,14 @@ void main() {
   ScopeConfig.debugError.isEnabled = true;
   ScopeConfig.debugError.log = (
     source,
-    message, {
-    Object? error,
-    StackTrace? stackTrace,
-  }) {
-    errorPrinter.print(
-      '[scopo]'
-      '${source == null ? '' : ' $source:'}'
-      ' ${message ?? 'null'}'
-      '${error == null ? '' : '\n$error'}'
-      '${stackTrace == null ? '' : '\n$stackTrace'}',
-    );
+    message,
+    ErrorWithStackTrace? error,
+  ) {
+    errorPrinter.print(ScopeLog.buildDefaultMessage(source, message, error));
   };
 
-  // AppEnvironment.probabilityOfAppRandomError = 0.3;
-  // AppEnvironment.probabilityOfHomeRandomError = 0.3;
+  // AppEnvironment.probabilityOfAppRandomError = 1.0;
+  // AppEnvironment.probabilityOfHomeRandomError = 1.0;
   // AppEnvironment.enabledConnectionDuration = (5, 10);
   // AppEnvironment.disabledConnectionDuration = (5, 10);
 

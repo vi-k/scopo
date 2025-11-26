@@ -1,6 +1,7 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
+/// Demonstrates how to inject and manage global UI state within the scope.
 class ThemeManager extends StatefulWidget {
   static Color seedColor = Colors.deepPurple;
   static DynamicSchemeVariant activeSchemeVariant =
@@ -26,7 +27,8 @@ class ThemeManager extends StatefulWidget {
   static ThemeManagerState? maybeOf(
     BuildContext context, {
     bool listen = true,
-  }) => _ThemeManagerScope.maybeOf(context, listen: listen)?.manager;
+  }) =>
+      _ThemeManagerScope.maybeOf(context, listen: listen)?.manager;
 
   static ThemeData? _defaultLightTheme;
   static ThemeData get defaultLightTheme =>
@@ -97,10 +99,10 @@ class ThemeManagerState extends State<ThemeManager> {
   }
 
   Brightness get brightness => switch (mode) {
-    ThemeMode.system => MediaQuery.platformBrightnessOf(context),
-    ThemeMode.light => Brightness.light,
-    ThemeMode.dark => Brightness.dark,
-  };
+        ThemeMode.system => MediaQuery.platformBrightnessOf(context),
+        ThemeMode.light => Brightness.light,
+        ThemeMode.dark => Brightness.dark,
+      };
 
   ThemeData get theme => _themes[(brightness, _active)]!;
 
@@ -147,8 +149,8 @@ class _ThemeManagerScope extends InheritedWidget {
   final bool active;
 
   _ThemeManagerScope({required this.manager, required super.child})
-    : mode = manager._mode,
-      active = manager._active;
+      : mode = manager._mode,
+        active = manager._active;
 
   static _ThemeManagerScope? maybeOf(
     BuildContext context, {

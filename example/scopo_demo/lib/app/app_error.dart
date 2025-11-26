@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:scopo/scopo.dart';
 
 import '../common/fake_exception.dart';
 
+/// A widget demonstrates how [Scope] handles errors.
 class AppError extends StatelessWidget {
   final Object error;
   final StackTrace stackTrace;

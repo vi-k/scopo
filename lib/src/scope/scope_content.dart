@@ -19,6 +19,9 @@ final class _ScopeContent<S extends Scope<S, D, C>, D extends ScopeDeps,
   String toStringShort() => '$C';
 }
 
+/// Holds the state and logic for the UI within the [Scope].
+///
+/// It acts as a [Listenable] to rebuild widgets when state changes.
 abstract base class ScopeContent<S extends Scope<S, D, C>, D extends ScopeDeps,
         C extends ScopeContent<S, D, C>> extends State<_ScopeContent<S, D, C>>
     implements Listenable {

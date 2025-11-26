@@ -5,12 +5,18 @@ import '../app/app.dart';
 import '../app/app_error.dart';
 import '../app/theme_manager.dart';
 import '../common/animated_progress_indicator.dart';
+import '../fake_dependencies/some_bloc.dart';
+import '../fake_dependencies/some_controller.dart';
 import 'home_counter.dart';
 import 'home_deps.dart';
 import 'home_navigation_block.dart';
 
 typedef HomeConsumer = ScopeConsumer<Home, HomeDeps, HomeContent>;
 
+/// A child scope.
+///
+/// Initializes feature-specific dependencies like [SomeBloc] and
+/// [SomeController].
 final class Home extends Scope<Home, HomeDeps, HomeContent> {
   final bool isRoot;
 
@@ -21,11 +27,16 @@ final class Home extends Scope<Home, HomeDeps, HomeContent> {
     this.isRoot = true,
   });
 
-  static HomeContent of(BuildContext context) =>
-      Scope.of<Home, HomeDeps, HomeContent>(context);
+  /// Provides access the scope params, i.e. to the widget [Home].
+  static Home paramsOf(BuildContext context, {bool listen = true}) =>
+      Scope.paramsOf<Home, HomeDeps, HomeContent>(context, listen: listen);
 
   @override
   bool updateParamsShouldNotify(Home oldWidget) => false;
+
+  /// Provides access the [HomeContent] and [HomeDeps].
+  static HomeContent of(BuildContext context) =>
+      Scope.of<Home, HomeDeps, HomeContent>(context);
 
   @override
   Widget onInit(Object? progress) => _FakeContent(progress as double?);
@@ -36,13 +47,13 @@ final class Home extends Scope<Home, HomeDeps, HomeContent> {
 
   @override
   Widget wrapContent(HomeDeps deps, Widget child) => NavigationNode(
-    isRoot: isRoot,
-    onPop: (context, result) async {
-      await Home.of(context).close();
-      return true;
-    },
-    child: child,
-  );
+        isRoot: isRoot,
+        onPop: (context, result) async {
+          await Home.of(context).close();
+          return true;
+        },
+        child: child,
+      );
 
   @override
   HomeContent createContent() => HomeContent();
@@ -50,36 +61,36 @@ final class Home extends Scope<Home, HomeDeps, HomeContent> {
 
 class HomeAppBar extends AppBar {
   HomeAppBar(BuildContext context, {super.key})
-    : super(
-        title: Text('$Home'),
-        actions: [
-          ValueListenableBuilder<bool>(
-            valueListenable: App.of(context).deps.connectivity,
-            builder:
-                (context, isConnected, _) => Icon(
-                  color:
-                      isConnected ? null : Theme.of(context).colorScheme.error,
-                  isConnected
-                      ? Icons.signal_cellular_4_bar
-                      : Icons.signal_cellular_connected_no_internet_0_bar,
-                ),
-          ),
-          IconButton(
-            onPressed: () {
-              ThemeManager.of(context, listen: false).toggleBrightness();
-            },
-            onLongPress: () {
-              ThemeManager.of(context, listen: false).mode = ThemeMode.system;
-            },
-            icon: Icon(switch (ThemeManager.of(context).brightness) {
-              Brightness.dark => Icons.light_mode,
-              Brightness.light => Icons.dark_mode,
-            }),
-          ),
-        ],
-      );
+      : super(
+          title: Text('$Home'),
+          actions: [
+            ValueListenableBuilder<bool>(
+              valueListenable: App.of(context).deps.connectivity,
+              builder: (context, isConnected, _) => Icon(
+                color: isConnected ? null : Theme.of(context).colorScheme.error,
+                isConnected
+                    ? Icons.signal_cellular_4_bar
+                    : Icons.signal_cellular_connected_no_internet_0_bar,
+              ),
+            ),
+            IconButton(
+              onPressed: () {
+                ThemeManager.of(context, listen: false).toggleBrightness();
+              },
+              onLongPress: () {
+                ThemeManager.of(context, listen: false).mode = ThemeMode.system;
+              },
+              icon: Icon(switch (ThemeManager.of(context).brightness) {
+                Brightness.dark => Icons.light_mode,
+                Brightness.light => Icons.dark_mode,
+              }),
+            ),
+          ],
+        );
 }
 
+/// The screen displays the progress of dependency initialization, mimicking
+/// the [Home] screen.
 class _FakeContent extends StatefulWidget {
   final double? progress;
 
@@ -135,6 +146,7 @@ mixin ChangeNotifierOnState<T extends StatefulWidget> on State<T>
   }
 }
 
+/// [HomeContent] is used to manage UI state and logic for [Home] scope.
 final class HomeContent extends ScopeContent<Home, HomeDeps, HomeContent> {
   var _counter = 0;
   int get counter => _counter;

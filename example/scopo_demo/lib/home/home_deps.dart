@@ -1,7 +1,6 @@
 import 'dart:async';
 import 'dart:math';
 
-import 'package:flutter/material.dart';
 import 'package:scopo/scopo.dart';
 
 import '../common/fake_exception.dart';
@@ -9,7 +8,11 @@ import '../fake_dependencies/http_client.dart';
 import '../fake_dependencies/some_bloc.dart';
 import '../fake_dependencies/some_controller.dart';
 import '../utils/app_environment.dart';
+import 'home.dart';
 
+/// Dependencies for [Home] scope.
+///
+/// They are initialized asynchronously in the [init] stream.
 class HomeDeps implements ScopeDeps {
   final HttpClient httpClient;
   final SomeBloc someBloc;
@@ -21,13 +24,17 @@ class HomeDeps implements ScopeDeps {
     required this.someController,
   });
 
+  /// Method uses [DoubleProgressIterator] to track and report granular
+  /// initialization progress ([double] 0.0 to 1.0).
+  ///
+  /// It simulates random initialization errors using [AppEnvironment]
+  /// probabilities.
   static Stream<ScopeInitState<double, HomeDeps>> init(
-    BuildContext context,
+    ScopeHelper helper,
   ) async* {
     HttpClient? httpClient;
     SomeBloc? someBloc;
     SomeController? someController;
-    var isInitialized = false;
 
     final progressIterator = DoubleProgressIterator(count: 3);
 
@@ -54,14 +61,13 @@ class HomeDeps implements ScopeDeps {
       yield ScopeProgress(progressIterator.nextProgress());
 
       final someBlocCompleter = Completer<void>();
-      someBloc =
-          SomeBloc()..add(
-            SomeBlocLoad(
-              fakeError:
-                  throwFakeError &&
-                  depWithFakeError == progressIterator.currentStep,
-            ),
-          );
+      someBloc = SomeBloc()
+        ..add(
+          SomeBlocLoad(
+            fakeError: throwFakeError &&
+                depWithFakeError == progressIterator.currentStep,
+          ),
+        );
       someBloc.stream.listen((state) {
         switch (state) {
           case SomeBlocInitial():
@@ -91,10 +97,8 @@ class HomeDeps implements ScopeDeps {
           someController: someController,
         ),
       );
-
-      isInitialized = true;
     } finally {
-      if (!isInitialized) {
+      if (helper.initializationNotCompleted) {
         await [
           httpClient?.dispose(),
           someBloc?.close(),
