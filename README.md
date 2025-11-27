@@ -32,7 +32,6 @@ dependencies and UI state.
 - [Accessing Dependencies](#accessing-dependencies)
 - [Logging](#logging)
 - [Utilities](#utilities)
-  - [ScopeInitState](#scopeinitstate)
   - [ScopeConsumer](#scopeconsumer)
   - [NavigationNode](#navigationnode)
   - [DoubleProgressIterator](#doubleprogressiterator)
@@ -125,6 +124,9 @@ class MyFeatureDeps implements ScopeDeps {
 Create a class that extends `ScopeContent`. This is where your UI logic and
 state reside. It has access to the dependencies.
 
+`ScopeContent` implements `Listenable`, so you can use it to rebuild widgets
+when state changes (e.g. using `ListenableBuilder` or `ListenableSelector`).
+
 ```dart
 class MyFeatureContent extends ScopeContent<MyFeatureScope, MyFeatureDeps, MyFeatureContent> {
   @override
@@ -136,6 +138,11 @@ class MyFeatureContent extends ScopeContent<MyFeatureScope, MyFeatureDeps, MyFea
   // Access dependencies via `deps`.
   void fetchData() {
     deps.apiService.fetch();
+  }
+
+  // Notify listeners to rebuild widgets that listen to this content.
+  void updateState() {
+    notifyListeners();
   }
 
   @override
