@@ -20,6 +20,28 @@ dependencies and UI state.
 - **Separation of Concerns**: clearly separates Dependencies (`ScopeDeps`),
   UI Logic (`ScopeContent`), and Wiring (`Scope`).
 
+## Table of Contents
+
+- [Features](#features)
+- [Installation](#installation)
+- [Usage](#usage)
+  - [1. Define Dependencies](#1-define-dependencies)
+  - [2. Define Content](#2-define-content)
+  - [3. Define the Scope](#3-define-the-scope)
+  - [4. Use it](#4-use-it)
+- [Accessing Dependencies](#accessing-dependencies)
+- [Logging](#logging)
+- [Utilities](#utilities)
+  - [ScopeInitState](#scopeinitstate)
+  - [ScopeConsumer](#scopeconsumer)
+  - [NavigationNode](#navigationnode)
+  - [DoubleProgressIterator](#doubleprogressiterator)
+  - [IntProgressIterator](#intprogressiterator)
+  - [ListenableListenExtension](#listenablelistenextension)
+  - [ListenableSelectExtension](#listenableselectextension)
+  - [ListenableSelector](#listenableselector)
+- [Examples](#examples)
+
 ## Installation
 
 Add `scopo` to your `pubspec.yaml`:
