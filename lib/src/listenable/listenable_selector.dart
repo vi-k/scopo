@@ -3,15 +3,14 @@ import 'package:flutter/widgets.dart';
 
 import 'listen.dart';
 
-/// A widget for building a widget subtree when an [aspect] of [Listenable]
-/// changes.
+/// A widget that rebuilds when a value selected from a `Listenable` changes.
 ///
-/// See [ListenableListenToExtension.listenTo].
-class ListenableAspectBuilder<L extends Listenable, T extends Object?>
+/// See [ListenableSelectExtension.listenTo].
+class ListenableSelector<L extends Listenable, T extends Object?>
     extends StatefulWidget {
   final L listenable;
-  final T Function(L listenable) aspect;
-  final bool Function(T previous, T current)? test;
+  final T Function(L listenable) selector;
+  final bool Function(T previous, T current)? compare;
   final Widget Function(
     BuildContext context,
     L listenable,
@@ -20,19 +19,18 @@ class ListenableAspectBuilder<L extends Listenable, T extends Object?>
   ) builder;
   final Widget? child;
 
-  /// Creates a builder that responds to [aspect] changes in [listenable].
-  const ListenableAspectBuilder({
+  /// Creates a builder that responds to [selector] changes in [listenable].
+  const ListenableSelector({
     super.key,
     required this.listenable,
-    required this.aspect,
-    this.test,
+    required this.selector,
+    this.compare,
     required this.builder,
     this.child,
   });
 
   @override
-  State<ListenableAspectBuilder> createState() =>
-      _ListenableAspectBuilderState<L, T>();
+  State<ListenableSelector> createState() => _ListenableSelectorState<L, T>();
 
   @override
   void debugFillProperties(DiagnosticPropertiesBuilder properties) {
@@ -41,9 +39,9 @@ class ListenableAspectBuilder<L extends Listenable, T extends Object?>
   }
 }
 
-class _ListenableAspectBuilderState<L extends Listenable, T extends Object?>
-    extends State<ListenableAspectBuilder<L, T>> {
-  late ListenableToSubscription<T> _subscription;
+class _ListenableSelectorState<L extends Listenable, T extends Object?>
+    extends State<ListenableSelector<L, T>> {
+  late ListenableSelectSubscription<T> _subscription;
 
   @override
   void initState() {
@@ -52,7 +50,7 @@ class _ListenableAspectBuilderState<L extends Listenable, T extends Object?>
   }
 
   @override
-  void didUpdateWidget(ListenableAspectBuilder<L, T> oldWidget) {
+  void didUpdateWidget(ListenableSelector<L, T> oldWidget) {
     super.didUpdateWidget(oldWidget);
 
     if (widget.listenable != oldWidget.listenable) {
@@ -62,14 +60,14 @@ class _ListenableAspectBuilderState<L extends Listenable, T extends Object?>
   }
 
   void _subscribe() {
-    _subscription = widget.listenable.listenTo(
-      widget.aspect,
+    _subscription = widget.listenable.select(
+      widget.selector,
       (_, __) {
         if (!mounted) return;
 
         setState(() {});
       },
-      test: widget.test,
+      compare: widget.compare,
     );
   }
 

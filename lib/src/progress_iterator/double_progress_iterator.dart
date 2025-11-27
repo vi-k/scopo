@@ -1,19 +1,43 @@
+/// A helper class to track initialization progress as a `double` value between
+/// 0.0 and 1.0.
+///
+/// ```dart
+/// static Stream<ScopeInitState<double, MyFeatureDeps>> init() async* {
+///   final progressIterator = DoubleProgressIterator(count: 3);
+///
+///   // step 1
+///   yield ScopeProgress(progressIterator.nextProgress()); // 0.33
+///
+///   // step 2
+///   yield ScopeProgress(progressIterator.nextProgress()); // 0.66
+///
+///   // step 3
+///   yield ScopeProgress(progressIterator.nextProgress()); // 1.0
+///
+///   ...
+/// }
+/// ```
 final class DoubleProgressIterator {
+  /// The total number of steps.
   final int count;
-  var _current = 0;
+
+  /// The current step.
+  var _currentStep = 0;
 
   DoubleProgressIterator({required this.count});
 
-  int get currentStep => _current;
+  /// The current step.
+  int get currentStep => _currentStep;
 
+  /// Returns the next progress value as a `double` between 0.0 and 1.0.
   double nextProgress() {
-    ++_current;
+    ++_currentStep;
 
     assert(
-      _current <= count,
-      'next step ($_current) > count ($count)',
+      _currentStep <= count,
+      'next step ($_currentStep) > count ($count)',
     );
 
-    return _current / count;
+    return _currentStep / count;
   }
 }

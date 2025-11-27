@@ -1,11 +1,10 @@
 part of 'scope.dart';
 
-typedef ErrorWithStackTrace = ({Object error, StackTrace stackTrace});
-
 typedef ScopeLogCallback = void Function(
   String? source,
   String? message,
-  ErrorWithStackTrace? error,
+  Object? error,
+  StackTrace? stackTrace,
 );
 
 typedef _ScopeLogCallback = void Function(
@@ -48,29 +47,39 @@ final class ScopeLog {
     StackTrace? stackTrace,
   }) =>
       _userLog(
-          _objToStr(source),
-          _objToStr(message),
-          error == null
-              ? null
-              : (error: error, stackTrace: stackTrace ?? StackTrace.empty));
+        _objToStr(source),
+        _objToStr(message),
+        error,
+        stackTrace,
+      );
 
   static String buildDefaultMessage(
     String? source,
-    String? message, [
-    ErrorWithStackTrace? error,
-  ]) {
+    String? message, {
+    Object? error,
+    StackTrace? stackTrace,
+  }) {
     return '[scopo]'
         '${source == null ? '' : ' $source:'}'
         ' ${message ?? 'null'}'
-        '${error == null ? '' : '\n${error.error}${error.stackTrace == StackTrace.empty ? '' : '\n${error.stackTrace}'}'}';
+        '${error == null ? '' : ': $error'}'
+        '${stackTrace == null ? '' : ': $stackTrace'}';
   }
 
   static void _defaultLog(
     String? source,
     String? message,
-    ErrorWithStackTrace? error,
+    Object? error,
+    StackTrace? stackTrace,
   ) {
     // ignore: avoid_print
-    print(buildDefaultMessage(source, message, error));
+    print(
+      buildDefaultMessage(
+        source,
+        message,
+        error: error,
+        stackTrace: stackTrace,
+      ),
+    );
   }
 }

@@ -1,5 +1,8 @@
 import 'package:flutter/foundation.dart';
 
+import 'check_disposed.dart';
+
+/// @nodoc
 @visibleForTesting
 class TestNotifier with Notifier {
   List<void Function()?> get listeners => _listeners;
@@ -9,6 +12,7 @@ class TestNotifier with Notifier {
   bool get notifyingListeners => _notifyingListeners;
 }
 
+/// @nodoc
 mixin Notifier implements Listenable {
   static final _emptyListeners = List<void Function()?>.filled(0, null);
 
@@ -27,25 +31,9 @@ mixin Notifier implements Listenable {
   @protected
   bool get hasListeners => _listeners.isNotEmpty;
 
-  /// Проверка на то, что объект не был disposed.
-  bool debugAssertNotDisposed() {
-    assert(() {
-      if (_debugDisposed) {
-        throw StateError(
-          'A $runtimeType was used after being disposed.'
-          ' Once you have called disposeListenable() on a $runtimeType,'
-          ' it can no longer be used.',
-        );
-      }
-      return true;
-    }());
-
-    return true;
-  }
-
   @override
   void addListener(void Function() listener) {
-    assert(debugAssertNotDisposed());
+    assert(debugAssertNotDisposed(this, _debugDisposed, 'disposeListenable'));
 
     if (_count == _listeners.length) {
       if (_count == 0) {
@@ -115,7 +103,7 @@ mixin Notifier implements Listenable {
   @protected
   @visibleForTesting
   void notifyListeners() {
-    assert(debugAssertNotDisposed());
+    assert(debugAssertNotDisposed(this, _debugDisposed, 'disposeListenable'));
 
     _notifyingListeners = true;
     final counter = ++_notifyListenersCounter;
@@ -159,7 +147,7 @@ mixin Notifier implements Listenable {
   }
 
   void disposeListenable() {
-    assert(debugAssertNotDisposed());
+    assert(debugAssertNotDisposed(this, _debugDisposed, 'disposeListenable'));
     assert(
       !_notifyingListeners,
       'The `disposeListenable()` method on $this was called during the call to'

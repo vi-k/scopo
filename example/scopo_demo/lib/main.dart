@@ -20,9 +20,17 @@ void main() {
   ScopeConfig.debugError.log = (
     source,
     message,
-    ErrorWithStackTrace? error,
+    error,
+    stackTrace,
   ) {
-    errorPrinter.print(ScopeLog.buildDefaultMessage(source, message, error));
+    errorPrinter.print(
+      ScopeLog.buildDefaultMessage(
+        source,
+        message,
+        error: error,
+        stackTrace: stackTrace,
+      ),
+    );
   };
 
   // AppEnvironment.probabilityOfAppRandomError = 1.0;

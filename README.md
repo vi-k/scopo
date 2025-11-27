@@ -26,7 +26,7 @@ Add `scopo` to your `pubspec.yaml`:
 
 ```yaml
 dependencies:
-  scopo: ^0.2.1
+  scopo: ^0.2.2
 ```
 
 Or run:
@@ -195,9 +195,250 @@ final content = Scope.of<MyFeatureScope, MyFeatureDeps, MyFeatureContent>(contex
 final deps = MyFeatureScope.of(context).deps;
 ```
 
+## Logging
+
+You can enable and customize logging using `ScopeConfig`.
+
+```dart
+void main() {
+  // Enable debug logs
+  ScopeConfig.debug.isEnabled = true;
+
+  // Enable error logs
+  ScopeConfig.debugError.isEnabled = true;
+
+  // Customize logger
+  ScopeConfig.debug.log = (source, message, error, stackTrace) {
+    print('[$source] $message');
+  };
+
+  runApp(const MyApp());
+}
+```
+
+## Utilities
+
+### ScopeConsumer
+
+A mixin for `State` classes that provides easy access to the scope content.
+
+```dart
+class MyWidget extends StatefulWidget {
+  const MyWidget({super.key});
+
+  @override
+  State<MyWidget> createState() => _MyWidgetState();
+}
+
+class _MyWidgetState extends State<MyWidget>
+    with ScopeConsumer<MyFeatureScope, MyFeatureDeps, MyFeatureContent> {
+  @override
+  Widget build(BuildContext context) {
+    // Access scope content via `scope`
+    return Text(scope.someValue);
+  }
+}
+```
+
+Or:
+
+```dart
+
+typedef MyFeatureConsumer =
+    ScopeConsumer<MyFeatureScope, MyFeatureDeps, MyFeatureContent>;
+
+class MyWidget extends StatefulWidget {
+  const MyWidget({super.key});
+
+  @override
+  State<MyWidget> createState() => _MyWidgetState();
+}
+
+class _MyWidgetState extends State<MyWidget> with MyFeatureConsumer {
+  @override
+  Widget build(BuildContext context) {
+    // Access scope content via `scope`
+    return Text(scope.someValue);
+  }
+}
+```
+
+### NavigationNode
+
+A widget that creates a nested `Navigator`. It allows you to include bottom
+sheets, dialogs, and other screens in the current scope, ensuring they have
+access to the dependencies.
+
+```dart
+final class MyFeature extends Scope<MyFeature, MyFeatureDeps, MyFeatureContent> {
+  const MyFeature({super.key});
+
+  ...
+
+  @override
+  Widget wrapContent(MyFeatureDeps deps, Widget child) => NavigationNode(
+    onPop: (context, result) async {
+      await MyFeature.of(context).close();
+      return true;
+    },
+    child: child,
+  );
+}
+
+final class MyFeatureContent
+    extends ScopeContent<MyFeature, MyFeatureDeps, MyFeatureContent> {
+  String get nestedScreenTitle = 'My Nested Screen';
+
+  @override
+  Widget build(BuildContext context) {
+    return MyNestedScreen();
+  }
+}
+
+// Because of `NavigationNode`, this screen will be pushed to the nested
+// navigator and will have access to `MyFeatureContent` and `MyFeatureDeps`.
+class MyNestedScreen extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      body: Center(
+        child: ElevatedButton(
+          onPressed: () {
+            // This dialog will be pushed to the nested navigator too and will
+            // have access to `MyFeatureContent` and `MyFeatureDeps`.
+            showDialog(
+              context: context,
+              // But you must specify not to use the root navigator!
+              useRootNavigator: false,
+              builder: (context) {
+                // Access dependencies!
+                final deps = MyFeature.of(context).deps;
+                return AlertDialog(title: Text('Deps: $deps'));
+              },
+            );
+          },
+          child: Text(MyFeature.of(context).nestedScreenTitle),
+        ),
+      ),
+    );
+  }
+}
+```
+
+### DoubleProgressIterator
+
+A helper class to track initialization progress as a `double` value between 0.0 and 1.0.
+
+```dart
+static Stream<ScopeInitState<double, MyFeatureDeps>> init() async* {
+  final progressIterator = DoubleProgressIterator(count: 3);
+
+  // step 1
+  yield ScopeProgress(progressIterator.nextProgress()); // 0.33
+
+  // step 2
+  yield ScopeProgress(progressIterator.nextProgress()); // 0.66
+
+  // step 3
+  yield ScopeProgress(progressIterator.nextProgress()); // 1.0
+
+  ...
+}
+```
+
+### IntProgressIterator
+
+A helper class to track initialization progress as an `int` value.
+
+```dart
+static Stream<ScopeInitState<int, MyFeatureDeps>> init() async* {
+  final progressIterator = IntProgressIterator(count: 3);
+
+  // step 1
+  yield ScopeProgress(progressIterator.nextStep()); // 1
+
+  // step 2
+  yield ScopeProgress(progressIterator.nextStep()); // 2
+
+  // step 3
+  yield ScopeProgress(progressIterator.nextStep()); // 3
+
+  ...
+}
+```
+
+### ListenableListenExtension
+
+A helper extension that adds a `listen` method to `Listenable`, similar to
+`Stream.listen`. It returns a `ListenableSubscription` that can be easily
+canceled.
+
+```dart
+final scrollController = ScrollController();
+final subscription = scrollController.listen(() {
+  // ...
+});
+
+// ...
+
+subscription.cancel();
+```
+
+It also supports `CompositeListenableSubscription` for managing multiple
+subscriptions:
+
+```dart
+final composite = CompositeListenableSubscription();
+
+composite.add(listenable1.listen(listener1));
+listenable2.listen(listener2).addTo(composite);
+
+// ...
+
+composite.cancel();
+```
+
+### ListenableSelectExtension
+
+A helper extension that adds a `select` method to `Listenable`. It allows
+listening to a specific value of the `Listenable` (selector), triggering the
+listener only when that value changes.
+
+```dart
+final subscription = listenable.select(
+  (listenable) => listenable.value,
+  (listenable, value) => print(value),
+);
+```
+
+By default, the previous value is compared to the new value using the
+operator `==`, but this behavior can be changed using `compare`.
+
+```dart
+final subscription = listenable.select(
+  (listenable) => listenable.value,
+  (listenable, value) => print(value),
+  compare: (previous, current) => identical(previous, current),
+);
+```
+
+### ListenableSelector
+
+A widget that rebuilds when a value selected from a `Listenable` changes.
+
+```dart
+ListenableSelector<MyScopeContent, int>(
+  listenable: scope,
+  selector: (scope) => scope.counter,
+  builder: (context, scope, counter, child) {
+    return Text('$counter');
+  },
+);
+```
+
 ## Examples
 
 Check out the `example` directory for more comprehensive examples:
 
--   **minimal**: A simple counter app demonstrating basic usage.
--   **scopo_demo**: A more complex app with nested scopes, error simulation, and custom progress indicators.
+-   [**minimal**](https://github.com/vi-k/scopo/tree/main/example/minimal): A simple counter app demonstrating basic usage.
+-   [**scopo_demo**](https://github.com/vi-k/scopo/tree/main/example/scopo_demo): A more complex app with nested scopes, error simulation, and custom progress indicators.

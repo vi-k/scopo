@@ -12,11 +12,10 @@ class HomeCounter extends StatefulWidget {
 
 class _HomeCounterState extends State<HomeCounter> {
   @override
-  Widget build(BuildContext context) => ListenableAspectBuilder(
-    listenable: Home.of(context),
-    aspect: (scope) => scope.counter,
-    builder:
-        (context, scope, counter, _) => Row(
+  Widget build(BuildContext context) => ListenableSelector(
+        listenable: Home.of(context),
+        selector: (scope) => scope.counter,
+        builder: (context, scope, counter, _) => Row(
           mainAxisSize: MainAxisSize.min,
           textBaseline: TextBaseline.alphabetic,
           children: [
@@ -36,5 +35,5 @@ class _HomeCounterState extends State<HomeCounter> {
             ),
           ],
         ),
-  );
+      );
 }

@@ -2,6 +2,22 @@ part of 'scope.dart';
 
 sealed class _ScopeDepsState<P extends Object, D extends ScopeDeps> {}
 
+/// The base class for the state of the scope initialization stream. It has two
+/// subclasses:
+///
+/// - `ScopeProgress<P, D>`: Emitted to report progress. It carries a value of
+///    type `P` (e.g., `double`, `String`, `int`).
+/// - `ScopeReady<P, D>`: Emitted when initialization is complete. It carries
+///    the initialized dependencies of type `D extends ScopeDeps`.
+///
+/// ```dart
+/// static Stream<ScopeInitState<double, MyFeatureDeps>> init() async* {
+///   // Report progress
+///   yield ScopeProgress(0.5);
+///
+///   // Report readiness
+///   yield ScopeReady(MyFeatureDeps(...));
+/// }
 sealed class ScopeInitState<P extends Object, D extends ScopeDeps>
     extends _ScopeDepsState<P, D> {}
 

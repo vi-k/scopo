@@ -4,8 +4,11 @@ import 'package:flutter/foundation.dart';
 
 import '../utils/check_disposed.dart';
 
-part 'listen_to.dart';
+part 'select.dart';
 
+/// A helper extension that adds a `listen` method to `Listenable`, similar to
+/// `Stream.listen`. It returns a `ListenableSubscription` that can be easily
+/// canceled.
 extension ListenableListenExtension on Listenable {
   /// Listen to the [Listenable].
   ///
@@ -134,6 +137,7 @@ final class CompositeListenableSubscription {
     _subscriptions.add(subscription);
   }
 
+  /// Removes all subscriptions from this composite.
   void cancel() {
     assert(debugAssertNotDisposed(this, _isDisposed, 'cancel'));
     if (!_isDisposed) {
