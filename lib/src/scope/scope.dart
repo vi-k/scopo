@@ -35,7 +35,7 @@ abstract base class Scope<S extends Scope<S, D, C>, D extends ScopeDeps,
     super.key,
     this.tag,
     required final ScopeInitFunction<Object, D> init,
-    this.pauseAfterInitialization = const Duration(milliseconds: 500),
+    this.pauseAfterInitialization = Duration.zero,
   }) : _init = init;
 
   /// Quick access to parameters passed in scope.
@@ -164,15 +164,21 @@ base class _ScopeState<S extends Scope<S, D, C>, D extends ScopeDeps,
 
           case ScopeReady():
             _debug(method, '$D is ready');
-            _pauseState = _state;
-            _state = state;
-            Timer(widget.pauseAfterInitialization, () {
-              if (mounted) {
-                setState(() {
-                  _pauseState = null;
-                });
-              }
-            });
+            if (widget.pauseAfterInitialization.inMilliseconds == 0) {
+              setState(() {
+                _state = state;
+              });
+            } else {
+              _pauseState = _state;
+              _state = state;
+              Timer(widget.pauseAfterInitialization, () {
+                if (mounted) {
+                  setState(() {
+                    _pauseState = null;
+                  });
+                }
+              });
+            }
         }
       },
       onError: (Object error, StackTrace stackTrace) {

@@ -1,8 +1,9 @@
-## 0.2.2
+## 0.2.2+1
 
 * breaking changes: rename `ListenableAspectBuilder` to `ListenableSelector`.
 * breaking changes: rename `listenTo` to `select`.
 * update docs.
+* fix: `pauseAfterInitialization` to zero by default.
 
 ## 0.2.0-0.2.1
 
