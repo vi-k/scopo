@@ -1,7 +1,7 @@
 import 'package:bloc/bloc.dart';
 import 'package:equatable/equatable.dart';
 
-import '../common/fake_exception.dart';
+import '../../domain/fake_exception.dart';
 
 sealed class SomeBlocEvent {}
 

@@ -3,7 +3,7 @@ import 'dart:math';
 
 import 'package:flutter/material.dart';
 
-import '../utils/app_environment.dart';
+import '../../../utils/app_environment.dart';
 
 class Connectivity extends ValueNotifier<bool> {
   late final Random _random;
@@ -26,10 +26,9 @@ class Connectivity extends ValueNotifier<bool> {
   Stream<bool> _fakeIsConnectedGenerator() async* {
     var isConnected = true;
     while (true) {
-      final (min, max) =
-          isConnected
-              ? AppEnvironment.enabledConnectionDuration
-              : AppEnvironment.disabledConnectionDuration;
+      final (min, max) = isConnected
+          ? AppEnvironment.enabledConnectionDuration
+          : AppEnvironment.disabledConnectionDuration;
       final duration = _random.nextInt(max - min) + min;
       // ignore: avoid_print
       print(

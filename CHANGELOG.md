@@ -1,3 +1,11 @@
+## 0.3.0
+
+* add `ScopeProviderBottom`, `ScopeProviderBase`, `ScopeProvider`
+* add `ScopeListenableProviderBottom`, `ScopeListenableProviderBase`, `ScopeListenableProvider`
+* add `ScopeNotifierBottom`, `ScopeNotifierBase`, `ScopeNotifier`
+* add `ScopeStateManagerBottom`, `ScopeStateManagerBase`, `ScopeStateManager`
+* remake scopo_demo
+
 ## 0.2.2+1
 
 * breaking changes: rename `ListenableAspectBuilder` to `ListenableSelector`.

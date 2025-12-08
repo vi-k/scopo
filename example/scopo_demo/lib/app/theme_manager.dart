@@ -1,60 +1,94 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:scopo/scopo.dart';
+import 'package:scopo_demo/common/data/real_services/key_value_service.dart';
 
 /// Demonstrates how to inject and manage global UI state within the scope.
 class ThemeManager extends StatefulWidget {
-  static Color seedColor = Colors.deepPurple;
-  static DynamicSchemeVariant activeSchemeVariant =
-      DynamicSchemeVariant.tonalSpot;
-  static DynamicSchemeVariant inactiveSchemeVariant =
-      DynamicSchemeVariant.neutral;
+  static const Color primarySeedColor = Colors.deepPurple;
+  static const Color secondarySeedColor = Colors.lightBlue;
+  static const Color tertiarySeedColor = Colors.lightGreen;
+  static final String _modeKey = 'mode';
 
-  final ThemeMode initialMode;
-  final bool initialActive;
+  late final ThemeMode initialMode;
   final Widget Function(BuildContext context) builder;
+  final KeyValueService keyValueService;
 
-  const ThemeManager({
+  ThemeManager({
     super.key,
-    this.initialMode = ThemeMode.system,
-    this.initialActive = true,
+    required this.keyValueService,
     required this.builder,
-  });
+  }) {
+    final modeIndex = keyValueService.getInt(_modeKey) ?? 0;
+    try {
+      initialMode = ThemeMode.values[modeIndex];
+    } on IndexError {
+      initialMode = ThemeMode.system;
+    }
+  }
 
-  static ThemeManagerState of(BuildContext context, {bool listen = true}) =>
-      maybeOf(context, listen: listen) ??
+  static ThemeManagerState of(
+    BuildContext context, {
+    bool listen = true,
+  }) =>
+      maybeOf(
+        context,
+        listen: listen,
+      ) ??
       (throw Exception('$ThemeManager not found in the context'));
 
   static ThemeManagerState? maybeOf(
     BuildContext context, {
     bool listen = true,
   }) =>
-      _ThemeManagerScope.maybeOf(context, listen: listen)?.manager;
+      listen
+          ? ScopeProvider.depend<ThemeManagerState>(context)
+          : ScopeProvider.get<ThemeManagerState>(context);
 
-  static ThemeData? _defaultLightTheme;
-  static ThemeData get defaultLightTheme =>
-      _defaultLightTheme ??= _createTheme(Brightness.light, true);
+  static ThemeData? _lightTheme;
+  static ThemeData get lightTheme =>
+      _lightTheme ??= _createTheme(Brightness.light);
 
-  static ThemeData? _defaultDartTheme;
-  static ThemeData get defaultDarkTheme =>
-      _defaultDartTheme ??= _createTheme(Brightness.light, true);
+  static ThemeData? _darkTheme;
+  static ThemeData get darkTheme =>
+      _darkTheme ??= _createTheme(Brightness.dark);
 
-  static ThemeData _createTheme(Brightness brightness, bool active) {
-    final colorScheme = ColorScheme.fromSeed(
+  static ThemeData _createTheme(Brightness brightness) {
+    final blueColorScheme = ColorScheme.fromSeed(
       brightness: brightness,
-      seedColor: seedColor,
-      dynamicSchemeVariant:
-          active ? activeSchemeVariant : inactiveSchemeVariant,
+      seedColor: secondarySeedColor,
     );
+    final greenColorScheme = ColorScheme.fromSeed(
+      brightness: brightness,
+      seedColor: tertiarySeedColor,
+    );
+    var colorScheme = ColorScheme.fromSeed(
+      brightness: brightness,
+      seedColor: primarySeedColor,
+      secondary: blueColorScheme.primary,
+      onSecondary: blueColorScheme.onPrimary,
+      secondaryContainer: blueColorScheme.primaryContainer,
+      onSecondaryContainer: blueColorScheme.onPrimaryContainer,
+      tertiary: greenColorScheme.primary,
+      onTertiary: greenColorScheme.onPrimary,
+      tertiaryContainer: greenColorScheme.primaryContainer,
+      onTertiaryContainer: greenColorScheme.onPrimaryContainer,
+    );
+
     return ThemeData(
       colorScheme: colorScheme,
+      canvasColor: colorScheme.surface,
+      scaffoldBackgroundColor: colorScheme.surface,
       appBarTheme: AppBarTheme(
         centerTitle: true,
-        backgroundColor:
-            active ? colorScheme.primary : colorScheme.inversePrimary,
-        foregroundColor: active ? colorScheme.onPrimary : colorScheme.onSurface,
+        backgroundColor: colorScheme.primary,
+        foregroundColor: colorScheme.onPrimary,
       ),
       bottomSheetTheme: BottomSheetThemeData(
         backgroundColor: colorScheme.primaryContainer,
+      ),
+      tabBarTheme: TabBarThemeData(
+        labelPadding: EdgeInsets.symmetric(horizontal: 8),
       ),
     );
   }
@@ -67,33 +101,23 @@ class ThemeManager extends StatefulWidget {
 
   @override
   void debugFillProperties(DiagnosticPropertiesBuilder properties) {
-    properties
-      ..add(MessageProperty('seedColor', '$seedColor'))
-      ..add(MessageProperty('initialMode', '$initialMode'))
-      ..add(MessageProperty('initialActive', '$initialActive'));
     super.debugFillProperties(properties);
+    properties
+      ..add(MessageProperty('primarySeedColor', '$primarySeedColor'))
+      ..add(MessageProperty('secondarySeedColor', '$secondarySeedColor'))
+      ..add(MessageProperty('tertiarySeedColor', '$tertiarySeedColor'))
+      ..add(MessageProperty('initialMode', '$initialMode'));
   }
 }
 
 class ThemeManagerState extends State<ThemeManager> {
-  late final Map<(Brightness, bool), ThemeData> _themes;
-
   late ThemeMode _mode = widget.initialMode;
   ThemeMode get mode => _mode;
   set mode(ThemeMode value) {
     if (_mode != value) {
       setState(() {
+        widget.keyValueService.setInt(ThemeManager._modeKey, value.index);
         _mode = value;
-      });
-    }
-  }
-
-  late bool _active = widget.initialActive;
-  bool get active => _active;
-  set active(bool value) {
-    if (_active != value) {
-      setState(() {
-        _active = value;
       });
     }
   }
@@ -104,11 +128,14 @@ class ThemeManagerState extends State<ThemeManager> {
         ThemeMode.dark => Brightness.dark,
       };
 
-  ThemeData get theme => _themes[(brightness, _active)]!;
+  ThemeData get theme => switch (brightness) {
+        Brightness.light => ThemeManager.lightTheme,
+        Brightness.dark => ThemeManager.darkTheme,
+      };
 
-  ThemeData get lightTheme => _themes[(Brightness.light, _active)]!;
+  ThemeData get lightTheme => ThemeManager.lightTheme;
 
-  ThemeData get darkTheme => _themes[(Brightness.dark, _active)]!;
+  ThemeData get darkTheme => ThemeManager.darkTheme;
 
   void toggleBrightness() {
     setState(() {
@@ -120,55 +147,10 @@ class ThemeManagerState extends State<ThemeManager> {
   }
 
   @override
-  void initState() {
-    super.initState();
-
-    _themes = {
-      for (final brightness in Brightness.values)
-        for (final active in [true, false])
-          (brightness, active): ThemeManager._createTheme(brightness, active),
-    };
-  }
-
-  @override
   Widget build(BuildContext context) {
-    return _ThemeManagerScope(
-      manager: this,
-      child: Builder(
-        builder: (context) {
-          return widget.builder(context);
-        },
-      ),
+    return ScopeProvider<ThemeManagerState>.value(
+      value: this,
+      builder: widget.builder,
     );
-  }
-}
-
-class _ThemeManagerScope extends InheritedWidget {
-  final ThemeManagerState manager;
-  final ThemeMode mode;
-  final bool active;
-
-  _ThemeManagerScope({required this.manager, required super.child})
-      : mode = manager._mode,
-        active = manager._active;
-
-  static _ThemeManagerScope? maybeOf(
-    BuildContext context, {
-    required bool listen,
-  }) =>
-      listen
-          ? context.dependOnInheritedWidgetOfExactType<_ThemeManagerScope>()
-          : context.getInheritedWidgetOfExactType<_ThemeManagerScope>();
-
-  @override
-  bool updateShouldNotify(_ThemeManagerScope oldWidget) =>
-      mode != oldWidget.mode || active != oldWidget.active;
-
-  @override
-  void debugFillProperties(DiagnosticPropertiesBuilder properties) {
-    properties
-      ..add(MessageProperty('mode', '$mode'))
-      ..add(MessageProperty('active', '$active'));
-    super.debugFillProperties(properties);
   }
 }

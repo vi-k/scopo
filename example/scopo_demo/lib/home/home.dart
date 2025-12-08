@@ -4,9 +4,12 @@ import 'package:scopo/scopo.dart';
 import '../app/app.dart';
 import '../app/app_error.dart';
 import '../app/theme_manager.dart';
-import '../common/animated_progress_indicator.dart';
-import '../fake_dependencies/some_bloc.dart';
-import '../fake_dependencies/some_controller.dart';
+import '../common/presentation/animated_progress_indicator.dart';
+import '../common/data/fake_services/some_bloc.dart';
+import '../common/data/fake_services/some_controller.dart';
+import '../common/presentation/sized_tab_bar.dart';
+import '../scope_provider_demo.dart/scope_provider_demo.dart';
+import '../scope_state_manager_demo/scope_state_manager_demo.dart';
 import 'home_counter.dart';
 import 'home_deps.dart';
 import 'home_navigation_block.dart';
@@ -60,8 +63,11 @@ final class Home extends Scope<Home, HomeDeps, HomeContent> {
 }
 
 class HomeAppBar extends AppBar {
-  HomeAppBar(BuildContext context, {super.key})
-      : super(
+  HomeAppBar(
+    BuildContext context, {
+    super.key,
+    bool withTabs = true,
+  }) : super(
           title: Text('$Home'),
           actions: [
             ValueListenableBuilder<bool>(
@@ -86,6 +92,23 @@ class HomeAppBar extends AppBar {
               }),
             ),
           ],
+          bottom: withTabs
+              ? SizedTabBar(
+                  height: 32,
+                  isScrollable: true,
+                  labelStyle: Theme.of(context).textTheme.bodySmall,
+                  labelColor: Theme.of(context).colorScheme.onPrimary,
+                  unselectedLabelColor: Theme.of(context)
+                      .colorScheme
+                      .onPrimary
+                      .withValues(alpha: 0.5),
+                  tabs: [
+                    Tab(text: 'ScopeProvider'),
+                    Tab(text: 'ScopeStateManager'),
+                    Tab(text: 'Other'),
+                  ],
+                )
+              : null,
         );
 }
 
@@ -104,7 +127,7 @@ class _FakeContentState extends State<_FakeContent> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: HomeAppBar(context),
+      appBar: HomeAppBar(context, withTabs: false),
       body: Padding(
         padding: EdgeInsets.all(8),
         child: Center(
@@ -239,22 +262,30 @@ final class HomeContent extends ScopeContent<Home, HomeDeps, HomeContent> {
   Widget build(BuildContext context) {
     return Builder(
       builder: (context) {
-        return Scaffold(
-          appBar: HomeAppBar(context),
-          body: Center(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
+        return DefaultTabController(
+          length: 3,
+          child: Scaffold(
+            appBar: HomeAppBar(context),
+            body: TabBarView(
               children: [
-                Text('You have pushed this buttons many times:'),
-                HomeCounter(),
-                SizedBox(height: 20),
-                HomeNavigationBlock(),
-                SizedBox(height: 20),
-                ElevatedButton(
-                  onPressed: () {
-                    setState(() {});
-                  },
-                  child: const Text('setState()'),
+                ScopeProviderDemo(),
+                ScopeStateManagerDemo(),
+                ListView(
+                  children: [
+                    Text('You have pushed this buttons many times:'),
+                    HomeCounter(),
+                    SizedBox(height: 20),
+                    SizedBox(height: 20),
+                    SizedBox(height: 20),
+                    HomeNavigationBlock(),
+                    SizedBox(height: 20),
+                    ElevatedButton(
+                      onPressed: () {
+                        setState(() {});
+                      },
+                      child: const Text('setState()'),
+                    ),
+                  ],
                 ),
               ],
             ),

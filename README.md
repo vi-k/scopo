@@ -32,6 +32,7 @@ dependencies and UI state.
 - [Accessing Dependencies](#accessing-dependencies)
 - [Logging](#logging)
 - [Utilities](#utilities)
+  - [ScopeProvider](#scopeprovider)
   - [ScopeConsumer](#scopeconsumer)
   - [NavigationNode](#navigationnode)
   - [DoubleProgressIterator](#doubleprogressiterator)
@@ -246,6 +247,63 @@ void main() {
 ```
 
 ## Utilities
+
+### ScopeProvider
+
+`ScopeProvider` is a dependency injection widget that efficiently provides
+values to the widget tree. It is built on top of `InheritedWidget` but adds
+powerful features for lifecycle management and selective rebuilding.
+
+Here is a breakdown of what it does:
+
+#### 1. Dependency Injection
+
+It allows you to provide a value (object, service, model, etc.) to all
+descendant widgets.
+
+*   **`ScopeProvider.value`**: Injects an existing instance.
+
+*   **`ScopeProvider` (default constructor)**: Creates a new instance using
+    a `create` callback and automatically handles its disposal via a
+    `dispose` callback.
+
+#### 2. Efficient Access & Rebuilds
+
+It offers three ways to access the provided value, giving you fine-grained
+control over widget rebuilds:
+
+*   **`ScopeProvider.get<T>(context)`**:
+    *   **Does NOT** subscribe to changes.
+    *   Use this for reading values in callbacks (e.g., `onPressed`) where you
+        don't need the widget to rebuild when the value changes.
+
+*   **`ScopeProvider.depend<T>(context)`**:
+    *   **Subscribes** to the provider.
+    *   The widget will rebuild whenever the `ScopeProvider` itself rebuilds or
+        notifies clients.
+
+*   **`ScopeProvider.select<T, V>(context, (m) => ...)`**:
+    *   **Selectively subscribes** to a specific part of the value.
+    *   The widget will **only** rebuild if the selected value `V` changes. This
+        is crucial for optimizing performance by preventing unnecessary rebuilds.
+
+#### 3. Lifecycle Management
+
+When using the default constructor, `ScopeProvider` manages the lifecycle of
+the object it creates. It calls the `dispose` function when the widget is
+removed from the tree, making it ideal for managing resources like controllers
+or streams.
+
+#### 4. Foundation for Other Providers
+
+It serves as the base class for more specialized providers:
+
+*   **`ScopeListenableProvider`**: Optimized for `Listenable` objects (like
+    `AnimationController`). It automatically listens to the object and rebuilds
+    dependents when the object notifies listeners.
+
+*   **`ScopeNotifier`**: A specialized version for `ChangeNotifier`,
+    automatically handling creation, disposal, and listening to updates.
 
 ### ScopeConsumer
 
@@ -471,3 +529,22 @@ Check out the `example` directory for more comprehensive examples:
 
 -   [**minimal**](https://github.com/vi-k/scopo/tree/main/example/minimal): A simple counter app demonstrating basic usage.
 -   [**scopo_demo**](https://github.com/vi-k/scopo/tree/main/example/scopo_demo): A more complex app with nested scopes, error simulation, and custom progress indicators.
+
+```dart
+  runApp(
+    App(
+      title: 'Tez Taxi',
+      init: AppDeps.init,
+      onInit: (progress) => SplashScreen(progress: progress),
+      builder: (_) {
+        return VersionCheck(
+          blocked: () => VersionBlocked(),
+          notFound: () => VersionNotFound(),
+          updateRequired: () => UpdateRequired(),
+          versionCheckFailed: () => VersionCheckFailed(),
+          ok: () => Home(),
+        );
+      },
+    ),
+  );
+```

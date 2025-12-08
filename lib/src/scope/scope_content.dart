@@ -33,7 +33,7 @@ abstract base class ScopeContent<S extends Scope<S, D, C>, D extends ScopeDeps,
   D get deps => super.widget.deps;
 
   Future<void> close() async {
-    await _Scope.maybeOf<S, D, C>(context, listen: false)?._close();
+    await Scope._stateOf<S, D, C>(context)?._close();
   }
 
   @override

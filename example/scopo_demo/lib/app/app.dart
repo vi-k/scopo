@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:scopo/scopo.dart';
 
-import '../fake_dependencies/analytics.dart';
-import '../fake_dependencies/connectivity.dart';
-import '../fake_dependencies/http_client.dart';
+import '../common/data/fake_services/analytics.dart';
+import '../common/data/fake_services/connectivity.dart';
+import '../common/data/fake_services/http_client.dart';
 import 'app_deps.dart';
 import 'app_error.dart';
 import 'theme_manager.dart';
@@ -46,8 +46,8 @@ final class App extends Scope<App, AppDeps, AppContent> {
       MaterialApp(
         title: 'Scope demo',
         themeMode: mode,
-        theme: light ?? ThemeManager.defaultLightTheme,
-        darkTheme: dark ?? ThemeManager.defaultDarkTheme,
+        theme: light ?? ThemeManager.lightTheme,
+        darkTheme: dark ?? ThemeManager.darkTheme,
         debugShowCheckedModeBanner: false,
         home: child,
       );
@@ -62,6 +62,7 @@ final class App extends Scope<App, AppDeps, AppContent> {
   @override
   Widget wrapContent(AppDeps deps, Widget child) {
     return ThemeManager(
+      keyValueService: deps.keyValueService('theme.'),
       builder: (context) {
         final themeManager = ThemeManager.of(context);
 
@@ -95,24 +96,46 @@ final class App extends Scope<App, AppDeps, AppContent> {
 
 /// [AppContent] is used to manage UI state and logic for [App] scope.
 final class AppContent extends ScopeContent<App, AppDeps, AppContent> {
-  @override
-  void initState() {
-    super.initState();
-
-    deps.connectivity.addListener(_changeThemeActive);
-  }
-
-  @override
-  void dispose() {
-    deps.connectivity.removeListener(_changeThemeActive);
-
-    super.dispose();
-  }
-
-  void _changeThemeActive() {
-    ThemeManager.of(context, listen: false).active = deps.connectivity.value;
+  void updateState() {
+    setState(() {});
   }
 
   @override
   Widget build(BuildContext context) => App.paramsOf(context).builder(context);
 }
+
+// sealed class AppState {}
+
+// final class AppStateManager
+//     extends ScopeStateManager<AppStateManager, AppState> {
+//   final Widget child;
+
+//   const AppStateManager({
+//     super.key,
+//     required super.initialState,
+//     required this.child,
+//   });
+
+//   @override
+//   Widget build(BuildContext context, AppState state) => child;
+// }
+
+// final class AppStateManager2 extends ScopeStateManagerBase<AppStateManager2,
+//     AppStateManager2State, AppState> {
+//   final Widget child;
+
+//   const AppStateManager2({
+//     super.key,
+//     required super.initialState,
+//     required this.child,
+//   });
+
+//   @override
+//   Widget build(BuildContext context, AppState state) => child;
+
+//   @override
+//   State<StatefulWidget> createState() => AppStateManager2State();
+// }
+
+// final class AppStateManager2State extends ScopeStateManagerStateBase<
+//     AppStateManager2, AppStateManager2State, AppState> {}

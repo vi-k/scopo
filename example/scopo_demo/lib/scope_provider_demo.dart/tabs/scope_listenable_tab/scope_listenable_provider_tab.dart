@@ -1,0 +1,182 @@
+import 'package:flutter/material.dart';
+
+import '../../../common/presentation/code.dart';
+import '../../../common/presentation/expansion.dart';
+import '../../../common/presentation/markdown.dart';
+import '../../../common/presentation/markdown_block.dart';
+import '../../../common/utils/string_extensions.dart';
+import 'examples/providing.dart';
+import 'examples/rebuilding.dart';
+import 'examples/usage.dart';
+
+class ScopeListenableProviderTab extends StatefulWidget {
+  const ScopeListenableProviderTab({super.key});
+
+  @override
+  State<ScopeListenableProviderTab> createState() =>
+      _ScopeListenableProviderTabState();
+}
+
+class _ScopeListenableProviderTabState extends State<ScopeListenableProviderTab>
+    with AutomaticKeepAliveClientMixin {
+  @override
+  bool get wantKeepAlive => true;
+
+  @override
+  Widget build(BuildContext context) {
+    super.build(context);
+
+    return ListView(
+      padding: EdgeInsets.all(8),
+      children: [
+        MarkdownBlock(
+          indent: 0,
+          '''
+          ### ScopeListenableProvider<Model extends Listenable>
+
+          `ScopeListenableProvider` is optimized for `Listenable` objects.
+          It automatically listens to the object and rebuilds dependents
+          when the object notifies listeners.
+
+          Its purpose is similar to that of `InheritedNotifier`, but it is
+          not based on it. `ScopeListenableProvider`, unlike
+          `InheritedWidget`, adds the ability to depend only on part of the
+          model, i.e. to use `select`.
+          '''
+              .trimIndent(),
+        ),
+        MarkdownBlock(
+          indent: 24,
+          '''
+          ## Providing and receiving data
+
+          It offers three ways to access the provided value, giving you
+          fine-grained control over widget rebuilds:
+
+          * **`ScopeListenableProvider.get<T>(context)`**:
+            * **Does NOT** subscribe to changes.
+            * Use this for reading values in callbacks (e.g., `onPressed`)
+              where you don't need the widget to rebuild when the value
+              changes.
+
+          * **`ScopeListenableProvider.depend<T>(context)`**:
+            * **Subscribes** to the provider.
+            * The widget will rebuild whenever the `ScopeListenableProvider`
+              notifies clients.
+
+          * **`ScopeListenableProvider.select<T, V>(context, (model) => ...)`**:
+            * **Selectively subscribes** to a specific part of the value.
+            * The widget will **only** rebuild if the selected value `V`
+              changes.
+            * This is crucial for optimizing performance by preventing
+              unnecessary rebuilds.
+          '''
+              .trimIndent(),
+        ),
+        const ScopeListenableProvidingExample(),
+        MarkdownBlock(
+          indent: 24,
+          '''
+          ## Rebuilding when changing the model
+
+          `ScopeListenableProvider` allows you to subscribe to
+          a `Listenable` object. When receiving a signal from `Listenable`,
+          unlike `ScopeProvider`, it rebuilds only its dependent widgets.
+          '''
+              .trimIndent(),
+        ),
+        ScopeListenableRebuildingExample(),
+        MarkdownBlock(
+          indent: 24,
+          '''
+          ## Create and dispose the model
+
+          Like `ScopeProvider`, `ScopeListenableProvider` can pass
+          a ready-made value using `ScopeListenableProvider.value`
+          constructor. But you can also create a model when building the
+          tree using `create` callback. In this case, it is important not
+          to forget to dispose of your model using `dispose` callback.
+
+          Most likely, you will use not the pure `Listenable` interface as
+          a model, but the ready-to-use `ChangeNotifier` mixin class. In
+          this case, `ScopeNotifier` is more suitable than
+          `ScopeListenableProvider`.
+          '''
+              .trimIndent(),
+        ),
+        MarkdownBlock(
+          indent: 24,
+          '''
+          ## Usage
+
+          The following code demonstrates how `ScopeListenableProvider`
+          can be used.
+          '''
+              .trimIndent(),
+        ),
+        Expansion(
+          title: Markdown('**Usage**', selectable: false),
+          contentPadding: EdgeInsets.zero,
+          initiallyExpanded: true,
+          children: [
+            Code(
+              '''
+              import 'package:flutter/material.dart';
+              import 'package:scopo/scopo.dart';
+
+              final class Model with ChangeNotifier {
+                var _counter = 0;
+                int get counter => _counter;
+
+                void increment() {
+                  _counter++;
+                  notifyListeners();
+                }
+              }
+
+              class ModelScope extends StatelessWidget {
+                const ModelScope({super.key});
+
+                @override
+                Widget build(BuildContext context) {
+                  return ScopeListenableProvider<Model>(
+                    create: (context) => Model(),
+                    dispose: (model) => model.dispose(),
+                    // With `ScopeListenableProvider`, content
+                    // can be either constant or non-constant.
+                    builder: (context) => Row(
+                      children: [
+                        // We use `Builder` so that changes in
+                        // `ScopeListenableProvider` do not affect other
+                        // widgets.
+                        Builder(
+                          builder: (context) {
+                            final counter = ScopeListenableProvider.select<Model, int>(
+                                context, (m) => m.counter);
+                            return Text('\$counter');
+                          },
+                        ),
+                        IconButton(
+                          color: Theme.of(context).colorScheme.primary,
+                          onPressed: () {
+                            ScopeListenableProvider.get<Model>(context).increment();
+                          },
+                          icon: const Icon(Icons.add_circle),
+                        ),
+                      ],
+                    ),
+                  );
+                }
+              }
+              '''
+                  .trimIndent(),
+            ),
+            ModelScope(),
+            SizedBox(height: 8),
+          ],
+        ),
+        SizedBox(height: 32),
+      ],
+    );
+  }
+}

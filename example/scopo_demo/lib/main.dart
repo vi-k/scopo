@@ -15,9 +15,9 @@ void main() {
     ),
   );
 
-  ScopeConfig.debug.isEnabled = true;
-  ScopeConfig.debugError.isEnabled = true;
-  ScopeConfig.debugError.log = (
+  ScopeConfig.log.isEnabled = true;
+  ScopeConfig.logError.isEnabled = true;
+  ScopeConfig.logError.log = (
     source,
     message,
     error,
@@ -42,7 +42,48 @@ void main() {
     App(
       init: AppDeps.init,
       onInit: (progress) => SplashScreen(progress: progress),
-      builder: (_) => Home(init: HomeDeps.init),
+      builder: (context) => VersionChecker(
+        updateState: App.of(context).updateState,
+        child: Home(init: HomeDeps.init),
+      ),
     ),
   );
+}
+
+final class VersionChecker extends ScopeFork<VersionChecker, bool> {
+  final Widget child;
+  final void Function() updateState;
+
+  const VersionChecker({
+    super.key,
+    required this.child,
+    required this.updateState,
+  }) : super(initialState: false);
+
+  @override
+  Widget onError(Object error, StackTrace stackTrace, void Function() restart) {
+    return Scaffold(
+      body: Center(
+        child: Text(error.toString()),
+      ),
+    );
+  }
+
+  @override
+  Widget onState(bool state) {
+    return state
+        ? child
+        : Scaffold(
+            body: Center(
+              child: Text(state.toString()),
+            ),
+          );
+  }
+
+  @override
+  Stream<bool> process() async* {
+    yield false;
+    await Future<void>.delayed(const Duration(seconds: 1));
+    yield true;
+  }
 }

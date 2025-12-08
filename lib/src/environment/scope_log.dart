@@ -1,4 +1,4 @@
-part of 'scope.dart';
+part of 'scope_config.dart';
 
 typedef ScopeLogCallback = void Function(
   String? source,
@@ -7,7 +7,7 @@ typedef ScopeLogCallback = void Function(
   StackTrace? stackTrace,
 );
 
-typedef _ScopeLogCallback = void Function(
+typedef RawScopeLogCallback = void Function(
   Object? source,
   Object? message, {
   Object? error,
@@ -26,7 +26,7 @@ final class ScopeLog {
     _userLog = value;
   }
 
-  _ScopeLogCallback _log = _noLog;
+  RawScopeLogCallback _log = _noLog;
 
   ScopeLogCallback _userLog = _defaultLog;
 
@@ -53,19 +53,6 @@ final class ScopeLog {
         stackTrace,
       );
 
-  static String buildDefaultMessage(
-    String? source,
-    String? message, {
-    Object? error,
-    StackTrace? stackTrace,
-  }) {
-    return '[scopo]'
-        '${source == null ? '' : ' $source:'}'
-        ' ${message ?? 'null'}'
-        '${error == null ? '' : ': $error'}'
-        '${stackTrace == null ? '' : ': $stackTrace'}';
-  }
-
   static void _defaultLog(
     String? source,
     String? message,
@@ -82,4 +69,20 @@ final class ScopeLog {
       ),
     );
   }
+
+  static String buildDefaultMessage(
+    String? source,
+    String? message, {
+    Object? error,
+    StackTrace? stackTrace,
+  }) {
+    return '[scopo]'
+        '${source == null ? '' : ' $source:'}'
+        ' ${message ?? 'null'}'
+        '${error == null ? '' : ': $error'}'
+        '${stackTrace == null ? '' : ':${stackTrace == StackTrace.empty ? ' no stack trace' : '\n$stackTrace'}'}';
+  }
 }
+
+String source(Diagnosticable diagnosticable, String method) =>
+    '${diagnosticable.toStringShort()}.$method';

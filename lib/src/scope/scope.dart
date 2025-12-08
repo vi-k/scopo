@@ -3,12 +3,12 @@ import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
+import '../environment/scope_config.dart' as log;
+import '../scope_provider/scope_provider.dart';
 import 'scope_deps.dart';
 
-part 'scope_config.dart';
 part 'scope_content.dart';
 part 'scope_deps_state.dart';
-part 'scope_log.dart';
 
 typedef ScopeInitFunction<P extends Object, D extends ScopeDeps>
     = Stream<ScopeInitState<P, D>> Function();
@@ -49,9 +49,11 @@ abstract base class Scope<S extends Scope<S, D, C>, D extends ScopeDeps,
   //     Scope.paramsOf<$YourScope, $YourScopeDeps, $YourScopeContent>(context, listen: listen);
   // ```
   static S paramsOf<S extends Scope<S, D, C>, D extends ScopeDeps,
-              C extends ScopeContent<S, D, C>>(BuildContext context,
-          {bool listen = true}) =>
-      _Scope.maybeOf<S, D, C>(context, listen: listen)?.widget ??
+          C extends ScopeContent<S, D, C>>(
+    BuildContext context, {
+    bool listen = true,
+  }) =>
+      _stateOf<S, D, C>(context, listen: listen)?.widget ??
       (throw Exception('$S not found in the context'));
 
   /// Method to check whether changes in parameters need to be notified to
@@ -73,10 +75,20 @@ abstract base class Scope<S extends Scope<S, D, C>, D extends ScopeDeps,
       maybeOf<S, D, C>(context) ??
       (throw Exception('$C not found in the context'));
 
-  /// Quick access to the scoop, if available.
+  /// Quick access to the scope, if available.
   static C? maybeOf<S extends Scope<S, D, C>, D extends ScopeDeps,
           C extends ScopeContent<S, D, C>>(BuildContext context) =>
-      _Scope.maybeOf<S, D, C>(context, listen: false)?._contentKey.currentState;
+      _stateOf<S, D, C>(context)?._contentKey.currentState;
+
+  /// Quick access to the scope state, if available.
+  static _ScopeState<S, D, C>? _stateOf<S extends Scope<S, D, C>,
+          D extends ScopeDeps, C extends ScopeContent<S, D, C>>(
+    BuildContext context, {
+    bool listen = false,
+  }) =>
+      listen
+          ? ScopeProvider.depend<_ScopeState<S, D, C>>(context)
+          : ScopeProvider.get<_ScopeState<S, D, C>>(context);
 
   /// Method for constructing a subtree during dependency initialization.
   ///
@@ -131,13 +143,11 @@ base class _ScopeState<S extends Scope<S, D, C>, D extends ScopeDeps,
   _ScopeDepsState<Object, D>? _pauseState;
   Completer<void>? _closeCompleter;
 
-  String _method(String method) => '${widget.toStringShort()}.$method';
-
   @override
   void initState() {
     super.initState();
 
-    String method() => _method('init');
+    String source() => log.source(widget, 'init');
 
     _subscription = widget._init().listen(
       (state) {
@@ -157,13 +167,13 @@ base class _ScopeState<S extends Scope<S, D, C>, D extends ScopeDeps,
 
         switch (state) {
           case ScopeProgress(:final value):
-            _debug(method, () => 'progress=$value');
+            log.d(source, () => 'progress=$value');
             setState(() {
               _state = state;
             });
 
           case ScopeReady():
-            _debug(method, '$D is ready');
+            log.d(source, '$D is ready');
             if (widget.pauseAfterInitialization.inMilliseconds == 0) {
               setState(() {
                 _state = state;
@@ -184,8 +194,8 @@ base class _ScopeState<S extends Scope<S, D, C>, D extends ScopeDeps,
       onError: (Object error, StackTrace stackTrace) {
         _unsubscribe();
 
-        _debugError(
-          method,
+        log.e(
+          source,
           'failed',
           error: error,
           stackTrace: stackTrace,
@@ -196,7 +206,7 @@ base class _ScopeState<S extends Scope<S, D, C>, D extends ScopeDeps,
         });
       },
       onDone: () {
-        _debug(method, 'done');
+        log.d(source, 'done');
       },
     );
   }
@@ -213,7 +223,7 @@ base class _ScopeState<S extends Scope<S, D, C>, D extends ScopeDeps,
       return completer.future;
     }
 
-    _debug(method, 'start');
+    log.d(method, 'start');
 
     _unsubscribe();
 
@@ -235,7 +245,7 @@ base class _ScopeState<S extends Scope<S, D, C>, D extends ScopeDeps,
       completer.complete();
     }
 
-    _debug(method, 'done');
+    log.d(method, 'done');
 
     return completer.future;
   }
@@ -248,9 +258,10 @@ base class _ScopeState<S extends Scope<S, D, C>, D extends ScopeDeps,
 
   @override
   Widget build(BuildContext _) {
-    return _Scope<S, D, C>(
-      scopeState: this,
-      child: switch (_pauseState ?? _state) {
+    return ScopeProvider<_ScopeState<S, D, C>>.value(
+      value: this,
+      debugString: () => '${S}Scope',
+      builder: (context) => switch (_pauseState ?? _state) {
         _ScopeInitial(:final value) ||
         ScopeProgress(:final Object? value) =>
           widget.onInit(value),
@@ -284,33 +295,4 @@ base class _ScopeState<S extends Scope<S, D, C>, D extends ScopeDeps,
 
   @override
   String toStringShort() => '${_ScopeState<S, D, C>}(_state: $_state)';
-}
-
-class _Scope<S extends Scope<S, D, C>, D extends ScopeDeps,
-    C extends ScopeContent<S, D, C>> extends InheritedWidget {
-  final _ScopeState<S, D, C> scopeState;
-  final S scope;
-
-  _Scope({super.key, required this.scopeState, required super.child})
-      : scope = scopeState.widget;
-
-  static _ScopeState<S, D, C>? maybeOf<
-              S extends Scope<S, D, C>,
-              D extends ScopeDeps,
-              C extends ScopeContent<S, D, C>>(BuildContext context,
-          {required bool listen}) =>
-      listen
-          ? context
-              .dependOnInheritedWidgetOfExactType<_Scope<S, D, C>>()
-              ?.scopeState
-          : context
-              .getInheritedWidgetOfExactType<_Scope<S, D, C>>()
-              ?.scopeState;
-
-  @override
-  bool updateShouldNotify(_Scope<S, D, C> oldWidget) =>
-      scope.updateParamsShouldNotify(oldWidget.scope);
-
-  @override
-  String toStringShort() => '${_Scope<S, D, C>}';
 }

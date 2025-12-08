@@ -3,10 +3,10 @@ import 'dart:math';
 
 import 'package:scopo/scopo.dart';
 
-import '../common/fake_exception.dart';
-import '../fake_dependencies/http_client.dart';
-import '../fake_dependencies/some_bloc.dart';
-import '../fake_dependencies/some_controller.dart';
+import '../common/domain/fake_exception.dart';
+import '../common/data/fake_services/http_client.dart';
+import '../common/data/fake_services/some_bloc.dart';
+import '../common/data/fake_services/some_controller.dart';
 import '../utils/app_environment.dart';
 import 'home.dart';
 

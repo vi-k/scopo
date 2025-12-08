@@ -1,12 +1,14 @@
 import 'dart:math';
 
 import 'package:scopo/scopo.dart';
+import 'package:scopo_demo/common/data/real_services/key_value_service.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
-import '../common/fake_exception.dart';
-import '../fake_dependencies/analytics.dart';
-import '../fake_dependencies/connectivity.dart';
-import '../fake_dependencies/http_client.dart';
-import '../fake_dependencies/some_controller.dart';
+import '../common/domain/fake_exception.dart';
+import '../common/data/fake_services/analytics.dart';
+import '../common/data/fake_services/connectivity.dart';
+import '../common/data/fake_services/http_client.dart';
+import '../common/data/fake_services/some_controller.dart';
 import '../utils/app_environment.dart';
 import 'app.dart';
 
@@ -14,17 +16,24 @@ import 'app.dart';
 ///
 /// They are initialized asynchronously in the [init] stream.
 class AppDeps implements ScopeDeps {
+  final SharedPreferences _sharedPreferences;
   final HttpClient httpClient;
   final Connectivity connectivity;
   final Analytics analytics;
   final SomeController someController;
 
   AppDeps({
+    required SharedPreferences sharedPreferences,
     required this.httpClient,
     required this.connectivity,
     required this.analytics,
     required this.someController,
-  });
+  }) : _sharedPreferences = sharedPreferences;
+
+  KeyValueService keyValueService(String prefix) => KeyValueService(
+        sharedPreferences: _sharedPreferences,
+        prefix: prefix,
+      );
 
   /// Method uses [DoubleProgressIterator] to track and report granular
   /// initialization progress ([double] 0.0 to 1.0).
@@ -32,13 +41,14 @@ class AppDeps implements ScopeDeps {
   /// It simulates random initialization errors using [AppEnvironment]
   /// probabilities.
   static Stream<ScopeInitState<double, AppDeps>> init() async* {
+    SharedPreferences? sharedPreferences;
     HttpClient? httpClient;
     Connectivity? connectivity;
     Analytics? analytics;
     SomeController? someController;
     var isInitialized = false;
 
-    final progressIterator = DoubleProgressIterator(count: 4);
+    final progressIterator = DoubleProgressIterator(count: 5);
 
     // Fake error block
     final random = Random();
@@ -57,6 +67,10 @@ class AppDeps implements ScopeDeps {
     }
 
     try {
+      sharedPreferences = await SharedPreferences.getInstance();
+      randomFakeError('$SharedPreferences initialization error');
+      yield ScopeProgress(progressIterator.nextProgress());
+
       httpClient = HttpClient();
       await httpClient.init();
       randomFakeError('$HttpClient initialization error');
@@ -79,6 +93,7 @@ class AppDeps implements ScopeDeps {
 
       yield ScopeReady(
         AppDeps(
+          sharedPreferences: sharedPreferences,
           httpClient: httpClient,
           connectivity: connectivity,
           analytics: analytics,
