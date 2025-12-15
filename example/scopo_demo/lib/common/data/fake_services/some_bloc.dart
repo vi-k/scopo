@@ -1,6 +1,7 @@
 import 'package:bloc/bloc.dart';
 import 'package:equatable/equatable.dart';
 
+import '../../../utils/app_environment.dart';
 import '../../domain/fake_exception.dart';
 
 sealed class SomeBlocEvent {}
@@ -50,7 +51,7 @@ class SomeBloc extends Bloc<SomeBlocEvent, SomeBlocState> {
       try {
         emit(SomeBlocInProgress());
 
-        await Future<void>.delayed(const Duration(milliseconds: 500));
+        await Future<void>.delayed(AppEnvironment.defaultPause);
         if (event.fakeError) {
           throw FakeException('$SomeBloc loading error');
         }

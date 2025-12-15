@@ -15,12 +15,12 @@ final class HomeFeature extends StatelessWidget {
       appBar: AppBar(
         title: Text('$HomeFeature ${withNode ? 'with node' : 'without node'}'),
       ),
-      body: Padding(
+      body: const Padding(
         padding: EdgeInsets.all(8),
         child: Center(
           child: Column(
             mainAxisSize: MainAxisSize.min,
-            children: const [
+            children: [
               HomeCounter(),
               SizedBox(height: 20),
               HomeNavigationBlock(),

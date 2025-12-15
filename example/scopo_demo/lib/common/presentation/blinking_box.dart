@@ -37,6 +37,7 @@ class _BlinkingBoxState extends State<BlinkingBox>
   void _restartAnimation() {
     _controller
       ..value = 1
+      // ignore: discarded_futures
       ..animateTo(0, duration: const Duration(milliseconds: 500));
   }
 
@@ -47,18 +48,16 @@ class _BlinkingBoxState extends State<BlinkingBox>
   }
 
   @override
-  Widget build(BuildContext context) {
-    return AnimatedBuilder(
-      animation: _controller,
-      builder: (context, child) => ColoredBox(
-        color: Color.lerp(
-          widget.backgroundColor,
-          widget.blinkingColor,
-          _controller.value,
-        )!,
-        child: child,
-      ),
-      child: widget.child,
-    );
-  }
+  Widget build(BuildContext context) => AnimatedBuilder(
+    animation: _controller,
+    builder: (context, child) => ColoredBox(
+      color: Color.lerp(
+        widget.backgroundColor,
+        widget.blinkingColor,
+        _controller.value,
+      )!,
+      child: child,
+    ),
+    child: widget.child,
+  );
 }

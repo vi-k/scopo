@@ -66,7 +66,7 @@ mixin Notifier implements Listenable {
     if (newLength <= _listeners.length ~/ 2) {
       final newListeners = List<void Function()?>.filled(newLength, null);
 
-      for (int i = 0, j = 0; i < _count; i++) {
+      for (var i = 0, j = 0; i < _count; i++) {
         if (_listeners[i] case final listener?) {
           newListeners[j++] = listener;
         }

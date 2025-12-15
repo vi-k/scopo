@@ -1,5 +1,6 @@
 part of 'scope.dart';
 
+@immutable
 sealed class _ScopeDepsState<P extends Object, D extends ScopeDeps> {}
 
 /// The base class for the state of the scope initialization stream. It has two

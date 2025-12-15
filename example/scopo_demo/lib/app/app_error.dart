@@ -15,29 +15,30 @@ class AppError extends StatelessWidget {
     Object? message;
     try {
       message = (error as dynamic).message;
+      // ignore: avoid_catching_errors
     } on NoSuchMethodError {
       message = null;
     }
 
     return Scaffold(
       appBar: AppBar(
-        title: Text('Something went wrong'),
+        title: const Text('Something went wrong'),
         backgroundColor: Colors.deepOrange,
       ),
       backgroundColor: Colors.deepOrangeAccent,
       body: Padding(
-        padding: EdgeInsets.all(8),
+        padding: const EdgeInsets.all(8),
         child: Center(
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
               Text(
                 '${message ?? error}',
-                style: TextStyle(fontWeight: FontWeight.bold),
+                style: const TextStyle(fontWeight: FontWeight.bold),
               ),
               if (error case FakeException()) ...[
-                SizedBox(height: 20),
-                Text('~ This is a fake error. Restart the application ~'),
+                const SizedBox(height: 20),
+                const Text('~ This is a fake error. Restart the application ~'),
               ],
             ],
           ),

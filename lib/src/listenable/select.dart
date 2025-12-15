@@ -61,8 +61,10 @@ final class ListenableSelectSubscription<T extends Object?>
   T _value;
 
   ListenableSelectSubscription._(
-      super._listenable, super._callback, this._value)
-      : super._();
+    super._listenable,
+    super._callback,
+    this._value,
+  ) : super._();
 
   T get value => _value;
 }

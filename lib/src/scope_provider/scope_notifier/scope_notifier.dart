@@ -1,55 +1,56 @@
 part of '../scope_provider.dart';
 
-final class ScopeNotifier<T extends ChangeNotifier>
-    extends ScopeNotifierBase<ScopeNotifier<T>, T> {
+final class ScopeNotifier<M extends Listenable>
+    extends ScopeNotifierBase<ScopeNotifier<M>, M>
+    with _ScopeInheritedWidgetMixin<M> {
+  @override
+  final Widget Function(BuildContext context) builder;
+
+  @override
+  final String? debugName;
+
   const ScopeNotifier({
     super.key,
     required super.create,
-    super.debugString,
-    required super.builder,
+    required super.dispose,
+    required this.builder,
+    this.debugName,
   });
 
   const ScopeNotifier.value({
     super.key,
     required super.value,
-    super.debugString,
-    required super.builder,
+    required this.builder,
+    this.debugName,
   }) : super.value();
 
-  static T? maybeGet<T extends ChangeNotifier>(
-    BuildContext context,
-  ) =>
-      ScopeNotifierBase.maybeGet<ScopeNotifier<T>, T>(context)?.model;
+  static M? maybeOf<M extends Listenable>(
+    BuildContext context, {
+    required bool listen,
+  }) =>
+      ScopeProviderBottom.maybeOf<ScopeNotifier<M>,
+          ScopeContext<ScopeNotifier<M>, M>, M>(
+        context,
+        listen: listen,
+      )?.model;
 
-  static T get<T extends ChangeNotifier>(
-    BuildContext context,
-  ) =>
-      ScopeNotifierBase.get<ScopeNotifier<T>, T>(context).model;
+  static M of<M extends Listenable>(
+    BuildContext context, {
+    required bool listen,
+  }) =>
+      ScopeProviderBottom.of<ScopeNotifier<M>,
+          ScopeContext<ScopeNotifier<M>, M>, M>(
+        context,
+        listen: listen,
+      ).model;
 
-  static T? maybeDepend<T extends ChangeNotifier>(
+  static V select<M extends Listenable, V extends Object?>(
     BuildContext context,
+    V Function(M model) selector,
   ) =>
-      ScopeNotifierBase.maybeDepend<ScopeNotifier<T>, T>(context)?.model;
-
-  static T depend<T extends ChangeNotifier>(
-    BuildContext context,
-  ) =>
-      ScopeNotifierBase.depend<ScopeNotifier<T>, T>(context).model;
-
-  static V? maybeSelect<T extends ChangeNotifier, V extends Object?>(
-    BuildContext context,
-    V Function(T) selector,
-  ) =>
-      ScopeNotifierBase.maybeSelect<ScopeNotifier<T>, T, V>(
-          context, (f) => selector(f.model));
-
-  static V select<T extends ChangeNotifier, V extends Object?>(
-    BuildContext context,
-    V Function(T) selector,
-  ) =>
-      ScopeNotifierBase.select<ScopeNotifier<T>, T, V>(
-          context, (f) => selector(f.model));
-
-  @override
-  String toStringShort() => debugString?.call() ?? '${ScopeNotifier<T>}';
+      ScopeProviderBottom.select<ScopeNotifier<M>,
+          ScopeContext<ScopeNotifier<M>, M>, M, V>(
+        context,
+        (context) => selector(context.model),
+      );
 }

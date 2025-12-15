@@ -3,7 +3,7 @@ extension StringTrim on String {
     final lines = split('\n');
     var minIndent = -1;
 
-    for (var line in lines) {
+    for (final line in lines) {
       if (line.trim().isEmpty) continue;
       final indent = line.length - line.trimLeft().length;
       if (minIndent == -1 || indent < minIndent) {

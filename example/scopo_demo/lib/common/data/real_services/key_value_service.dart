@@ -4,10 +4,7 @@ final class KeyValueService {
   final SharedPreferences sharedPreferences;
   final String prefix;
 
-  KeyValueService({
-    required this.sharedPreferences,
-    required this.prefix,
-  });
+  KeyValueService({required this.sharedPreferences, required this.prefix});
 
   String _prefixedKey(String key) => '$prefix$key';
 
@@ -48,12 +45,12 @@ final class KeyValueService {
       sharedPreferences.remove(_prefixedKey(key));
 
   Set<String> getKeys() => {
-        for (var key in sharedPreferences.getKeys())
-          if (key.startsWith(prefix)) key.substring(prefix.length),
-      };
+    for (final key in sharedPreferences.getKeys())
+      if (key.startsWith(prefix)) key.substring(prefix.length),
+  };
 
   Future<void> clear() async {
-    for (var key in sharedPreferences.getKeys()) {
+    for (final key in sharedPreferences.getKeys()) {
       if (key.startsWith(prefix)) {
         await sharedPreferences.remove(key);
       }

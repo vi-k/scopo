@@ -22,6 +22,7 @@ final class ScopeLog {
     _log = value ? _prepareLog : _noLog;
   }
 
+  // ignore: avoid_setters_without_getters
   set log(ScopeLogCallback value) {
     _userLog = value;
   }
@@ -75,13 +76,12 @@ final class ScopeLog {
     String? message, {
     Object? error,
     StackTrace? stackTrace,
-  }) {
-    return '[scopo]'
-        '${source == null ? '' : ' $source:'}'
-        ' ${message ?? 'null'}'
-        '${error == null ? '' : ': $error'}'
-        '${stackTrace == null ? '' : ':${stackTrace == StackTrace.empty ? ' no stack trace' : '\n$stackTrace'}'}';
-  }
+  }) =>
+      '[scopo]'
+      '${source == null ? '' : ' $source:'}'
+      ' ${message ?? 'null'}'
+      '${error == null ? '' : ': $error'}'
+      '${stackTrace == null ? '' : ':${stackTrace == StackTrace.empty ? ' no stack trace' : '\n$stackTrace'}'}';
 }
 
 String source(Diagnosticable diagnosticable, String method) =>

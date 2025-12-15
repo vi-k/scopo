@@ -1,3 +1,4 @@
+// ignore: avoid_classes_with_only_static_members
 abstract final class CompareUtils {
   static bool equals(Object? a, Object? b) => a == b;
 

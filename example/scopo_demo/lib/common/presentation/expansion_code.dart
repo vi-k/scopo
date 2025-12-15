@@ -26,21 +26,13 @@ class ExpansionCode extends StatelessWidget {
   });
 
   @override
-  Widget build(BuildContext context) {
-    return Expansion(
-      title: title,
-      borderColor: borderColor,
-      titleBackgroundColor: titleBackgroundColor,
-      contentBackgroundColor: contentBackgroundColor,
-      initiallyExpanded: initiallyExpanded,
-      contentPadding: contentPadding,
-      children: [
-        Code(
-          code,
-          borderRadius: BorderRadius.zero,
-          fontSize: fontSize,
-        ),
-      ],
-    );
-  }
+  Widget build(BuildContext context) => Expansion(
+    title: title,
+    borderColor: borderColor,
+    titleBackgroundColor: titleBackgroundColor,
+    contentBackgroundColor: contentBackgroundColor,
+    initiallyExpanded: initiallyExpanded,
+    contentPadding: contentPadding,
+    children: [Code(code, borderRadius: BorderRadius.zero, fontSize: fontSize)],
+  );
 }

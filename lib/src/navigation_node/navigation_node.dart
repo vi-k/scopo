@@ -45,6 +45,7 @@ final class _NavigationNodeState extends State<NavigationNode> {
           if (_navigator.previous case final previous?) {
             switch (widget.onPop?.call(context, result)) {
               case final Future<bool> future:
+                // ignore: discarded_futures
                 future.then((canPop) {
                   if (canPop) {
                     previous.pop(result);
@@ -122,6 +123,7 @@ final class _NodeNavigatorObserver extends NavigatorObserver {
       topRoute.addLocalHistoryEntry(
         _HookEntry(
           onRemove: () {
+            // ignore: discarded_futures
             navigator?.previous?.maybePop(node._navigator._interceptedResult);
           },
         ),

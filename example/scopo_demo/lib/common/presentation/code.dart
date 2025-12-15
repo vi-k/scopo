@@ -17,10 +17,11 @@ class Code extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final fontFamily =
-        Platform.isIOS || Platform.isMacOS ? 'Menlo' : 'monospace';
+    final fontFamily = Platform.isIOS || Platform.isMacOS
+        ? 'Menlo'
+        : 'monospace';
 
-    return Container(
+    return DecoratedBox(
       decoration: BoxDecoration(
         color: Theme.of(context).colorScheme.surfaceContainer,
         borderRadius: borderRadius,
@@ -29,19 +30,17 @@ class Code extends StatelessWidget {
         alignment: Alignment.topLeft,
         child: SyntaxView(
           syntax: Syntax.DART,
-          syntaxTheme: switch (Theme.brightnessOf(context)) {
-            Brightness.dark => SyntaxTheme.vscodeDark(),
-            Brightness.light => SyntaxTheme.vscodeLight(),
-          }
-              .copyWith(
-            baseStyle: TextStyle(fontFamily: fontFamily),
-            backgroundColor: Colors.transparent,
-          ),
+          syntaxTheme:
+              switch (Theme.brightnessOf(context)) {
+                Brightness.dark => SyntaxTheme.vscodeDark(),
+                Brightness.light => SyntaxTheme.vscodeLight(),
+              }.copyWith(
+                baseStyle: TextStyle(fontFamily: fontFamily),
+                backgroundColor: Colors.transparent,
+              ),
           fontSize: fontSize,
           withZoom: false,
           withLinesCount: false,
-          expanded: false,
-          selectable: true,
           code: code,
         ),
       ),

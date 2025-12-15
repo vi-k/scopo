@@ -6,182 +6,111 @@ typedef _ScopeDependency<T extends Object, V extends Object?> = (
 );
 
 abstract base class ScopeProviderBottom<
-    W extends ScopeProviderBottom<W, E, T>,
-    E extends ScopeProviderElementBase<W, E, T>,
-    T extends Object> extends InheritedWidget {
-  final T? value;
-  final bool hasValue;
-  final T Function(BuildContext context)? create;
-  final void Function(T model)? dispose;
-  final String Function()? debugString;
-  final Widget Function(BuildContext context) builder;
-
+    W extends ScopeProviderBottom<W, E, M>,
+    E extends ScopeProviderElementBase<W, E, M>,
+    M extends Object> extends InheritedWidget implements ScopeInheritedWidget {
   const ScopeProviderBottom({
     super.key,
-    required T Function(BuildContext context) this.create,
-    this.dispose,
-    this.debugString,
-    required this.builder,
-  })  : value = null,
-        hasValue = false,
-        super(child: const _NullWidget());
+  }) : super(child: const _NullWidget());
 
-  const ScopeProviderBottom.value({
-    super.key,
-    required T this.value,
-    this.debugString,
-    required this.builder,
-  })  : hasValue = true,
-        create = null,
-        dispose = null,
-        super(child: const _NullWidget());
-
-  const ScopeProviderBottom.raw({
-    super.key,
-    this.debugString,
-    required this.builder,
-  })  : value = null,
-        hasValue = false,
-        create = null,
-        dispose = null,
-        super(child: const _NullWidget());
+  E createScopeElement();
 
   @override
-  E createElement();
+  InheritedElement createElement() => createScopeElement();
 
   @override
-  bool updateShouldNotify(ScopeProviderBottom<W, E, T> oldWidget) => true;
+  bool updateShouldNotify(ScopeProviderBottom<W, E, M> oldWidget) => true;
 
-  static E? maybeGet<W extends ScopeProviderBottom<W, E, T>,
-          E extends ScopeProviderElementBase<W, E, T>, T extends Object>(
+  @override
+  String toStringShort() => '$W';
+
+  static C? maybeOf<W extends ScopeInheritedWidget,
+          C extends ScopeContext<W, M>, M extends Object>(
+    BuildContext context, {
+    required bool listen,
+  }) =>
+      _find<W, C, M, void>(context, listen: listen)?.$1;
+
+  static C of<W extends ScopeInheritedWidget, C extends ScopeContext<W, M>,
+          M extends Object>(
+    BuildContext context, {
+    required bool listen,
+  }) =>
+      _find<W, C, M, void>(context, listen: listen)?.$1 ?? _throwNotFound<W>();
+
+  static V select<W extends ScopeInheritedWidget, C extends ScopeContext<W, M>,
+          M extends Object, V extends Object?>(
     BuildContext context,
+    V Function(C context) selector,
   ) =>
-      context.getElementForInheritedWidgetOfExactType<W>() as E?;
+      (_find<W, C, M, V>(context, listen: true, selector: selector) ??
+              _throwNotFound<W>())
+          .$2 as V;
 
-  static E get<W extends ScopeProviderBottom<W, E, T>,
-          E extends ScopeProviderElementBase<W, E, T>, T extends Object>(
-    BuildContext context,
-  ) =>
-      maybeGet<W, E, T>(context) ?? _throwNotFound<W, E, T>();
-
-  static E? maybeDepend<W extends ScopeProviderBottom<W, E, T>,
-          E extends ScopeProviderElementBase<W, E, T>, T extends Object>(
-    BuildContext context,
-  ) =>
-      _depend<W, E, T, void>(context)?.$1;
-
-  static E depend<W extends ScopeProviderBottom<W, E, T>,
-          E extends ScopeProviderElementBase<W, E, T>, T extends Object>(
-    BuildContext context,
-  ) =>
-      maybeDepend<W, E, T>(context) ?? _throwNotFound<W, E, T>();
-
-  static V? maybeSelect<
-          W extends ScopeProviderBottom<W, E, T>,
-          E extends ScopeProviderElementBase<W, E, T>,
-          T extends Object,
-          V extends Object?>(
-    BuildContext context,
-    V Function(E) selector,
-  ) =>
-      _depend<W, E, T, V>(context, selector)?.$2;
-
-  static V select<
-          W extends ScopeProviderBottom<W, E, T>,
-          E extends ScopeProviderElementBase<W, E, T>,
-          T extends Object,
-          V extends Object?>(
-    BuildContext context,
-    V Function(E) selector,
-  ) =>
-      maybeSelect<W, E, T, V>(context, selector) ?? _throwNotFound<W, E, T>();
-
-  static (E, V?)? _depend<
-      W extends ScopeProviderBottom<W, E, T>,
-      E extends ScopeProviderElementBase<W, E, T>,
-      T extends Object,
-      V extends Object?>(
-    BuildContext context, [
-    V Function(E)? selector,
-  ]) {
-    final element = context.getElementForInheritedWidgetOfExactType<W>() as E?;
+  static (C, V?)? _find<W extends ScopeInheritedWidget,
+      C extends ScopeContext<W, M>, M extends Object, V extends Object?>(
+    BuildContext context, {
+    required bool listen,
+    V Function(C)? selector,
+  }) {
+    final element = context.getElementForInheritedWidgetOfExactType<W>();
     if (element == null) {
       return null;
+    }
+
+    final scopeContext = element is C
+        ? element as C
+        : throw Exception('The element of $W is not $C');
+
+    if (!listen) {
+      return (scopeContext, null);
     }
 
     V? value;
     if (selector == null) {
       context.dependOnInheritedElement(element);
     } else {
-      value = selector(element);
+      value = selector(scopeContext);
       context.dependOnInheritedElement(element, aspect: (value, selector));
     }
 
-    return (element, value);
+    return (scopeContext, value);
   }
 
-  static Never _throwNotFound<W extends ScopeProviderBottom<W, E, T>,
-      E extends ScopeProviderElementBase<W, E, T>, T extends Object>() {
+  static Never _throwNotFound<W extends InheritedWidget>() {
     throw Exception('$W not found in the context');
-  }
-
-  @override
-  String toStringShort() =>
-      debugString?.call() ?? '${ScopeProviderBottom<W, E, T>}';
-
-  @override
-  void debugFillProperties(DiagnosticPropertiesBuilder properties) {
-    super.debugFillProperties(properties);
-    if (hasValue) {
-      properties.add(MessageProperty('value', '$value'));
-    }
-    if (create != null) {
-      properties.add(MessageProperty('create', '$create'));
-      properties.add(MessageProperty('dispose', '$dispose'));
-    }
   }
 }
 
-base class ScopeProviderElementBase<W extends ScopeProviderBottom<W, E, T>,
-        E extends ScopeProviderElementBase<W, E, T>, T extends Object>
-    extends InheritedElement implements ScopeProviderFacade<W, T> {
-  T? _model;
-
+abstract base class ScopeProviderElementBase<
+        W extends ScopeProviderBottom<W, E, M>,
+        E extends ScopeProviderElementBase<W, E, M>,
+        M extends Object> extends InheritedElement
+    implements ScopeInheritedElement<W, M> {
   ScopeProviderElementBase(W super.widget) {
-    if (!widget.hasValue) {
-      _model = createModel();
-    }
+    init();
+  }
+
+  @override
+  void unmount() {
+    dispose();
+    super.unmount();
   }
 
   @override
   W get widget => super.widget as W;
 
   @override
-  T get model => _model ?? widget.value!;
+  void init() {}
 
   @override
-  void unmount() {
-    assert(widget.dispose == null || _model != null);
-    if ((widget.dispose, _model) case (final dispose?, final model?)) {
-      dispose(model);
-    }
-    super.unmount();
-  }
-
-  T createModel() {
-    if (widget.create case final create?) {
-      return create(this);
-    }
-
-    throw Exception(
-        'In raw mode, you need to override the `createModel` method');
-  }
+  void dispose() {}
 
   List<_ScopeDependency<E, Object?>> _createDependencies() => [];
 
   @override
   void updateDependencies(Element dependent, Object? aspect) {
-    var dependencies =
+    final dependencies =
         getDependencies(dependent) as List<_ScopeDependency<E, Object?>>?;
 
     /// Уже подписались на все изменения.
@@ -215,7 +144,7 @@ base class ScopeProviderElementBase<W extends ScopeProviderBottom<W, E, T>,
       return;
     }
 
-    for (var (value, selector) in dependencies) {
+    for (final (value, selector) in dependencies) {
       if (selector(this as E) != value) {
         setDependencies(dependent, null);
         dependent.didChangeDependencies();
@@ -224,14 +153,11 @@ base class ScopeProviderElementBase<W extends ScopeProviderBottom<W, E, T>,
     }
   }
 
-  @override
-  Widget build() => widget.builder(this);
-
   /// [InheritedElement.notifyClients] does not support self-subscription,
   /// although this is required in our case.
   @override
   void notifyClients(W oldWidget) {
-    for (final Element dependent in dependents.keys) {
+    for (final dependent in dependents.keys) {
       assert(() {
         // check that it really is our descendant
         if (dependent == this) {
@@ -253,17 +179,12 @@ base class ScopeProviderElementBase<W extends ScopeProviderBottom<W, E, T>,
   }
 
   @override
-  void debugFillProperties(DiagnosticPropertiesBuilder properties) {
-    super.debugFillProperties(properties);
-    if (_model != null) {
-      properties.add(MessageProperty('model', '$_model'));
-    }
-  }
+  Widget build() => buildBranch();
 }
 
-class _NullWidget extends StatelessWidget {
+class _NullWidget extends Widget {
   const _NullWidget();
 
   @override
-  Widget build(BuildContext context) => throw UnimplementedError();
+  Element createElement() => throw UnimplementedError();
 }

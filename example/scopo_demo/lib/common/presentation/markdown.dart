@@ -8,12 +8,7 @@ class Markdown extends StatelessWidget {
   final double? fontSize;
   final bool selectable;
 
-  const Markdown(
-    this.data, {
-    super.key,
-    this.fontSize,
-    this.selectable = true,
-  });
+  const Markdown(this.data, {super.key, this.fontSize, this.selectable = true});
 
   @override
   Widget build(BuildContext context) {
@@ -22,7 +17,6 @@ class Markdown extends StatelessWidget {
     final content = MarkdownBody(
       data: data,
       listItemCrossAxisAlignment: MarkdownListItemCrossAxisAlignment.start,
-      fitContent: true,
       styleSheet: MarkdownStyleSheet.fromTheme(Theme.of(context)).copyWith(
         a: TextStyle(fontSize: fontSize),
         p: TextStyle(fontSize: fontSize),
@@ -38,14 +32,14 @@ class Markdown extends StatelessWidget {
         del: TextStyle(fontSize: fontSize),
         code: TextStyle(
           fontSize: fontSize * .9,
-          fontFamily:
-              Platform.isIOS || Platform.isMacOS ? 'Menlo' : 'monospace',
-          backgroundColor:
-              Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.1),
+          fontFamily: Platform.isIOS || Platform.isMacOS
+              ? 'Menlo'
+              : 'monospace',
+          backgroundColor: Theme.of(
+            context,
+          ).colorScheme.onSurface.withValues(alpha: 0.1),
         ),
-        codeblockDecoration: BoxDecoration(
-          color: Colors.transparent,
-        ),
+        codeblockDecoration: const BoxDecoration(color: Colors.transparent),
         listBulletPadding: EdgeInsets.zero,
         listIndent: fontSize,
         listBullet: TextStyle(fontSize: fontSize),

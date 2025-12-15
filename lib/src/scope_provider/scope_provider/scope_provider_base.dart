@@ -1,73 +1,73 @@
 part of '../scope_provider.dart';
 
-abstract base class ScopeProviderBase<W extends ScopeProviderBase<W, T>,
-        T extends Object>
-    extends ScopeProviderBottom<W, ScopeProviderElement<W, T>, T> {
+abstract base class ScopeProviderBase<W extends ScopeProviderBase<W, M>,
+        M extends Object>
+    extends ScopeProviderBottom<W, ScopeProviderElement<W, M>, M>
+    with _ScopeInheritedWidgetBaseMixin<M> {
+  @override
+  final M? value;
+
+  @override
+  final bool hasValue;
+
+  @override
+  final M Function(BuildContext context)? create;
+
+  @override
+  final void Function(M model)? dispose;
+
   const ScopeProviderBase({
     super.key,
-    required super.create,
-    super.dispose,
-    super.debugString,
-    required super.builder,
-  });
+    required this.create,
+    required this.dispose,
+  })  : hasValue = false,
+        value = null;
 
   const ScopeProviderBase.value({
     super.key,
-    required super.value,
-    super.debugString,
-    required super.builder,
-  }) : super.value();
+    required this.value,
+  })  : hasValue = true,
+        create = null,
+        dispose = null;
 
   @override
-  ScopeProviderElement<W, T> createElement() => ScopeProviderElement(this as W);
-
-  static ScopeProviderFacade<W, T>? maybeGet<W extends ScopeProviderBase<W, T>,
-          T extends Object>(
-    BuildContext context,
-  ) =>
-      ScopeProviderBottom.maybeGet<W, ScopeProviderElement<W, T>, T>(context);
-
-  static ScopeProviderFacade<W, T>
-      get<W extends ScopeProviderBase<W, T>, T extends Object>(
-    BuildContext context,
-  ) =>
-          ScopeProviderBottom.get<W, ScopeProviderElement<W, T>, T>(context);
-
-  static ScopeProviderFacade<W, T>?
-      maybeDepend<W extends ScopeProviderBase<W, T>, T extends Object>(
-    BuildContext context,
-  ) =>
-          ScopeProviderBottom.maybeDepend<W, ScopeProviderElement<W, T>, T>(
-              context);
-
-  static ScopeProviderFacade<W, T>
-      depend<W extends ScopeProviderBase<W, T>, T extends Object>(
-    BuildContext context,
-  ) =>
-          ScopeProviderBottom.depend<W, ScopeProviderElement<W, T>, T>(context);
-
-  static V? maybeSelect<W extends ScopeProviderBase<W, T>, T extends Object,
-          V extends Object?>(
-    BuildContext context,
-    V Function(ScopeProviderFacade<W, T>) selector,
-  ) =>
-      ScopeProviderBottom.maybeSelect<W, ScopeProviderElement<W, T>, T, V>(
-          context, selector);
-
-  static V select<W extends ScopeProviderBase<W, T>, T extends Object,
-          V extends Object?>(
-    BuildContext context,
-    V Function(ScopeProviderFacade<W, T>) selector,
-  ) =>
-      ScopeProviderBottom.select<W, ScopeProviderElement<W, T>, T, V>(
-          context, selector);
+  ScopeProviderElement<W, M> createScopeElement() =>
+      ScopeProviderElement(this as W);
 
   @override
-  String toStringShort() => debugString?.call() ?? '${ScopeProviderBase<W, T>}';
+  Widget build(BuildContext context);
+
+  static ScopeContext<W, M>?
+      maybeOf<W extends ScopeProviderBase<W, M>, M extends Object>(
+    BuildContext context, {
+    required bool listen,
+  }) =>
+          ScopeProviderBottom.maybeOf<W, ScopeContext<W, M>, M>(
+            context,
+            listen: listen,
+          );
+
+  static ScopeContext<W, M> of<W extends ScopeProviderBase<W, M>,
+          M extends Object>(
+    BuildContext context, {
+    required bool listen,
+  }) =>
+      ScopeProviderBottom.of<W, ScopeContext<W, M>, M>(context, listen: listen);
+
+  static V select<W extends ScopeProviderBase<W, M>, M extends Object,
+          V extends Object?>(
+    BuildContext context,
+    V Function(ScopeContext<W, M> context) selector,
+  ) =>
+      ScopeProviderBottom.select<W, ScopeContext<W, M>, M, V>(
+        context,
+        selector,
+      );
 }
 
-final class ScopeProviderElement<W extends ScopeProviderBase<W, T>,
-        T extends Object>
-    extends ScopeProviderElementBase<W, ScopeProviderElement<W, T>, T> {
+final class ScopeProviderElement<W extends ScopeProviderBase<W, M>,
+        M extends Object>
+    extends ScopeProviderElementBase<W, ScopeProviderElement<W, M>, M>
+    with _ScopeInheritedElementMixin<W, M> {
   ScopeProviderElement(super.widget);
 }

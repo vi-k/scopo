@@ -6,7 +6,9 @@ import '../common/data/fake_services/connectivity.dart';
 import '../common/data/fake_services/http_client.dart';
 import 'app_deps.dart';
 import 'app_error.dart';
-import 'theme_manager.dart';
+import 'theme_manager/static_themes.dart';
+import 'theme_manager/theme_manager.dart';
+import 'theme_manager/theme_model.dart';
 
 /// The root scope.
 ///
@@ -21,7 +23,8 @@ final class App extends Scope<App, AppDeps, AppContent> {
     required ScopeInitFunction<double, AppDeps> super.init,
     required ScopeOnInitCallback<double> onInit,
     required this.builder,
-  }) : _onInit = onInit;
+  }) : _onInit = onInit,
+       super(pauseAfterInitialization: const Duration(milliseconds: 500));
 
   /// Provides access the scope params, i.e. to the widget [App].
   static App paramsOf(BuildContext context, {bool listen = true}) =>
@@ -42,15 +45,14 @@ final class App extends Scope<App, AppDeps, AppContent> {
     ThemeData? light,
     ThemeData? dark,
     required Widget child,
-  }) =>
-      MaterialApp(
-        title: 'Scope demo',
-        themeMode: mode,
-        theme: light ?? ThemeManager.lightTheme,
-        darkTheme: dark ?? ThemeManager.darkTheme,
-        debugShowCheckedModeBanner: false,
-        home: child,
-      );
+  }) => MaterialApp(
+    title: 'Scope demo',
+    themeMode: mode,
+    theme: light ?? StaticThemes.lightTheme,
+    darkTheme: dark ?? StaticThemes.darkTheme,
+    debugShowCheckedModeBanner: false,
+    home: child,
+  );
 
   @override
   Widget onInit(Object? progress) => _app(child: _onInit(progress as double?));
@@ -60,35 +62,37 @@ final class App extends Scope<App, AppDeps, AppContent> {
       _app(child: AppError(error, stackTrace));
 
   @override
-  Widget wrapContent(AppDeps deps, Widget child) {
-    return ThemeManager(
+  Widget wrapContent(AppDeps deps, Widget child) => ThemeManager(
+    create: (context) => ThemeModelNotifier(
       keyValueService: deps.keyValueService('theme.'),
-      builder: (context) {
-        final themeManager = ThemeManager.of(context);
+      systemBrightness: () => MediaQuery.of(context).platformBrightness,
+    ),
+    dispose: (model) => model.dispose(),
+    builder: (context) {
+      final themeModel = ThemeManager.of(context);
 
-        return Directionality(
-          textDirection: TextDirection.ltr,
-          child: Banner(
-            message: 'scopo demo',
-            location: BannerLocation.bottomEnd,
-            color: themeManager.theme.colorScheme.primary,
-            textStyle: TextStyle(
-              color: themeManager.theme.colorScheme.onPrimary,
-              fontSize: 9,
-              fontWeight: FontWeight.normal,
-              height: 1.0,
-            ),
-            child: _app(
-              mode: themeManager.mode,
-              light: themeManager.lightTheme,
-              dark: themeManager.darkTheme,
-              child: child,
-            ),
+      return Directionality(
+        textDirection: TextDirection.ltr,
+        child: Banner(
+          message: 'scopo demo',
+          location: BannerLocation.bottomEnd,
+          color: themeModel.theme.colorScheme.primary,
+          textStyle: TextStyle(
+            color: themeModel.theme.colorScheme.onPrimary,
+            fontSize: 9,
+            fontWeight: FontWeight.normal,
+            height: 1,
           ),
-        );
-      },
-    );
-  }
+          child: _app(
+            mode: themeModel.mode,
+            light: themeModel.lightTheme,
+            dark: themeModel.darkTheme,
+            child: child,
+          ),
+        ),
+      );
+    },
+  );
 
   @override
   AppContent createContent() => AppContent();
@@ -103,39 +107,3 @@ final class AppContent extends ScopeContent<App, AppDeps, AppContent> {
   @override
   Widget build(BuildContext context) => App.paramsOf(context).builder(context);
 }
-
-// sealed class AppState {}
-
-// final class AppStateManager
-//     extends ScopeStateManager<AppStateManager, AppState> {
-//   final Widget child;
-
-//   const AppStateManager({
-//     super.key,
-//     required super.initialState,
-//     required this.child,
-//   });
-
-//   @override
-//   Widget build(BuildContext context, AppState state) => child;
-// }
-
-// final class AppStateManager2 extends ScopeStateManagerBase<AppStateManager2,
-//     AppStateManager2State, AppState> {
-//   final Widget child;
-
-//   const AppStateManager2({
-//     super.key,
-//     required super.initialState,
-//     required this.child,
-//   });
-
-//   @override
-//   Widget build(BuildContext context, AppState state) => child;
-
-//   @override
-//   State<StatefulWidget> createState() => AppStateManager2State();
-// }
-
-// final class AppStateManager2State extends ScopeStateManagerStateBase<
-//     AppStateManager2, AppStateManager2State, AppState> {}

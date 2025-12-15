@@ -3,10 +3,10 @@ import 'dart:math';
 
 import 'package:scopo/scopo.dart';
 
-import '../common/domain/fake_exception.dart';
 import '../common/data/fake_services/http_client.dart';
 import '../common/data/fake_services/some_bloc.dart';
 import '../common/data/fake_services/some_controller.dart';
+import '../common/domain/fake_exception.dart';
 import '../utils/app_environment.dart';
 import 'home.dart';
 
@@ -54,7 +54,7 @@ class HomeDeps implements ScopeDeps {
     }
 
     try {
-      httpClient = HttpClient();
+      httpClient = const HttpClient();
       await httpClient.init();
       randomFakeError('$HttpClient initialization error');
       yield ScopeProgress(progressIterator.nextProgress());

@@ -52,6 +52,7 @@ class _AnimatedProgressIndicatorState extends State<AnimatedProgressIndicator>
         _animationController = animationController;
       }
 
+      // ignore: discarded_futures
       animationController.animateTo(
         value,
         duration: widget.stepDuration,
@@ -69,10 +70,10 @@ class _AnimatedProgressIndicatorState extends State<AnimatedProgressIndicator>
 
   @override
   Widget build(BuildContext context) => switch (_animationController) {
-        null => widget.builder(null),
-        final AnimationController controller => AnimatedBuilder(
-            animation: controller,
-            builder: (_, __) => widget.builder(controller.value),
-          ),
-      };
+    null => widget.builder(null),
+    final AnimationController controller => AnimatedBuilder(
+      animation: controller,
+      builder: (_, __) => widget.builder(controller.value),
+    ),
+  };
 }

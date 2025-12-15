@@ -1,9 +1,7 @@
 ## 0.3.0
 
-* add `ScopeProviderBottom`, `ScopeProviderBase`, `ScopeProvider`
-* add `ScopeListenableProviderBottom`, `ScopeListenableProviderBase`, `ScopeListenableProvider`
-* add `ScopeNotifierBottom`, `ScopeNotifierBase`, `ScopeNotifier`
-* add `ScopeStateManagerBottom`, `ScopeStateManagerBase`, `ScopeStateManager`
+* add `ScopeProvider`, `ScopeNotifier`, `ScopeStateBuilder`,
+  `ScopeAsyncInitializer`, `ScopeStreamInitializer`.
 * remake scopo_demo
 
 ## 0.2.2+1

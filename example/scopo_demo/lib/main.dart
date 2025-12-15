@@ -10,7 +10,7 @@ import 'home/home_deps.dart';
 
 void main() {
   final errorPrinter = ansi.AnsiPrinter(
-    defaultState: ansi.SgrPlainState(
+    defaultState: const ansi.SgrPlainState(
       foreground: ansi.Color256(ansi.Colors.rgb500),
     ),
   );
@@ -42,48 +42,45 @@ void main() {
     App(
       init: AppDeps.init,
       onInit: (progress) => SplashScreen(progress: progress),
-      builder: (context) => VersionChecker(
-        updateState: App.of(context).updateState,
-        child: Home(init: HomeDeps.init),
-      ),
+      builder: (context) => const Home(init: HomeDeps.init),
     ),
   );
 }
 
-final class VersionChecker extends ScopeFork<VersionChecker, bool> {
-  final Widget child;
-  final void Function() updateState;
+// final class VersionChecker extends ScopeFork<VersionChecker, bool> {
+//   final Widget child;
+//   final void Function() updateState;
 
-  const VersionChecker({
-    super.key,
-    required this.child,
-    required this.updateState,
-  }) : super(initialState: false);
+//   const VersionChecker({
+//     super.key,
+//     required this.child,
+//     required this.updateState,
+//   }) : super(initialState: false);
 
-  @override
-  Widget onError(Object error, StackTrace stackTrace, void Function() restart) {
-    return Scaffold(
-      body: Center(
-        child: Text(error.toString()),
-      ),
-    );
-  }
+//   @override
+//   Widget onError(Object error, StackTrace stackTrace, void Function() restart) {
+//     return Scaffold(
+//       body: Center(
+//         child: Text(error.toString()),
+//       ),
+//     );
+//   }
 
-  @override
-  Widget onState(bool state) {
-    return state
-        ? child
-        : Scaffold(
-            body: Center(
-              child: Text(state.toString()),
-            ),
-          );
-  }
+//   @override
+//   Widget onState(bool state) {
+//     return state
+//         ? child
+//         : Scaffold(
+//             body: Center(
+//               child: Text(state.toString()),
+//             ),
+//           );
+//   }
 
-  @override
-  Stream<bool> process() async* {
-    yield false;
-    await Future<void>.delayed(const Duration(seconds: 1));
-    yield true;
-  }
-}
+//   @override
+//   Stream<bool> process() async* {
+//     yield false;
+//     await Future<void>.delayed(const Duration(seconds: 1));
+//     yield true;
+//   }
+// }

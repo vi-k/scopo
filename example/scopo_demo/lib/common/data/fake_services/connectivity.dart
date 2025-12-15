@@ -20,7 +20,7 @@ class Connectivity extends ValueNotifier<bool> {
       value = isConnected;
     });
 
-    await Future<void>.delayed(const Duration(seconds: 1));
+    await Future<void>.delayed(AppEnvironment.defaultPause);
   }
 
   Stream<bool> _fakeIsConnectedGenerator() async* {
@@ -44,8 +44,7 @@ class Connectivity extends ValueNotifier<bool> {
   @override
   Future<void> dispose() async {
     assert(_subscription != null, '$Connectivity is not initialized');
-    _subscription?.cancel();
-
+    await _subscription?.cancel();
     super.dispose();
   }
 }

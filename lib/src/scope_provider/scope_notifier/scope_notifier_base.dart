@@ -1,76 +1,82 @@
 part of '../scope_provider.dart';
 
-abstract base class ScopeNotifierBase<W extends ScopeNotifierBase<W, T>,
-        T extends ChangeNotifier>
-    extends ScopeNotifierBottom<W, ScopeNotifierElement<W, T>, T> {
+abstract base class ScopeNotifierBase<W extends ScopeNotifierBase<W, M>,
+        M extends Listenable>
+    extends ScopeNotifierBottom<W, ScopeNotifierElement<W, M>, M>
+    with _ScopeInheritedWidgetBaseMixin<M> {
+  @override
+  final M? value;
+
+  @override
+  final bool hasValue;
+
+  @override
+  final M Function(BuildContext context)? create;
+
+  @override
+  final void Function(M model)? dispose;
+
   const ScopeNotifierBase({
     super.key,
-    required super.create,
-    super.debugString,
-    required super.builder,
-  });
+    required this.create,
+    required this.dispose,
+  })  : hasValue = false,
+        value = null;
 
   const ScopeNotifierBase.value({
     super.key,
-    required super.value,
-    super.debugString,
-    required super.builder,
-  }) : super.value();
+    required this.value,
+  })  : hasValue = true,
+        create = null,
+        dispose = null;
 
   @override
-  ScopeNotifierElement<W, T> createElement() =>
-      ScopeNotifierElement<W, T>(this as W);
+  ScopeNotifierElement<W, M> createScopeElement() =>
+      ScopeNotifierElement(this as W);
 
-  static ScopeProviderFacade<W, T>?
-      maybeGet<W extends ScopeNotifierBase<W, T>, T extends ChangeNotifier>(
-    BuildContext context,
-  ) =>
-          ScopeListenableProviderBottom.maybeGet<W, ScopeNotifierElement<W, T>,
-              T>(context);
+  @override
+  Widget build(BuildContext context);
 
-  static ScopeProviderFacade<W, T>
-      get<W extends ScopeNotifierBase<W, T>, T extends ChangeNotifier>(
-    BuildContext context,
-  ) =>
-          ScopeListenableProviderBottom.get<W, ScopeNotifierElement<W, T>, T>(
-              context);
+  static ScopeContext<W, M>?
+      maybeOf<W extends ScopeNotifierBase<W, M>, M extends Listenable>(
+    BuildContext context, {
+    required bool listen,
+  }) =>
+          ScopeProviderBottom.maybeOf<W, ScopeContext<W, M>, M>(
+            context,
+            listen: listen,
+          );
 
-  static ScopeProviderFacade<W, T>?
-      maybeDepend<W extends ScopeNotifierBase<W, T>, T extends ChangeNotifier>(
-    BuildContext context,
-  ) =>
-          ScopeListenableProviderBottom.maybeDepend<W,
-              ScopeNotifierElement<W, T>, T>(context);
+  static ScopeContext<W, M> of<W extends ScopeNotifierBase<W, M>,
+          M extends Listenable>(
+    BuildContext context, {
+    required bool listen,
+  }) =>
+      ScopeProviderBottom.of<W, ScopeContext<W, M>, M>(context, listen: listen);
 
-  static ScopeProviderFacade<W, T>
-      depend<W extends ScopeNotifierBase<W, T>, T extends ChangeNotifier>(
-    BuildContext context,
-  ) =>
-          ScopeListenableProviderBottom.depend<W, ScopeNotifierElement<W, T>,
-              T>(context);
-
-  static V? maybeSelect<W extends ScopeNotifierBase<W, T>,
-          T extends ChangeNotifier, V extends Object?>(
-    BuildContext context,
-    V Function(ScopeProviderFacade<W, T>) selector,
-  ) =>
-      ScopeListenableProviderBottom.maybeSelect<W, ScopeNotifierElement<W, T>,
-          T, V>(context, selector);
-
-  static V select<W extends ScopeNotifierBase<W, T>, T extends ChangeNotifier,
+  static V select<W extends ScopeNotifierBase<W, M>, M extends Listenable,
           V extends Object?>(
     BuildContext context,
-    V Function(ScopeProviderFacade<W, T>) selector,
+    V Function(ScopeContext<W, M> context) selector,
   ) =>
-      ScopeListenableProviderBottom.select<W, ScopeNotifierElement<W, T>, T, V>(
-          context, selector);
-
-  @override
-  String toStringShort() => debugString?.call() ?? '${ScopeNotifierBase<W, T>}';
+      ScopeProviderBottom.select<W, ScopeContext<W, M>, M, V>(
+        context,
+        selector,
+      );
 }
 
-final class ScopeNotifierElement<W extends ScopeNotifierBase<W, T>,
-        T extends ChangeNotifier>
-    extends ScopeNotifierElementBase<W, ScopeNotifierElement<W, T>, T> {
+final class ScopeNotifierElement<W extends ScopeNotifierBase<W, M>,
+        M extends Listenable>
+    extends ScopeNotifierElementBase<W, ScopeNotifierElement<W, M>, M>
+    with _ScopeInheritedElementMixin<W, M> {
   ScopeNotifierElement(super.widget);
+
+  @override
+  void update(W newWidget) {
+    if (widget.value != newWidget.value) {
+      widget.value?.removeListener(_listener);
+      newWidget.value?.removeListener(_listener);
+    }
+    super.update(newWidget);
+  }
 }

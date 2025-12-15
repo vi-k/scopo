@@ -16,7 +16,9 @@ typedef ScopeInitFunction<P extends Object, D extends ScopeDeps>
 typedef ScopeOnInitCallback<P extends Object> = Widget Function(P? progress);
 
 typedef ScopeOnErrorCallback = Widget Function(
-    Object error, StackTrace stackTrace);
+  Object error,
+  StackTrace stackTrace,
+);
 
 /// The main widget that creates a scope.
 ///
@@ -34,7 +36,7 @@ abstract base class Scope<S extends Scope<S, D, C>, D extends ScopeDeps,
   const Scope({
     super.key,
     this.tag,
-    required final ScopeInitFunction<Object, D> init,
+    required ScopeInitFunction<Object, D> init,
     this.pauseAfterInitialization = Duration.zero,
   }) : _init = init;
 
@@ -46,7 +48,10 @@ abstract base class Scope<S extends Scope<S, D, C>, D extends ScopeDeps,
   //
   // ```dart
   // static $YourScope paramsOf(BuildContext context, {bool listen = true}) =>
-  //     Scope.paramsOf<$YourScope, $YourScopeDeps, $YourScopeContent>(context, listen: listen);
+  //     Scope.paramsOf<$YourScope, $YourScopeDeps, $YourScopeContent>(
+  //       context,
+  //       listen: listen,
+  //     );
   // ```
   static S paramsOf<S extends Scope<S, D, C>, D extends ScopeDeps,
           C extends ScopeContent<S, D, C>>(
@@ -86,9 +91,7 @@ abstract base class Scope<S extends Scope<S, D, C>, D extends ScopeDeps,
     BuildContext context, {
     bool listen = false,
   }) =>
-      listen
-          ? ScopeProvider.depend<_ScopeState<S, D, C>>(context)
-          : ScopeProvider.get<_ScopeState<S, D, C>>(context);
+      ScopeProvider.of<_ScopeState<S, D, C>>(context, listen: listen);
 
   /// Method for constructing a subtree during dependency initialization.
   ///
@@ -103,7 +106,9 @@ abstract base class Scope<S extends Scope<S, D, C>, D extends ScopeDeps,
   /// [ScopeInitState] definition:
   ///
   /// ```dart
-  /// Stream<ScopeInitState<double, MyFeatureDeps>> init(BuildContext context) {...}
+  /// Stream<ScopeInitState<double, MyFeatureDeps>> init(BuildContext context) {
+  ///   ...
+  /// }
   /// ```
   ///
   /// However, the [onInit] method cannot automatically accept this type. You
@@ -212,6 +217,7 @@ base class _ScopeState<S extends Scope<S, D, C>, D extends ScopeDeps,
   }
 
   void _unsubscribe() {
+    // ignore: discarded_futures
     _subscription?.cancel();
     _subscription = null;
   }
@@ -227,7 +233,7 @@ base class _ScopeState<S extends Scope<S, D, C>, D extends ScopeDeps,
 
     _unsubscribe();
 
-    var completer = Completer();
+    final completer = Completer<void>();
     _closeCompleter = completer;
     if (mounted) {
       setState(() {});
@@ -257,41 +263,40 @@ base class _ScopeState<S extends Scope<S, D, C>, D extends ScopeDeps,
   }
 
   @override
-  Widget build(BuildContext _) {
-    return ScopeProvider<_ScopeState<S, D, C>>.value(
-      value: this,
-      debugString: () => '${S}Scope',
-      builder: (context) => switch (_pauseState ?? _state) {
-        _ScopeInitial(:final value) ||
-        ScopeProgress(:final Object? value) =>
-          widget.onInit(value),
-        _ScopeError(:final error, :final stackTrace) => widget.onError(
-            error,
-            stackTrace,
-          ),
-        ScopeReady(:final deps) => widget.wrapContent(
-            deps,
-            Stack(
-              children: [
-                _ScopeContent<S, D, C>(
-                  key: _contentKey,
-                  deps: deps,
-                  createContent: widget.createContent,
-                ),
-                if (_closeCompleter != null)
-                  Positioned.fill(
-                    child: ColoredBox(
-                      color:
-                          Theme.of(context).canvasColor.withValues(alpha: 0.5),
-                      child: Center(child: CircularProgressIndicator()),
-                    ),
-                  ),
-              ],
+  Widget build(BuildContext _) => ScopeProvider<_ScopeState<S, D, C>>.value(
+        value: this,
+        debugName: '${S}Scope',
+        builder: (context) => switch (_pauseState ?? _state) {
+          _ScopeInitial(:final value) ||
+          ScopeProgress(:final Object? value) =>
+            widget.onInit(value),
+          _ScopeError(:final error, :final stackTrace) => widget.onError(
+              error,
+              stackTrace,
             ),
-          ),
-      },
-    );
-  }
+          ScopeReady(:final deps) => widget.wrapContent(
+              deps,
+              Stack(
+                children: [
+                  _ScopeContent<S, D, C>(
+                    key: _contentKey,
+                    deps: deps,
+                    createContent: widget.createContent,
+                  ),
+                  if (_closeCompleter != null)
+                    Positioned.fill(
+                      child: ColoredBox(
+                        color: Theme.of(context)
+                            .canvasColor
+                            .withValues(alpha: 0.5),
+                        child: const Center(child: CircularProgressIndicator()),
+                      ),
+                    ),
+                ],
+              ),
+            ),
+        },
+      );
 
   @override
   String toStringShort() => '${_ScopeState<S, D, C>}(_state: $_state)';
