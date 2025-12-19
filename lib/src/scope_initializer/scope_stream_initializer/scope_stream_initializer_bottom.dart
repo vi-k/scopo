@@ -8,6 +8,44 @@ abstract base class ScopeStreamInitializerBottom<
   const ScopeStreamInitializerBottom({
     super.key,
   }) : super(initialState: const ScopeInitializerWaitingForPrevious());
+
+  static E? maybeOf<
+          W extends ScopeStreamInitializerBottom<W, E, T>,
+          E extends ScopeStreamInitializerElementBase<W, E, T>,
+          T extends Object?>(
+    BuildContext context, {
+    required bool listen,
+  }) =>
+      ScopeModelBottom.maybeOf<W, E, ScopeStateModel<ScopeInitializerState<T>>>(
+        context,
+        listen: listen,
+      );
+
+  static E of<
+          W extends ScopeStreamInitializerBottom<W, E, T>,
+          E extends ScopeStreamInitializerElementBase<W, E, T>,
+          T extends Object?>(
+    BuildContext context, {
+    required bool listen,
+  }) =>
+      ScopeModelBottom.of<W, E, ScopeStateModel<ScopeInitializerState<T>>>(
+        context,
+        listen: listen,
+      );
+
+  static V select<
+          W extends ScopeStreamInitializerBottom<W, E, T>,
+          E extends ScopeStreamInitializerElementBase<W, E, T>,
+          T extends Object?,
+          V extends Object?>(
+    BuildContext context,
+    V Function(E element) selector,
+  ) =>
+      ScopeModelBottom.select<W, E, ScopeStateModel<ScopeInitializerState<T>>,
+          V>(
+        context,
+        selector,
+      );
 }
 
 abstract base class ScopeStreamInitializerElementBase<
@@ -15,19 +53,27 @@ abstract base class ScopeStreamInitializerElementBase<
         E extends ScopeStreamInitializerElementBase<W, E, T>,
         T extends Object?>
     extends ScopeStateBuilderElementBase<W, E, ScopeInitializerState<T>>
-    with ScopeAsyncDisposerElementMixin<W, T> {
+    with ScopeInitializerElementMixin<W, T> {
   StreamSubscription<void>? _subscription;
 
   ScopeStreamInitializerElementBase(super.widget);
 
   @override
-  Key? get _disposeKey;
+  Key? get disposeKey;
 
   @override
-  Duration? get _disposeTimeout;
+  Duration? get disposeTimeout;
 
   @override
-  void Function()? get _onDisposeTimeout;
+  void Function()? get onDisposeTimeout;
+
+  Stream<ScopeProcessState<Object, T>> initAsync();
+
+  @override
+  FutureOr<void> disposeAsync(W widget, T value);
+
+  @override
+  Widget buildOnState(ScopeInitializerState<T> state);
 
   @override
   Future<void> runInitAsync() async {
@@ -38,10 +84,28 @@ abstract base class ScopeStreamInitializerElementBase<
 
       _subscription = initAsync().listen(
         (state) {
-          _notifier.update(state);
+          switch (_notifier.state) {
+            case ScopeInitializerWaitingForPrevious<T>():
+            case ScopeInitializerProgress<T>():
+              break;
+
+            case ScopeInitializerReady<T>():
+              throw StateError('$W already initialized');
+
+            case ScopeInitializerError<T>():
+              throw StateError('$W initialization failed');
+          }
+
+          _notifier.update(state.toScopeInitializerState());
         },
         onError: (Object error, StackTrace stackTrace) {
-          _notifier.update(ScopeInitializerError(error, stackTrace));
+          final progress = switch (_notifier.state) {
+            ScopeInitializerProgress<T>(:final progress) => progress,
+            _ => null,
+          };
+          _notifier.update(
+            ScopeInitializerError(error, stackTrace, progress: progress),
+          );
         },
         cancelOnError: true,
       );
@@ -56,12 +120,4 @@ abstract base class ScopeStreamInitializerElementBase<
     _subscription?.cancel();
     super.dispose();
   }
-
-  Stream<ScopeProcessState<T>> initAsync();
-
-  @override
-  FutureOr<void> disposeAsync(W widget, T value);
-
-  @override
-  Widget buildState(ScopeInitializerState<T> state);
 }

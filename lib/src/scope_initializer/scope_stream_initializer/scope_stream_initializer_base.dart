@@ -15,11 +15,7 @@ abstract base class ScopeStreamInitializerBase<
     this.onDisposeTimeout,
   });
 
-  @override
-  ScopeStreamInitializerElement<W, T> createScopeElement() =>
-      ScopeStreamInitializerElement<W, T>(this as W);
-
-  Stream<ScopeProcessState<T>> init();
+  Stream<ScopeProcessState<Object, T>> init();
 
   FutureOr<void> dispose(T value);
 
@@ -33,7 +29,42 @@ abstract base class ScopeStreamInitializerBase<
     BuildContext context,
     Object error,
     StackTrace stackTrace,
+    Object? progress,
   );
+
+  @override
+  ScopeStreamInitializerElement<W, T> createScopeElement() =>
+      ScopeStreamInitializerElement<W, T>(this as W);
+
+  static ScopeInitializerContext<W, T>?
+      maybeOf<W extends ScopeStreamInitializerBase<W, T>, T extends Object?>(
+    BuildContext context, {
+    required bool listen,
+  }) =>
+          ScopeModelBottom.maybeOf<W, ScopeInitializerContext<W, T>,
+              ScopeStateModel<ScopeInitializerState<T>>>(
+            context,
+            listen: listen,
+          );
+
+  static ScopeInitializerContext<W, T>
+      of<W extends ScopeStreamInitializerBase<W, T>, T extends Object>(
+    BuildContext context, {
+    required bool listen,
+  }) =>
+          ScopeModelBottom.of<W, ScopeInitializerContext<W, T>,
+              ScopeStateModel<ScopeInitializerState<T>>>(
+            context,
+            listen: listen,
+          );
+
+  static V select<W extends ScopeStreamInitializerBase<W, T>, T extends Object,
+          V extends Object?>(
+    BuildContext context,
+    V Function(ScopeInitializerContext<W, T> context) selector,
+  ) =>
+      ScopeModelBottom.select<W, ScopeInitializerContext<W, T>,
+          ScopeStateModel<ScopeInitializerState<T>>, V>(context, selector);
 }
 
 final class ScopeStreamInitializerElement<
@@ -43,29 +74,33 @@ final class ScopeStreamInitializerElement<
   ScopeStreamInitializerElement(super.widget);
 
   @override
-  Key? get _disposeKey => widget.disposeKey;
+  Key? get disposeKey => widget.disposeKey;
 
   @override
-  Duration? get _disposeTimeout => widget.disposeTimeout;
+  Duration? get disposeTimeout => widget.disposeTimeout;
 
   @override
-  void Function()? get _onDisposeTimeout => widget.onDisposeTimeout;
+  void Function()? get onDisposeTimeout => widget.onDisposeTimeout;
 
   @override
-  Stream<ScopeProcessState<T>> initAsync() => widget.init();
+  Stream<ScopeProcessState<Object, T>> initAsync() => widget.init();
 
   @override
   FutureOr<void> disposeAsync(W widget, T value) => widget.dispose(value);
 
   @override
-  Widget buildState(ScopeInitializerState<T> state) => switch (state) {
+  Widget buildOnState(ScopeInitializerState<T> state) => switch (state) {
         ScopeInitializerWaitingForPrevious() =>
           widget.buildOnWaitingForPrevious?.call(this) ??
               widget.buildOnInitializing(this, null),
-        ScopeProgressV2(:final progress) =>
+        ScopeInitializerProgress(:final progress) =>
           widget.buildOnInitializing(this, progress),
-        ScopeReadyV2(:final value) => widget.buildOnReady(this, value),
-        ScopeInitializerError(:final error, :final stackTrace) =>
-          widget.buildOnError(this, error, stackTrace),
+        ScopeInitializerReady(:final value) => widget.buildOnReady(this, value),
+        ScopeInitializerError(
+          :final error,
+          :final stackTrace,
+          :final progress
+        ) =>
+          widget.buildOnError(this, error, stackTrace, progress),
       };
 }

@@ -4,7 +4,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
 import '../environment/scope_config.dart' as log;
-import '../scope_provider/scope_provider.dart';
+import '../scope_model/scope_model.dart';
 import 'scope_deps.dart';
 
 part 'scope_content.dart';
@@ -91,7 +91,7 @@ abstract base class Scope<S extends Scope<S, D, C>, D extends ScopeDeps,
     BuildContext context, {
     bool listen = false,
   }) =>
-      ScopeProvider.of<_ScopeState<S, D, C>>(context, listen: listen);
+      ScopeModel.of<_ScopeState<S, D, C>>(context, listen: listen);
 
   /// Method for constructing a subtree during dependency initialization.
   ///
@@ -263,7 +263,7 @@ base class _ScopeState<S extends Scope<S, D, C>, D extends ScopeDeps,
   }
 
   @override
-  Widget build(BuildContext _) => ScopeProvider<_ScopeState<S, D, C>>.value(
+  Widget build(BuildContext _) => ScopeModel<_ScopeState<S, D, C>>.value(
         value: this,
         debugName: '${S}Scope',
         builder: (context) => switch (_pauseState ?? _state) {

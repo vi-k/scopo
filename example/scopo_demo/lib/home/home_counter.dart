@@ -12,10 +12,12 @@ class HomeCounter extends StatefulWidget {
 
 class _HomeCounterState extends State<HomeCounter> {
   @override
-  Widget build(BuildContext context) => ListenableSelector(
-        listenable: Home.of(context),
-        selector: (scope) => scope.counter,
-        builder: (context, scope, counter, _) => Row(
+  Widget build(BuildContext context) {
+    return ListenableSelector(
+      listenable: Home.of(context),
+      selector: (scope) => scope.counter,
+      builder: (context, scope, counter, _) {
+        return Row(
           mainAxisSize: MainAxisSize.min,
           textBaseline: TextBaseline.alphabetic,
           children: [
@@ -34,6 +36,8 @@ class _HomeCounterState extends State<HomeCounter> {
               icon: const Icon(Icons.add_circle),
             ),
           ],
-        ),
-      );
+        );
+      },
+    );
+  }
 }

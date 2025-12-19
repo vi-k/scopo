@@ -2,7 +2,7 @@ part of '../scope_initializer.dart';
 
 final class ScopeStreamInitializer<T extends Object?>
     extends ScopeStreamInitializerBase<ScopeStreamInitializer<T>, T> {
-  final Stream<ScopeProcessState<T>> Function() _init;
+  final Stream<ScopeProcessState<Object, T>> Function() _init;
   final FutureOr<void> Function(T value) _dispose;
   final Widget Function(BuildContext context)? _buildOnWaitingForPrevious;
   final Widget Function(BuildContext context, Object? progress)
@@ -12,11 +12,12 @@ final class ScopeStreamInitializer<T extends Object?>
     BuildContext context,
     Object error,
     StackTrace stackTrace,
+    Object? progress,
   ) _buildOnError;
 
   const ScopeStreamInitializer({
     super.key,
-    required Stream<ScopeProcessState<T>> Function() init,
+    required Stream<ScopeProcessState<Object, T>> Function() init,
     required FutureOr<void> Function(T value) dispose,
     Widget Function(BuildContext context)? buildOnWaitingForPrevious,
     required Widget Function(BuildContext context, Object? progress)
@@ -26,6 +27,7 @@ final class ScopeStreamInitializer<T extends Object?>
       BuildContext context,
       Object error,
       StackTrace stackTrace,
+      Object? progress,
     ) buildOnError,
   })  : _init = init,
         _dispose = dispose,
@@ -35,7 +37,7 @@ final class ScopeStreamInitializer<T extends Object?>
         _buildOnError = buildOnError;
 
   @override
-  Stream<ScopeProcessState<T>> init() => _init();
+  Stream<ScopeProcessState<Object, T>> init() => _init();
 
   @override
   FutureOr<void> dispose(T value) => _dispose(value);
@@ -57,6 +59,44 @@ final class ScopeStreamInitializer<T extends Object?>
     BuildContext context,
     Object error,
     StackTrace stackTrace,
+    Object? progress,
   ) =>
-      _buildOnError(context, error, stackTrace);
+      _buildOnError(context, error, stackTrace, progress);
+
+  static ScopeInitializerContext<ScopeStreamInitializer<T>, T>?
+      maybeOf<T extends Object?>(
+    BuildContext context, {
+    required bool listen,
+  }) =>
+          ScopeModelBottom.maybeOf<
+              ScopeStreamInitializer<T>,
+              ScopeInitializerContext<ScopeStreamInitializer<T>, T>,
+              ScopeStateModel<ScopeInitializerState<T>>>(
+            context,
+            listen: listen,
+          );
+
+  static ScopeInitializerContext<ScopeStreamInitializer<T>, T>
+      of<T extends Object>(
+    BuildContext context, {
+    required bool listen,
+  }) =>
+          ScopeModelBottom.of<
+              ScopeStreamInitializer<T>,
+              ScopeInitializerContext<ScopeStreamInitializer<T>, T>,
+              ScopeStateModel<ScopeInitializerState<T>>>(
+            context,
+            listen: listen,
+          );
+
+  static V select<T extends Object, V extends Object?>(
+    BuildContext context,
+    V Function(ScopeInitializerContext<ScopeStreamInitializer<T>, T> context)
+        selector,
+  ) =>
+      ScopeModelBottom.select<
+          ScopeStreamInitializer<T>,
+          ScopeInitializerContext<ScopeStreamInitializer<T>, T>,
+          ScopeStateModel<ScopeInitializerState<T>>,
+          V>(context, selector);
 }

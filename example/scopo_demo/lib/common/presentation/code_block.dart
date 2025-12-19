@@ -17,19 +17,21 @@ class CodeBlock extends StatelessWidget {
   });
 
   @override
-  Widget build(BuildContext context) => Padding(
-    padding: const EdgeInsets.only(top: 8),
-    // ignore: use_decorated_box
-    child: Container(
-      decoration: BoxDecoration(
-        borderRadius: borderRadius,
-        border: Border.all(
-          color:
-              borderColor ??
-              Theme.of(context).colorScheme.surfaceContainerHighest,
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(top: 8),
+      // ignore: use_decorated_box
+      child: Container(
+        decoration: BoxDecoration(
+          borderRadius: borderRadius,
+          border: Border.all(
+            color:
+                borderColor ??
+                Theme.of(context).colorScheme.surfaceContainerHighest,
+          ),
         ),
+        child: Code(code, borderRadius: borderRadius, fontSize: fontSize),
       ),
-      child: Code(code, borderRadius: borderRadius, fontSize: fontSize),
-    ),
-  );
+    );
+  }
 }

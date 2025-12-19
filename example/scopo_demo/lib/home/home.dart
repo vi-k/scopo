@@ -8,8 +8,9 @@ import '../common/data/fake_services/some_bloc.dart';
 import '../common/data/fake_services/some_controller.dart';
 import '../common/presentation/animated_progress_indicator.dart';
 import '../common/presentation/sized_tab_bar.dart';
-import '../data_access_demo/data_access_demo.dart';
-import '../scope_initializer_demo/scope_state_manager_demo.dart';
+import 'demos/data_access_demo/data_access_demo.dart';
+import 'demos/scope_demo/scope_demo.dart';
+import 'demos/scope_initializer_demo/scope_initializer_demo.dart';
 import 'home_counter.dart';
 import 'home_deps.dart';
 import 'home_navigation_block.dart';
@@ -50,68 +51,69 @@ final class Home extends Scope<Home, HomeDeps, HomeContent> {
 
   @override
   Widget wrapContent(HomeDeps deps, Widget child) => NavigationNode(
-        isRoot: isRoot,
-        onPop: (context, result) async {
-          await Home.of(context).close();
-          return true;
-        },
-        child: child,
-      );
+    isRoot: isRoot,
+    onPop: (context, result) async {
+      await Home.of(context).close();
+      return true;
+    },
+    child: child,
+  );
 
   @override
   HomeContent createContent() => HomeContent();
 }
 
 class HomeAppBar extends AppBar {
-  HomeAppBar(
-    BuildContext context, {
-    super.key,
-    bool withTabs = true,
-  }) : super(
-          title: Text('$Home'),
-          actions: [
-            ValueListenableBuilder<bool>(
-              valueListenable: App.of(context).deps.connectivity,
-              builder: (context, isConnected, _) => Icon(
+  HomeAppBar(BuildContext context, {super.key, bool withTabs = true})
+    : super(
+        title: Text('$Home'),
+        actions: [
+          ValueListenableBuilder<bool>(
+            valueListenable: App.of(context).deps.connectivity,
+            builder: (context, isConnected, _) {
+              return Icon(
                 color: isConnected ? null : Theme.of(context).colorScheme.error,
                 isConnected
                     ? Icons.signal_cellular_4_bar
                     : Icons.signal_cellular_connected_no_internet_0_bar,
-              ),
-            ),
-            IconButton(
-              onPressed: () {
-                ThemeManager.of(context, listen: false).toggleBrightness();
-              },
-              onLongPress: () {
-                ThemeManager.of(context, listen: false).resetBrightness();
-              },
-              icon: Icon(
-                switch (ThemeManager.select(context, (m) => m.brightness)) {
-                  Brightness.dark => Icons.light_mode,
-                  Brightness.light => Icons.dark_mode,
-                },
-              ),
-            ),
-          ],
-          bottom: withTabs
-              ? SizedTabBar(
+              );
+            },
+          ),
+          IconButton(
+            onPressed: () {
+              ThemeManager.of(context, listen: false).toggleBrightness();
+            },
+            onLongPress: () {
+              ThemeManager.of(context, listen: false).resetBrightness();
+            },
+            icon: Icon(switch (ThemeManager.select(
+              context,
+              (m) => m.brightness,
+            )) {
+              Brightness.dark => Icons.light_mode,
+              Brightness.light => Icons.dark_mode,
+            }),
+          ),
+        ],
+        bottom:
+            withTabs
+                ? SizedTabBar(
                   height: 32,
                   isScrollable: true,
                   labelStyle: Theme.of(context).textTheme.bodySmall,
                   labelColor: Theme.of(context).colorScheme.onPrimary,
-                  unselectedLabelColor: Theme.of(context)
-                      .colorScheme
-                      .onPrimary
-                      .withValues(alpha: 0.5),
+                  unselectedLabelColor: Theme.of(
+                    context,
+                  ).colorScheme.onPrimary.withValues(alpha: 0.5),
                   tabs: const [
                     Tab(text: 'Data access'),
                     Tab(text: 'Async initialization'),
+                    Tab(text: 'Scope'),
                     Tab(text: 'Other'),
                   ],
                 )
-              : null,
-        );
+                : null,
+      );
 }
 
 /// The screen displays the progress of dependency initialization, mimicking
@@ -127,18 +129,22 @@ class _FakeContent extends StatefulWidget {
 
 class _FakeContentState extends State<_FakeContent> {
   @override
-  Widget build(BuildContext context) => Scaffold(
-        appBar: HomeAppBar(context, withTabs: false),
-        body: Padding(
-          padding: const EdgeInsets.all(8),
-          child: Center(
-            child: AnimatedProgressIndicator(
-              value: widget.progress,
-              builder: (value) => CircularProgressIndicator(value: value),
-            ),
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: HomeAppBar(context, withTabs: false),
+      body: Padding(
+        padding: const EdgeInsets.all(8),
+        child: Center(
+          child: AnimatedProgressIndicator(
+            value: widget.progress,
+            builder: (value) {
+              return CircularProgressIndicator(value: value);
+            },
           ),
         ),
-      );
+      ),
+    );
+  }
 }
 
 mixin ChangeNotifierOnState<T extends StatefulWidget> on State<T>
@@ -185,65 +191,20 @@ final class HomeContent extends ScopeContent<Home, HomeDeps, HomeContent> {
   }
 
   Future<void> openDialog(BuildContext context) => showAdaptiveDialog<void>(
-        useRootNavigator: false,
-        context: context,
-        barrierDismissible: true,
-        builder: (context) => Dialog(
-          backgroundColor: Theme.of(
-            context,
-          ).colorScheme.surface.withValues(alpha: 0.7),
-          clipBehavior: Clip.antiAlias,
-          child: IntrinsicWidth(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                AppBar(
-                  title: const Text('Dialog'),
-                  primary: false,
-                ),
-                const SizedBox(height: 20),
-                const HomeCounter(),
-                const SizedBox(height: 20),
-              ],
-            ),
-          ),
-        ),
-      );
-
-  void openBottomSheet(BuildContext context) {
-    showBottomSheet(
-      context: context,
-      clipBehavior: Clip.antiAlias,
-      builder: (context) => SafeArea(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            AppBar(title: const Text('Bottom sheet')),
-            const SizedBox(height: 20),
-            const HomeCounter(),
-            const SizedBox(height: 20),
-            ElevatedButton(
-              onPressed: () {
-                openBottomSheet(context);
-              },
-              child: const Text('more'),
-            ),
-            const SizedBox(height: 20),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Future<void> openModalBottomSheet(BuildContext context) =>
-      showModalBottomSheet(
-        context: context,
+    useRootNavigator: false,
+    context: context,
+    barrierDismissible: true,
+    builder: (context) {
+      return Dialog(
+        backgroundColor: Theme.of(
+          context,
+        ).colorScheme.surface.withValues(alpha: 0.7),
         clipBehavior: Clip.antiAlias,
-        builder: (context) => SafeArea(
+        child: IntrinsicWidth(
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              AppBar(title: const Text('Bottom sheet')),
+              AppBar(title: const Text('Dialog'), primary: false),
               const SizedBox(height: 20),
               const HomeCounter(),
               const SizedBox(height: 20),
@@ -251,17 +212,68 @@ final class HomeContent extends ScopeContent<Home, HomeDeps, HomeContent> {
           ),
         ),
       );
+    },
+  );
+
+  void openBottomSheet(BuildContext context) {
+    showBottomSheet(
+      context: context,
+      clipBehavior: Clip.antiAlias,
+      builder: (context) {
+        return SafeArea(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              AppBar(title: const Text('Bottom sheet')),
+              const SizedBox(height: 20),
+              const HomeCounter(),
+              const SizedBox(height: 20),
+              ElevatedButton(
+                onPressed: () {
+                  openBottomSheet(context);
+                },
+                child: const Text('more'),
+              ),
+              const SizedBox(height: 20),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  Future<void> openModalBottomSheet(BuildContext context) =>
+      showModalBottomSheet(
+        context: context,
+        clipBehavior: Clip.antiAlias,
+        builder: (context) {
+          return SafeArea(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                AppBar(title: const Text('Bottom sheet')),
+                const SizedBox(height: 20),
+                const HomeCounter(),
+                const SizedBox(height: 20),
+              ],
+            ),
+          );
+        },
+      );
 
   @override
-  Widget build(BuildContext context) => Builder(
-        builder: (context) => DefaultTabController(
-          length: 3,
+  Widget build(BuildContext context) {
+    return Builder(
+      builder: (context) {
+        return DefaultTabController(
+          length: 4,
           child: Scaffold(
             appBar: HomeAppBar(context),
             body: TabBarView(
               children: [
                 const DataAccessDemo(),
-                const ScopeStateBuilderDemo(),
+                const ScopeInitializerDemo(),
+                const ScopeDemo(),
                 ListView(
                   children: [
                     const Text('You have pushed this buttons many times:'),
@@ -282,6 +294,8 @@ final class HomeContent extends ScopeContent<Home, HomeDeps, HomeContent> {
               ],
             ),
           ),
-        ),
-      );
+        );
+      },
+    );
+  }
 }

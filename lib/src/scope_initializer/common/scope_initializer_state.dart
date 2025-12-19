@@ -9,28 +9,25 @@ final class ScopeInitializerWaitingForPrevious<T extends Object?>
   const ScopeInitializerWaitingForPrevious();
 }
 
-/// Public name.
-sealed class ScopeProcessState<T extends Object?>
+final class ScopeInitializerProgress<T extends Object?>
     extends ScopeInitializerState<T> {
-  const ScopeProcessState();
-}
-
-final class ScopeProgressV2<T extends Object?> extends ScopeProcessState<T> {
   final Object? progress;
 
-  const ScopeProgressV2([this.progress]);
+  const ScopeInitializerProgress([this.progress]);
 }
 
-final class ScopeReadyV2<T extends Object?> extends ScopeProcessState<T> {
+final class ScopeInitializerReady<T extends Object?>
+    extends ScopeInitializerState<T> {
   final T value;
 
-  const ScopeReadyV2(this.value);
+  const ScopeInitializerReady(this.value);
 }
 
 final class ScopeInitializerError<T extends Object?>
     extends ScopeInitializerState<T> {
   final Object error;
   final StackTrace stackTrace;
+  final Object? progress;
 
-  const ScopeInitializerError(this.error, this.stackTrace);
+  const ScopeInitializerError(this.error, this.stackTrace, {this.progress});
 }

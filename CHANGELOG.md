@@ -1,7 +1,8 @@
 ## 0.3.0
 
-* add `ScopeProvider`, `ScopeNotifier`, `ScopeStateBuilder`,
+* add `ScopeModel`, `ScopeNotifier`, `ScopeStateBuilder`,
   `ScopeAsyncInitializer`, `ScopeStreamInitializer`.
+* new `Scope` (`ScopeV2`).
 * remake scopo_demo
 
 ## 0.2.2+1

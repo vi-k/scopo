@@ -17,8 +17,10 @@ class MarkdownBlock extends StatelessWidget {
   });
 
   @override
-  Widget build(BuildContext context) => Padding(
-    padding: EdgeInsets.only(top: indent),
-    child: Markdown(data, selectable: selectable, fontSize: fontSize),
-  );
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: EdgeInsets.only(top: indent),
+      child: Markdown(data, selectable: selectable, fontSize: fontSize),
+    );
+  }
 }

@@ -21,43 +21,45 @@ class Expansion extends StatelessWidget {
   });
 
   @override
-  Widget build(BuildContext context) => Padding(
-    padding: const EdgeInsets.only(top: 8),
-    child: ExpansionTile(
-      title: title,
-      dense: true,
-      initiallyExpanded: initiallyExpanded,
-      maintainState: true,
-      shape: RoundedRectangleBorder(
-        side: BorderSide(
-          color: borderColor ?? Theme.of(context).colorScheme.primary,
-        ),
-        borderRadius: BorderRadius.circular(4),
-      ),
-      collapsedShape: RoundedRectangleBorder(
-        side: BorderSide(
-          color: borderColor ?? Theme.of(context).colorScheme.primary,
-        ),
-        borderRadius: BorderRadius.circular(4),
-      ),
-      collapsedBackgroundColor:
-          titleBackgroundColor ??
-          Theme.of(context).colorScheme.surfaceContainerHighest,
-      backgroundColor:
-          titleBackgroundColor ??
-          Theme.of(context).colorScheme.surfaceContainerHighest,
-      children: [
-        Container(
-          color:
-              contentBackgroundColor ??
-              Theme.of(context).colorScheme.surfaceContainer,
-          padding: contentPadding,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: children,
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(top: 8),
+      child: ExpansionTile(
+        title: title,
+        dense: true,
+        initiallyExpanded: initiallyExpanded,
+        maintainState: true,
+        shape: RoundedRectangleBorder(
+          side: BorderSide(
+            color: borderColor ?? Theme.of(context).colorScheme.primary,
           ),
+          borderRadius: BorderRadius.circular(4),
         ),
-      ],
-    ),
-  );
+        collapsedShape: RoundedRectangleBorder(
+          side: BorderSide(
+            color: borderColor ?? Theme.of(context).colorScheme.primary,
+          ),
+          borderRadius: BorderRadius.circular(4),
+        ),
+        collapsedBackgroundColor:
+            titleBackgroundColor ??
+            Theme.of(context).colorScheme.surfaceContainerHighest,
+        backgroundColor:
+            titleBackgroundColor ??
+            Theme.of(context).colorScheme.surfaceContainerHighest,
+        children: [
+          Container(
+            color:
+                contentBackgroundColor ??
+                Theme.of(context).colorScheme.surfaceContainer,
+            padding: contentPadding,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: children,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
 }

@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import 'blinking_box.dart';
 
 class TitledBox extends StatelessWidget {
-  final Widget title;
+  final Widget? title;
   final Color? titleBackgroundColor;
   final Color? titleForegroundColor;
   final Color? backgroundColor;
@@ -14,7 +14,7 @@ class TitledBox extends StatelessWidget {
 
   const TitledBox({
     super.key,
-    required this.title,
+    this.title,
     this.titleBackgroundColor,
     this.titleForegroundColor,
     this.backgroundColor,
@@ -43,24 +43,25 @@ class TitledBox extends StatelessWidget {
       child: Table(
         defaultColumnWidth: const IntrinsicColumnWidth(),
         children: [
-          TableRow(
-            children: [
-              ColoredBox(
-                color: titleBackgroundColor,
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 8),
-                  child: DefaultTextStyle(
-                    style: DefaultTextStyle.of(context).style.copyWith(
-                      color:
-                          titleForegroundColor ??
-                          Theme.of(context).colorScheme.onPrimary,
+          if (title != null)
+            TableRow(
+              children: [
+                ColoredBox(
+                  color: titleBackgroundColor,
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 8),
+                    child: DefaultTextStyle(
+                      style: DefaultTextStyle.of(context).style.copyWith(
+                        color:
+                            titleForegroundColor ??
+                            Theme.of(context).colorScheme.onPrimary,
+                      ),
+                      child: Center(child: title),
                     ),
-                    child: Center(child: title),
                   ),
                 ),
-              ),
-            ],
-          ),
+              ],
+            ),
           TableRow(
             children: [
               DefaultTextStyle(

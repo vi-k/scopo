@@ -17,12 +17,7 @@ void main() {
 
   ScopeConfig.log.isEnabled = true;
   ScopeConfig.logError.isEnabled = true;
-  ScopeConfig.logError.log = (
-    source,
-    message,
-    error,
-    stackTrace,
-  ) {
+  ScopeConfig.logError.log = (source, message, error, stackTrace) {
     errorPrinter.print(
       ScopeLog.buildDefaultMessage(
         source,
@@ -42,7 +37,9 @@ void main() {
     App(
       init: AppDeps.init,
       onInit: (progress) => SplashScreen(progress: progress),
-      builder: (context) => const Home(init: HomeDeps.init),
+      builder: (context) {
+        return const Home(init: HomeDeps.init);
+      },
     ),
   );
 }

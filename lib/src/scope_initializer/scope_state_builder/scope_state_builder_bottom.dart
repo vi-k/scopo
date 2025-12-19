@@ -16,32 +16,32 @@ abstract base class ScopeStateBuilderBottom<
   @override
   E createScopeElement();
 
-  static C? maybeOf<W extends ScopeStateBuilderBase<W, S>,
-          C extends ScopeContext<W, ScopeStateModel<S>>, S extends Object>(
+  static E? maybeOf<W extends ScopeStateBuilderBottom<W, E, S>,
+          E extends ScopeStateBuilderElementBase<W, E, S>, S extends Object>(
     BuildContext context, {
     required bool listen,
   }) =>
-      ScopeProviderBottom.maybeOf<W, C, ScopeStateModel<S>>(
+      ScopeModelBottom.maybeOf<W, E, ScopeStateModel<S>>(
         context,
         listen: listen,
       );
 
-  static C of<W extends ScopeStateBuilderBase<W, S>,
-          C extends ScopeContext<W, ScopeStateModel<S>>, S extends Object>(
+  static E of<W extends ScopeStateBuilderBottom<W, E, S>,
+          E extends ScopeStateBuilderElementBase<W, E, S>, S extends Object>(
     BuildContext context, {
     required bool listen,
   }) =>
-      ScopeProviderBottom.of<W, C, ScopeStateModel<S>>(context, listen: listen);
+      ScopeModelBottom.of<W, E, ScopeStateModel<S>>(context, listen: listen);
 
   static V select<
-          W extends ScopeStateBuilderBase<W, S>,
-          C extends ScopeContext<W, ScopeStateModel<S>>,
+          W extends ScopeStateBuilderBottom<W, E, S>,
+          E extends ScopeStateBuilderElementBase<W, E, S>,
           S extends Object,
           V extends Object?>(
     BuildContext context,
-    V Function(C context) selector,
+    V Function(E element) selector,
   ) =>
-      ScopeProviderBottom.select<W, C, ScopeStateModel<S>, V>(
+      ScopeModelBottom.select<W, E, ScopeStateModel<S>, V>(
         context,
         selector,
       );

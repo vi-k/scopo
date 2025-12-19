@@ -15,7 +15,9 @@ final class ThemeManager
   });
 
   @override
-  Widget build(BuildContext context) => builder(context);
+  Widget build(BuildContext context) {
+    return builder(context);
+  }
 
   static ThemeModel of(BuildContext context, {bool listen = true}) =>
       ScopeNotifierBase.of<ThemeManager, ThemeModelNotifier>(

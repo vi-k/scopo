@@ -63,10 +63,11 @@ final class App extends Scope<App, AppDeps, AppContent> {
 
   @override
   Widget wrapContent(AppDeps deps, Widget child) => ThemeManager(
-    create: (context) => ThemeModelNotifier(
-      keyValueService: deps.keyValueService('theme.'),
-      systemBrightness: () => MediaQuery.of(context).platformBrightness,
-    ),
+    create:
+        (context) => ThemeModelNotifier(
+          keyValueService: deps.keyValueService('theme.'),
+          systemBrightness: () => MediaQuery.of(context).platformBrightness,
+        ),
     dispose: (model) => model.dispose(),
     builder: (context) {
       final themeModel = ThemeManager.of(context);
@@ -105,5 +106,7 @@ final class AppContent extends ScopeContent<App, AppDeps, AppContent> {
   }
 
   @override
-  Widget build(BuildContext context) => App.paramsOf(context).builder(context);
+  Widget build(BuildContext context) {
+    return App.paramsOf(context).builder(context);
+  }
 }

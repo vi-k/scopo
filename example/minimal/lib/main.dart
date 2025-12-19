@@ -124,7 +124,9 @@ final class AppContent extends ScopeContent<App, AppDeps, AppContent> {
   }
 
   @override
-  Widget build(BuildContext context) => HomeScreen();
+  Widget build(BuildContext context) {
+    return HomeScreen();
+  }
 }
 
 class HomeScreen extends StatelessWidget {
@@ -135,12 +137,14 @@ class HomeScreen extends StatelessWidget {
     return Scaffold(
       body: ListenableBuilder(
         listenable: App.of(context),
-        builder: (context, _) => Center(
-          child: Text(
-            '${App.of(context).counter}',
-            style: Theme.of(context).textTheme.displayLarge,
-          ),
-        ),
+        builder: (context, _) {
+          return Center(
+            child: Text(
+              '${App.of(context).counter}',
+              style: Theme.of(context).textTheme.displayLarge,
+            ),
+          );
+        },
       ),
       floatingActionButton: FloatingActionButton(
         onPressed: App.of(context).increment,

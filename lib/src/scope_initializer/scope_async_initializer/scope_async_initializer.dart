@@ -57,4 +57,41 @@ final class ScopeAsyncInitializer<T extends Object?>
     StackTrace stackTrace,
   ) =>
       _buildOnError(context, error, stackTrace);
+
+  static ScopeInitializerContext<ScopeAsyncInitializer<T>, T>?
+      maybeOf<T extends Object?>(
+    BuildContext context, {
+    required bool listen,
+  }) =>
+          ScopeModelBottom.maybeOf<
+              ScopeAsyncInitializer<T>,
+              ScopeInitializerContext<ScopeAsyncInitializer<T>, T>,
+              ScopeStateModel<ScopeInitializerState<T>>>(
+            context,
+            listen: listen,
+          );
+
+  static ScopeInitializerContext<ScopeAsyncInitializer<T>, T>
+      of<T extends Object>(
+    BuildContext context, {
+    required bool listen,
+  }) =>
+          ScopeModelBottom.of<
+              ScopeAsyncInitializer<T>,
+              ScopeInitializerContext<ScopeAsyncInitializer<T>, T>,
+              ScopeStateModel<ScopeInitializerState<T>>>(
+            context,
+            listen: listen,
+          );
+
+  static V select<T extends Object, V extends Object?>(
+    BuildContext context,
+    V Function(ScopeInitializerContext<ScopeAsyncInitializer<T>, T> context)
+        selector,
+  ) =>
+      ScopeModelBottom.select<
+          ScopeAsyncInitializer<T>,
+          ScopeInitializerContext<ScopeAsyncInitializer<T>, T>,
+          ScopeStateModel<ScopeInitializerState<T>>,
+          V>(context, selector);
 }

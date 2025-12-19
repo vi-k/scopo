@@ -8,6 +8,44 @@ abstract base class ScopeAsyncInitializerBottom<
   const ScopeAsyncInitializerBottom({
     super.key,
   }) : super(initialState: const ScopeInitializerWaitingForPrevious());
+
+  static E? maybeOf<
+          W extends ScopeAsyncInitializerBottom<W, E, T>,
+          E extends ScopeAsyncInitializerElementBase<W, E, T>,
+          T extends Object?>(
+    BuildContext context, {
+    required bool listen,
+  }) =>
+      ScopeModelBottom.maybeOf<W, E, ScopeStateModel<ScopeInitializerState<T>>>(
+        context,
+        listen: listen,
+      );
+
+  static E of<
+          W extends ScopeAsyncInitializerBottom<W, E, T>,
+          E extends ScopeAsyncInitializerElementBase<W, E, T>,
+          T extends Object?>(
+    BuildContext context, {
+    required bool listen,
+  }) =>
+      ScopeModelBottom.of<W, E, ScopeStateModel<ScopeInitializerState<T>>>(
+        context,
+        listen: listen,
+      );
+
+  static V select<
+          W extends ScopeAsyncInitializerBottom<W, E, T>,
+          E extends ScopeAsyncInitializerElementBase<W, E, T>,
+          T extends Object?,
+          V extends Object?>(
+    BuildContext context,
+    V Function(E element) selector,
+  ) =>
+      ScopeModelBottom.select<W, E, ScopeStateModel<ScopeInitializerState<T>>,
+          V>(
+        context,
+        selector,
+      );
 }
 
 abstract base class ScopeAsyncInitializerElementBase<
@@ -15,17 +53,18 @@ abstract base class ScopeAsyncInitializerElementBase<
         E extends ScopeAsyncInitializerElementBase<W, E, T>,
         T extends Object?>
     extends ScopeStateBuilderElementBase<W, E, ScopeInitializerState<T>>
-    with ScopeAsyncDisposerElementMixin<W, T> {
+    with ScopeInitializerElementMixin<W, T>
+    implements ScopeInitializerContext<W, T> {
   ScopeAsyncInitializerElementBase(super.widget);
 
   @override
-  Key? get _disposeKey;
+  Key? get disposeKey;
 
   @override
-  Duration? get _disposeTimeout;
+  Duration? get disposeTimeout;
 
   @override
-  void Function()? get _onDisposeTimeout;
+  void Function()? get onDisposeTimeout;
 
   @override
   Future<void> runInitAsync() async {
@@ -34,10 +73,10 @@ abstract base class ScopeAsyncInitializerElementBase<
     try {
       if (!mounted) return;
 
-      _notifier.update(const ScopeProgressV2());
+      _notifier.update(const ScopeInitializerProgress());
       final value = await initAsync();
       if (mounted) {
-        _notifier.update(ScopeReadyV2(value));
+        _notifier.update(ScopeInitializerReady(value));
       }
     } on Object catch (error, stackTrace) {
       if (mounted) {
@@ -54,5 +93,5 @@ abstract base class ScopeAsyncInitializerElementBase<
   FutureOr<void> disposeAsync(W widget, T value);
 
   @override
-  Widget buildState(ScopeInitializerState<T> state);
+  Widget buildOnState(ScopeInitializerState<T> state);
 }

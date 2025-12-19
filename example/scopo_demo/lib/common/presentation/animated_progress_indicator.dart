@@ -69,11 +69,15 @@ class _AnimatedProgressIndicatorState extends State<AnimatedProgressIndicator>
   }
 
   @override
-  Widget build(BuildContext context) => switch (_animationController) {
-    null => widget.builder(null),
-    final AnimationController controller => AnimatedBuilder(
-      animation: controller,
-      builder: (_, __) => widget.builder(controller.value),
-    ),
-  };
+  Widget build(BuildContext context) {
+    return switch (_animationController) {
+      null => widget.builder(null),
+      final AnimationController controller => AnimatedBuilder(
+        animation: controller,
+        builder: (_, __) {
+          return widget.builder(controller.value);
+        },
+      ),
+    };
+  }
 }
