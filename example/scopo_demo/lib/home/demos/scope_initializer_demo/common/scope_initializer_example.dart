@@ -177,7 +177,7 @@ class _ConsumerState extends State<_Consumer> {
               '''
               Removed from widget tree
 
-              Asynchronous disposal takes **2 seconds**
+              **Disposal takes 1 second**
               '''.trimIndent(),
               fontSize: 12,
             ),

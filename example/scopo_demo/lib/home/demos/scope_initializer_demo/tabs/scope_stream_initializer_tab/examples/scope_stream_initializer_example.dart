@@ -5,6 +5,7 @@ import 'package:scopo/scopo.dart';
 
 import '../../../../../../common/presentation/animated_progress_indicator.dart';
 import '../../../../../../common/presentation/box.dart';
+import '../../../../../../common/presentation/markdown.dart';
 import '../../../common/scope_initializer_example.dart';
 
 class ScopeStreamInitializerExample extends StatelessWidget {
@@ -13,7 +14,7 @@ class ScopeStreamInitializerExample extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return ScopeInitializerExample(
-      consumersCount: 4,
+      consumersCount: 3,
       builder: (context, withError, log) {
         return ScopeStreamInitializer<int>(
           init: () async* {
@@ -27,16 +28,17 @@ class ScopeStreamInitializerExample extends StatelessWidget {
                 // ignore: only_throw_errors
                 throw 'test error';
               }
-              yield ScopeProgressV2(nextProgress);
+              yield ScopeProgress(nextProgress);
               if (nextProgress >= 1.0) break;
             }
 
             await Future<void>.delayed(step);
-            yield ScopeReadyV2(42);
+            yield ScopeReady(42);
           },
           dispose: (_) async {
-            await Future<void>.delayed(const Duration(seconds: 2));
+            await Future<void>.delayed(const Duration(seconds: 1));
           },
+          disposeKey: const Key('scope_stream_initializer_example'),
           buildOnWaitingForPrevious: (context) {
             log('onWaitingForPrevious');
             return const Box(child: Icon(Icons.lock_clock));
@@ -72,8 +74,9 @@ class ScopeStreamInitializerExample extends StatelessWidget {
             return Box(
               borderColor: Theme.of(context).colorScheme.error,
               foregroundColor: Theme.of(context).colorScheme.error,
-              child: Text(
-                '$error${progress is double ? ': initialized at ${(progress * 100).toStringAsFixed(0)}%' : ''}',
+              child: Markdown(
+                color: Theme.of(context).colorScheme.error,
+                '**$error**${progress == null ? '' : ' on $progress'}',
               ),
             );
           },

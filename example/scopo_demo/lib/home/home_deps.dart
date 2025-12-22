@@ -13,12 +13,12 @@ import 'home.dart';
 /// Dependencies for [Home] scope.
 ///
 /// They are initialized asynchronously in the [init] stream.
-class HomeDeps implements ScopeDeps {
+class HomeDependencies implements ScopeDependencies {
   final HttpClient httpClient;
   final SomeBloc someBloc;
   final SomeController someController;
 
-  HomeDeps({
+  HomeDependencies({
     required this.httpClient,
     required this.someBloc,
     required this.someController,
@@ -29,7 +29,7 @@ class HomeDeps implements ScopeDeps {
   ///
   /// It simulates random initialization errors using [AppEnvironment]
   /// probabilities.
-  static Stream<ScopeInitState<double, HomeDeps>> init() async* {
+  static Stream<ScopeInitState<double, HomeDependencies>> init() async* {
     HttpClient? httpClient;
     SomeBloc? someBloc;
     SomeController? someController;
@@ -44,7 +44,7 @@ class HomeDeps implements ScopeDeps {
     final depWithFakeError = random.nextInt(progressIterator.count);
     // ignore: avoid_print
     print(
-      '[$HomeDeps] '
+      '[$HomeDependencies] '
       '${throwFakeError ? 'throw fake error on dep #${depWithFakeError + 1}' : 'no throw fake error'}',
     );
     void randomFakeError(String text) {
@@ -60,13 +60,14 @@ class HomeDeps implements ScopeDeps {
       yield ScopeProgress(progressIterator.nextProgress());
 
       final someBlocCompleter = Completer<void>();
-      someBloc = SomeBloc()
-        ..add(
-          SomeBlocLoad(
-            fakeError: throwFakeError &&
-                depWithFakeError == progressIterator.currentStep,
-          ),
-        );
+      someBloc =
+          SomeBloc()..add(
+            SomeBlocLoad(
+              fakeError:
+                  throwFakeError &&
+                  depWithFakeError == progressIterator.currentStep,
+            ),
+          );
       someBloc.stream.listen((state) {
         switch (state) {
           case SomeBlocInitial():
@@ -87,7 +88,7 @@ class HomeDeps implements ScopeDeps {
       yield ScopeProgress(progressIterator.nextProgress());
 
       yield ScopeReady(
-        HomeDeps(
+        HomeDependencies(
           httpClient: httpClient,
           someBloc: someBloc,
           someController: someController,

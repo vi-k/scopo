@@ -6,39 +6,55 @@ import '../common/data/fake_services/connectivity.dart';
 import '../common/data/fake_services/http_client.dart';
 import 'app_deps.dart';
 import 'app_error.dart';
-import 'theme_manager/static_themes.dart';
 import 'theme_manager/theme_manager.dart';
-import 'theme_manager/theme_model.dart';
 
 /// The root scope.
 ///
 /// Initializes global dependencies like [HttpClient], [Connectivity], and
 /// [Analytics].
-final class App extends Scope<App, AppDeps, AppContent> {
+final class App extends Scope<App, AppDependencies, AppState> {
+  final ScopeInitFunction<double, AppDependencies> _init;
   final ScopeOnInitCallback<double> _onInit;
   final Widget Function(BuildContext context) builder;
 
   const App({
     super.key,
-    required ScopeInitFunction<double, AppDeps> super.init,
+    required ScopeInitFunction<double, AppDependencies> init,
     required ScopeOnInitCallback<double> onInit,
     required this.builder,
-  }) : _onInit = onInit,
+  }) : _init = init,
+       _onInit = onInit,
        super(pauseAfterInitialization: const Duration(milliseconds: 500));
+
+  @override
+  Stream<ScopeInitState<double, AppDependencies>> init() => _init();
 
   /// Provides access the scope params, i.e. to the widget [App].
   static App paramsOf(BuildContext context, {bool listen = true}) =>
-      Scope.paramsOf<App, AppDeps, AppContent>(context, listen: listen);
+      Scope.paramsOf<App, AppDependencies, AppState>(context, listen: listen);
 
-  @override
-  bool updateParamsShouldNotify(App oldWidget) => false;
+  static V selectParam<V extends Object?>(
+    BuildContext context,
+    V Function(App widget) selector,
+  ) => Scope.selectParam<App, AppDependencies, AppState, V>(
+    context,
+    (widget) => selector(widget),
+  );
 
-  /// Provides access the scope content/dependencies.
-  static AppContent of(BuildContext context) =>
-      Scope.of<App, AppDeps, AppContent>(context);
+  static AppState? maybeOf(BuildContext context) =>
+      Scope.maybeOf<App, AppDependencies, AppState>(context);
 
-  static AppContent? maybeOf(BuildContext context) =>
-      Scope.maybeOf<App, AppDeps, AppContent>(context);
+  /// Provides access the scope state.
+  static AppState of(BuildContext context) =>
+      Scope.of<App, AppDependencies, AppState>(context);
+
+  static V select<V extends Object?>(
+    BuildContext context,
+    V Function(AppState state) selector,
+  ) => Scope.select<App, AppDependencies, AppState, V>(
+    context,
+    (state) => selector(state),
+  );
 
   Widget _app({
     ThemeMode mode = ThemeMode.system,
@@ -55,20 +71,24 @@ final class App extends Scope<App, AppDeps, AppContent> {
   );
 
   @override
-  Widget onInit(Object? progress) => _app(child: _onInit(progress as double?));
+  Widget buildOnInitializing(BuildContext context, Object? progress) =>
+      _app(child: _onInit(context, progress as double?));
 
   @override
-  Widget onError(Object error, StackTrace stackTrace) =>
-      _app(child: AppError(error, stackTrace));
+  Widget buildOnError(
+    BuildContext context,
+    Object error,
+    StackTrace stackTrace,
+    Object? progress,
+  ) => _app(child: AppError(error, stackTrace));
 
   @override
-  Widget wrapContent(AppDeps deps, Widget child) => ThemeManager(
-    create:
-        (context) => ThemeModelNotifier(
-          keyValueService: deps.keyValueService('theme.'),
-          systemBrightness: () => MediaQuery.of(context).platformBrightness,
-        ),
-    dispose: (model) => model.dispose(),
+  Widget wrapState(
+    BuildContext context,
+    AppDependencies dependencies,
+    Widget child,
+  ) => ThemeManager(
+    keyValueService: dependencies.keyValueService('theme.'),
     builder: (context) {
       final themeModel = ThemeManager.of(context);
 
@@ -96,15 +116,11 @@ final class App extends Scope<App, AppDeps, AppContent> {
   );
 
   @override
-  AppContent createContent() => AppContent();
+  AppState createState() => AppState();
 }
 
-/// [AppContent] is used to manage UI state and logic for [App] scope.
-final class AppContent extends ScopeContent<App, AppDeps, AppContent> {
-  void updateState() {
-    setState(() {});
-  }
-
+/// [AppState] is used to manage UI state and logic for [App] scope.
+final class AppState extends ScopeState<App, AppDependencies, AppState> {
   @override
   Widget build(BuildContext context) {
     return App.paramsOf(context).builder(context);

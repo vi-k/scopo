@@ -8,10 +8,6 @@ abstract base class ScopeNotifierBottom<
     super.key,
   });
 
-  // +++
-  // @override
-  // bool updateShouldNotify(ScopeNotifierBottom<W, E, T> oldWidget) => false;
-
   @override
   E createScopeElement();
 

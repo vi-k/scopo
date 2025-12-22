@@ -3,49 +3,65 @@ import 'package:scopo/scopo.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {
-  runApp(App(init: AppDeps.init));
+  runApp(App(init: AppDependencies.init));
 }
 
-final class App extends Scope<App, AppDeps, AppContent> {
+final class App extends Scope<App, AppDependencies, AppState> {
+  final ScopeInitFunction<String, AppDependencies> _init;
+
   const App({
     super.key,
-    required ScopeInitFunction<String, AppDeps> super.init,
-  });
-
-  static App paramsOf(BuildContext context, {bool listen = true}) =>
-      Scope.paramsOf<App, AppDeps, AppContent>(context, listen: listen);
+    required ScopeInitFunction<String, AppDependencies> init,
+  }) : _init = init;
 
   @override
-  bool updateParamsShouldNotify(App oldWidget) => false;
+  Stream<ScopeInitState<String, AppDependencies>> init() => _init();
 
-  static AppContent of(BuildContext context) =>
-      Scope.of<App, AppDeps, AppContent>(context);
+  static App paramsOf(BuildContext context, {bool listen = true}) =>
+      Scope.paramsOf<App, AppDependencies, AppState>(context, listen: listen);
+
+  static AppState of(BuildContext context) =>
+      Scope.of<App, AppDependencies, AppState>(context);
+
+  static V select<V extends Object?>(
+    BuildContext context,
+    V Function(AppState state) selector,
+  ) => Scope.select<App, AppDependencies, AppState, V>(
+    context,
+    (state) => selector(state),
+  );
 
   Widget _app({required Widget child}) {
     return MaterialApp(
       title: 'scopo minimal demo',
       theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(
-          seedColor: Colors.deepPurple,
-        ),
+        colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
       ),
       home: child,
     );
   }
 
   @override
-  Widget onInit(Object? progress) =>
+  Widget buildOnInitializing(BuildContext context, Object? progress) =>
       _app(child: _SplashScreen(progress: progress as String?));
 
   @override
-  Widget onError(Object error, StackTrace stackTrace) =>
-      _app(child: _ErrorScreen(error: error));
+  Widget buildOnError(
+    BuildContext context,
+    Object error,
+    StackTrace stackTrace,
+    Object? progress,
+  ) => _app(child: _ErrorScreen(error: error));
 
   @override
-  Widget wrapContent(AppDeps deps, Widget child) => _app(child: child);
+  Widget wrapState(
+    BuildContext context,
+    AppDependencies dependencies,
+    Widget child,
+  ) => _app(child: child);
 
   @override
-  AppContent createContent() => AppContent();
+  AppState createState() => AppState();
 }
 
 class _SplashScreen extends StatelessWidget {
@@ -55,11 +71,7 @@ class _SplashScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      body: Center(
-        child: Text(progress ?? ''),
-      ),
-    );
+    return Scaffold(body: Center(child: Text(progress ?? '')));
   }
 }
 
@@ -75,24 +87,21 @@ class _ErrorScreen extends StatelessWidget {
       body: Center(
         child: Text(
           '$error',
-          style: Theme.of(context)
-              .textTheme
-              .labelLarge
-              ?.copyWith(color: Theme.of(context).colorScheme.onError),
+          style: Theme.of(context).textTheme.labelLarge?.copyWith(
+            color: Theme.of(context).colorScheme.onError,
+          ),
         ),
       ),
     );
   }
 }
 
-class AppDeps implements ScopeDeps {
+class AppDependencies implements ScopeDependencies {
   final SharedPreferences sharedPreferences;
 
-  AppDeps({
-    required this.sharedPreferences,
-  });
+  AppDependencies({required this.sharedPreferences});
 
-  static Stream<ScopeInitState<String, AppDeps>> init() async* {
+  static Stream<ScopeInitState<String, AppDependencies>> init() async* {
     SharedPreferences? sharedPreferences;
 
     yield ScopeProgress('init $SharedPreferences');
@@ -100,27 +109,30 @@ class AppDeps implements ScopeDeps {
 
     await Future<void>.delayed(const Duration(milliseconds: 500));
 
-    yield ScopeReady(AppDeps(sharedPreferences: sharedPreferences));
+    yield ScopeReady(AppDependencies(sharedPreferences: sharedPreferences));
   }
 
   @override
   Future<void> dispose() async {}
 }
 
-final class AppContent extends ScopeContent<App, AppDeps, AppContent> {
+final class AppState extends ScopeState<App, AppDependencies, AppState> {
   late int _counter;
   int get counter => _counter;
 
   @override
   void initState() {
     super.initState();
-    _counter = App.of(context).deps.sharedPreferences.getInt('counter') ?? 0;
+    _counter =
+        App.of(context).dependencies.sharedPreferences.getInt('counter') ?? 0;
   }
 
   Future<void> increment() async {
     _counter++;
-    notifyListeners();
-    await App.of(context).deps.sharedPreferences.setInt('counter', _counter);
+    notifyDependents();
+    await App.of(
+      context,
+    ).dependencies.sharedPreferences.setInt('counter', _counter);
   }
 
   @override
@@ -134,17 +146,14 @@ class HomeScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final counter = App.select(context, (state) => state.counter);
+
     return Scaffold(
-      body: ListenableBuilder(
-        listenable: App.of(context),
-        builder: (context, _) {
-          return Center(
-            child: Text(
-              '${App.of(context).counter}',
-              style: Theme.of(context).textTheme.displayLarge,
-            ),
-          );
-        },
+      body: Center(
+        child: Text(
+          '$counter',
+          style: Theme.of(context).textTheme.displayLarge,
+        ),
       ),
       floatingActionButton: FloatingActionButton(
         onPressed: App.of(context).increment,

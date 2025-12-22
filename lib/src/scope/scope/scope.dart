@@ -1,17 +1,31 @@
 part of '../scope.dart';
 
-abstract base class ScopeV2<W extends ScopeV2<W, D, S>,
-        D extends ScopeDependencies, S extends ScopeState<W, D, S>>
+typedef ScopeInitFunction<P extends Object, D extends ScopeDependencies>
+    = Stream<ScopeInitState<P, D>> Function();
+
+typedef ScopeOnInitCallback<P extends Object> = Widget Function(
+  BuildContext context,
+  P? progress,
+);
+
+typedef ScopeOnErrorCallback = Widget Function(
+  BuildContext context,
+  Object error,
+  StackTrace stackTrace,
+  Object? progress,
+);
+
+abstract base class Scope<W extends Scope<W, D, S>, D extends ScopeDependencies,
+        S extends ScopeState<W, D, S>>
     extends ScopeStreamInitializerBottom<W, ScopeElement<W, D, S>, D> {
-  const ScopeV2({super.key});
+  final Duration? pauseAfterInitialization;
 
-  Key? get disposeKey => null;
+  const Scope({
+    super.key,
+    this.pauseAfterInitialization,
+  });
 
-  Duration? get disposeTimeout => null;
-
-  void Function()? get onDisposeTimeout => null;
-
-  Stream<ScopeProcessState<Object, D>> init();
+  Stream<ScopeInitState<Object, D>> init();
 
   Widget Function(BuildContext context)? get buildOnWaitingForPrevious => null;
 
@@ -24,18 +38,24 @@ abstract base class ScopeV2<W extends ScopeV2<W, D, S>,
     Object? progress,
   );
 
-  S createState();
-
-  @override
-  ScopeElement<W, D, S> createScopeElement() => ScopeElement(this as W);
-
   /// Wraps all states.
   Widget wrap(BuildContext context, Widget child) => child;
+
+  S createState();
 
   /// Wraps [ScopeState].
   Widget wrapState(BuildContext context, D dependencies, Widget child) => child;
 
-  static W paramsOf<W extends ScopeV2<W, D, S>, D extends ScopeDependencies,
+  Key? get disposeKey => null;
+
+  Duration? get disposeTimeout => null;
+
+  void Function()? get onDisposeTimeout => null;
+
+  @override
+  ScopeElement<W, D, S> createScopeElement() => ScopeElement(this as W);
+
+  static W paramsOf<W extends Scope<W, D, S>, D extends ScopeDependencies,
           S extends ScopeState<W, D, S>>(
     BuildContext context, {
     required bool listen,
@@ -46,7 +66,7 @@ abstract base class ScopeV2<W extends ScopeV2<W, D, S>,
         listen: listen,
       ).widget;
 
-  static V selectParam<W extends ScopeV2<W, D, S>, D extends ScopeDependencies,
+  static V selectParam<W extends Scope<W, D, S>, D extends ScopeDependencies,
           S extends ScopeState<W, D, S>, V extends Object?>(
     BuildContext context,
     V Function(W widget) selector,
@@ -57,7 +77,15 @@ abstract base class ScopeV2<W extends ScopeV2<W, D, S>,
           ScopeStateModel<ScopeInitializerState<D>>,
           V>(context, (element) => selector(element.widget));
 
-  static S of<W extends ScopeV2<W, D, S>, D extends ScopeDependencies,
+  static S? maybeOf<W extends Scope<W, D, S>, D extends ScopeDependencies,
+          S extends ScopeState<W, D, S>>(BuildContext context) =>
+      ScopeModelBottom.maybeOf<W, ScopeElement<W, D, S>,
+          ScopeStateModel<ScopeInitializerState<D>>>(
+        context,
+        listen: false,
+      )?._globalStateKey.currentState;
+
+  static S of<W extends Scope<W, D, S>, D extends ScopeDependencies,
           S extends ScopeState<W, D, S>>(BuildContext context) =>
       ScopeModelBottom.of<W, ScopeElement<W, D, S>,
           ScopeStateModel<ScopeInitializerState<D>>>(
@@ -65,10 +93,10 @@ abstract base class ScopeV2<W extends ScopeV2<W, D, S>,
         listen: false,
       )._globalStateKey.currentState!;
 
-  static V select<W extends ScopeV2<W, D, S>, D extends ScopeDependencies,
+  static V select<W extends Scope<W, D, S>, D extends ScopeDependencies,
           S extends ScopeState<W, D, S>, V extends Object?>(
     BuildContext context,
-    V Function(S state) selector,
+    V Function(S scope) selector,
   ) =>
       ScopeModelBottom.select<W, ScopeElement<W, D, S>,
           ScopeStateModel<ScopeInitializerState<D>>, V>(
@@ -77,12 +105,19 @@ abstract base class ScopeV2<W extends ScopeV2<W, D, S>,
       );
 }
 
-final class ScopeElement<W extends ScopeV2<W, D, S>,
-        D extends ScopeDependencies, S extends ScopeState<W, D, S>>
+final class ScopeElement<W extends Scope<W, D, S>, D extends ScopeDependencies,
+        S extends ScopeState<W, D, S>>
     extends ScopeStreamInitializerElementBase<W, ScopeElement<W, D, S>, D> {
+  var _selfDependence = true;
   final _globalStateKey = GlobalKey<S>();
 
   ScopeElement(super.widget);
+
+  @override
+  bool get selfDependence => _selfDependence;
+
+  @override
+  Duration? get pauseAfterInitialization => widget.pauseAfterInitialization;
 
   @override
   Key? get disposeKey => widget.disposeKey;
@@ -94,7 +129,7 @@ final class ScopeElement<W extends ScopeV2<W, D, S>,
   void Function()? get onDisposeTimeout => widget.onDisposeTimeout;
 
   @override
-  Stream<ScopeProcessState<Object, D>> initAsync() => widget.init();
+  Stream<ScopeInitState<Object, D>> initAsync() => widget.init();
 
   @override
   FutureOr<void> disposeAsync(W widget, D value) => value.dispose();
@@ -118,14 +153,18 @@ final class ScopeElement<W extends ScopeV2<W, D, S>,
         },
       );
 
-  Widget buildOnReady(BuildContext context, D dependencies) => widget.wrapState(
-        this,
-        dependencies,
-        _ScopeStateWidget<W, D, S>(
-          key: _globalStateKey,
-          createState: _createState,
-        ),
-      );
+  Widget buildOnReady(BuildContext context, D dependencies) {
+    _selfDependence = false;
+
+    return widget.wrapState(
+      this,
+      dependencies,
+      _ScopeStateWidget<W, D, S>(
+        key: _globalStateKey,
+        createState: _createState,
+      ),
+    );
+  }
 
   S _createState() => widget.createState().._scopeElement = this;
 }

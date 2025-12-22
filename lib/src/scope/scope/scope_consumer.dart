@@ -1,7 +1,4 @@
-import 'package:flutter/widgets.dart';
-
-import 'scope.dart';
-import 'scope_deps.dart';
+part of '../scope.dart';
 
 /// A mixin for `State` classes that provides easy access to the scope content.
 ///
@@ -44,10 +41,13 @@ import 'scope_deps.dart';
 ///   }
 /// }
 /// ```
-mixin ScopeConsumer<S extends Scope<S, D, C>, D extends ScopeDeps,
-    C extends ScopeContent<S, D, C>> {
-  C? _scope;
-  C get scope => _scope ??= Scope.of<S, D, C>(context);
+mixin ScopeConsumer<W extends Scope<W, D, S>, D extends ScopeDependencies,
+    S extends ScopeState<W, D, S>> {
+  S? _scope;
+  S get scope => _scope ??= Scope.of<W, D, S>(context);
+
+  V select<V extends Object?>(V Function(S scope) selector) =>
+      Scope.select<W, D, S, V>(context, selector);
 
   BuildContext get context;
 }

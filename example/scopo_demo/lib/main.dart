@@ -35,10 +35,10 @@ void main() {
 
   runApp(
     App(
-      init: AppDeps.init,
-      onInit: (progress) => SplashScreen(progress: progress),
+      init: AppDependencies.init,
+      onInit: (context, progress) => SplashScreen(progress: progress),
       builder: (context) {
-        return const Home(init: HomeDeps.init);
+        return const Home(init: HomeDependencies.init);
       },
     ),
   );

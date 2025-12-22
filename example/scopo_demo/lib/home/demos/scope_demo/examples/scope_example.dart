@@ -141,8 +141,7 @@ final class MyScopeDependencies implements ScopeDependencies {
   FutureOr<void> dispose() {}
 }
 
-final class MyScope
-    extends ScopeV2<MyScope, MyScopeDependencies, MyScopeState> {
+final class MyScope extends Scope<MyScope, MyScopeDependencies, MyScopeState> {
   final int a;
   final int b;
   final bool withError;
@@ -155,7 +154,7 @@ final class MyScope
   });
 
   @override
-  Stream<ScopeProcessState<double, MyScopeDependencies>> init() async* {
+  Stream<ScopeInitState<double, MyScopeDependencies>> init() async* {
     const count = 4;
     for (var i = 1; i <= count; i++) {
       await Future<void>.delayed(const Duration(milliseconds: 500));
@@ -163,11 +162,11 @@ final class MyScope
         // ignore: only_throw_errors
         throw 'test error';
       }
-      yield ScopeProgressV2(i / count);
+      yield ScopeProgress(i / count);
     }
     await Future<void>.delayed(const Duration(milliseconds: 500));
 
-    yield ScopeReadyV2(const MyScopeDependencies());
+    yield ScopeReady(const MyScopeDependencies());
   }
 
   @override
@@ -206,9 +205,7 @@ final class MyScope
       child: Box(
         borderColor: Theme.of(context).colorScheme.error,
         foregroundColor: Theme.of(context).colorScheme.error,
-        child: Text(
-          '$error${progress is double ? ': initialized at ${(progress * 100).toStringAsFixed(0)}%' : ''}',
-        ),
+        child: Text('$error${progress == null ? '' : ': on $progress'}'),
       ),
     );
   }
@@ -217,7 +214,7 @@ final class MyScope
   MyScopeState createState() => MyScopeState();
 
   static MyScope paramsOf(BuildContext context, {required bool listen}) =>
-      ScopeV2.selectParam<MyScope, MyScopeDependencies, MyScopeState, MyScope>(
+      Scope.selectParam<MyScope, MyScopeDependencies, MyScopeState, MyScope>(
         context,
         (widget) => widget,
       );
@@ -225,22 +222,18 @@ final class MyScope
   static V selectParam<V extends Object?>(
     BuildContext context,
     V Function(MyScope widget) selector,
-  ) => ScopeV2.selectParam<MyScope, MyScopeDependencies, MyScopeState, V>(
+  ) => Scope.selectParam<MyScope, MyScopeDependencies, MyScopeState, V>(
     context,
     selector,
   );
 
-  static MyScopeState of<
-    W extends ScopeV2<W, D, S>,
-    D extends ScopeDependencies,
-    S extends ScopeState<W, D, S>
-  >(BuildContext context) =>
-      ScopeV2.of<MyScope, MyScopeDependencies, MyScopeState>(context);
+  static MyScopeState of(BuildContext context) =>
+      Scope.of<MyScope, MyScopeDependencies, MyScopeState>(context);
 
   static V select<V extends Object?>(
     BuildContext context,
     V Function(MyScopeState state) selector,
-  ) => ScopeV2.select<MyScope, MyScopeDependencies, MyScopeState, V>(
+  ) => Scope.select<MyScope, MyScopeDependencies, MyScopeState, V>(
     context,
     selector,
   );
@@ -255,6 +248,7 @@ class _ConsumerAOutside extends StatelessWidget {
       title: const Text('dependent on [MyScope.a]'),
       titleBackgroundColor: Theme.of(context).colorScheme.primary,
       titleForegroundColor: Theme.of(context).colorScheme.onPrimary,
+      blinkingColor: Theme.of(context).colorScheme.primary,
       children: [
         Consumer(
           blinkingColor: Theme.of(context).colorScheme.primary,
@@ -271,10 +265,10 @@ class _ConsumerAOutside extends StatelessWidget {
           blinkingColor: Theme.of(context).colorScheme.primary,
           description: const Markdown(
             fontSize: 12,
-            'a = selectParam(context, (w) => w.a)',
+            'a = selectParam(context, (widget) => widget.a)',
           ),
           builder: (context) {
-            final a = MyScope.selectParam(context, (w) => w.a);
+            final a = MyScope.selectParam(context, (widget) => widget.a);
             return Text('a: $a');
           },
         ),
@@ -292,6 +286,7 @@ class _ConsumerBOutside extends StatelessWidget {
       title: const Text('dependent on [MyScope.b]'),
       titleBackgroundColor: Theme.of(context).colorScheme.primary,
       titleForegroundColor: Theme.of(context).colorScheme.onPrimary,
+      blinkingColor: Theme.of(context).colorScheme.primary,
       children: [
         Consumer(
           blinkingColor: Theme.of(context).colorScheme.primary,
@@ -308,10 +303,10 @@ class _ConsumerBOutside extends StatelessWidget {
           blinkingColor: Theme.of(context).colorScheme.primary,
           description: const Markdown(
             fontSize: 12,
-            'b = selectParam(context, (w) => w.b)',
+            'b = selectParam(context, (widget) => widget.b)',
           ),
           builder: (context) {
-            final b = MyScope.selectParam(context, (w) => w.b);
+            final b = MyScope.selectParam(context, (widget) => widget.b);
             return Text('b: $b');
           },
         ),
@@ -344,20 +339,44 @@ final class MyScopeState
       title: const Text('Initialized'),
       titleBackgroundColor: Theme.of(context).colorScheme.tertiary,
       titleForegroundColor: Theme.of(context).colorScheme.onTertiary,
-      blinkingColor: Theme.of(context).colorScheme.tertiary,
-      children: [
+      // for testing
+      // blinkingColor: Theme.of(context).colorScheme.tertiary,
+      children: const [
         Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Counter(title: 'MyScopeState.c', value: _c, increment: incrementC),
-            Counter(title: 'MyScopeState.d', value: _d, increment: incrementD),
-          ],
+          children: [_CounterC(), _CounterD()],
         ),
-        const _ConsumerAInside(),
-        const _ConsumerBInside(),
-        const _ConsumerC(),
-        const _ConsumerD(),
+        _ConsumerAInside(),
+        _ConsumerBInside(),
+        _ConsumerC(),
+        _ConsumerD(),
       ],
+    );
+  }
+}
+
+class _CounterC extends StatelessWidget {
+  const _CounterC();
+
+  @override
+  Widget build(BuildContext context) {
+    return Counter(
+      title: 'MyScopeState.c',
+      value: MyScope.select(context, (state) => state.c),
+      increment: MyScope.of(context).incrementC,
+    );
+  }
+}
+
+class _CounterD extends StatelessWidget {
+  const _CounterD();
+
+  @override
+  Widget build(BuildContext context) {
+    return Counter(
+      title: 'MyScopeState.d',
+      value: MyScope.select(context, (state) => state.d),
+      increment: MyScope.of(context).incrementD,
     );
   }
 }
@@ -372,10 +391,10 @@ class _ConsumerAInside extends StatelessWidget {
       blinkingColor: Theme.of(context).colorScheme.primary,
       description: const Markdown(
         fontSize: 12,
-        'a = select(context, (s) => s.params.a)',
+        'a = select(context, (state) => state.params.a)',
       ),
       builder: (context) {
-        final a = MyScope.select(context, (s) => s.params.a);
+        final a = MyScope.select(context, (state) => state.params.a);
         return Text('a: $a');
       },
     );
@@ -392,10 +411,10 @@ class _ConsumerBInside extends StatelessWidget {
       blinkingColor: Theme.of(context).colorScheme.primary,
       description: const Markdown(
         fontSize: 12,
-        'b = select(context, (s) => s.params.b)',
+        'b = select(context, (state) => state.params.b)',
       ),
       builder: (context) {
-        final b = MyScope.select(context, (s) => s.params.b);
+        final b = MyScope.select(context, (state) => state.params.b);
         return Text('b: $b');
       },
     );
@@ -412,10 +431,10 @@ class _ConsumerC extends StatelessWidget {
       blinkingColor: Theme.of(context).colorScheme.primary,
       description: const Markdown(
         fontSize: 12,
-        'c = select(context, (s) => s.c)',
+        'c = select(context, (state) => state.c)',
       ),
       builder: (context) {
-        final c = MyScope.select(context, (s) => s.c);
+        final c = MyScope.select(context, (state) => state.c);
         return Text('c: $c');
       },
     );
@@ -432,10 +451,10 @@ class _ConsumerD extends StatelessWidget {
       blinkingColor: Theme.of(context).colorScheme.primary,
       description: const Markdown(
         fontSize: 12,
-        'd = select(context, (s) => s.d)',
+        'd = select(context, (state) => state.d)',
       ),
       builder: (context) {
-        final d = MyScope.select(context, (s) => s.d);
+        final d = MyScope.select(context, (state) => state.d);
         return Text('d: $d');
       },
     );

@@ -58,6 +58,8 @@ abstract base class ScopeStreamInitializerElementBase<
 
   ScopeStreamInitializerElementBase(super.widget);
 
+  Duration? get pauseAfterInitialization;
+
   @override
   Key? get disposeKey;
 
@@ -67,7 +69,7 @@ abstract base class ScopeStreamInitializerElementBase<
   @override
   void Function()? get onDisposeTimeout;
 
-  Stream<ScopeProcessState<Object, T>> initAsync();
+  Stream<ScopeInitState<Object, T>> initAsync();
 
   @override
   FutureOr<void> disposeAsync(W widget, T value);
@@ -82,22 +84,35 @@ abstract base class ScopeStreamInitializerElementBase<
     try {
       if (!mounted) return;
 
-      _subscription = initAsync().listen(
-        (state) {
-          switch (_notifier.state) {
-            case ScopeInitializerWaitingForPrevious<T>():
-            case ScopeInitializerProgress<T>():
-              break;
+      _subscription = initAsync().asyncMap((state) async {
+        switch (_notifier.state) {
+          case ScopeInitializerWaitingForPrevious<T>():
+          case ScopeInitializerProgress<T>():
+            break;
 
-            case ScopeInitializerReady<T>():
-              throw StateError('$W already initialized');
+          case ScopeInitializerReady<T>():
+            throw StateError('$W already initialized');
 
-            case ScopeInitializerError<T>():
-              throw StateError('$W initialization failed');
-          }
+          case ScopeInitializerError<T>():
+            throw StateError('$W initialization failed');
+        }
 
-          _notifier.update(state.toScopeInitializerState());
-        },
+        switch (state) {
+          case ScopeProgress<Object, T>():
+            _notifier.update(state.toScopeInitializerState());
+
+          case ScopeReady<Object, T>():
+            if (pauseAfterInitialization case final pauseAfterInitialization?) {
+              await Future<void>.delayed(pauseAfterInitialization);
+              if (mounted) {
+                _notifier.update(state.toScopeInitializerState());
+              }
+            } else {
+              _notifier.update(state.toScopeInitializerState());
+            }
+        }
+      }).listen(
+        (_) {},
         onError: (Object error, StackTrace stackTrace) {
           final progress = switch (_notifier.state) {
             ScopeInitializerProgress<T>(:final progress) => progress,

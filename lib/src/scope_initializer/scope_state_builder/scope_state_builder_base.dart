@@ -3,9 +3,11 @@ part of '../scope_initializer.dart';
 abstract base class ScopeStateBuilderBase<W extends ScopeStateBuilderBase<W, S>,
         S extends Object>
     extends ScopeStateBuilderBottom<W, ScopeStateBuilderElement<W, S>, S> {
+  final bool selfDependence;
+
   const ScopeStateBuilderBase({
     super.key,
-    super.selfDependence = true,
+    this.selfDependence = true,
     required super.initialState,
   });
 
@@ -44,6 +46,9 @@ final class ScopeStateBuilderElement<W extends ScopeStateBuilderBase<W, S>,
         S extends Object>
     extends ScopeStateBuilderElementBase<W, ScopeStateBuilderElement<W, S>, S> {
   ScopeStateBuilderElement(super.widget);
+
+  @override
+  bool get selfDependence => widget.selfDependence;
 
   @override
   Widget buildBranch() => widget.build(this, _notifier);

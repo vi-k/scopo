@@ -187,7 +187,7 @@ abstract base class ScopeModelElementBase<
     }
   }
 
-  void notifyDependents() {
+  void notifyDependents({bool updateChild = true}) {
     _shouldNotify = true;
     markNeedsBuild();
   }

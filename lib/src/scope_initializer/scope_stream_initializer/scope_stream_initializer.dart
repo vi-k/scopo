@@ -2,7 +2,7 @@ part of '../scope_initializer.dart';
 
 final class ScopeStreamInitializer<T extends Object?>
     extends ScopeStreamInitializerBase<ScopeStreamInitializer<T>, T> {
-  final Stream<ScopeProcessState<Object, T>> Function() _init;
+  final Stream<ScopeInitState<Object, T>> Function() _init;
   final FutureOr<void> Function(T value) _dispose;
   final Widget Function(BuildContext context)? _buildOnWaitingForPrevious;
   final Widget Function(BuildContext context, Object? progress)
@@ -17,8 +17,11 @@ final class ScopeStreamInitializer<T extends Object?>
 
   const ScopeStreamInitializer({
     super.key,
-    required Stream<ScopeProcessState<Object, T>> Function() init,
+    required Stream<ScopeInitState<Object, T>> Function() init,
     required FutureOr<void> Function(T value) dispose,
+    super.disposeKey,
+    super.disposeTimeout,
+    super.onDisposeTimeout,
     Widget Function(BuildContext context)? buildOnWaitingForPrevious,
     required Widget Function(BuildContext context, Object? progress)
         buildOnInitializing,
@@ -37,7 +40,7 @@ final class ScopeStreamInitializer<T extends Object?>
         _buildOnError = buildOnError;
 
   @override
-  Stream<ScopeProcessState<Object, T>> init() => _init();
+  Stream<ScopeInitState<Object, T>> init() => _init();
 
   @override
   FutureOr<void> dispose(T value) => _dispose(value);

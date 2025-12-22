@@ -4,12 +4,14 @@ abstract base class ScopeAsyncInitializerBase<
         W extends ScopeAsyncInitializerBase<W, T>, T extends Object?>
     extends ScopeAsyncInitializerBottom<W, ScopeAsyncInitializerElement<W, T>,
         T> {
+  final bool selfDependence;
   final Key? disposeKey;
   final Duration? disposeTimeout;
   final void Function()? onDisposeTimeout;
 
   const ScopeAsyncInitializerBase({
     super.key,
+    this.selfDependence = true,
     this.disposeKey,
     this.disposeTimeout,
     this.onDisposeTimeout,
@@ -71,6 +73,9 @@ final class ScopeAsyncInitializerElement<
     extends ScopeAsyncInitializerElementBase<W,
         ScopeAsyncInitializerElement<W, T>, T> {
   ScopeAsyncInitializerElement(super.widget);
+
+  @override
+  bool get selfDependence => widget.selfDependence;
 
   @override
   Key? get disposeKey => widget.disposeKey;

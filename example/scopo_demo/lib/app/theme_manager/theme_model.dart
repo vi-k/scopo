@@ -1,9 +1,6 @@
-import 'package:flutter/material.dart';
+part of 'theme_manager.dart';
 
-import '../../common/data/real_services/key_value_service.dart';
-import 'static_themes.dart';
-
-abstract interface class ThemeModel {
+abstract interface class ThemeModel implements Listenable {
   ThemeMode get mode;
 
   Brightness get brightness;
@@ -17,17 +14,16 @@ abstract interface class ThemeModel {
   void toggleBrightness();
 
   void resetBrightness();
-
-  Brightness systemBrightness();
 }
 
-final class ThemeModelNotifier extends ChangeNotifier implements ThemeModel {
+final class _ThemeModelNotifier extends ChangeNotifier implements ThemeModel {
   static const String _modeKey = 'mode';
 
   final KeyValueService keyValueService;
-  final Brightness Function() _systemBrightness;
 
-  ThemeModelNotifier({
+  Brightness Function()? _systemBrightness;
+
+  _ThemeModelNotifier({
     required this.keyValueService,
     required Brightness Function() systemBrightness,
   }) : _mode = _initialMode(keyValueService),
@@ -57,7 +53,7 @@ final class ThemeModelNotifier extends ChangeNotifier implements ThemeModel {
 
   @override
   Brightness get brightness => switch (_mode) {
-    ThemeMode.system => systemBrightness(),
+    ThemeMode.system => _systemBrightness!(),
     ThemeMode.light => Brightness.light,
     ThemeMode.dark => Brightness.dark,
   };
@@ -75,6 +71,12 @@ final class ThemeModelNotifier extends ChangeNotifier implements ThemeModel {
   ThemeData get darkTheme => StaticThemes.darkTheme;
 
   @override
+  void dispose() {
+    _systemBrightness = null;
+    super.dispose();
+  }
+
+  @override
   void toggleBrightness() {
     mode = switch (brightness) {
       Brightness.dark => ThemeMode.light,
@@ -86,7 +88,4 @@ final class ThemeModelNotifier extends ChangeNotifier implements ThemeModel {
   void resetBrightness() {
     mode = ThemeMode.system;
   }
-
-  @override
-  Brightness systemBrightness() => _systemBrightness();
 }

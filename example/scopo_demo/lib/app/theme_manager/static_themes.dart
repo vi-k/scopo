@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+part of 'theme_manager.dart';
 
 // ignore: avoid_classes_with_only_static_members
 abstract interface class StaticThemes {

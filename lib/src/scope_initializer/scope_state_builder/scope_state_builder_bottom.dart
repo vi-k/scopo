@@ -5,11 +5,9 @@ abstract base class ScopeStateBuilderBottom<
     E extends ScopeStateBuilderElementBase<W, E, S>,
     S extends Object> extends ScopeNotifierBottom<W, E, ScopeStateModel<S>> {
   final S initialState;
-  final bool selfDependence;
 
   const ScopeStateBuilderBottom({
     super.key,
-    this.selfDependence = true,
     required this.initialState,
   });
 
@@ -59,6 +57,8 @@ abstract base class ScopeStateBuilderElementBase<
 
   ScopeStateBuilderElementBase(super.widget);
 
+  bool get selfDependence;
+
   @override
   void init() {
     _notifier = ScopeStateNotifier(widget.initialState);
@@ -73,7 +73,6 @@ abstract base class ScopeStateBuilderElementBase<
   }
 
   @override
-  Set<InheritedElement>? get dependencies => widget.selfDependence
-      ? {...?super.dependencies, this}
-      : super.dependencies;
+  Set<InheritedElement>? get dependencies =>
+      selfDependence ? {...?super.dependencies, this} : super.dependencies;
 }

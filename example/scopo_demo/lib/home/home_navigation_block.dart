@@ -67,11 +67,8 @@ class HomeNavigationBlock extends StatelessWidget {
               context,
               MaterialPageRoute<void>(
                 builder:
-                    (_) => const Home(
-                      tag: 'second',
-                      init: HomeDeps.init,
-                      isRoot: false,
-                    ),
+                    (_) =>
+                        const Home(init: HomeDependencies.init, isRoot: false),
               ),
             );
           },

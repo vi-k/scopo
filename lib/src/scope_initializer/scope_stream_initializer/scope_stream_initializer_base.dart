@@ -4,18 +4,22 @@ abstract base class ScopeStreamInitializerBase<
         W extends ScopeStreamInitializerBase<W, T>, T extends Object?>
     extends ScopeStreamInitializerBottom<W, ScopeStreamInitializerElement<W, T>,
         T> {
+  final bool selfDependence;
+  final Duration? pauseAfterInitialization;
   final Key? disposeKey;
   final Duration? disposeTimeout;
   final void Function()? onDisposeTimeout;
 
   const ScopeStreamInitializerBase({
     super.key,
+    this.selfDependence = true,
+    this.pauseAfterInitialization,
     this.disposeKey,
     this.disposeTimeout,
     this.onDisposeTimeout,
   });
 
-  Stream<ScopeProcessState<Object, T>> init();
+  Stream<ScopeInitState<Object, T>> init();
 
   FutureOr<void> dispose(T value);
 
@@ -74,6 +78,12 @@ final class ScopeStreamInitializerElement<
   ScopeStreamInitializerElement(super.widget);
 
   @override
+  bool get selfDependence => widget.selfDependence;
+
+  @override
+  Duration? get pauseAfterInitialization => widget.pauseAfterInitialization;
+
+  @override
   Key? get disposeKey => widget.disposeKey;
 
   @override
@@ -83,7 +93,7 @@ final class ScopeStreamInitializerElement<
   void Function()? get onDisposeTimeout => widget.onDisposeTimeout;
 
   @override
-  Stream<ScopeProcessState<Object, T>> initAsync() => widget.init();
+  Stream<ScopeInitState<Object, T>> initAsync() => widget.init();
 
   @override
   FutureOr<void> disposeAsync(W widget, T value) => widget.dispose(value);

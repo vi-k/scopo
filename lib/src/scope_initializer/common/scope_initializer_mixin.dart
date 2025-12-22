@@ -7,7 +7,7 @@ base mixin ScopeInitializerElementMixin<W extends ScopeInheritedWidget,
 
   final _initCompleter = Completer<void>();
   final _lifecycleCompleter = Completer<void>();
-  late final (Type, Key?) _completerKey = (W, disposeKey);
+  late final (Type, Key) _completerKey = (W, disposeKey ?? UniqueKey());
 
   Key? get disposeKey;
 

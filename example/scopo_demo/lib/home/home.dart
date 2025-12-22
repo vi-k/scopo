@@ -15,42 +15,75 @@ import 'home_counter.dart';
 import 'home_deps.dart';
 import 'home_navigation_block.dart';
 
-typedef HomeConsumer = ScopeConsumer<Home, HomeDeps, HomeContent>;
+typedef HomeConsumer = ScopeConsumer<Home, HomeDependencies, HomeState>;
 
 /// A child scope.
 ///
 /// Initializes feature-specific dependencies like [SomeBloc] and
 /// [SomeController].
-final class Home extends Scope<Home, HomeDeps, HomeContent> {
+final class Home extends Scope<Home, HomeDependencies, HomeState> {
+  final ScopeInitFunction<double, HomeDependencies> _init;
   final bool isRoot;
 
   const Home({
     super.key,
-    super.tag,
-    required ScopeInitFunction<double, HomeDeps> super.init,
+    // super.tag,
+    required ScopeInitFunction<double, HomeDependencies> init,
     this.isRoot = true,
-  }) : super(pauseAfterInitialization: const Duration(milliseconds: 500));
+  }) : _init = init,
+       super(pauseAfterInitialization: const Duration(milliseconds: 500));
+
+  @override
+  Stream<ScopeInitState<double, HomeDependencies>> init() => _init();
 
   /// Provides access the scope params, i.e. to the widget [Home].
   static Home paramsOf(BuildContext context, {bool listen = true}) =>
-      Scope.paramsOf<Home, HomeDeps, HomeContent>(context, listen: listen);
+      Scope.paramsOf<Home, HomeDependencies, HomeState>(
+        context,
+        listen: listen,
+      );
+
+  static V selectParam<V extends Object?>(
+    BuildContext context,
+    V Function(Home widget) selector,
+  ) => Scope.selectParam<Home, HomeDependencies, HomeState, V>(
+    context,
+    (widget) => selector(widget),
+  );
+
+  static HomeState? maybeOf(BuildContext context) =>
+      Scope.maybeOf<Home, HomeDependencies, HomeState>(context);
+
+  /// Provides access the [HomeState] and [HomeDependencies].
+  static HomeState of(BuildContext context) =>
+      Scope.of<Home, HomeDependencies, HomeState>(context);
+
+  static V select<V extends Object?>(
+    BuildContext context,
+    V Function(HomeState state) selector,
+  ) => Scope.select<Home, HomeDependencies, HomeState, V>(
+    context,
+    (state) => selector(state),
+  );
 
   @override
-  bool updateParamsShouldNotify(Home oldWidget) => false;
-
-  /// Provides access the [HomeContent] and [HomeDeps].
-  static HomeContent of(BuildContext context) =>
-      Scope.of<Home, HomeDeps, HomeContent>(context);
+  Widget buildOnInitializing(BuildContext context, Object? progress) =>
+      _FakeContent(progress as double?);
 
   @override
-  Widget onInit(Object? progress) => _FakeContent(progress as double?);
+  Widget buildOnError(
+    BuildContext context,
+    Object error,
+    StackTrace stackTrace,
+    Object? progress,
+  ) => AppError(error, stackTrace);
 
   @override
-  Widget onError(Object error, StackTrace stackTrace) =>
-      AppError(error, stackTrace);
-
-  @override
-  Widget wrapContent(HomeDeps deps, Widget child) => NavigationNode(
+  Widget wrapState(
+    BuildContext context,
+    HomeDependencies dependencies,
+    Widget child,
+  ) => NavigationNode(
     isRoot: isRoot,
     onPop: (context, result) async {
       await Home.of(context).close();
@@ -60,7 +93,7 @@ final class Home extends Scope<Home, HomeDeps, HomeContent> {
   );
 
   @override
-  HomeContent createContent() => HomeContent();
+  HomeState createState() => HomeState();
 }
 
 class HomeAppBar extends AppBar {
@@ -69,7 +102,7 @@ class HomeAppBar extends AppBar {
         title: Text('$Home'),
         actions: [
           ValueListenableBuilder<bool>(
-            valueListenable: App.of(context).deps.connectivity,
+            valueListenable: App.of(context).dependencies.connectivity,
             builder: (context, isConnected, _) {
               return Icon(
                 color: isConnected ? null : Theme.of(context).colorScheme.error,
@@ -175,19 +208,19 @@ mixin ChangeNotifierOnState<T extends StatefulWidget> on State<T>
   }
 }
 
-/// [HomeContent] is used to manage UI state and logic for [Home] scope.
-final class HomeContent extends ScopeContent<Home, HomeDeps, HomeContent> {
+/// [HomeState] is used to manage UI state and logic for [Home] scope.
+final class HomeState extends ScopeState<Home, HomeDependencies, HomeState> {
   var _counter = 0;
   int get counter => _counter;
 
   void increment() {
     _counter++;
-    notifyListeners();
+    notifyDependents();
   }
 
   void decrement() {
     _counter--;
-    notifyListeners();
+    notifyDependents();
   }
 
   Future<void> openDialog(BuildContext context) => showAdaptiveDialog<void>(

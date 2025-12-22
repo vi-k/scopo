@@ -12,7 +12,7 @@ class ScopeAsyncInitializerExample extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return ScopeInitializerExample(
-      consumersCount: 5,
+      consumersCount: 3,
       builder: (context, withError, log) {
         return ScopeAsyncInitializer<int>(
           init: () async {
@@ -24,8 +24,9 @@ class ScopeAsyncInitializerExample extends StatelessWidget {
             return 42;
           },
           dispose: (_) async {
-            await Future<void>.delayed(const Duration(seconds: 2));
+            await Future<void>.delayed(const Duration(seconds: 1));
           },
+          disposeKey: const Key('scope_async_initializer_example'),
           buildOnWaitingForPrevious: (context) {
             log('onWaitingForPrevious');
             return const Box(child: Icon(Icons.lock_clock));

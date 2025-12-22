@@ -15,14 +15,14 @@ import 'app.dart';
 /// Dependencies for [App] scope.
 ///
 /// They are initialized asynchronously in the [init] stream.
-class AppDeps implements ScopeDeps {
+class AppDependencies implements ScopeDependencies {
   final SharedPreferences _sharedPreferences;
   final HttpClient httpClient;
   final Connectivity connectivity;
   final Analytics analytics;
   final SomeController someController;
 
-  AppDeps({
+  AppDependencies({
     required SharedPreferences sharedPreferences,
     required this.httpClient,
     required this.connectivity,
@@ -38,7 +38,7 @@ class AppDeps implements ScopeDeps {
   ///
   /// It simulates random initialization errors using [AppEnvironment]
   /// probabilities.
-  static Stream<ScopeInitState<double, AppDeps>> init() async* {
+  static Stream<ScopeInitState<double, AppDependencies>> init() async* {
     SharedPreferences? sharedPreferences;
     HttpClient? httpClient;
     Connectivity? connectivity;
@@ -55,7 +55,7 @@ class AppDeps implements ScopeDeps {
     final depWithFakeError = random.nextInt(progressIterator.count);
     // ignore: avoid_print
     print(
-      '[$AppDeps] '
+      '[$AppDependencies] '
       '${throwFakeError ? 'throw fake error on dep #${depWithFakeError + 1}' : 'no throw fake error'}',
     );
     void randomFakeError(String text) {
@@ -90,7 +90,7 @@ class AppDeps implements ScopeDeps {
       yield ScopeProgress(progressIterator.nextProgress());
 
       yield ScopeReady(
-        AppDeps(
+        AppDependencies(
           sharedPreferences: sharedPreferences,
           httpClient: httpClient,
           connectivity: connectivity,

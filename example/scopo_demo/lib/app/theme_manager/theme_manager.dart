@@ -1,18 +1,27 @@
-import 'package:flutter/widgets.dart';
+import 'package:flutter/material.dart';
 import 'package:scopo/scopo.dart';
 
-import 'theme_model.dart';
+import '../../common/data/real_services/key_value_service.dart';
 
-final class ThemeManager
-    extends ScopeNotifierBase<ThemeManager, ThemeModelNotifier> {
+part 'static_themes.dart';
+part 'theme_model.dart';
+
+final class ThemeManager extends ScopeNotifierBase<ThemeManager, ThemeModel> {
   final Widget Function(BuildContext context) builder;
 
-  const ThemeManager({
+  ThemeManager({
     super.key,
-    required super.create,
-    required super.dispose,
     required this.builder,
-  });
+    required KeyValueService keyValueService,
+  }) : super(
+         create:
+             (context) => _ThemeModelNotifier(
+               keyValueService: keyValueService,
+               systemBrightness:
+                   () => MediaQuery.of(context).platformBrightness,
+             ),
+         dispose: (model) => (model as _ThemeModelNotifier).dispose(),
+       );
 
   @override
   Widget build(BuildContext context) {
@@ -20,7 +29,7 @@ final class ThemeManager
   }
 
   static ThemeModel of(BuildContext context, {bool listen = true}) =>
-      ScopeNotifierBase.of<ThemeManager, ThemeModelNotifier>(
+      ScopeNotifierBase.of<ThemeManager, ThemeModel>(
         context,
         listen: listen,
       ).model;
@@ -28,7 +37,7 @@ final class ThemeManager
   static V select<V extends Object>(
     BuildContext context,
     V Function(ThemeModel) selector,
-  ) => ScopeNotifierBase.select<ThemeManager, ThemeModelNotifier, V>(
+  ) => ScopeNotifierBase.select<ThemeManager, ThemeModel, V>(
     context,
     (context) => selector(context.model),
   );
