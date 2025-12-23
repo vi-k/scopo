@@ -5,6 +5,9 @@ abstract base class ScopeModelBase<W extends ScopeModelBase<W, M>,
     extends ScopeModelBottom<W, ScopeModelElement<W, M>, M>
     with ScopeModelBaseMixin<M> {
   @override
+  final String? tag;
+
+  @override
   final M? value;
 
   @override
@@ -18,6 +21,7 @@ abstract base class ScopeModelBase<W extends ScopeModelBase<W, M>,
 
   const ScopeModelBase({
     super.key,
+    this.tag,
     required this.create,
     required this.dispose,
   })  : hasValue = false,
@@ -25,6 +29,7 @@ abstract base class ScopeModelBase<W extends ScopeModelBase<W, M>,
 
   const ScopeModelBase.value({
     super.key,
+    this.tag,
     required this.value,
   })  : hasValue = true,
         create = null,
@@ -41,7 +46,7 @@ abstract base class ScopeModelBase<W extends ScopeModelBase<W, M>,
     BuildContext context, {
     required bool listen,
   }) =>
-          ScopeModelBottom.maybeOf<W, ScopeModelContext<W, M>, M>(
+          ScopeWidgetContext.maybeOf<W, ScopeModelContext<W, M>>(
             context,
             listen: listen,
           );
@@ -51,7 +56,7 @@ abstract base class ScopeModelBase<W extends ScopeModelBase<W, M>,
     BuildContext context, {
     required bool listen,
   }) =>
-          ScopeModelBottom.of<W, ScopeModelContext<W, M>, M>(
+          ScopeWidgetContext.of<W, ScopeModelContext<W, M>>(
             context,
             listen: listen,
           );
@@ -61,7 +66,7 @@ abstract base class ScopeModelBase<W extends ScopeModelBase<W, M>,
     BuildContext context,
     V Function(ScopeModelContext<W, M> context) selector,
   ) =>
-      ScopeModelBottom.select<W, ScopeModelContext<W, M>, M, V>(
+      ScopeWidgetContext.select<W, ScopeModelContext<W, M>, V>(
         context,
         selector,
       );
@@ -69,6 +74,9 @@ abstract base class ScopeModelBase<W extends ScopeModelBase<W, M>,
 
 final class ScopeModelElement<W extends ScopeModelBase<W, M>, M extends Object>
     extends ScopeModelElementBase<W, ScopeModelElement<W, M>, M>
-    with ScopeInheritedElementMixin<W, M> {
+    with ScopeModelElementMixin<W, M>
+    implements ScopeModelContext<W, M> {
   ScopeModelElement(super.widget);
+
+  String? get tag => widget.tag;
 }

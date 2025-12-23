@@ -4,17 +4,22 @@ abstract base class ScopeStreamInitializerBase<
         W extends ScopeStreamInitializerBase<W, T>, T extends Object?>
     extends ScopeStreamInitializerBottom<W, ScopeStreamInitializerElement<W, T>,
         T> {
-  final bool selfDependence;
+  @override
+  final String? tag;
+
+  final bool onlyOneInstance;
+
+  final bool autoSelfDependence;
   final Duration? pauseAfterInitialization;
-  final Key? disposeKey;
   final Duration? disposeTimeout;
   final void Function()? onDisposeTimeout;
 
   const ScopeStreamInitializerBase({
     super.key,
-    this.selfDependence = true,
+    this.tag,
+    this.onlyOneInstance = false,
+    this.autoSelfDependence = true,
     this.pauseAfterInitialization,
-    this.disposeKey,
     this.disposeTimeout,
     this.onDisposeTimeout,
   });
@@ -45,8 +50,7 @@ abstract base class ScopeStreamInitializerBase<
     BuildContext context, {
     required bool listen,
   }) =>
-          ScopeModelBottom.maybeOf<W, ScopeInitializerContext<W, T>,
-              ScopeStateModel<ScopeInitializerState<T>>>(
+          ScopeWidgetContext.maybeOf<W, ScopeInitializerContext<W, T>>(
             context,
             listen: listen,
           );
@@ -56,8 +60,7 @@ abstract base class ScopeStreamInitializerBase<
     BuildContext context, {
     required bool listen,
   }) =>
-          ScopeModelBottom.of<W, ScopeInitializerContext<W, T>,
-              ScopeStateModel<ScopeInitializerState<T>>>(
+          ScopeWidgetContext.of<W, ScopeInitializerContext<W, T>>(
             context,
             listen: listen,
           );
@@ -67,8 +70,10 @@ abstract base class ScopeStreamInitializerBase<
     BuildContext context,
     V Function(ScopeInitializerContext<W, T> context) selector,
   ) =>
-      ScopeModelBottom.select<W, ScopeInitializerContext<W, T>,
-          ScopeStateModel<ScopeInitializerState<T>>, V>(context, selector);
+      ScopeWidgetContext.select<W, ScopeInitializerContext<W, T>, V>(
+        context,
+        selector,
+      );
 }
 
 final class ScopeStreamInitializerElement<
@@ -78,13 +83,18 @@ final class ScopeStreamInitializerElement<
   ScopeStreamInitializerElement(super.widget);
 
   @override
-  bool get selfDependence => widget.selfDependence;
+  Key? get instanceKey => widget.onlyOneInstance
+      ? ValueKey(widget.tag)
+      : switch (widget.tag) {
+          null => null,
+          final tag => Key(tag),
+        };
+
+  @override
+  bool get autoSelfDependence => widget.autoSelfDependence;
 
   @override
   Duration? get pauseAfterInitialization => widget.pauseAfterInitialization;
-
-  @override
-  Key? get disposeKey => widget.disposeKey;
 
   @override
   Duration? get disposeTimeout => widget.disposeTimeout;

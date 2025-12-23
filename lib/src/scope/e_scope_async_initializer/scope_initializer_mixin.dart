@@ -2,14 +2,15 @@ part of '../scope.dart';
 
 base mixin ScopeInitializerElementMixin<W extends ScopeInheritedWidget,
         T extends Object?>
-    on ScopeInheritedElement<W, ScopeStateModel<ScopeInitializerState<T>>> {
+    on ScopeModelInheritedElement<W,
+        ScopeStateModel<ScopeInitializerState<T>>> {
   static final _staticLifecycleCompleters = <(Type, Key?), Completer<void>>{};
 
   final _initCompleter = Completer<void>();
   final _lifecycleCompleter = Completer<void>();
-  late final (Type, Key) _completerKey = (W, disposeKey ?? UniqueKey());
+  late final (Type, Key) _completerKey = (W, instanceKey ?? UniqueKey());
 
-  Key? get disposeKey;
+  Key? get instanceKey;
 
   Duration? get disposeTimeout;
 

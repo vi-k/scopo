@@ -138,7 +138,9 @@ final class MyScopeDependencies implements ScopeDependencies {
   const MyScopeDependencies();
 
   @override
-  FutureOr<void> dispose() {}
+  FutureOr<void> dispose() async {
+    await Future<void>.delayed(const Duration(seconds: 1));
+  }
 }
 
 final class MyScope extends Scope<MyScope, MyScopeDependencies, MyScopeState> {
@@ -151,7 +153,7 @@ final class MyScope extends Scope<MyScope, MyScopeDependencies, MyScopeState> {
     required this.a,
     required this.b,
     required this.withError,
-  });
+  }) : super(onlyOneInstance: true);
 
   @override
   Stream<ScopeInitState<double, MyScopeDependencies>> init() async* {

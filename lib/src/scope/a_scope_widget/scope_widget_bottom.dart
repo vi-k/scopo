@@ -5,13 +5,11 @@ typedef _ScopeDependency<T extends Object, V extends Object?> = (
   V Function(T),
 );
 
-abstract base class ScopeModelBottom<
-    W extends ScopeModelBottom<W, E, M>,
-    E extends ScopeModelElementBase<W, E, M>,
-    M extends Object> extends ScopeInheritedWidget {
-  const ScopeModelBottom({
-    super.key,
-  }) : super(child: const _NullWidget());
+abstract base class ScopeWidgetBottom<W extends ScopeWidgetBottom<W, E>,
+    E extends ScopeWidgetElementBase<W, E>> extends ScopeInheritedWidget {
+  const ScopeWidgetBottom({super.key});
+
+  String? get tag;
 
   E createScopeElement();
 
@@ -19,82 +17,45 @@ abstract base class ScopeModelBottom<
   InheritedElement createElement() => createScopeElement();
 
   @override
-  bool updateShouldNotify(ScopeModelBottom<W, E, M> oldWidget) => true;
+  bool updateShouldNotify(ScopeWidgetBottom<W, E> oldWidget) => true;
 
   @override
-  String toStringShort() => '$W';
+  String toStringShort() => '$W${tag == null ? '' : '($tag)'}';
 
-  static C? maybeOf<W extends ScopeInheritedWidget,
-          C extends ScopeModelContext<W, M>, M extends Object>(
+  static E? maybeOf<W extends ScopeWidgetBottom<W, E>,
+          E extends ScopeWidgetElementBase<W, E>>(
     BuildContext context, {
     required bool listen,
   }) =>
-      _find<W, C, M, void>(context, listen: listen)?.$1;
+      ScopeWidgetContext.maybeOf<W, E>(context, listen: listen);
 
-  static C of<W extends ScopeInheritedWidget, C extends ScopeModelContext<W, M>,
-          M extends Object>(
+  static E of<W extends ScopeWidgetBottom<W, E>,
+          E extends ScopeWidgetElementBase<W, E>>(
     BuildContext context, {
     required bool listen,
   }) =>
-      _find<W, C, M, void>(context, listen: listen)?.$1 ?? _throwNotFound<W>();
+      ScopeWidgetContext.of<W, E>(context, listen: listen);
 
-  static V select<
-          W extends ScopeInheritedWidget,
-          C extends ScopeModelContext<W, M>,
-          M extends Object,
-          V extends Object?>(
+  static V select<W extends ScopeWidgetBottom<W, E>,
+          E extends ScopeWidgetElementBase<W, E>, V extends Object?>(
     BuildContext context,
-    V Function(C context) selector,
+    V Function(E element) selector,
   ) =>
-      (_find<W, C, M, V>(context, listen: true, selector: selector) ??
-              _throwNotFound<W>())
-          .$2 as V;
-
-  static (C, V?)? _find<W extends ScopeInheritedWidget,
-      C extends ScopeModelContext<W, M>, M extends Object, V extends Object?>(
-    BuildContext context, {
-    required bool listen,
-    V Function(C)? selector,
-  }) {
-    final element = context.getElementForInheritedWidgetOfExactType<W>();
-    if (element == null) {
-      return null;
-    }
-
-    final scopeContext = element is C
-        ? element as C
-        : throw Exception('The element of $W is not $C');
-
-    if (!listen) {
-      return (scopeContext, null);
-    }
-
-    V? value;
-    if (selector == null) {
-      context.dependOnInheritedElement(element);
-    } else {
-      value = selector(scopeContext);
-      context.dependOnInheritedElement(element, aspect: (value, selector));
-    }
-
-    return (scopeContext, value);
-  }
-
-  static Never _throwNotFound<W extends InheritedWidget>() {
-    throw Exception('$W not found in the context');
-  }
+      ScopeWidgetContext.select<W, E, V>(context, selector);
 }
 
-abstract base class ScopeModelElementBase<
-    W extends ScopeModelBottom<W, E, M>,
-    E extends ScopeModelElementBase<W, E, M>,
-    M extends Object> extends ScopeInheritedElement<W, M> {
+abstract base class ScopeWidgetElementBase<W extends ScopeWidgetBottom<W, E>,
+        E extends ScopeWidgetElementBase<W, E>> extends InheritedElement
+    implements ScopeInheritedElement<W> {
   var _shouldNotify = false;
   var _updateChild = true;
 
-  ScopeModelElementBase(W super.widget) {
+  ScopeWidgetElementBase(W super.widget) {
     init();
   }
+
+  @override
+  W get widget => super.widget as W;
 
   @override
   void unmount() {
@@ -102,8 +63,11 @@ abstract base class ScopeModelElementBase<
     super.unmount();
   }
 
+  bool get autoSelfDependence;
+
   @override
-  W get widget => super.widget as W;
+  Set<InheritedElement>? get dependencies =>
+      autoSelfDependence ? {...?super.dependencies, this} : super.dependencies;
 
   @override
   void init() {}
@@ -187,7 +151,7 @@ abstract base class ScopeModelElementBase<
     }
   }
 
-  void notifyDependents({bool updateChild = true}) {
+  void notifyDependents() {
     _shouldNotify = true;
     markNeedsBuild();
   }
@@ -208,11 +172,4 @@ abstract base class ScopeModelElementBase<
 
   @override
   Widget build() => buildBranch();
-}
-
-class _NullWidget extends Widget {
-  const _NullWidget();
-
-  @override
-  Element createElement() => throw UnimplementedError();
 }

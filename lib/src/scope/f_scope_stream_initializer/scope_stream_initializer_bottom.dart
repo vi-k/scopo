@@ -16,7 +16,7 @@ abstract base class ScopeStreamInitializerBottom<
     BuildContext context, {
     required bool listen,
   }) =>
-      ScopeModelBottom.maybeOf<W, E, ScopeStateModel<ScopeInitializerState<T>>>(
+      ScopeWidgetContext.maybeOf<W, E>(
         context,
         listen: listen,
       );
@@ -28,7 +28,7 @@ abstract base class ScopeStreamInitializerBottom<
     BuildContext context, {
     required bool listen,
   }) =>
-      ScopeModelBottom.of<W, E, ScopeStateModel<ScopeInitializerState<T>>>(
+      ScopeWidgetContext.of<W, E>(
         context,
         listen: listen,
       );
@@ -41,8 +41,7 @@ abstract base class ScopeStreamInitializerBottom<
     BuildContext context,
     V Function(E element) selector,
   ) =>
-      ScopeModelBottom.select<W, E, ScopeStateModel<ScopeInitializerState<T>>,
-          V>(
+      ScopeWidgetContext.select<W, E, V>(
         context,
         selector,
       );
@@ -61,7 +60,7 @@ abstract base class ScopeStreamInitializerElementBase<
   Duration? get pauseAfterInitialization;
 
   @override
-  Key? get disposeKey;
+  Key? get instanceKey;
 
   @override
   Duration? get disposeTimeout;

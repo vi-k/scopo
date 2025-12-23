@@ -17,6 +17,7 @@ class ScopeStreamInitializerExample extends StatelessWidget {
       consumersCount: 3,
       builder: (context, withError, log) {
         return ScopeStreamInitializer<int>(
+          onlyOneInstance: true,
           init: () async* {
             const step = Duration(milliseconds: 200);
             final progress = DoubleProgressIterator(count: 4);
@@ -38,7 +39,6 @@ class ScopeStreamInitializerExample extends StatelessWidget {
           dispose: (_) async {
             await Future<void>.delayed(const Duration(seconds: 1));
           },
-          disposeKey: const Key('scope_stream_initializer_example'),
           buildOnWaitingForPrevious: (context) {
             log('onWaitingForPrevious');
             return const Box(child: Icon(Icons.lock_clock));

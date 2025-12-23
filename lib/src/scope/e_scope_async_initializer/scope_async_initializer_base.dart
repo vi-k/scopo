@@ -4,15 +4,20 @@ abstract base class ScopeAsyncInitializerBase<
         W extends ScopeAsyncInitializerBase<W, T>, T extends Object?>
     extends ScopeAsyncInitializerBottom<W, ScopeAsyncInitializerElement<W, T>,
         T> {
-  final bool selfDependence;
-  final Key? disposeKey;
+  @override
+  final String? tag;
+
+  final bool onlyOneInstance;
+
+  final bool autoSelfDependence;
   final Duration? disposeTimeout;
   final void Function()? onDisposeTimeout;
 
   const ScopeAsyncInitializerBase({
     super.key,
-    this.selfDependence = true,
-    this.disposeKey,
+    this.tag,
+    this.onlyOneInstance = false,
+    this.autoSelfDependence = true,
     this.disposeTimeout,
     this.onDisposeTimeout,
   });
@@ -42,8 +47,7 @@ abstract base class ScopeAsyncInitializerBase<
     BuildContext context, {
     required bool listen,
   }) =>
-          ScopeModelBottom.maybeOf<W, ScopeInitializerContext<W, T>,
-              ScopeStateModel<ScopeInitializerState<T>>>(
+          ScopeWidgetContext.maybeOf<W, ScopeInitializerContext<W, T>>(
             context,
             listen: listen,
           );
@@ -53,8 +57,7 @@ abstract base class ScopeAsyncInitializerBase<
     BuildContext context, {
     required bool listen,
   }) =>
-          ScopeModelBottom.of<W, ScopeInitializerContext<W, T>,
-              ScopeStateModel<ScopeInitializerState<T>>>(
+          ScopeWidgetContext.of<W, ScopeInitializerContext<W, T>>(
             context,
             listen: listen,
           );
@@ -64,8 +67,10 @@ abstract base class ScopeAsyncInitializerBase<
     BuildContext context,
     V Function(ScopeInitializerContext<W, T> context) selector,
   ) =>
-      ScopeModelBottom.select<W, ScopeInitializerContext<W, T>,
-          ScopeStateModel<ScopeInitializerState<T>>, V>(context, selector);
+      ScopeWidgetContext.select<W, ScopeInitializerContext<W, T>, V>(
+        context,
+        selector,
+      );
 }
 
 final class ScopeAsyncInitializerElement<
@@ -75,10 +80,15 @@ final class ScopeAsyncInitializerElement<
   ScopeAsyncInitializerElement(super.widget);
 
   @override
-  bool get selfDependence => widget.selfDependence;
+  Key? get instanceKey => widget.onlyOneInstance
+      ? ValueKey(widget.tag)
+      : switch (widget.tag) {
+          null => null,
+          final tag => Key(tag),
+        };
 
   @override
-  Key? get disposeKey => widget.disposeKey;
+  bool get autoSelfDependence => widget.autoSelfDependence;
 
   @override
   Duration? get disposeTimeout => widget.disposeTimeout;

@@ -1,0 +1,43 @@
+part of '../scope.dart';
+
+abstract base class ScopeModelBottom<
+    W extends ScopeModelBottom<W, E, M>,
+    E extends ScopeModelElementBase<W, E, M>,
+    M extends Object> extends ScopeWidgetBottom<W, E> {
+  const ScopeModelBottom({super.key});
+
+  @override
+  E createScopeElement();
+
+  static E? maybeOf<W extends ScopeModelBottom<W, E, M>,
+          E extends ScopeModelElementBase<W, E, M>, M extends Object>(
+    BuildContext context, {
+    required bool listen,
+  }) =>
+      ScopeWidgetContext.maybeOf<W, E>(context, listen: listen);
+
+  static E of<W extends ScopeModelBottom<W, E, M>,
+          E extends ScopeModelElementBase<W, E, M>, M extends Object>(
+    BuildContext context, {
+    required bool listen,
+  }) =>
+      ScopeWidgetContext.of<W, E>(context, listen: listen);
+
+  static V select<
+          W extends ScopeModelBottom<W, E, M>,
+          E extends ScopeModelElementBase<W, E, M>,
+          M extends Object,
+          V extends Object?>(
+    BuildContext context,
+    V Function(E element) selector,
+  ) =>
+      ScopeWidgetContext.select<W, E, V>(context, selector);
+}
+
+abstract base class ScopeModelElementBase<
+        W extends ScopeModelBottom<W, E, M>,
+        E extends ScopeModelElementBase<W, E, M>,
+        M extends Object> extends ScopeWidgetElementBase<W, E>
+    implements ScopeModelInheritedElement<W, M> {
+  ScopeModelElementBase(super.widget);
+}

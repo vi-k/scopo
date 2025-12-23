@@ -11,29 +11,29 @@ abstract base class ScopeNotifierBottom<
   @override
   E createScopeElement();
 
-  static C? maybeOf<W extends ScopeInheritedWidget,
-          C extends ScopeModelContext<W, M>, M extends Listenable>(
+  static E? maybeOf<W extends ScopeNotifierBottom<W, E, M>,
+          E extends ScopeNotifierElementBase<W, E, M>, M extends Listenable>(
     BuildContext context, {
     required bool listen,
   }) =>
-      ScopeModelBottom.maybeOf<W, C, M>(context, listen: listen);
+      ScopeWidgetContext.maybeOf<W, E>(context, listen: listen);
 
-  static C of<W extends ScopeInheritedWidget, C extends ScopeModelContext<W, M>,
-          M extends Listenable>(
+  static E of<W extends ScopeNotifierBottom<W, E, M>,
+          E extends ScopeNotifierElementBase<W, E, M>, M extends Listenable>(
     BuildContext context, {
     required bool listen,
   }) =>
-      ScopeModelBottom.of<W, C, M>(context, listen: listen);
+      ScopeWidgetContext.of<W, E>(context, listen: listen);
 
   static V select<
-          W extends ScopeInheritedWidget,
-          C extends ScopeModelContext<W, M>,
+          W extends ScopeNotifierBottom<W, E, M>,
+          E extends ScopeNotifierElementBase<W, E, M>,
           M extends Listenable,
           V extends Object?>(
     BuildContext context,
-    V Function(C context) selector,
+    V Function(E element) selector,
   ) =>
-      ScopeModelBottom.select<W, C, M, V>(context, selector);
+      ScopeWidgetContext.select<W, E, V>(context, selector);
 }
 
 abstract base class ScopeNotifierElementBase<

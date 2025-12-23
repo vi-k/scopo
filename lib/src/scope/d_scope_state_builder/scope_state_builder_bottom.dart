@@ -19,7 +19,7 @@ abstract base class ScopeStateBuilderBottom<
     BuildContext context, {
     required bool listen,
   }) =>
-      ScopeModelBottom.maybeOf<W, E, ScopeStateModel<S>>(
+      ScopeWidgetContext.maybeOf<W, E>(
         context,
         listen: listen,
       );
@@ -29,7 +29,7 @@ abstract base class ScopeStateBuilderBottom<
     BuildContext context, {
     required bool listen,
   }) =>
-      ScopeModelBottom.of<W, E, ScopeStateModel<S>>(context, listen: listen);
+      ScopeWidgetContext.of<W, E>(context, listen: listen);
 
   static V select<
           W extends ScopeStateBuilderBottom<W, E, S>,
@@ -39,7 +39,7 @@ abstract base class ScopeStateBuilderBottom<
     BuildContext context,
     V Function(E element) selector,
   ) =>
-      ScopeModelBottom.select<W, E, ScopeStateModel<S>, V>(
+      ScopeWidgetContext.select<W, E, V>(
         context,
         selector,
       );
@@ -57,8 +57,6 @@ abstract base class ScopeStateBuilderElementBase<
 
   ScopeStateBuilderElementBase(super.widget);
 
-  bool get selfDependence;
-
   @override
   void init() {
     notifier = ScopeStateNotifier(widget.initialState);
@@ -74,5 +72,5 @@ abstract base class ScopeStateBuilderElementBase<
 
   @override
   Set<InheritedElement>? get dependencies =>
-      selfDependence ? {...?super.dependencies, this} : super.dependencies;
+      autoSelfDependence ? {...?super.dependencies, this} : super.dependencies;
 }

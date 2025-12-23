@@ -27,7 +27,7 @@ final class Home extends Scope<Home, HomeDependencies, HomeState> {
 
   const Home({
     super.key,
-    // super.tag,
+    super.tag,
     required ScopeInitFunction<double, HomeDependencies> init,
     this.isRoot = true,
   }) : _init = init,

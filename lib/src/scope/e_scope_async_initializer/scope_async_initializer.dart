@@ -1,36 +1,33 @@
 part of '../scope.dart';
 
-final class ScopeStreamInitializer<T extends Object?>
-    extends ScopeStreamInitializerBase<ScopeStreamInitializer<T>, T> {
-  final Stream<ScopeInitState<Object, T>> Function() _init;
+final class ScopeAsyncInitializer<T extends Object?>
+    extends ScopeAsyncInitializerBase<ScopeAsyncInitializer<T>, T> {
+  final Future<T> Function() _init;
   final FutureOr<void> Function(T value) _dispose;
   final Widget Function(BuildContext context)? _buildOnWaitingForPrevious;
-  final Widget Function(BuildContext context, Object? progress)
-      _buildOnInitializing;
+  final Widget Function(BuildContext context) _buildOnInitializing;
   final Widget Function(BuildContext context, T value) _buildOnReady;
   final Widget Function(
     BuildContext context,
     Object error,
     StackTrace stackTrace,
-    Object? progress,
   ) _buildOnError;
 
-  const ScopeStreamInitializer({
+  const ScopeAsyncInitializer({
     super.key,
-    required Stream<ScopeInitState<Object, T>> Function() init,
+    super.tag,
+    super.onlyOneInstance,
+    required Future<T> Function() init,
     required FutureOr<void> Function(T value) dispose,
-    super.disposeKey,
     super.disposeTimeout,
     super.onDisposeTimeout,
     Widget Function(BuildContext context)? buildOnWaitingForPrevious,
-    required Widget Function(BuildContext context, Object? progress)
-        buildOnInitializing,
+    required Widget Function(BuildContext context) buildOnInitializing,
     required Widget Function(BuildContext context, T value) buildOnReady,
     required Widget Function(
       BuildContext context,
       Object error,
       StackTrace stackTrace,
-      Object? progress,
     ) buildOnError,
   })  : _init = init,
         _dispose = dispose,
@@ -40,7 +37,7 @@ final class ScopeStreamInitializer<T extends Object?>
         _buildOnError = buildOnError;
 
   @override
-  Stream<ScopeInitState<Object, T>> init() => _init();
+  Future<T> init() => _init();
 
   @override
   FutureOr<void> dispose(T value) => _dispose(value);
@@ -50,8 +47,8 @@ final class ScopeStreamInitializer<T extends Object?>
       _buildOnWaitingForPrevious;
 
   @override
-  Widget buildOnInitializing(BuildContext context, Object? progress) =>
-      _buildOnInitializing(context, progress);
+  Widget buildOnInitializing(BuildContext context) =>
+      _buildOnInitializing(context);
 
   @override
   Widget buildOnReady(BuildContext context, T value) =>
@@ -62,44 +59,38 @@ final class ScopeStreamInitializer<T extends Object?>
     BuildContext context,
     Object error,
     StackTrace stackTrace,
-    Object? progress,
   ) =>
-      _buildOnError(context, error, stackTrace, progress);
+      _buildOnError(context, error, stackTrace);
 
-  static ScopeInitializerContext<ScopeStreamInitializer<T>, T>?
+  static ScopeInitializerContext<ScopeAsyncInitializer<T>, T>?
       maybeOf<T extends Object?>(
     BuildContext context, {
     required bool listen,
   }) =>
-          ScopeModelBottom.maybeOf<
-              ScopeStreamInitializer<T>,
-              ScopeInitializerContext<ScopeStreamInitializer<T>, T>,
-              ScopeStateModel<ScopeInitializerState<T>>>(
+          ScopeWidgetContext.maybeOf<ScopeAsyncInitializer<T>,
+              ScopeInitializerContext<ScopeAsyncInitializer<T>, T>>(
             context,
             listen: listen,
           );
 
-  static ScopeInitializerContext<ScopeStreamInitializer<T>, T>
+  static ScopeInitializerContext<ScopeAsyncInitializer<T>, T>
       of<T extends Object>(
     BuildContext context, {
     required bool listen,
   }) =>
-          ScopeModelBottom.of<
-              ScopeStreamInitializer<T>,
-              ScopeInitializerContext<ScopeStreamInitializer<T>, T>,
-              ScopeStateModel<ScopeInitializerState<T>>>(
+          ScopeWidgetContext.of<ScopeAsyncInitializer<T>,
+              ScopeInitializerContext<ScopeAsyncInitializer<T>, T>>(
             context,
             listen: listen,
           );
 
   static V select<T extends Object, V extends Object?>(
     BuildContext context,
-    V Function(ScopeInitializerContext<ScopeStreamInitializer<T>, T> context)
+    V Function(ScopeInitializerContext<ScopeAsyncInitializer<T>, T> context)
         selector,
   ) =>
-      ScopeModelBottom.select<
-          ScopeStreamInitializer<T>,
-          ScopeInitializerContext<ScopeStreamInitializer<T>, T>,
-          ScopeStateModel<ScopeInitializerState<T>>,
+      ScopeWidgetContext.select<
+          ScopeAsyncInitializer<T>,
+          ScopeInitializerContext<ScopeAsyncInitializer<T>, T>,
           V>(context, selector);
 }

@@ -18,10 +18,17 @@ typedef ScopeOnErrorCallback = Widget Function(
 abstract base class Scope<W extends Scope<W, D, S>, D extends ScopeDependencies,
         S extends ScopeState<W, D, S>>
     extends ScopeStreamInitializerBottom<W, ScopeElement<W, D, S>, D> {
+  @override
+  final String? tag;
+
+  final bool onlyOneInstance;
+
   final Duration? pauseAfterInitialization;
 
   const Scope({
     super.key,
+    this.tag,
+    this.onlyOneInstance = false,
     this.pauseAfterInitialization,
   });
 
@@ -45,8 +52,6 @@ abstract base class Scope<W extends Scope<W, D, S>, D extends ScopeDependencies,
 
   /// Wraps [ScopeState].
   Widget wrapState(BuildContext context, D dependencies, Widget child) => child;
-
-  Key? get disposeKey => null;
 
   Duration? get disposeTimeout => null;
 
@@ -108,19 +113,24 @@ abstract base class Scope<W extends Scope<W, D, S>, D extends ScopeDependencies,
 final class ScopeElement<W extends Scope<W, D, S>, D extends ScopeDependencies,
         S extends ScopeState<W, D, S>>
     extends ScopeStreamInitializerElementBase<W, ScopeElement<W, D, S>, D> {
-  var _selfDependence = true;
+  var _autoSelfDependence = true;
   final _globalStateKey = GlobalKey<S>();
 
   ScopeElement(super.widget);
 
   @override
-  bool get selfDependence => _selfDependence;
+  bool get autoSelfDependence => _autoSelfDependence;
 
   @override
   Duration? get pauseAfterInitialization => widget.pauseAfterInitialization;
 
   @override
-  Key? get disposeKey => widget.disposeKey;
+  Key? get instanceKey => widget.onlyOneInstance
+      ? ValueKey(widget.tag)
+      : switch (widget.tag) {
+          null => null,
+          final tag => Key(tag),
+        };
 
   @override
   Duration? get disposeTimeout => widget.disposeTimeout;
@@ -154,7 +164,7 @@ final class ScopeElement<W extends Scope<W, D, S>, D extends ScopeDependencies,
       );
 
   Widget buildOnReady(BuildContext context, D dependencies) {
-    _selfDependence = false;
+    _autoSelfDependence = false;
 
     return widget.wrapState(
       this,
