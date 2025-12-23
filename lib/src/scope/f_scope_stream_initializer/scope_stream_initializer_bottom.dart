@@ -7,6 +7,7 @@ abstract base class ScopeStreamInitializerBottom<
     extends ScopeStateBuilderBottom<W, E, ScopeInitializerState<T>> {
   const ScopeStreamInitializerBottom({
     super.key,
+    super.tag,
   }) : super(initialState: const ScopeInitializerWaitingForPrevious());
 
   static E? maybeOf<
@@ -57,10 +58,10 @@ abstract base class ScopeStreamInitializerElementBase<
 
   ScopeStreamInitializerElementBase(super.widget);
 
-  Duration? get pauseAfterInitialization;
-
   @override
-  Key? get instanceKey;
+  bool get onlyOneInstance;
+
+  Duration? get pauseAfterInitialization;
 
   @override
   Duration? get disposeTimeout;

@@ -8,6 +8,7 @@ abstract base class ScopeStateBuilderBottom<
 
   const ScopeStateBuilderBottom({
     super.key,
+    super.tag,
     required this.initialState,
   });
 

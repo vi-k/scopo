@@ -5,9 +5,6 @@ abstract base class ScopeModelBase<W extends ScopeModelBase<W, M>,
     extends ScopeModelBottom<W, ScopeModelElement<W, M>, M>
     with ScopeModelBaseMixin<M> {
   @override
-  final String? tag;
-
-  @override
   final M? value;
 
   @override
@@ -21,7 +18,7 @@ abstract base class ScopeModelBase<W extends ScopeModelBase<W, M>,
 
   const ScopeModelBase({
     super.key,
-    this.tag,
+    super.tag,
     required this.create,
     required this.dispose,
   })  : hasValue = false,
@@ -29,7 +26,7 @@ abstract base class ScopeModelBase<W extends ScopeModelBase<W, M>,
 
   const ScopeModelBase.value({
     super.key,
-    this.tag,
+    super.tag,
     required this.value,
   })  : hasValue = true,
         create = null,

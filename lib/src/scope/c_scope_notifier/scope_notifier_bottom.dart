@@ -6,6 +6,7 @@ abstract base class ScopeNotifierBottom<
     M extends Listenable> extends ScopeModelBottom<W, E, M> {
   const ScopeNotifierBottom({
     super.key,
+    super.tag,
   });
 
   @override

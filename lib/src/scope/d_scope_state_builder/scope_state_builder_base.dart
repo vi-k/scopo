@@ -3,14 +3,11 @@ part of '../scope.dart';
 abstract base class ScopeStateBuilderBase<W extends ScopeStateBuilderBase<W, S>,
         S extends Object>
     extends ScopeStateBuilderBottom<W, ScopeStateBuilderElement<W, S>, S> {
-  @override
-  final String? tag;
-
   final bool autoSelfDependence;
 
   const ScopeStateBuilderBase({
     super.key,
-    this.tag,
+    super.tag,
     this.autoSelfDependence = true,
     required super.initialState,
   });

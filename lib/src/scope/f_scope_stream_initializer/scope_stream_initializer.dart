@@ -4,16 +4,16 @@ final class ScopeStreamInitializer<T extends Object?>
     extends ScopeStreamInitializerBase<ScopeStreamInitializer<T>, T> {
   final Stream<ScopeInitState<Object, T>> Function() _init;
   final FutureOr<void> Function(T value) _dispose;
-  final Widget Function(BuildContext context)? _buildOnWaitingForPrevious;
+  final Widget Function(BuildContext context)? waitingForPreviousBuilder;
   final Widget Function(BuildContext context, Object? progress)
-      _buildOnInitializing;
-  final Widget Function(BuildContext context, T value) _buildOnReady;
+      initializingBuilder;
+  final Widget Function(BuildContext context, T value) readyBuilder;
   final Widget Function(
     BuildContext context,
     Object error,
     StackTrace stackTrace,
     Object? progress,
-  ) _buildOnError;
+  ) errorBuilder;
 
   const ScopeStreamInitializer({
     super.key,
@@ -23,22 +23,12 @@ final class ScopeStreamInitializer<T extends Object?>
     required FutureOr<void> Function(T value) dispose,
     super.disposeTimeout,
     super.onDisposeTimeout,
-    Widget Function(BuildContext context)? buildOnWaitingForPrevious,
-    required Widget Function(BuildContext context, Object? progress)
-        buildOnInitializing,
-    required Widget Function(BuildContext context, T value) buildOnReady,
-    required Widget Function(
-      BuildContext context,
-      Object error,
-      StackTrace stackTrace,
-      Object? progress,
-    ) buildOnError,
+    this.waitingForPreviousBuilder,
+    required this.initializingBuilder,
+    required this.readyBuilder,
+    required this.errorBuilder,
   })  : _init = init,
-        _dispose = dispose,
-        _buildOnWaitingForPrevious = buildOnWaitingForPrevious,
-        _buildOnInitializing = buildOnInitializing,
-        _buildOnReady = buildOnReady,
-        _buildOnError = buildOnError;
+        _dispose = dispose;
 
   @override
   Stream<ScopeInitState<Object, T>> init() => _init();
@@ -48,15 +38,15 @@ final class ScopeStreamInitializer<T extends Object?>
 
   @override
   Widget Function(BuildContext context)? get buildOnWaitingForPrevious =>
-      _buildOnWaitingForPrevious;
+      waitingForPreviousBuilder;
 
   @override
   Widget buildOnInitializing(BuildContext context, Object? progress) =>
-      _buildOnInitializing(context, progress);
+      initializingBuilder(context, progress);
 
   @override
   Widget buildOnReady(BuildContext context, T value) =>
-      _buildOnReady(context, value);
+      readyBuilder(context, value);
 
   @override
   Widget buildOnError(
@@ -65,7 +55,7 @@ final class ScopeStreamInitializer<T extends Object?>
     StackTrace stackTrace,
     Object? progress,
   ) =>
-      _buildOnError(context, error, stackTrace, progress);
+      errorBuilder(context, error, stackTrace, progress);
 
   static ScopeInitializerContext<ScopeStreamInitializer<T>, T>?
       maybeOf<T extends Object?>(

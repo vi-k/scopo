@@ -5,9 +5,6 @@ abstract base class ScopeNotifierBase<W extends ScopeNotifierBase<W, M>,
     extends ScopeNotifierBottom<W, ScopeNotifierElement<W, M>, M>
     with ScopeModelBaseMixin<M> {
   @override
-  final String? tag;
-
-  @override
   final M? value;
 
   @override
@@ -21,7 +18,7 @@ abstract base class ScopeNotifierBase<W extends ScopeNotifierBase<W, M>,
 
   const ScopeNotifierBase({
     super.key,
-    this.tag,
+    super.tag,
     required this.create,
     required this.dispose,
   })  : hasValue = false,
@@ -29,7 +26,7 @@ abstract base class ScopeNotifierBase<W extends ScopeNotifierBase<W, M>,
 
   const ScopeNotifierBase.value({
     super.key,
-    this.tag,
+    super.tag,
     required this.value,
   })  : hasValue = true,
         create = null,

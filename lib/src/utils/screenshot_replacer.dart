@@ -30,9 +30,8 @@ class _ScreenshotReplacerState extends State<ScreenshotReplacer> {
   Future<void> _capture() async {
     if (!mounted) return;
     try {
-      final boundary =
-          _globalKey.currentContext?.findRenderObject()
-              as RenderRepaintBoundary?;
+      final boundary = _globalKey.currentContext?.findRenderObject()
+          as RenderRepaintBoundary?;
       if (boundary == null) return;
 
       if (boundary.debugNeedsPaint) {

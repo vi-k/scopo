@@ -1,7 +1,12 @@
 part of '../scope.dart';
 
 abstract base class ScopeInheritedWidget extends InheritedWidget {
-  const ScopeInheritedWidget({super.key}) : super(child: const _NullWidget());
+  final String? tag;
+
+  const ScopeInheritedWidget({
+    super.key,
+    this.tag,
+  }) : super(child: const _NullWidget());
 }
 
 final class _NullWidget extends Widget {

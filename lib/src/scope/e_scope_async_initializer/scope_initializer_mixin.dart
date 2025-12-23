@@ -8,9 +8,10 @@ base mixin ScopeInitializerElementMixin<W extends ScopeInheritedWidget,
 
   final _initCompleter = Completer<void>();
   final _lifecycleCompleter = Completer<void>();
-  late final (Type, Key) _completerKey = (W, instanceKey ?? UniqueKey());
+  late final (Type, Key) _completerKey =
+      (W, onlyOneInstance ? ValueKey(widget.tag) : UniqueKey());
 
-  Key? get instanceKey;
+  bool get onlyOneInstance;
 
   Duration? get disposeTimeout;
 

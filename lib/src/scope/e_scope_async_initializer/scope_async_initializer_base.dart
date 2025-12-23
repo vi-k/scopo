@@ -4,18 +4,14 @@ abstract base class ScopeAsyncInitializerBase<
         W extends ScopeAsyncInitializerBase<W, T>, T extends Object?>
     extends ScopeAsyncInitializerBottom<W, ScopeAsyncInitializerElement<W, T>,
         T> {
-  @override
-  final String? tag;
-
   final bool onlyOneInstance;
-
   final bool autoSelfDependence;
   final Duration? disposeTimeout;
   final void Function()? onDisposeTimeout;
 
   const ScopeAsyncInitializerBase({
     super.key,
-    this.tag,
+    super.tag,
     this.onlyOneInstance = false,
     this.autoSelfDependence = true,
     this.disposeTimeout,
@@ -80,12 +76,7 @@ final class ScopeAsyncInitializerElement<
   ScopeAsyncInitializerElement(super.widget);
 
   @override
-  Key? get instanceKey => widget.onlyOneInstance
-      ? ValueKey(widget.tag)
-      : switch (widget.tag) {
-          null => null,
-          final tag => Key(tag),
-        };
+  bool get onlyOneInstance => widget.onlyOneInstance;
 
   @override
   bool get autoSelfDependence => widget.autoSelfDependence;

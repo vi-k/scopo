@@ -4,7 +4,10 @@ abstract base class ScopeModelBottom<
     W extends ScopeModelBottom<W, E, M>,
     E extends ScopeModelElementBase<W, E, M>,
     M extends Object> extends ScopeWidgetBottom<W, E> {
-  const ScopeModelBottom({super.key});
+  const ScopeModelBottom({
+    super.key,
+    super.tag,
+  });
 
   @override
   E createScopeElement();

@@ -4,11 +4,7 @@ abstract base class ScopeStreamInitializerBase<
         W extends ScopeStreamInitializerBase<W, T>, T extends Object?>
     extends ScopeStreamInitializerBottom<W, ScopeStreamInitializerElement<W, T>,
         T> {
-  @override
-  final String? tag;
-
   final bool onlyOneInstance;
-
   final bool autoSelfDependence;
   final Duration? pauseAfterInitialization;
   final Duration? disposeTimeout;
@@ -16,7 +12,7 @@ abstract base class ScopeStreamInitializerBase<
 
   const ScopeStreamInitializerBase({
     super.key,
-    this.tag,
+    super.tag,
     this.onlyOneInstance = false,
     this.autoSelfDependence = true,
     this.pauseAfterInitialization,
@@ -83,12 +79,7 @@ final class ScopeStreamInitializerElement<
   ScopeStreamInitializerElement(super.widget);
 
   @override
-  Key? get instanceKey => widget.onlyOneInstance
-      ? ValueKey(widget.tag)
-      : switch (widget.tag) {
-          null => null,
-          final tag => Key(tag),
-        };
+  bool get onlyOneInstance => widget.onlyOneInstance;
 
   @override
   bool get autoSelfDependence => widget.autoSelfDependence;

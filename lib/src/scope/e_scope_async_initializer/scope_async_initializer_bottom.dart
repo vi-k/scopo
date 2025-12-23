@@ -7,6 +7,7 @@ abstract base class ScopeAsyncInitializerBottom<
     extends ScopeStateBuilderBottom<W, E, ScopeInitializerState<T>> {
   const ScopeAsyncInitializerBottom({
     super.key,
+    super.tag,
   }) : super(initialState: const ScopeInitializerWaitingForPrevious());
 
   static E? maybeOf<
@@ -57,7 +58,7 @@ abstract base class ScopeAsyncInitializerElementBase<
   ScopeAsyncInitializerElementBase(super.widget);
 
   @override
-  Key? get instanceKey;
+  bool get onlyOneInstance;
 
   @override
   Duration? get disposeTimeout;

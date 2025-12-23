@@ -39,11 +39,11 @@ class ScopeStreamInitializerExample extends StatelessWidget {
           dispose: (_) async {
             await Future<void>.delayed(const Duration(seconds: 1));
           },
-          buildOnWaitingForPrevious: (context) {
+          waitingForPreviousBuilder: (context) {
             log('onWaitingForPrevious');
             return const Box(child: Icon(Icons.lock_clock));
           },
-          buildOnInitializing: (context, progress) {
+          initializingBuilder: (context, progress) {
             log('onInitializing: $progress');
             return Box(
               child: SizedBox.square(
@@ -58,7 +58,7 @@ class ScopeStreamInitializerExample extends StatelessWidget {
               ),
             );
           },
-          buildOnReady: (context, value) {
+          readyBuilder: (context, value) {
             log('onReady: $value');
             return Box(
               child: SizedBox.square(
@@ -69,7 +69,7 @@ class ScopeStreamInitializerExample extends StatelessWidget {
               ),
             );
           },
-          buildOnError: (context, error, stackTrace, progress) {
+          errorBuilder: (context, error, stackTrace, progress) {
             log('onError');
             return Box(
               borderColor: Theme.of(context).colorScheme.error,

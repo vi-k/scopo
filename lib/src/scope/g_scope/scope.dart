@@ -18,16 +18,13 @@ typedef ScopeOnErrorCallback = Widget Function(
 abstract base class Scope<W extends Scope<W, D, S>, D extends ScopeDependencies,
         S extends ScopeState<W, D, S>>
     extends ScopeStreamInitializerBottom<W, ScopeElement<W, D, S>, D> {
-  @override
-  final String? tag;
-
   final bool onlyOneInstance;
 
   final Duration? pauseAfterInitialization;
 
   const Scope({
     super.key,
-    this.tag,
+    super.tag,
     this.onlyOneInstance = false,
     this.pauseAfterInitialization,
   });
@@ -119,18 +116,13 @@ final class ScopeElement<W extends Scope<W, D, S>, D extends ScopeDependencies,
   ScopeElement(super.widget);
 
   @override
+  bool get onlyOneInstance => widget.onlyOneInstance;
+
+  @override
   bool get autoSelfDependence => _autoSelfDependence;
 
   @override
   Duration? get pauseAfterInitialization => widget.pauseAfterInitialization;
-
-  @override
-  Key? get instanceKey => widget.onlyOneInstance
-      ? ValueKey(widget.tag)
-      : switch (widget.tag) {
-          null => null,
-          final tag => Key(tag),
-        };
 
   @override
   Duration? get disposeTimeout => widget.disposeTimeout;

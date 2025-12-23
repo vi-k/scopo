@@ -7,9 +7,10 @@ typedef _ScopeDependency<T extends Object, V extends Object?> = (
 
 abstract base class ScopeWidgetBottom<W extends ScopeWidgetBottom<W, E>,
     E extends ScopeWidgetElementBase<W, E>> extends ScopeInheritedWidget {
-  const ScopeWidgetBottom({super.key});
-
-  String? get tag;
+  const ScopeWidgetBottom({
+    super.key,
+    super.tag,
+  });
 
   E createScopeElement();
 
