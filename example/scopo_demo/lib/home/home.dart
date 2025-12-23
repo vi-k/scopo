@@ -213,6 +213,14 @@ final class HomeState extends ScopeState<Home, HomeDependencies, HomeState> {
   var _counter = 0;
   int get counter => _counter;
 
+  @override
+  void initState() {
+    super.initState();
+
+    // this.widget.;
+    print(dependencies.someController);
+  }
+
   void increment() {
     _counter++;
     notifyDependents();

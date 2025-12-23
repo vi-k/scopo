@@ -6,10 +6,10 @@ import 'package:scopo_demo/common/presentation/animated_progress_indicator.dart'
 import 'package:scopo_demo/common/presentation/counter.dart';
 
 import '../../../../common/constants.dart';
-import '../../../../common/presentation/box.dart';
 import '../../../../common/presentation/consumer.dart';
 import '../../../../common/presentation/expansion.dart';
 import '../../../../common/presentation/markdown.dart';
+import '../../../../common/presentation/titled_box.dart';
 import '../../../../common/presentation/titled_box_list.dart';
 
 class ScopeExample extends StatefulWidget {
@@ -181,14 +181,19 @@ final class MyScope extends Scope<MyScope, MyScopeDependencies, MyScopeState> {
 
   @override
   Widget buildOnInitializing(BuildContext context, Object? progress) {
-    return Center(
-      child: SizedBox.square(
-        dimension: 24,
-        child: AnimatedProgressIndicator(
-          value: progress as double?,
-          builder: (value) {
-            return CircularProgressIndicator(value: value);
-          },
+    return TitledBox(
+      title: const Text('buildOnInitializing'),
+      titleBackgroundColor: Theme.of(context).colorScheme.tertiary,
+      titleForegroundColor: Theme.of(context).colorScheme.onTertiary,
+      child: Center(
+        child: SizedBox.square(
+          dimension: 24,
+          child: AnimatedProgressIndicator(
+            value: progress as double?,
+            builder: (value) {
+              return CircularProgressIndicator(value: value);
+            },
+          ),
         ),
       ),
     );
@@ -201,11 +206,12 @@ final class MyScope extends Scope<MyScope, MyScopeDependencies, MyScopeState> {
     StackTrace stackTrace,
     Object? progress,
   ) {
-    return Center(
-      child: Box(
-        borderColor: Theme.of(context).colorScheme.error,
-        foregroundColor: Theme.of(context).colorScheme.error,
-        child: Text('$error${progress == null ? '' : ': on $progress'}'),
+    return TitledBox(
+      title: const Text('buildOnError'),
+      titleBackgroundColor: Theme.of(context).colorScheme.error,
+      foregroundColor: Theme.of(context).colorScheme.error,
+      child: Center(
+        child: Text('$error${progress == null ? '' : ' on $progress'}'),
       ),
     );
   }
@@ -336,7 +342,7 @@ final class MyScopeState
   @override
   Widget build(BuildContext context) {
     return TitledBoxList(
-      title: const Text('Initialized'),
+      title: const Text('buildOnInitialized'),
       titleBackgroundColor: Theme.of(context).colorScheme.tertiary,
       titleForegroundColor: Theme.of(context).colorScheme.onTertiary,
       // for testing

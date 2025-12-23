@@ -1,12 +1,35 @@
 import 'dart:async';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/widgets.dart';
 
-import '../scope_initializer/scope_initializer.dart';
-import '../scope_model/scope_model.dart';
-
-part 'scope/scope.dart';
-part 'scope/scope_consumer.dart';
-part 'scope/scope_context.dart';
-part 'scope/scope_dependencies.dart';
-part 'scope/scope_state.dart';
+part 'a_scope_common/scope_inherited_widget.dart';
+part 'b_scope_widget/scope_widget_bottom.dart';
+part 'c_scope_model/mixins.dart';
+part 'c_scope_model/scope_inherited_element.dart';
+part 'c_scope_model/scope_model.dart';
+part 'c_scope_model/scope_model_base.dart';
+part 'c_scope_model/scope_model_bottom.dart';
+part 'c_scope_model/scope_model_context.dart';
+part 'd_scope_notifier/scope_notifier.dart';
+part 'd_scope_notifier/scope_notifier_base.dart';
+part 'd_scope_notifier/scope_notifier_bottom.dart';
+part 'e_scope_state_builder/scope_state_builder.dart';
+part 'e_scope_state_builder/scope_state_builder_base.dart';
+part 'e_scope_state_builder/scope_state_builder_bottom.dart';
+part 'e_scope_state_builder/scope_state_model.dart';
+part 'e_scope_state_builder/scope_state_with_error_model.dart';
+part 'f_scope_async_initializer/scope_async_initializer.dart';
+part 'f_scope_async_initializer/scope_async_initializer_base.dart';
+part 'f_scope_async_initializer/scope_async_initializer_bottom.dart';
+part 'f_scope_async_initializer/scope_initializer_context.dart';
+part 'f_scope_async_initializer/scope_initializer_mixin.dart';
+part 'f_scope_async_initializer/scope_initializer_state.dart';
+part 'g_scope_stream_initializer/scope_process_state.dart';
+part 'g_scope_stream_initializer/scope_stream_initializer.dart';
+part 'g_scope_stream_initializer/scope_stream_initializer_base.dart';
+part 'g_scope_stream_initializer/scope_stream_initializer_bottom.dart';
+part 'i_scope/scope.dart';
+part 'i_scope/scope_consumer.dart';
+part 'i_scope/scope_dependencies.dart';
+part 'i_scope/scope_state.dart';
