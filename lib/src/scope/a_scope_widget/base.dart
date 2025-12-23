@@ -16,26 +16,25 @@ final class _NullWidget extends Widget {
   Element createElement() => throw UnimplementedError();
 }
 
-abstract interface class ScopeWidgetContext<W extends ScopeInheritedWidget>
+abstract interface class ScopeContext<W extends ScopeInheritedWidget>
     implements BuildContext {
   @override
   W get widget;
 
-  static C?
-      maybeOf<W extends ScopeInheritedWidget, C extends ScopeWidgetContext<W>>(
+  static C? maybeOf<W extends ScopeInheritedWidget, C extends ScopeContext<W>>(
     BuildContext context, {
     required bool listen,
   }) =>
-          _find<W, C, void>(context, listen: listen)?.$1;
+      _find<W, C, void>(context, listen: listen)?.$1;
 
-  static C of<W extends ScopeInheritedWidget, C extends ScopeWidgetContext<W>>(
+  static C of<W extends ScopeInheritedWidget, C extends ScopeContext<W>>(
     BuildContext context, {
     required bool listen,
   }) =>
       _find<W, C, void>(context, listen: listen)?.$1 ?? _throwNotFound<W>();
 
-  static V select<W extends ScopeInheritedWidget,
-          C extends ScopeWidgetContext<W>, V extends Object?>(
+  static V select<W extends ScopeInheritedWidget, C extends ScopeContext<W>,
+          V extends Object?>(
     BuildContext context,
     V Function(C context) selector,
   ) =>
@@ -44,7 +43,7 @@ abstract interface class ScopeWidgetContext<W extends ScopeInheritedWidget>
           .$2 as V;
 
   static (C, V?)? _find<W extends ScopeInheritedWidget,
-      C extends ScopeWidgetContext<W>, V extends Object?>(
+      C extends ScopeContext<W>, V extends Object?>(
     BuildContext context, {
     required bool listen,
     V Function(C)? selector,
@@ -79,7 +78,7 @@ abstract interface class ScopeWidgetContext<W extends ScopeInheritedWidget>
 }
 
 abstract interface class ScopeInheritedElement<W extends ScopeInheritedWidget>
-    implements ScopeWidgetContext<W> {
+    implements ScopeContext<W> {
   @override
   W get widget;
 

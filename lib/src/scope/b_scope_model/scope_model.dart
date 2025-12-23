@@ -27,8 +27,7 @@ final class ScopeModel<M extends Object>
     BuildContext context, {
     required bool listen,
   }) =>
-      ScopeWidgetContext.maybeOf<ScopeModel<M>,
-          ScopeModelContext<ScopeModel<M>, M>>(
+      ScopeContext.maybeOf<ScopeModel<M>, ScopeModelContext<ScopeModel<M>, M>>(
         context,
         listen: listen,
       )?.model;
@@ -37,7 +36,7 @@ final class ScopeModel<M extends Object>
     BuildContext context, {
     required bool listen,
   }) =>
-      ScopeWidgetContext.of<ScopeModel<M>, ScopeModelContext<ScopeModel<M>, M>>(
+      ScopeContext.of<ScopeModel<M>, ScopeModelContext<ScopeModel<M>, M>>(
         context,
         listen: listen,
       ).model;
@@ -46,8 +45,8 @@ final class ScopeModel<M extends Object>
     BuildContext context,
     V Function(M model) selector,
   ) =>
-      ScopeWidgetContext.select<ScopeModel<M>,
-          ScopeModelContext<ScopeModel<M>, M>, V>(
+      ScopeContext.select<ScopeModel<M>, ScopeModelContext<ScopeModel<M>, M>,
+          V>(
         context,
         (context) => selector(context.model),
       );

@@ -28,7 +28,7 @@ final class ScopeNotifier<M extends Listenable>
     BuildContext context, {
     required bool listen,
   }) =>
-      ScopeWidgetContext.maybeOf<ScopeNotifier<M>,
+      ScopeContext.maybeOf<ScopeNotifier<M>,
           ScopeModelContext<ScopeNotifier<M>, M>>(
         context,
         listen: listen,
@@ -38,8 +38,7 @@ final class ScopeNotifier<M extends Listenable>
     BuildContext context, {
     required bool listen,
   }) =>
-      ScopeWidgetContext.of<ScopeNotifier<M>,
-          ScopeModelContext<ScopeNotifier<M>, M>>(
+      ScopeContext.of<ScopeNotifier<M>, ScopeModelContext<ScopeNotifier<M>, M>>(
         context,
         listen: listen,
       ).model;
@@ -48,7 +47,7 @@ final class ScopeNotifier<M extends Listenable>
     BuildContext context,
     V Function(M model) selector,
   ) =>
-      ScopeWidgetContext.select<ScopeNotifier<M>,
+      ScopeContext.select<ScopeNotifier<M>,
           ScopeModelContext<ScopeNotifier<M>, M>, V>(
         context,
         (context) => selector(context.model),

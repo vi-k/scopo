@@ -17,7 +17,7 @@ abstract base class ScopeStreamInitializerBottom<
     BuildContext context, {
     required bool listen,
   }) =>
-      ScopeWidgetContext.maybeOf<W, E>(
+      ScopeContext.maybeOf<W, E>(
         context,
         listen: listen,
       );
@@ -29,7 +29,7 @@ abstract base class ScopeStreamInitializerBottom<
     BuildContext context, {
     required bool listen,
   }) =>
-      ScopeWidgetContext.of<W, E>(
+      ScopeContext.of<W, E>(
         context,
         listen: listen,
       );
@@ -42,7 +42,7 @@ abstract base class ScopeStreamInitializerBottom<
     BuildContext context,
     V Function(E element) selector,
   ) =>
-      ScopeWidgetContext.select<W, E, V>(
+      ScopeContext.select<W, E, V>(
         context,
         selector,
       );
@@ -78,8 +78,8 @@ abstract base class ScopeStreamInitializerElementBase<
   Widget buildOnState(ScopeInitializerState<T> state);
 
   @override
-  Future<void> runInitAsync() async {
-    await super.runInitAsync();
+  Future<void> _runInitAsync() async {
+    await super._runInitAsync();
 
     try {
       if (!mounted) return;

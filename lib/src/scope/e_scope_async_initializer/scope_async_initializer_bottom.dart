@@ -17,7 +17,7 @@ abstract base class ScopeAsyncInitializerBottom<
     BuildContext context, {
     required bool listen,
   }) =>
-      ScopeWidgetContext.maybeOf<W, E>(
+      ScopeContext.maybeOf<W, E>(
         context,
         listen: listen,
       );
@@ -29,7 +29,7 @@ abstract base class ScopeAsyncInitializerBottom<
     BuildContext context, {
     required bool listen,
   }) =>
-      ScopeWidgetContext.of<W, E>(
+      ScopeContext.of<W, E>(
         context,
         listen: listen,
       );
@@ -42,7 +42,7 @@ abstract base class ScopeAsyncInitializerBottom<
     BuildContext context,
     V Function(E element) selector,
   ) =>
-      ScopeWidgetContext.select<W, E, V>(
+      ScopeContext.select<W, E, V>(
         context,
         selector,
       );
@@ -67,8 +67,8 @@ abstract base class ScopeAsyncInitializerElementBase<
   void Function()? get onDisposeTimeout;
 
   @override
-  Future<void> runInitAsync() async {
-    await super.runInitAsync();
+  Future<void> _runInitAsync() async {
+    await super._runInitAsync();
 
     try {
       if (!mounted) return;

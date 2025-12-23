@@ -21,7 +21,7 @@ final class ScopeStateBuilder<S extends Object>
     BuildContext context, {
     required bool listen,
   }) =>
-      ScopeWidgetContext.maybeOf<ScopeStateBuilder<S>,
+      ScopeContext.maybeOf<ScopeStateBuilder<S>,
           ScopeModelContext<ScopeStateBuilder<S>, ScopeStateModel<S>>>(
         context,
         listen: listen,
@@ -31,7 +31,7 @@ final class ScopeStateBuilder<S extends Object>
     BuildContext context, {
     required bool listen,
   }) =>
-      ScopeWidgetContext.of<ScopeStateBuilder<S>,
+      ScopeContext.of<ScopeStateBuilder<S>,
           ScopeModelContext<ScopeStateBuilder<S>, ScopeStateModel<S>>>(
         context,
         listen: listen,
@@ -42,12 +42,12 @@ final class ScopeStateBuilder<S extends Object>
     required bool listen,
   }) =>
       listen
-          ? ScopeWidgetContext.select<ScopeStateBuilder<S>,
+          ? ScopeContext.select<ScopeStateBuilder<S>,
               ScopeModelContext<ScopeStateBuilder<S>, ScopeStateModel<S>>, S>(
               context,
               (context) => context.model.state,
             )
-          : ScopeWidgetContext.of<ScopeStateBuilder<S>,
+          : ScopeContext.of<ScopeStateBuilder<S>,
               ScopeModelContext<ScopeStateBuilder<S>, ScopeStateModel<S>>>(
               context,
               listen: false,

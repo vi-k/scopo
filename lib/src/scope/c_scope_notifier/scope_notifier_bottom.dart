@@ -17,14 +17,14 @@ abstract base class ScopeNotifierBottom<
     BuildContext context, {
     required bool listen,
   }) =>
-      ScopeWidgetContext.maybeOf<W, E>(context, listen: listen);
+      ScopeContext.maybeOf<W, E>(context, listen: listen);
 
   static E of<W extends ScopeNotifierBottom<W, E, M>,
           E extends ScopeNotifierElementBase<W, E, M>, M extends Listenable>(
     BuildContext context, {
     required bool listen,
   }) =>
-      ScopeWidgetContext.of<W, E>(context, listen: listen);
+      ScopeContext.of<W, E>(context, listen: listen);
 
   static V select<
           W extends ScopeNotifierBottom<W, E, M>,
@@ -34,7 +34,7 @@ abstract base class ScopeNotifierBottom<
     BuildContext context,
     V Function(E element) selector,
   ) =>
-      ScopeWidgetContext.select<W, E, V>(context, selector);
+      ScopeContext.select<W, E, V>(context, selector);
 }
 
 abstract base class ScopeNotifierElementBase<

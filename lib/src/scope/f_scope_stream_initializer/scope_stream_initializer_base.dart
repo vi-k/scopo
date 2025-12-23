@@ -46,7 +46,7 @@ abstract base class ScopeStreamInitializerBase<
     BuildContext context, {
     required bool listen,
   }) =>
-          ScopeWidgetContext.maybeOf<W, ScopeInitializerContext<W, T>>(
+          ScopeContext.maybeOf<W, ScopeInitializerContext<W, T>>(
             context,
             listen: listen,
           );
@@ -56,7 +56,7 @@ abstract base class ScopeStreamInitializerBase<
     BuildContext context, {
     required bool listen,
   }) =>
-          ScopeWidgetContext.of<W, ScopeInitializerContext<W, T>>(
+          ScopeContext.of<W, ScopeInitializerContext<W, T>>(
             context,
             listen: listen,
           );
@@ -66,7 +66,7 @@ abstract base class ScopeStreamInitializerBase<
     BuildContext context,
     V Function(ScopeInitializerContext<W, T> context) selector,
   ) =>
-      ScopeWidgetContext.select<W, ScopeInitializerContext<W, T>, V>(
+      ScopeContext.select<W, ScopeInitializerContext<W, T>, V>(
         context,
         selector,
       );

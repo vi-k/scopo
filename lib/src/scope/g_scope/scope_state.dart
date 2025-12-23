@@ -33,18 +33,14 @@ abstract base class ScopeState<
 
   @override
   @visibleForTesting
-  @protected
-  // ignore: library_private_types_in_public_api
-  _ScopeStateWidget<W, D, S> get widget => super.widget;
+  Never get widget => throw UnimplementedError();
 
   W get params => _scopeElement.widget;
 
   D get dependencies => _scopeElement.value;
 
-  Future<void> close() async {
-    // +++
-    // await Scope._stateOf<W, T, C>(context)?._close();
-  }
+  Future<void> close() =>
+      ScopeContext.of<W, ScopeElement<W, D, S>>(context, listen: false).close();
 
   @mustCallSuper
   @override

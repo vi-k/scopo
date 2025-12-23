@@ -44,7 +44,7 @@ abstract base class ScopeNotifierBase<W extends ScopeNotifierBase<W, M>,
     BuildContext context, {
     required bool listen,
   }) =>
-          ScopeWidgetContext.maybeOf<W, ScopeModelContext<W, M>>(
+          ScopeContext.maybeOf<W, ScopeModelContext<W, M>>(
             context,
             listen: listen,
           );
@@ -54,7 +54,7 @@ abstract base class ScopeNotifierBase<W extends ScopeNotifierBase<W, M>,
     BuildContext context, {
     required bool listen,
   }) =>
-          ScopeWidgetContext.of<W, ScopeModelContext<W, M>>(
+          ScopeContext.of<W, ScopeModelContext<W, M>>(
             context,
             listen: listen,
           );
@@ -64,7 +64,7 @@ abstract base class ScopeNotifierBase<W extends ScopeNotifierBase<W, M>,
     BuildContext context,
     V Function(ScopeModelContext<W, M> context) selector,
   ) =>
-      ScopeWidgetContext.select<W, ScopeModelContext<W, M>, V>(
+      ScopeContext.select<W, ScopeModelContext<W, M>, V>(
         context,
         selector,
       );

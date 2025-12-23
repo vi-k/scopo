@@ -28,21 +28,21 @@ abstract base class ScopeWidgetBottom<W extends ScopeWidgetBottom<W, E>,
     BuildContext context, {
     required bool listen,
   }) =>
-      ScopeWidgetContext.maybeOf<W, E>(context, listen: listen);
+      ScopeContext.maybeOf<W, E>(context, listen: listen);
 
   static E of<W extends ScopeWidgetBottom<W, E>,
           E extends ScopeWidgetElementBase<W, E>>(
     BuildContext context, {
     required bool listen,
   }) =>
-      ScopeWidgetContext.of<W, E>(context, listen: listen);
+      ScopeContext.of<W, E>(context, listen: listen);
 
   static V select<W extends ScopeWidgetBottom<W, E>,
           E extends ScopeWidgetElementBase<W, E>, V extends Object?>(
     BuildContext context,
     V Function(E element) selector,
   ) =>
-      ScopeWidgetContext.select<W, E, V>(context, selector);
+      ScopeContext.select<W, E, V>(context, selector);
 }
 
 abstract base class ScopeWidgetElementBase<W extends ScopeWidgetBottom<W, E>,

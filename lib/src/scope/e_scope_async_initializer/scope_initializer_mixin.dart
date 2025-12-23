@@ -58,18 +58,18 @@ base mixin ScopeInitializerElementMixin<W extends ScopeInheritedWidget,
   void init() {
     super.init();
     // ignore: discarded_futures
-    runInitAsync();
+    _runInitAsync();
   }
 
   @override
   void dispose() {
     // ignore: discarded_futures
-    runDisposeAsync(widget);
+    _runDisposeAsync(widget);
     super.dispose();
   }
 
   @mustCallSuper
-  Future<void> runInitAsync() async {
+  Future<void> _runInitAsync() async {
     assert(model.state is ScopeInitializerWaitingForPrevious);
 
     while (true) {
@@ -108,7 +108,7 @@ base mixin ScopeInitializerElementMixin<W extends ScopeInheritedWidget,
     _staticLifecycleCompleters[_completerKey] = _lifecycleCompleter;
   }
 
-  Future<void> runDisposeAsync(W widget) async {
+  Future<void> _runDisposeAsync(W widget) async {
     if (!_initCompleter.isCompleted) {
       await _initCompleter.future;
     }

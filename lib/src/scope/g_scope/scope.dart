@@ -112,6 +112,8 @@ final class ScopeElement<W extends Scope<W, D, S>, D extends ScopeDependencies,
     extends ScopeStreamInitializerElementBase<W, ScopeElement<W, D, S>, D> {
   var _autoSelfDependence = true;
   final _globalStateKey = GlobalKey<S>();
+  Completer<void>? _closeCompleter;
+  Completer<void>? _screenshotCompleter;
 
   ScopeElement(super.widget);
 
@@ -158,15 +160,64 @@ final class ScopeElement<W extends Scope<W, D, S>, D extends ScopeDependencies,
   Widget buildOnReady(BuildContext context, D dependencies) {
     _autoSelfDependence = false;
 
+    final child = _ScopeStateWidget<W, D, S>(
+      key: _globalStateKey,
+      createState: _createState,
+    );
+
     return widget.wrapState(
       this,
       dependencies,
-      _ScopeStateWidget<W, D, S>(
-        key: _globalStateKey,
-        createState: _createState,
-      ),
+      switch (_closeCompleter) {
+        null => child,
+        _ => Stack(
+            children: [
+              ScreenshotReplacer(
+                onCompleted: () {
+                  _screenshotCompleter?.complete();
+                },
+                child: child,
+              ),
+              Positioned.fill(
+                child: ColoredBox(
+                  color: Theme.of(context)
+                      .colorScheme
+                      .surface
+                      .withValues(alpha: 0.8),
+                  child: const Center(
+                    child: CircularProgressIndicator.adaptive(),
+                  ),
+                ),
+              ),
+            ],
+          ),
+      },
     );
   }
 
   S _createState() => widget.createState().._scopeElement = this;
+
+  @override
+  Future<void> _runDisposeAsync(W widget) async {
+    if (_closeCompleter case final closeCompleter?) {
+      return closeCompleter.future;
+    }
+
+    final completer = Completer<void>();
+    _closeCompleter = completer;
+    final screenshotCompleter = Completer<void>();
+    _screenshotCompleter = screenshotCompleter;
+    markNeedsBuild();
+    await screenshotCompleter.future;
+
+    try {
+      await super._runDisposeAsync(widget);
+    } finally {
+      completer.complete();
+    }
+  }
+
+  Future<void> close() async {
+    await _runDisposeAsync(widget);
+  }
 }

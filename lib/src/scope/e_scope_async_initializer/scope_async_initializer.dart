@@ -67,7 +67,7 @@ final class ScopeAsyncInitializer<T extends Object?>
     BuildContext context, {
     required bool listen,
   }) =>
-          ScopeWidgetContext.maybeOf<ScopeAsyncInitializer<T>,
+          ScopeContext.maybeOf<ScopeAsyncInitializer<T>,
               ScopeInitializerContext<ScopeAsyncInitializer<T>, T>>(
             context,
             listen: listen,
@@ -78,7 +78,7 @@ final class ScopeAsyncInitializer<T extends Object?>
     BuildContext context, {
     required bool listen,
   }) =>
-          ScopeWidgetContext.of<ScopeAsyncInitializer<T>,
+          ScopeContext.of<ScopeAsyncInitializer<T>,
               ScopeInitializerContext<ScopeAsyncInitializer<T>, T>>(
             context,
             listen: listen,
@@ -89,7 +89,7 @@ final class ScopeAsyncInitializer<T extends Object?>
     V Function(ScopeInitializerContext<ScopeAsyncInitializer<T>, T> context)
         selector,
   ) =>
-      ScopeWidgetContext.select<
+      ScopeContext.select<
           ScopeAsyncInitializer<T>,
           ScopeInitializerContext<ScopeAsyncInitializer<T>, T>,
           V>(context, selector);

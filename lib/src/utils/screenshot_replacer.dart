@@ -6,11 +6,17 @@ import 'package:flutter/rendering.dart';
 /// A widget that renders its [child] once, captures a screenshot of it,
 /// and then replaces the child with the captured image.
 class ScreenshotReplacer extends StatefulWidget {
+  final void Function() onCompleted;
+
   /// The widget to be screenshot.
   final Widget child;
 
   /// Creates a [ScreenshotReplacer].
-  const ScreenshotReplacer({required this.child, super.key});
+  const ScreenshotReplacer({
+    super.key,
+    required this.onCompleted,
+    required this.child,
+  });
 
   @override
   State<ScreenshotReplacer> createState() => _ScreenshotReplacerState();
@@ -54,6 +60,8 @@ class _ScreenshotReplacerState extends State<ScreenshotReplacer> {
       }
     } on Object catch (e) {
       debugPrint('Error capturing screenshot: $e');
+    } finally {
+      widget.onCompleted();
     }
   }
 

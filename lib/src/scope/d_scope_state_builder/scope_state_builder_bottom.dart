@@ -20,7 +20,7 @@ abstract base class ScopeStateBuilderBottom<
     BuildContext context, {
     required bool listen,
   }) =>
-      ScopeWidgetContext.maybeOf<W, E>(
+      ScopeContext.maybeOf<W, E>(
         context,
         listen: listen,
       );
@@ -30,7 +30,7 @@ abstract base class ScopeStateBuilderBottom<
     BuildContext context, {
     required bool listen,
   }) =>
-      ScopeWidgetContext.of<W, E>(context, listen: listen);
+      ScopeContext.of<W, E>(context, listen: listen);
 
   static V select<
           W extends ScopeStateBuilderBottom<W, E, S>,
@@ -40,7 +40,7 @@ abstract base class ScopeStateBuilderBottom<
     BuildContext context,
     V Function(E element) selector,
   ) =>
-      ScopeWidgetContext.select<W, E, V>(
+      ScopeContext.select<W, E, V>(
         context,
         selector,
       );

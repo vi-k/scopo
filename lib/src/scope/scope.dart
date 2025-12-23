@@ -1,7 +1,10 @@
 import 'dart:async';
 
 import 'package:flutter/foundation.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter/widgets.dart';
+
+import '../utils/screenshot_replacer.dart';
 
 part 'a_scope_widget/base.dart';
 part 'a_scope_widget/scope_widget_bottom.dart';

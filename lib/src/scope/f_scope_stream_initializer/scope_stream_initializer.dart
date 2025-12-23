@@ -62,7 +62,7 @@ final class ScopeStreamInitializer<T extends Object?>
     BuildContext context, {
     required bool listen,
   }) =>
-          ScopeWidgetContext.maybeOf<ScopeStreamInitializer<T>,
+          ScopeContext.maybeOf<ScopeStreamInitializer<T>,
               ScopeInitializerContext<ScopeStreamInitializer<T>, T>>(
             context,
             listen: listen,
@@ -73,7 +73,7 @@ final class ScopeStreamInitializer<T extends Object?>
     BuildContext context, {
     required bool listen,
   }) =>
-          ScopeWidgetContext.of<ScopeStreamInitializer<T>,
+          ScopeContext.of<ScopeStreamInitializer<T>,
               ScopeInitializerContext<ScopeStreamInitializer<T>, T>>(
             context,
             listen: listen,
@@ -84,7 +84,7 @@ final class ScopeStreamInitializer<T extends Object?>
     V Function(ScopeInitializerContext<ScopeStreamInitializer<T>, T> context)
         selector,
   ) =>
-      ScopeWidgetContext.select<
+      ScopeContext.select<
           ScopeStreamInitializer<T>,
           ScopeInitializerContext<ScopeStreamInitializer<T>, T>,
           V>(context, selector);

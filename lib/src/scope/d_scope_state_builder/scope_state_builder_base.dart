@@ -18,22 +18,22 @@ abstract base class ScopeStateBuilderBase<W extends ScopeStateBuilderBase<W, S>,
   ScopeStateBuilderElement<W, S> createScopeElement() =>
       ScopeStateBuilderElement<W, S>(this as W);
 
-  static ScopeModelContext<W, ScopeStateModel<S>>? maybeOf<
-          W extends ScopeStateBuilderBase<W, S>, S extends Object>(
+  static ScopeModelContext<W, ScopeStateModel<S>>?
+      maybeOf<W extends ScopeStateBuilderBase<W, S>, S extends Object>(
     BuildContext context, {
     required bool listen,
   }) =>
-      ScopeWidgetContext.maybeOf<W, ScopeModelContext<W, ScopeStateModel<S>>>(
-        context,
-        listen: listen,
-      );
+          ScopeContext.maybeOf<W, ScopeModelContext<W, ScopeStateModel<S>>>(
+            context,
+            listen: listen,
+          );
 
   static ScopeModelContext<W, ScopeStateModel<S>>
       of<W extends ScopeStateBuilderBase<W, S>, S extends Object>(
     BuildContext context, {
     required bool listen,
   }) =>
-          ScopeWidgetContext.of<W, ScopeModelContext<W, ScopeStateModel<S>>>(
+          ScopeContext.of<W, ScopeModelContext<W, ScopeStateModel<S>>>(
             context,
             listen: listen,
           );
@@ -43,7 +43,7 @@ abstract base class ScopeStateBuilderBase<W extends ScopeStateBuilderBase<W, S>,
     BuildContext context,
     V Function(ScopeModelContext<W, ScopeStateModel<S>> context) selector,
   ) =>
-      ScopeWidgetContext.select<W, ScopeModelContext<W, ScopeStateModel<S>>, V>(
+      ScopeContext.select<W, ScopeModelContext<W, ScopeStateModel<S>>, V>(
         context,
         selector,
       );

@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:scopo/scopo.dart';
 
@@ -317,6 +319,7 @@ final class HomeState extends ScopeState<Home, HomeDependencies, HomeState> {
                 const ScopeDemo(),
                 ListView(
                   children: [
+                    _Timer(tag: Home.paramsOf(context).tag),
                     const Text('You have pushed this buttons many times:'),
                     const HomeCounter(),
                     const SizedBox(height: 20),
@@ -336,6 +339,47 @@ final class HomeState extends ScopeState<Home, HomeDependencies, HomeState> {
             ),
           ),
         );
+      },
+    );
+  }
+}
+
+class _Timer extends StatefulWidget {
+  final String? tag;
+
+  const _Timer({required this.tag});
+
+  @override
+  State<_Timer> createState() => _TimerState();
+}
+
+class _TimerState extends State<_Timer> {
+  final _counter = ValueNotifier<int>(0);
+  late final Timer _timer;
+
+  @override
+  void initState() {
+    super.initState();
+    _timer = Timer.periodic(const Duration(milliseconds: 300), (timer) {
+      _counter.value++;
+      if (widget.tag case final tag?) {
+        print('$tag: ${_counter.value}');
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _timer.cancel();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return ValueListenableBuilder(
+      valueListenable: _counter,
+      builder: (context, value, _) {
+        return Text('$value');
       },
     );
   }

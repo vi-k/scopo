@@ -1,7 +1,7 @@
 part of '../scope.dart';
 
 abstract interface class ScopeModelContext<W extends ScopeInheritedWidget,
-    M extends Object> implements ScopeWidgetContext<W> {
+    M extends Object> implements ScopeContext<W> {
   @override
   W get widget;
 
