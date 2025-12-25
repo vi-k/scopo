@@ -24,7 +24,7 @@ abstract interface class ScopeModelInheritedElement<
   void dispose();
 
   @override
-  Widget buildBranch();
+  Widget buildChild();
 }
 
 base mixin ScopeModelBaseMixin<M extends Object> on ScopeInheritedWidget {
@@ -87,7 +87,7 @@ base mixin ScopeModelElementMixin<W extends ScopeModelBaseMixin<M>,
   }
 
   @override
-  Widget buildBranch() => widget.build(this);
+  Widget buildChild() => widget.build(this);
 
   @override
   void debugFillProperties(DiagnosticPropertiesBuilder properties) {

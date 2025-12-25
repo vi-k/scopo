@@ -132,7 +132,7 @@ base mixin ScopeInitializerElementMixin<W extends ScopeInheritedWidget,
   FutureOr<void> disposeAsync(W widget, T value);
 
   @override
-  Widget buildBranch() => buildOnState(model.state);
+  Widget buildChild() => buildOnState(model.state);
 
   Widget buildOnState(ScopeInitializerState<T> state);
 }

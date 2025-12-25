@@ -54,5 +54,5 @@ abstract base class ScopeModelElementBase<
   void dispose();
 
   @override
-  Widget buildBranch();
+  Widget buildChild();
 }

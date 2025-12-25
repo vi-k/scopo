@@ -88,5 +88,5 @@ abstract interface class ScopeInheritedElement<W extends ScopeInheritedWidget>
   @mustCallSuper
   void dispose();
 
-  Widget buildBranch();
+  Widget buildChild();
 }

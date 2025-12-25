@@ -171,6 +171,7 @@ abstract base class ScopeWidgetElementBase<W extends ScopeWidgetCore<W, E>,
   Element? updateChild(Element? child, Widget? newWidget, Object? newSlot) =>
       _updateChild ? super.updateChild(child, newWidget, newSlot) : child;
 
+  @nonVirtual
   @override
-  Widget build() => buildBranch();
+  Widget build() => buildChild();
 }

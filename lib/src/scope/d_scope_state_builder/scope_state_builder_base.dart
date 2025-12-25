@@ -58,5 +58,5 @@ final class ScopeStateBuilderElement<W extends ScopeStateBuilderBase<W, S>,
   bool get autoSelfDependence => widget.autoSelfDependence;
 
   @override
-  Widget buildBranch() => widget.build(this, notifier);
+  Widget buildChild() => widget.build(this, notifier);
 }
