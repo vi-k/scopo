@@ -2,7 +2,7 @@ part of '../scope.dart';
 
 abstract base class ScopeNotifierBase<W extends ScopeNotifierBase<W, M>,
         M extends Listenable>
-    extends ScopeNotifierBottom<W, ScopeNotifierElement<W, M>, M>
+    extends ScopeNotifierCore<W, ScopeNotifierElement<W, M>, M>
     with ScopeModelBaseMixin<M> {
   @override
   final M? value;

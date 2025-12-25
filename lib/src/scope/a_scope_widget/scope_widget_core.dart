@@ -5,9 +5,9 @@ typedef _ScopeDependency<T extends Object, V extends Object?> = (
   V Function(T),
 );
 
-abstract base class ScopeWidgetBottom<W extends ScopeWidgetBottom<W, E>,
+abstract base class ScopeWidgetCore<W extends ScopeWidgetCore<W, E>,
     E extends ScopeWidgetElementBase<W, E>> extends ScopeInheritedWidget {
-  const ScopeWidgetBottom({
+  const ScopeWidgetCore({
     super.key,
     super.tag,
   });
@@ -18,26 +18,26 @@ abstract base class ScopeWidgetBottom<W extends ScopeWidgetBottom<W, E>,
   InheritedElement createElement() => createScopeElement();
 
   @override
-  bool updateShouldNotify(ScopeWidgetBottom<W, E> oldWidget) => true;
+  bool updateShouldNotify(ScopeWidgetCore<W, E> oldWidget) => true;
 
   @override
   String toStringShort() => '$W${tag == null ? '' : '($tag)'}';
 
-  static E? maybeOf<W extends ScopeWidgetBottom<W, E>,
+  static E? maybeOf<W extends ScopeWidgetCore<W, E>,
           E extends ScopeWidgetElementBase<W, E>>(
     BuildContext context, {
     required bool listen,
   }) =>
       ScopeContext.maybeOf<W, E>(context, listen: listen);
 
-  static E of<W extends ScopeWidgetBottom<W, E>,
+  static E of<W extends ScopeWidgetCore<W, E>,
           E extends ScopeWidgetElementBase<W, E>>(
     BuildContext context, {
     required bool listen,
   }) =>
       ScopeContext.of<W, E>(context, listen: listen);
 
-  static V select<W extends ScopeWidgetBottom<W, E>,
+  static V select<W extends ScopeWidgetCore<W, E>,
           E extends ScopeWidgetElementBase<W, E>, V extends Object?>(
     BuildContext context,
     V Function(E element) selector,
@@ -45,7 +45,7 @@ abstract base class ScopeWidgetBottom<W extends ScopeWidgetBottom<W, E>,
       ScopeContext.select<W, E, V>(context, selector);
 }
 
-abstract base class ScopeWidgetElementBase<W extends ScopeWidgetBottom<W, E>,
+abstract base class ScopeWidgetElementBase<W extends ScopeWidgetCore<W, E>,
         E extends ScopeWidgetElementBase<W, E>> extends InheritedElement
     implements ScopeInheritedElement<W> {
   var _shouldNotify = false;

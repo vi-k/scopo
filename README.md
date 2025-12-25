@@ -19,6 +19,8 @@ dependencies and UI state.
 - **Error Handling**: graceful handling of initialization errors.
 - **Separation of Concerns**: clearly separates Dependencies (`ScopeDeps`),
   UI Logic (`ScopeContent`), and Wiring (`Scope`).
+- **Closing Transition**: provides a smooth UI experience during scope disposal
+  by preserving the last frame.
 
 ## Table of Contents
 
@@ -28,7 +30,8 @@ dependencies and UI state.
   - [1. Define Dependencies](#1-define-dependencies)
   - [2. Define Content](#2-define-content)
   - [3. Define the Scope](#3-define-the-scope)
-  - [4. Use it](#4-use-it)
+  - [4. Closing Transition](#4-closing-transition)
+  - [5. Use it](#5-use-it)
 - [Accessing Dependencies](#accessing-dependencies)
 - [Logging](#logging)
 - [Utilities](#utilities)
@@ -194,12 +197,47 @@ class MyFeatureScope extends Scope<MyFeatureScope, MyFeatureDeps, MyFeatureConte
     );
   }
 
+    );
+  }
+
   @override
   bool updateParamsShouldNotify(MyFeatureScope oldWidget) => false;
 }
 ```
 
-### 4. Use it
+### 4. Closing Transition
+
+The `Scope` now handles the closing transition gracefully. When a scope is closed, it captures a screenshot of the current state and displays it while the disposal logic (e.g., closing databases, cancelling streams) is running in the background. This ensures a smooth user experience without UI flickering or empty states during teardown.
+
+This is handled automatically, but you can customize the disposal timeout:
+
+```dart
+class MyFeatureScope extends Scope<MyFeatureScope, MyFeatureDeps, MyFeatureContent> {
+  const MyFeatureScope({
+    super.key,
+  }) : super(
+          init: MyFeatureDeps.init,
+          // Optional: Only allow one instance of this scope in the tree.
+          onlyOneInstance: false,
+          // Optional: Pause after initialization before showing content.
+          pauseAfterInitialization: const Duration(milliseconds: 500),
+        );
+
+  // ...
+
+  // Optional: Set a timeout for disposal.
+  @override
+  Duration? get disposeTimeout => const Duration(seconds: 5);
+
+  // Optional: Action to take if disposal times out.
+  @override
+  void Function()? get onDisposeTimeout => () {
+     print('Disposal timed out!');
+  };
+}
+```
+
+### 5. Use it
 
 Simply wrap your widget tree (or part of it) with your `Scope`.
 

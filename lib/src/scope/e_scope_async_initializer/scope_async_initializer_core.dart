@@ -1,17 +1,17 @@
 part of '../scope.dart';
 
-abstract base class ScopeAsyncInitializerBottom<
-        W extends ScopeAsyncInitializerBottom<W, E, T>,
+abstract base class ScopeAsyncInitializerCore<
+        W extends ScopeAsyncInitializerCore<W, E, T>,
         E extends ScopeAsyncInitializerElementBase<W, E, T>,
         T extends Object?>
-    extends ScopeStateBuilderBottom<W, E, ScopeInitializerState<T>> {
-  const ScopeAsyncInitializerBottom({
+    extends ScopeStateBuilderCore<W, E, ScopeInitializerState<T>> {
+  const ScopeAsyncInitializerCore({
     super.key,
     super.tag,
   }) : super(initialState: const ScopeInitializerWaitingForPrevious());
 
   static E? maybeOf<
-          W extends ScopeAsyncInitializerBottom<W, E, T>,
+          W extends ScopeAsyncInitializerCore<W, E, T>,
           E extends ScopeAsyncInitializerElementBase<W, E, T>,
           T extends Object?>(
     BuildContext context, {
@@ -23,7 +23,7 @@ abstract base class ScopeAsyncInitializerBottom<
       );
 
   static E of<
-          W extends ScopeAsyncInitializerBottom<W, E, T>,
+          W extends ScopeAsyncInitializerCore<W, E, T>,
           E extends ScopeAsyncInitializerElementBase<W, E, T>,
           T extends Object?>(
     BuildContext context, {
@@ -35,7 +35,7 @@ abstract base class ScopeAsyncInitializerBottom<
       );
 
   static V select<
-          W extends ScopeAsyncInitializerBottom<W, E, T>,
+          W extends ScopeAsyncInitializerCore<W, E, T>,
           E extends ScopeAsyncInitializerElementBase<W, E, T>,
           T extends Object?,
           V extends Object?>(
@@ -49,7 +49,7 @@ abstract base class ScopeAsyncInitializerBottom<
 }
 
 abstract base class ScopeAsyncInitializerElementBase<
-        W extends ScopeAsyncInitializerBottom<W, E, T>,
+        W extends ScopeAsyncInitializerCore<W, E, T>,
         E extends ScopeAsyncInitializerElementBase<W, E, T>,
         T extends Object?>
     extends ScopeStateBuilderElementBase<W, E, ScopeInitializerState<T>>

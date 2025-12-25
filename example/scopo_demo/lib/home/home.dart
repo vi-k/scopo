@@ -10,6 +10,9 @@ import '../common/data/fake_services/some_bloc.dart';
 import '../common/data/fake_services/some_controller.dart';
 import '../common/presentation/animated_progress_indicator.dart';
 import '../common/presentation/sized_tab_bar.dart';
+import 'demos/a_scope_widget/scope_widget_demo.dart';
+import 'demos/b_scope_model/scope_model_demo.dart';
+import 'demos/c_scope_notifier/scope_notifier_demo.dart';
 import 'demos/data_access_demo/data_access_demo.dart';
 import 'demos/scope_demo/scope_demo.dart';
 import 'demos/scope_initializer_demo/scope_initializer_demo.dart';
@@ -18,6 +21,16 @@ import 'home_deps.dart';
 import 'home_navigation_block.dart';
 
 typedef HomeConsumer = ScopeConsumer<Home, HomeDependencies, HomeState>;
+
+const _tabs = <(String, Widget)>[
+  ('Common', _Common()),
+  ('ScopeWidget', ScopeWidgetDemo()),
+  ('ScopeModel', ScopeModelDemo()),
+  ('ScopeNotifier', ScopeNotifierDemo()),
+  ('Data access', DataAccessDemo()),
+  ('Async initialization', ScopeInitializerDemo()),
+  ('Scope', ScopeDemo()),
+];
 
 /// A child scope.
 ///
@@ -140,12 +153,7 @@ class HomeAppBar extends AppBar {
                   unselectedLabelColor: Theme.of(
                     context,
                   ).colorScheme.onPrimary.withValues(alpha: 0.5),
-                  tabs: const [
-                    Tab(text: 'Data access'),
-                    Tab(text: 'Async initialization'),
-                    Tab(text: 'Scope'),
-                    Tab(text: 'Other'),
-                  ],
+                  tabs: _tabs.map((e) => Tab(text: e.$1)).toList(),
                 )
                 : null,
       );
@@ -219,7 +227,6 @@ final class HomeState extends ScopeState<Home, HomeDependencies, HomeState> {
   void initState() {
     super.initState();
 
-    // this.widget.;
     print(dependencies.someController);
   }
 
@@ -309,37 +316,33 @@ final class HomeState extends ScopeState<Home, HomeDependencies, HomeState> {
     return Builder(
       builder: (context) {
         return DefaultTabController(
-          length: 4,
+          length: _tabs.length,
           child: Scaffold(
             appBar: HomeAppBar(context),
-            body: TabBarView(
-              children: [
-                const DataAccessDemo(),
-                const ScopeInitializerDemo(),
-                const ScopeDemo(),
-                ListView(
-                  children: [
-                    _Timer(tag: Home.paramsOf(context).tag),
-                    const Text('You have pushed this buttons many times:'),
-                    const HomeCounter(),
-                    const SizedBox(height: 20),
-                    const SizedBox(height: 20),
-                    const SizedBox(height: 20),
-                    const HomeNavigationBlock(),
-                    const SizedBox(height: 20),
-                    ElevatedButton(
-                      onPressed: () {
-                        setState(() {});
-                      },
-                      child: const Text('setState()'),
-                    ),
-                  ],
-                ),
-              ],
-            ),
+            body: TabBarView(children: _tabs.map((e) => e.$2).toList()),
           ),
         );
       },
+    );
+  }
+}
+
+class _Common extends StatelessWidget {
+  const _Common();
+
+  @override
+  Widget build(BuildContext context) {
+    return ListView(
+      children: [
+        _Timer(tag: Home.paramsOf(context).tag),
+        const Text('You have pushed this buttons many times:'),
+        const HomeCounter(),
+        const SizedBox(height: 20),
+        const SizedBox(height: 20),
+        const SizedBox(height: 20),
+        const HomeNavigationBlock(),
+        const SizedBox(height: 20),
+      ],
     );
   }
 }

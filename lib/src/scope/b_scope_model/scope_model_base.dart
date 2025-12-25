@@ -1,8 +1,7 @@
 part of '../scope.dart';
 
 abstract base class ScopeModelBase<W extends ScopeModelBase<W, M>,
-        M extends Object>
-    extends ScopeModelBottom<W, ScopeModelElement<W, M>, M>
+        M extends Object> extends ScopeModelCore<W, ScopeModelElement<W, M>, M>
     with ScopeModelBaseMixin<M> {
   @override
   final M? value;

@@ -1,12 +1,12 @@
 part of '../scope.dart';
 
-abstract base class ScopeStateBuilderBottom<
-    W extends ScopeStateBuilderBottom<W, E, S>,
+abstract base class ScopeStateBuilderCore<
+    W extends ScopeStateBuilderCore<W, E, S>,
     E extends ScopeStateBuilderElementBase<W, E, S>,
-    S extends Object> extends ScopeNotifierBottom<W, E, ScopeStateModel<S>> {
+    S extends Object> extends ScopeNotifierCore<W, E, ScopeStateModel<S>> {
   final S initialState;
 
-  const ScopeStateBuilderBottom({
+  const ScopeStateBuilderCore({
     super.key,
     super.tag,
     required this.initialState,
@@ -15,7 +15,7 @@ abstract base class ScopeStateBuilderBottom<
   @override
   E createScopeElement();
 
-  static E? maybeOf<W extends ScopeStateBuilderBottom<W, E, S>,
+  static E? maybeOf<W extends ScopeStateBuilderCore<W, E, S>,
           E extends ScopeStateBuilderElementBase<W, E, S>, S extends Object>(
     BuildContext context, {
     required bool listen,
@@ -25,7 +25,7 @@ abstract base class ScopeStateBuilderBottom<
         listen: listen,
       );
 
-  static E of<W extends ScopeStateBuilderBottom<W, E, S>,
+  static E of<W extends ScopeStateBuilderCore<W, E, S>,
           E extends ScopeStateBuilderElementBase<W, E, S>, S extends Object>(
     BuildContext context, {
     required bool listen,
@@ -33,7 +33,7 @@ abstract base class ScopeStateBuilderBottom<
       ScopeContext.of<W, E>(context, listen: listen);
 
   static V select<
-          W extends ScopeStateBuilderBottom<W, E, S>,
+          W extends ScopeStateBuilderCore<W, E, S>,
           E extends ScopeStateBuilderElementBase<W, E, S>,
           S extends Object,
           V extends Object?>(
@@ -47,7 +47,7 @@ abstract base class ScopeStateBuilderBottom<
 }
 
 abstract base class ScopeStateBuilderElementBase<
-        W extends ScopeStateBuilderBottom<W, E, S>,
+        W extends ScopeStateBuilderCore<W, E, S>,
         E extends ScopeStateBuilderElementBase<W, E, S>,
         S extends Object>
     extends ScopeNotifierElementBase<W, E, ScopeStateModel<S>> {

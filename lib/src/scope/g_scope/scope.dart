@@ -17,7 +17,7 @@ typedef ScopeOnErrorCallback = Widget Function(
 
 abstract base class Scope<W extends Scope<W, D, S>, D extends ScopeDependencies,
         S extends ScopeState<W, D, S>>
-    extends ScopeStreamInitializerBottom<W, ScopeElement<W, D, S>, D> {
+    extends ScopeStreamInitializerCore<W, ScopeElement<W, D, S>, D> {
   final bool onlyOneInstance;
 
   final Duration? pauseAfterInitialization;
@@ -62,7 +62,7 @@ abstract base class Scope<W extends Scope<W, D, S>, D extends ScopeDependencies,
     BuildContext context, {
     required bool listen,
   }) =>
-      ScopeModelBottom.of<W, ScopeElement<W, D, S>,
+      ScopeModelCore.of<W, ScopeElement<W, D, S>,
           ScopeStateModel<ScopeInitializerState<D>>>(
         context,
         listen: listen,
@@ -73,7 +73,7 @@ abstract base class Scope<W extends Scope<W, D, S>, D extends ScopeDependencies,
     BuildContext context,
     V Function(W widget) selector,
   ) =>
-      ScopeModelBottom.select<
+      ScopeModelCore.select<
           W,
           ScopeElement<W, D, S>,
           ScopeStateModel<ScopeInitializerState<D>>,
@@ -81,7 +81,7 @@ abstract base class Scope<W extends Scope<W, D, S>, D extends ScopeDependencies,
 
   static S? maybeOf<W extends Scope<W, D, S>, D extends ScopeDependencies,
           S extends ScopeState<W, D, S>>(BuildContext context) =>
-      ScopeModelBottom.maybeOf<W, ScopeElement<W, D, S>,
+      ScopeModelCore.maybeOf<W, ScopeElement<W, D, S>,
           ScopeStateModel<ScopeInitializerState<D>>>(
         context,
         listen: false,
@@ -89,7 +89,7 @@ abstract base class Scope<W extends Scope<W, D, S>, D extends ScopeDependencies,
 
   static S of<W extends Scope<W, D, S>, D extends ScopeDependencies,
           S extends ScopeState<W, D, S>>(BuildContext context) =>
-      ScopeModelBottom.of<W, ScopeElement<W, D, S>,
+      ScopeModelCore.of<W, ScopeElement<W, D, S>,
           ScopeStateModel<ScopeInitializerState<D>>>(
         context,
         listen: false,
@@ -100,7 +100,7 @@ abstract base class Scope<W extends Scope<W, D, S>, D extends ScopeDependencies,
     BuildContext context,
     V Function(S scope) selector,
   ) =>
-      ScopeModelBottom.select<W, ScopeElement<W, D, S>,
+      ScopeModelCore.select<W, ScopeElement<W, D, S>,
           ScopeStateModel<ScopeInitializerState<D>>, V>(
         context,
         (element) => selector(element._globalStateKey.currentState!),

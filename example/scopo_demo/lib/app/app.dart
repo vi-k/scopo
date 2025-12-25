@@ -95,15 +95,16 @@ final class App extends Scope<App, AppDependencies, AppState> {
       return Directionality(
         textDirection: TextDirection.ltr,
         child: Banner(
-          message: 'scopo demo',
+          message: 'scopo',
           location: BannerLocation.bottomEnd,
           color: themeModel.theme.colorScheme.primary,
           textStyle: TextStyle(
             color: themeModel.theme.colorScheme.onPrimary,
-            fontSize: 9,
-            fontWeight: FontWeight.normal,
+            fontSize: 11,
+            fontWeight: FontWeight.bold,
             height: 1,
           ),
+          shadow: const BoxShadow(color: Colors.transparent),
           child: _app(
             mode: themeModel.mode,
             light: themeModel.lightTheme,

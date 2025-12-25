@@ -2,7 +2,7 @@ part of '../scope.dart';
 
 abstract base class ScopeStateBuilderBase<W extends ScopeStateBuilderBase<W, S>,
         S extends Object>
-    extends ScopeStateBuilderBottom<W, ScopeStateBuilderElement<W, S>, S> {
+    extends ScopeStateBuilderCore<W, ScopeStateBuilderElement<W, S>, S> {
   final bool autoSelfDependence;
 
   const ScopeStateBuilderBase({

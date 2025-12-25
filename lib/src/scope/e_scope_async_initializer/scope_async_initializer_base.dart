@@ -2,7 +2,7 @@ part of '../scope.dart';
 
 abstract base class ScopeAsyncInitializerBase<
         W extends ScopeAsyncInitializerBase<W, T>, T extends Object?>
-    extends ScopeAsyncInitializerBottom<W, ScopeAsyncInitializerElement<W, T>,
+    extends ScopeAsyncInitializerCore<W, ScopeAsyncInitializerElement<W, T>,
         T> {
   final bool onlyOneInstance;
   final bool autoSelfDependence;

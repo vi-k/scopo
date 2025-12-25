@@ -2,7 +2,7 @@ part of '../scope.dart';
 
 abstract base class ScopeStreamInitializerBase<
         W extends ScopeStreamInitializerBase<W, T>, T extends Object?>
-    extends ScopeStreamInitializerBottom<W, ScopeStreamInitializerElement<W, T>,
+    extends ScopeStreamInitializerCore<W, ScopeStreamInitializerElement<W, T>,
         T> {
   final bool onlyOneInstance;
   final bool autoSelfDependence;

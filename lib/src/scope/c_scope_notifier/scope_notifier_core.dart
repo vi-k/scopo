@@ -1,10 +1,10 @@
 part of '../scope.dart';
 
-abstract base class ScopeNotifierBottom<
-    W extends ScopeNotifierBottom<W, E, M>,
+abstract base class ScopeNotifierCore<
+    W extends ScopeNotifierCore<W, E, M>,
     E extends ScopeNotifierElementBase<W, E, M>,
-    M extends Listenable> extends ScopeModelBottom<W, E, M> {
-  const ScopeNotifierBottom({
+    M extends Listenable> extends ScopeModelCore<W, E, M> {
+  const ScopeNotifierCore({
     super.key,
     super.tag,
   });
@@ -12,14 +12,14 @@ abstract base class ScopeNotifierBottom<
   @override
   E createScopeElement();
 
-  static E? maybeOf<W extends ScopeNotifierBottom<W, E, M>,
+  static E? maybeOf<W extends ScopeNotifierCore<W, E, M>,
           E extends ScopeNotifierElementBase<W, E, M>, M extends Listenable>(
     BuildContext context, {
     required bool listen,
   }) =>
       ScopeContext.maybeOf<W, E>(context, listen: listen);
 
-  static E of<W extends ScopeNotifierBottom<W, E, M>,
+  static E of<W extends ScopeNotifierCore<W, E, M>,
           E extends ScopeNotifierElementBase<W, E, M>, M extends Listenable>(
     BuildContext context, {
     required bool listen,
@@ -27,7 +27,7 @@ abstract base class ScopeNotifierBottom<
       ScopeContext.of<W, E>(context, listen: listen);
 
   static V select<
-          W extends ScopeNotifierBottom<W, E, M>,
+          W extends ScopeNotifierCore<W, E, M>,
           E extends ScopeNotifierElementBase<W, E, M>,
           M extends Listenable,
           V extends Object?>(
@@ -37,11 +37,9 @@ abstract base class ScopeNotifierBottom<
       ScopeContext.select<W, E, V>(context, selector);
 }
 
-abstract base class ScopeNotifierElementBase<
-        W extends ScopeModelBottom<W, E, M>,
-        E extends ScopeNotifierElementBase<W, E, M>,
-        M extends Listenable> extends ScopeModelElementBase<W, E, M>
-    implements ScopeModelContext<W, M> {
+abstract base class ScopeNotifierElementBase<W extends ScopeModelCore<W, E, M>,
+        E extends ScopeNotifierElementBase<W, E, M>, M extends Listenable>
+    extends ScopeModelElementBase<W, E, M> implements ScopeModelContext<W, M> {
   ScopeNotifierElementBase(super.widget);
 
   @override
