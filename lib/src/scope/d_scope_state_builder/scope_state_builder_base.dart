@@ -47,6 +47,20 @@ abstract base class ScopeStateBuilderBase<W extends ScopeStateBuilderBase<W, S>,
         context,
         selector,
       );
+
+  static S stateOf<W extends ScopeStateBuilderBase<W, S>, S extends Object>(
+    BuildContext context, {
+    required bool listen,
+  }) =>
+      listen
+          ? ScopeContext.select<W, ScopeModelContext<W, ScopeStateModel<S>>, S>(
+              context,
+              (context) => context.model.state,
+            )
+          : ScopeContext.of<W, ScopeModelContext<W, ScopeStateModel<S>>>(
+              context,
+              listen: false,
+            ).model.state;
 }
 
 final class ScopeStateBuilderElement<W extends ScopeStateBuilderBase<W, S>,

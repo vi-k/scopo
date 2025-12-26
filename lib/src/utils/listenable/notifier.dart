@@ -1,6 +1,6 @@
 import 'package:flutter/foundation.dart';
 
-import 'check_disposed.dart';
+import '../check_disposed.dart';
 
 /// @nodoc
 @visibleForTesting
@@ -146,7 +146,7 @@ mixin Notifier implements Listenable {
     }
   }
 
-  void disposeListenable() {
+  void disposeNotifier() {
     assert(debugAssertNotDisposed(this, _debugDisposed, 'disposeListenable'));
     assert(
       !_notifyingListeners,

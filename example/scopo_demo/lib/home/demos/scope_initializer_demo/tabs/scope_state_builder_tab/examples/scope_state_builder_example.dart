@@ -16,7 +16,7 @@ class ScopeStateBuilderExample extends StatelessWidget {
   Widget build(BuildContext context) {
     return ScopeStateBuilder<ScopeStateBuilderExampleState>(
       initialState: ScopeStateBuilderExampleState.initial,
-      autoSelfDependence: false,
+      autoSelfDependence: false, // +++ разобраться, нужно ли это здесь
       builder: (context, notifier) {
         return Expansion(
           initiallyExpanded: true,

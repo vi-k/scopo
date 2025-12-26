@@ -1,0 +1,61 @@
+import 'package:flutter/material.dart';
+import 'package:scopo/scopo.dart';
+
+class ScopeWidgetExample extends StatefulWidget {
+  const ScopeWidgetExample({super.key});
+
+  @override
+  State<ScopeWidgetExample> createState() => _ScopeWidgetExampleState();
+}
+
+class _ScopeWidgetExampleState extends State<ScopeWidgetExample> {
+  var _count = 0;
+
+  void _increment() {
+    setState(() {
+      _count++;
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        CounterScope(count: _count),
+        IconButton(
+          color: Theme.of(context).colorScheme.primary,
+          onPressed: _increment,
+          icon: const Icon(Icons.add_circle),
+        ),
+      ],
+    );
+  }
+}
+
+final class CounterScope extends ScopeWidgetBase<CounterScope> {
+  final int count;
+
+  const CounterScope({super.key, required this.count});
+
+  static int countOf(BuildContext context) =>
+      ScopeWidgetBase.select<CounterScope, int>(
+        context,
+        (widget) => widget.count,
+      );
+
+  @override
+  Widget build(BuildContext context) {
+    return const _CounterView();
+  }
+}
+
+class _CounterView extends StatelessWidget {
+  const _CounterView();
+
+  @override
+  Widget build(BuildContext context) {
+    final count = CounterScope.countOf(context);
+    return Center(child: Text('$count'));
+  }
+}

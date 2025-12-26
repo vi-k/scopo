@@ -40,8 +40,5 @@ final class ScopeWidgetElement<W extends ScopeWidgetBase<W>>
   ScopeWidgetElement(super.widget);
 
   @override
-  bool get autoSelfDependence => false;
-
-  @override
   Widget buildChild() => widget.build(this);
 }

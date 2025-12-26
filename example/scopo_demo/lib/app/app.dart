@@ -20,10 +20,10 @@ final class App extends Scope<App, AppDependencies, AppState> {
   const App({
     super.key,
     required ScopeInitFunction<double, AppDependencies> init,
-    required ScopeOnInitCallback<double> onInit,
+    required ScopeOnInitCallback<double> initBuilder,
     required this.builder,
   }) : _init = init,
-       _onInit = onInit,
+       _onInit = initBuilder,
        super(pauseAfterInitialization: const Duration(milliseconds: 500));
 
   @override

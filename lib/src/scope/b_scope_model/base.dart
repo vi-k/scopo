@@ -10,7 +10,11 @@ abstract interface class ScopeModelContext<W extends ScopeInheritedWidget,
 
 abstract interface class ScopeModelInheritedElement<
         W extends ScopeInheritedWidget, M extends Object>
-    implements ScopeInheritedElement<W>, ScopeModelContext<W, M> {
+    implements
+        // ignore: avoid_implementing_value_types
+        InheritedElement,
+        ScopeInheritedElement<W>,
+        ScopeModelContext<W, M> {
   @override
   W get widget;
 
@@ -65,8 +69,6 @@ base mixin ScopeModelElementMixin<W extends ScopeModelBaseMixin<M>,
   M? _model;
 
   M get model => _model ?? widget.value!;
-
-  bool get autoSelfDependence => false;
 
   @override
   void init() {

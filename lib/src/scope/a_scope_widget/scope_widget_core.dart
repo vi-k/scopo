@@ -64,7 +64,7 @@ abstract base class ScopeWidgetElementBase<W extends ScopeWidgetCore<W, E>,
     super.unmount();
   }
 
-  bool get autoSelfDependence;
+  bool get autoSelfDependence => false;
 
   @override
   Set<InheritedElement>? get dependencies =>
@@ -152,6 +152,7 @@ abstract base class ScopeWidgetElementBase<W extends ScopeWidgetCore<W, E>,
     }
   }
 
+  @protected
   void notifyDependents() {
     _shouldNotify = true;
     markNeedsBuild();

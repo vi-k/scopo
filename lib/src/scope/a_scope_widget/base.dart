@@ -16,9 +16,7 @@ final class _NullWidget extends Widget {
   Element createElement() => throw UnimplementedError();
 }
 
-abstract interface class ScopeContext<W extends ScopeInheritedWidget>
-    implements BuildContext {
-  @override
+abstract interface class ScopeContext<W extends ScopeInheritedWidget> {
   W get widget;
 
   static C? maybeOf<W extends ScopeInheritedWidget, C extends ScopeContext<W>>(

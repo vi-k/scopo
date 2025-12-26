@@ -1,0 +1,124 @@
+import 'package:flutter/material.dart';
+import 'package:scopo/scopo.dart';
+
+class ScopeNotifierExample2 extends StatelessWidget {
+  const ScopeNotifierExample2({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return const Center(child: CounterScope());
+  }
+}
+
+abstract interface class CounterModel implements Listenable {
+  int get count;
+
+  void increment();
+}
+
+final class _CounterModelImpl with ChangeNotifier implements CounterModel {
+  int _count = 0;
+
+  @override
+  int get count => _count;
+
+  @override
+  void increment() {
+    _count++;
+    notifyListeners();
+  }
+}
+
+final class CounterScope
+    extends ScopeNotifierCore<CounterScope, CounterScopeElement, CounterModel> {
+  const CounterScope({super.key});
+
+  // ignore: unused_element
+  static _CounterModelImpl _of(BuildContext context) =>
+      ScopeNotifierCore.of<CounterScope, CounterScopeElement, CounterModel>(
+        context,
+        listen: false,
+      )._model;
+
+  static CounterModel of(BuildContext context) =>
+      ScopeNotifierCore.of<CounterScope, CounterScopeElement, CounterModel>(
+        context,
+        listen: false,
+      ).model;
+
+  static int countOf(BuildContext context) => ScopeNotifierCore.select<
+    CounterScope,
+    CounterScopeElement,
+    CounterModel,
+    int
+  >(context, (context) => context.model.count);
+
+  static V select<V>(
+    BuildContext context,
+    V Function(ScopeModelContext<CounterScope, CounterModel> context) selector,
+  ) => ScopeNotifierCore.select<
+    CounterScope,
+    CounterScopeElement,
+    CounterModel,
+    V
+  >(context, (context) => selector(context));
+
+  Widget build(BuildContext context) {
+    return const Row(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [_CounterView(), _IncrementAction()],
+    );
+  }
+
+  @override
+  CounterScopeElement createScopeElement() => CounterScopeElement(this);
+}
+
+final class CounterScopeElement
+    extends
+        ScopeNotifierElementBase<
+          CounterScope,
+          CounterScopeElement,
+          CounterModel
+        > {
+  final _CounterModelImpl _model = _CounterModelImpl();
+
+  @override
+  CounterScopeElement(super.widget);
+
+  @override
+  CounterModel get model => _model;
+
+  @override
+  void dispose() {
+    // Именно в таком порядке!
+    super.dispose();
+    _model.dispose();
+  }
+
+  @override
+  Widget buildChild() => widget.build(this);
+}
+
+class _CounterView extends StatelessWidget {
+  const _CounterView();
+
+  @override
+  Widget build(BuildContext context) {
+    final count = CounterScope.countOf(context);
+    return Center(child: Text('$count'));
+  }
+}
+
+class _IncrementAction extends StatelessWidget {
+  const _IncrementAction();
+
+  @override
+  Widget build(BuildContext context) {
+    return IconButton(
+      color: Theme.of(context).colorScheme.primary,
+      onPressed: CounterScope.of(context).increment,
+      icon: const Icon(Icons.add_circle),
+    );
+  }
+}
