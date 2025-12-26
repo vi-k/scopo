@@ -5,7 +5,7 @@ abstract interface class ScopeStateModel<S extends Object>
   S get state;
 }
 
-final class ScopeStateNotifier<S extends Object> extends ChangeNotifier
+base class ScopeStateNotifier<S extends Object> extends ChangeNotifier
     implements ScopeStateModel<S> {
   S _state;
 
@@ -23,15 +23,15 @@ final class ScopeStateNotifier<S extends Object> extends ChangeNotifier
 
   bool equals(S previous, S current) => false;
 
-  ScopeStateUnmodifiableView<S> asUnmodifiable() =>
-      ScopeStateUnmodifiableView(this);
+  UnmodifiableScopeStateModel<S> asUnmodifiable() =>
+      UnmodifiableScopeStateModel(this);
 }
 
-final class ScopeStateUnmodifiableView<S extends Object>
+base class UnmodifiableScopeStateModel<S extends Object>
     implements ScopeStateModel<S> {
   final ScopeStateNotifier<S> _notifier;
 
-  ScopeStateUnmodifiableView(ScopeStateNotifier<S> notifier)
+  UnmodifiableScopeStateModel(ScopeStateNotifier<S> notifier)
       : _notifier = notifier;
 
   @override

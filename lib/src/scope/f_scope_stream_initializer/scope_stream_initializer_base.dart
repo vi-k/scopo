@@ -5,7 +5,6 @@ abstract base class ScopeStreamInitializerBase<
     extends ScopeStreamInitializerCore<W, ScopeStreamInitializerElement<W, T>,
         T> {
   final bool onlyOneInstance;
-  final bool autoSelfDependence;
   final Duration? pauseAfterInitialization;
   final Duration? disposeTimeout;
   final void Function()? onDisposeTimeout;
@@ -14,7 +13,6 @@ abstract base class ScopeStreamInitializerBase<
     super.key,
     super.tag,
     this.onlyOneInstance = false,
-    this.autoSelfDependence = true,
     this.pauseAfterInitialization,
     this.disposeTimeout,
     this.onDisposeTimeout,
@@ -80,9 +78,6 @@ final class ScopeStreamInitializerElement<
 
   @override
   bool get onlyOneInstance => widget.onlyOneInstance;
-
-  @override
-  bool get autoSelfDependence => widget.autoSelfDependence;
 
   @override
   Duration? get pauseAfterInitialization => widget.pauseAfterInitialization;

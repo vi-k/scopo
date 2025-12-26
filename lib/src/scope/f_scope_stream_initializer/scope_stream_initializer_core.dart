@@ -1,14 +1,13 @@
 part of '../scope.dart';
 
 abstract base class ScopeStreamInitializerCore<
-        W extends ScopeStreamInitializerCore<W, E, T>,
-        E extends ScopeStreamInitializerElementBase<W, E, T>,
-        T extends Object?>
-    extends ScopeStateBuilderCore<W, E, ScopeInitializerState<T>> {
+    W extends ScopeStreamInitializerCore<W, E, T>,
+    E extends ScopeStreamInitializerElementBase<W, E, T>,
+    T extends Object?> extends ScopeModelCore<W, E, ScopeInitializerModel<T>> {
   const ScopeStreamInitializerCore({
     super.key,
     super.tag,
-  }) : super(initialState: const ScopeInitializerWaitingForPrevious());
+  });
 
   static E? maybeOf<
           W extends ScopeStreamInitializerCore<W, E, T>,
@@ -52,11 +51,24 @@ abstract base class ScopeStreamInitializerElementBase<
         W extends ScopeStreamInitializerCore<W, E, T>,
         E extends ScopeStreamInitializerElementBase<W, E, T>,
         T extends Object?>
-    extends ScopeStateBuilderElementBase<W, E, ScopeInitializerState<T>>
+    extends ScopeNotifierElementBase<W, E, ScopeInitializerModel<T>>
     with ScopeInitializerElementMixin<W, T> {
+  final _ScopeInitializerNotifier<T> _model = _ScopeInitializerNotifier<T>();
+
   StreamSubscription<void>? _subscription;
 
   ScopeStreamInitializerElementBase(super.widget);
+
+  @override
+  void dispose() {
+    // ignore: discarded_futures
+    _subscription?.cancel();
+    super.dispose();
+    _model.dispose();
+  }
+
+  @override
+  ScopeInitializerModel<T> get model => _model;
 
   @override
   bool get onlyOneInstance;
@@ -85,7 +97,7 @@ abstract base class ScopeStreamInitializerElementBase<
       if (!mounted) return;
 
       _subscription = initAsync().asyncMap((state) async {
-        switch (notifier.state) {
+        switch (_model.state) {
           case ScopeInitializerWaitingForPrevious<T>():
           case ScopeInitializerProgress<T>():
             break;
@@ -99,26 +111,26 @@ abstract base class ScopeStreamInitializerElementBase<
 
         switch (state) {
           case ScopeProgress<Object, T>():
-            notifier.update(state.toScopeInitializerState());
+            _model.update(state.toScopeInitializerState());
 
           case ScopeReady<Object, T>():
             if (pauseAfterInitialization case final pauseAfterInitialization?) {
               await Future<void>.delayed(pauseAfterInitialization);
               if (mounted) {
-                notifier.update(state.toScopeInitializerState());
+                _model.update(state.toScopeInitializerState());
               }
             } else {
-              notifier.update(state.toScopeInitializerState());
+              _model.update(state.toScopeInitializerState());
             }
         }
       }).listen(
         (_) {},
         onError: (Object error, StackTrace stackTrace) {
-          final progress = switch (notifier.state) {
+          final progress = switch (_model.state) {
             ScopeInitializerProgress<T>(:final progress) => progress,
             _ => null,
           };
-          notifier.update(
+          _model.update(
             ScopeInitializerError(error, stackTrace, progress: progress),
           );
         },
@@ -127,12 +139,5 @@ abstract base class ScopeStreamInitializerElementBase<
     } finally {
       _initCompleter.complete();
     }
-  }
-
-  @override
-  void dispose() {
-    // ignore: discarded_futures
-    _subscription?.cancel();
-    super.dispose();
   }
 }

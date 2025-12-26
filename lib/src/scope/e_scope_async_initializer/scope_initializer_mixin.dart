@@ -2,14 +2,15 @@ part of '../scope.dart';
 
 base mixin ScopeInitializerElementMixin<W extends ScopeInheritedWidget,
         T extends Object?>
-    on ScopeModelInheritedElement<W,
-        ScopeStateModel<ScopeInitializerState<T>>> {
+    on ScopeModelInheritedElement<W, ScopeInitializerModel<T>> {
   static final _staticLifecycleCompleters = <(Type, Key?), Completer<void>>{};
 
   final _initCompleter = Completer<void>();
   final _lifecycleCompleter = Completer<void>();
   late final (Type, Key) _completerKey =
       (W, onlyOneInstance ? ValueKey(widget.tag) : UniqueKey());
+
+  bool get autoSelfDependence => true;
 
   bool get onlyOneInstance;
 
@@ -50,7 +51,7 @@ base mixin ScopeInitializerElementMixin<W extends ScopeInheritedWidget,
         ScopeInitializerWaitingForPrevious() ||
         ScopeInitializerProgress() ||
         ScopeInitializerReady() =>
-          throw StateError('No stack trace'),
+          throw StateError('No error'),
         ScopeInitializerError(:final stackTrace) => stackTrace,
       };
 

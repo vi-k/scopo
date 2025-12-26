@@ -5,7 +5,6 @@ abstract base class ScopeAsyncInitializerBase<
     extends ScopeAsyncInitializerCore<W, ScopeAsyncInitializerElement<W, T>,
         T> {
   final bool onlyOneInstance;
-  final bool autoSelfDependence;
   final Duration? disposeTimeout;
   final void Function()? onDisposeTimeout;
 
@@ -13,7 +12,6 @@ abstract base class ScopeAsyncInitializerBase<
     super.key,
     super.tag,
     this.onlyOneInstance = false,
-    this.autoSelfDependence = true,
     this.disposeTimeout,
     this.onDisposeTimeout,
   });
@@ -77,9 +75,6 @@ final class ScopeAsyncInitializerElement<
 
   @override
   bool get onlyOneInstance => widget.onlyOneInstance;
-
-  @override
-  bool get autoSelfDependence => widget.autoSelfDependence;
 
   @override
   Duration? get disposeTimeout => widget.disposeTimeout;

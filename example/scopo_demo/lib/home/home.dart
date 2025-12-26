@@ -13,7 +13,6 @@ import '../common/presentation/sized_tab_bar.dart';
 import 'demos/a_scope_widget/scope_widget_demo.dart';
 import 'demos/b_scope_model/scope_model_demo.dart';
 import 'demos/c_scope_notifier/scope_notifier_demo.dart';
-import 'demos/d_scope_state_builder/scope_state_builder_demo.dart';
 import 'demos/data_access_demo/data_access_demo.dart';
 import 'demos/scope_demo/scope_demo.dart';
 import 'demos/scope_initializer_demo/scope_initializer_demo.dart';
@@ -28,7 +27,6 @@ const _tabs = <(String, Widget)>[
   ('ScopeWidget', ScopeWidgetDemo()),
   ('ScopeModel', ScopeModelDemo()),
   ('ScopeNotifier', ScopeNotifierDemo()),
-  ('ScopeStateBuilder', ScopeStateBuilderDemo()),
   ('Data access', DataAccessDemo()),
   ('Async initialization', ScopeInitializerDemo()),
   ('Scope', ScopeDemo()),

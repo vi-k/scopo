@@ -1,14 +1,13 @@
 part of '../scope.dart';
 
 abstract base class ScopeAsyncInitializerCore<
-        W extends ScopeAsyncInitializerCore<W, E, T>,
-        E extends ScopeAsyncInitializerElementBase<W, E, T>,
-        T extends Object?>
-    extends ScopeStateBuilderCore<W, E, ScopeInitializerState<T>> {
+    W extends ScopeAsyncInitializerCore<W, E, T>,
+    E extends ScopeAsyncInitializerElementBase<W, E, T>,
+    T extends Object?> extends ScopeModelCore<W, E, ScopeInitializerModel<T>> {
   const ScopeAsyncInitializerCore({
     super.key,
     super.tag,
-  }) : super(initialState: const ScopeInitializerWaitingForPrevious());
+  });
 
   static E? maybeOf<
           W extends ScopeAsyncInitializerCore<W, E, T>,
@@ -52,10 +51,22 @@ abstract base class ScopeAsyncInitializerElementBase<
         W extends ScopeAsyncInitializerCore<W, E, T>,
         E extends ScopeAsyncInitializerElementBase<W, E, T>,
         T extends Object?>
-    extends ScopeStateBuilderElementBase<W, E, ScopeInitializerState<T>>
+    extends ScopeNotifierElementBase<W, E, ScopeInitializerModel<T>>
     with ScopeInitializerElementMixin<W, T>
     implements ScopeInitializerContext<W, T> {
+  final _ScopeInitializerNotifier<T> _notifier = _ScopeInitializerNotifier<T>();
+  late final ScopeInitializerModel<T> _model = _notifier.asUnmodifiable();
+
   ScopeAsyncInitializerElementBase(super.widget);
+
+  @override
+  void dispose() {
+    super.dispose();
+    _notifier.dispose();
+  }
+
+  @override
+  ScopeInitializerModel<T> get model => _model;
 
   @override
   bool get onlyOneInstance;
@@ -73,14 +84,14 @@ abstract base class ScopeAsyncInitializerElementBase<
     try {
       if (!mounted) return;
 
-      notifier.update(const ScopeInitializerProgress());
+      _notifier.update(const ScopeInitializerProgress());
       final value = await initAsync();
       if (mounted) {
-        notifier.update(ScopeInitializerReady(value));
+        _notifier.update(ScopeInitializerReady(value));
       }
     } on Object catch (error, stackTrace) {
       if (mounted) {
-        notifier.update(ScopeInitializerError(error, stackTrace));
+        _notifier.update(ScopeInitializerError(error, stackTrace));
       }
     } finally {
       _initCompleter.complete();

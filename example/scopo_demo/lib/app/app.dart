@@ -61,14 +61,16 @@ final class App extends Scope<App, AppDependencies, AppState> {
     ThemeData? light,
     ThemeData? dark,
     required Widget child,
-  }) => MaterialApp(
-    title: 'Scope demo',
-    themeMode: mode,
-    theme: light ?? StaticThemes.lightTheme,
-    darkTheme: dark ?? StaticThemes.darkTheme,
-    debugShowCheckedModeBanner: false,
-    home: child,
-  );
+  }) {
+    return MaterialApp(
+      title: 'Scope demo',
+      themeMode: mode,
+      theme: light ?? StaticThemes.lightTheme,
+      darkTheme: dark ?? StaticThemes.darkTheme,
+      debugShowCheckedModeBanner: false,
+      home: child,
+    );
+  }
 
   @override
   Widget buildOnInitializing(BuildContext context, Object? progress) =>
