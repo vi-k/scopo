@@ -74,5 +74,5 @@ final class ScopeModelElement<W extends ScopeModelBase<W, M>, M extends Object>
     implements ScopeModelContext<W, M> {
   ScopeModelElement(super.widget);
 
-  String? get tag => widget.tag;
+  Object? get tag => widget.tag;
 }

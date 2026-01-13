@@ -15,7 +15,7 @@ class ScopeAsyncInitializerExample extends StatelessWidget {
       consumersCount: 3,
       builder: (context, withError, log) {
         return ScopeAsyncInitializer<int>(
-          onlyOneInstance: true,
+          exclusiveCoordinatorKey: const ValueKey('scope_async_initializer'),
           init: () async {
             await Future<void>.delayed(const Duration(seconds: 2));
             if (withError) {

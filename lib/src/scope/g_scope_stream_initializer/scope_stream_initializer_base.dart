@@ -4,18 +4,20 @@ abstract base class ScopeStreamInitializerBase<
         W extends ScopeStreamInitializerBase<W, T>, T extends Object?>
     extends ScopeStreamInitializerCore<W, ScopeStreamInitializerElement<W, T>,
         T> {
-  final bool onlyOneInstance;
+  final LifecycleCoordinator<Object>? exclusiveCoordinator;
+  final Key? exclusiveCoordinatorKey;
+  final LifecycleCoordinator<Object>? disposeCoordinator;
+  final Key? disposeCoordinatorKey;
   final Duration? pauseAfterInitialization;
-  final Duration? disposeTimeout;
-  final void Function()? onDisposeTimeout;
 
   const ScopeStreamInitializerBase({
     super.key,
     super.tag,
-    this.onlyOneInstance = false,
+    this.exclusiveCoordinator,
+    this.exclusiveCoordinatorKey,
+    this.disposeCoordinator,
+    this.disposeCoordinatorKey,
     this.pauseAfterInitialization,
-    this.disposeTimeout,
-    this.onDisposeTimeout,
   });
 
   Stream<ScopeInitState<Object, T>> init();
@@ -77,16 +79,21 @@ final class ScopeStreamInitializerElement<
   ScopeStreamInitializerElement(super.widget);
 
   @override
-  bool get onlyOneInstance => widget.onlyOneInstance;
+  LifecycleCoordinator<Object>? get exclusiveCoordinator =>
+      widget.exclusiveCoordinator;
+
+  @override
+  Key? get exclusiveCoordinatorKey => widget.exclusiveCoordinatorKey;
+
+  @override
+  LifecycleCoordinator<Object>? get disposeCoordinator =>
+      widget.disposeCoordinator;
+
+  @override
+  Key? get disposeCoordinatorKey => widget.disposeCoordinatorKey;
 
   @override
   Duration? get pauseAfterInitialization => widget.pauseAfterInitialization;
-
-  @override
-  Duration? get disposeTimeout => widget.disposeTimeout;
-
-  @override
-  void Function()? get onDisposeTimeout => widget.onDisposeTimeout;
 
   @override
   Stream<ScopeInitState<Object, T>> initAsync() => widget.init();

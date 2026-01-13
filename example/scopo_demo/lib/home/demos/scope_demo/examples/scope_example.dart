@@ -44,90 +44,80 @@ class _ScopeExampleState extends State<ScopeExample> {
       initiallyExpanded: true,
       title: const Markdown(Constants.exampleTitle, selectable: false),
       children: [
-        ValueListenableBuilder(
-          valueListenable: _rebuildCounter,
-          builder: (context, counter, child) {
-            return Wrap(
-              runSpacing: 8,
-              spacing: 8,
-              alignment: WrapAlignment.center,
+        Wrap(
+          runSpacing: 8,
+          spacing: 8,
+          alignment: WrapAlignment.center,
+          children: [
+            TitledBoxList(
+              title: const Text('Outside MyScope'),
+              titleBackgroundColor: Theme.of(context).colorScheme.secondary,
+              titleForegroundColor: Theme.of(context).colorScheme.onSecondary,
               children: [
-                TitledBoxList(
-                  title: const Text('Outside MyScope'),
-                  titleBackgroundColor: Theme.of(context).colorScheme.secondary,
-                  titleForegroundColor:
-                      Theme.of(context).colorScheme.onSecondary,
-                  children: [
-                    FilledButton(
-                      style: FilledButton.styleFrom(
-                        backgroundColor:
-                            Theme.of(context).colorScheme.secondary,
-                        foregroundColor:
-                            Theme.of(context).colorScheme.onSecondary,
-                      ),
-                      onPressed: () {
-                        _restart(withError: false);
-                      },
-                      child: const Text('Restart'),
-                    ),
-                    FilledButton(
-                      style: FilledButton.styleFrom(
-                        backgroundColor:
-                            Theme.of(context).colorScheme.secondary,
-                        foregroundColor:
-                            Theme.of(context).colorScheme.onSecondary,
-                      ),
-                      onPressed: () {
-                        _restart(withError: true);
-                      },
-                      child: const Text('Restart with error'),
-                    ),
-                    ValueListenableBuilder(
-                      valueListenable: _scopeA,
-                      builder: (context, value, child) {
-                        return Counter(
-                          title: 'MyScope.a',
-                          value: value,
-                          increment: incrementA,
-                        );
-                      },
-                    ),
-                    ValueListenableBuilder(
-                      valueListenable: _scopeB,
-                      builder: (context, value, child) {
-                        return Counter(
-                          title: 'MyScope.b',
-                          value: value,
-                          increment: incrementB,
-                        );
-                      },
-                    ),
-                  ],
+                FilledButton(
+                  style: FilledButton.styleFrom(
+                    backgroundColor: Theme.of(context).colorScheme.secondary,
+                    foregroundColor: Theme.of(context).colorScheme.onSecondary,
+                  ),
+                  onPressed: () {
+                    _restart(withError: false);
+                  },
+                  child: const Text('Restart'),
+                ),
+                FilledButton(
+                  style: FilledButton.styleFrom(
+                    backgroundColor: Theme.of(context).colorScheme.secondary,
+                    foregroundColor: Theme.of(context).colorScheme.onSecondary,
+                  ),
+                  onPressed: () {
+                    _restart(withError: true);
+                  },
+                  child: const Text('Restart with error'),
                 ),
                 ValueListenableBuilder(
-                  valueListenable: _rebuildCounter,
-                  builder: (context, rebuildCounter, child) {
-                    return ValueListenableBuilder(
-                      valueListenable: _scopeA,
-                      builder: (context, a, child) {
-                        return ValueListenableBuilder(
-                          valueListenable: _scopeB,
-                          builder: (context, b, child) {
-                            return MyScope(
-                              key: ValueKey(_rebuildCounter.value),
-                              a: a,
-                              b: b,
-                              withError: _withError,
-                            );
-                          },
-                        );
-                      },
+                  valueListenable: _scopeA,
+                  builder: (context, value, child) {
+                    return Counter(
+                      title: 'MyScope.a',
+                      value: value,
+                      increment: incrementA,
+                    );
+                  },
+                ),
+                ValueListenableBuilder(
+                  valueListenable: _scopeB,
+                  builder: (context, value, child) {
+                    return Counter(
+                      title: 'MyScope.b',
+                      value: value,
+                      increment: incrementB,
                     );
                   },
                 ),
               ],
-            );
-          },
+            ),
+            ValueListenableBuilder(
+              valueListenable: _rebuildCounter,
+              builder: (context, rebuildCounter, child) {
+                return ValueListenableBuilder(
+                  valueListenable: _scopeA,
+                  builder: (context, a, child) {
+                    return ValueListenableBuilder(
+                      valueListenable: _scopeB,
+                      builder: (context, b, child) {
+                        return MyScope(
+                          key: ValueKey(_rebuildCounter.value),
+                          a: a,
+                          b: b,
+                          withError: _withError,
+                        );
+                      },
+                    );
+                  },
+                );
+              },
+            ),
+          ],
         ),
       ],
     );
@@ -153,7 +143,7 @@ final class MyScope extends Scope<MyScope, MyScopeDependencies, MyScopeState> {
     required this.a,
     required this.b,
     required this.withError,
-  }) : super(onlyOneInstance: true);
+  }) : super(exclusiveCoordinatorKey: const ValueKey('my_scope'));
 
   @override
   Stream<ScopeInitState<double, MyScopeDependencies>> init() async* {

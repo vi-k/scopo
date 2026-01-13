@@ -71,15 +71,18 @@ abstract base class ScopeStreamInitializerElementBase<
   ScopeInitializerModel<T> get model => _model;
 
   @override
-  bool get onlyOneInstance;
+  LifecycleCoordinator<Object>? get exclusiveCoordinator;
+
+  @override
+  Key? get exclusiveCoordinatorKey;
+
+  @override
+  LifecycleCoordinator<Object>? get disposeCoordinator;
+
+  @override
+  Key? get disposeCoordinatorKey;
 
   Duration? get pauseAfterInitialization;
-
-  @override
-  Duration? get disposeTimeout;
-
-  @override
-  void Function()? get onDisposeTimeout;
 
   Stream<ScopeInitState<Object, T>> initAsync();
 

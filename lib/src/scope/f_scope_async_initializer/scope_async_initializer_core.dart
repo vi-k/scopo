@@ -69,13 +69,16 @@ abstract base class ScopeAsyncInitializerElementBase<
   ScopeInitializerModel<T> get model => _model;
 
   @override
-  bool get onlyOneInstance;
+  LifecycleCoordinator<Object>? get exclusiveCoordinator;
 
   @override
-  Duration? get disposeTimeout;
+  Key? get exclusiveCoordinatorKey;
 
   @override
-  void Function()? get onDisposeTimeout;
+  LifecycleCoordinator<Object>? get disposeCoordinator;
+
+  @override
+  Key? get disposeCoordinatorKey;
 
   @override
   Future<void> _runInitAsync() async {

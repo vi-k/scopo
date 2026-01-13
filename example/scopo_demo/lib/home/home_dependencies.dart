@@ -114,6 +114,6 @@ class HomeDependencies implements ScopeDependencies {
       someBloc.close(),
       someController.dispose(),
     ].wait;
-    await Future<void>.delayed(const Duration(seconds: 10));
+    await Future<void>.delayed(const Duration(seconds: 3));
   }
 }

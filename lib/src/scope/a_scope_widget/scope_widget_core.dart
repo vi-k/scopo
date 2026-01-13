@@ -21,7 +21,7 @@ abstract base class ScopeWidgetCore<W extends ScopeWidgetCore<W, E>,
   bool updateShouldNotify(ScopeWidgetCore<W, E> oldWidget) => true;
 
   @override
-  String toStringShort() => '$W${tag == null ? '' : '($tag)'}';
+  String toStringShort() => '$W${tag == null ? '' : '(tag: $tag)'}';
 
   static E? maybeOf<W extends ScopeWidgetCore<W, E>,
           E extends ScopeWidgetElementBase<W, E>>(

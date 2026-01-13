@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
 import 'home.dart';
-import 'home_deps.dart';
+import 'home_dependencies.dart';
 import 'home_feature/home_feature.dart';
 
 class HomeNavigationBlock extends StatelessWidget {

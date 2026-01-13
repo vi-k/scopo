@@ -6,7 +6,7 @@ import 'app/app.dart';
 import 'app/app_deps.dart';
 import 'app/splash_screen.dart';
 import 'home/home.dart';
-import 'home/home_deps.dart';
+import 'home/home_dependencies.dart';
 
 void main() {
   final errorPrinter = ansi.AnsiPrinter(

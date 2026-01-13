@@ -33,8 +33,15 @@ class _ScreenshotReplacerState extends State<ScreenshotReplacer> {
     WidgetsBinding.instance.addPostFrameCallback((_) => _capture());
   }
 
+  @override
+  void dispose() {
+    widget.onCompleted();
+    super.dispose();
+  }
+
   Future<void> _capture() async {
     if (!mounted) return;
+
     try {
       final boundary = _globalKey.currentContext?.findRenderObject()
           as RenderRepaintBoundary?;

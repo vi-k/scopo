@@ -1,9 +1,11 @@
 ## 0.3.0
 
-* add `ScopeModel`, `ScopeNotifier`, `ScopeStateBuilder`,
-  `ScopeAsyncInitializer`, `ScopeStreamInitializer`.
-* new `Scope` (`ScopeV2`).
+* add `ScopeModel`, `ScopeNotifier`, `ScopeAsyncInitializer`,
+  `ScopeStreamInitializer`.
+* new `Scope`.
 * remake scopo_demo
+* add `LifyceycleCoordinator` for sequiential async initialization and
+  disposal.
 
 ## 0.2.2+1
 

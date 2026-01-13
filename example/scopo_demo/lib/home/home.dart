@@ -17,7 +17,7 @@ import 'demos/data_access_demo/data_access_demo.dart';
 import 'demos/scope_demo/scope_demo.dart';
 import 'demos/scope_initializer_demo/scope_initializer_demo.dart';
 import 'home_counter.dart';
-import 'home_deps.dart';
+import 'home_dependencies.dart';
 import 'home_navigation_block.dart';
 
 typedef HomeConsumer = ScopeConsumer<Home, HomeDependencies, HomeState>;
@@ -27,7 +27,7 @@ const _tabs = <(String, Widget)>[
   ('ScopeWidget', ScopeWidgetDemo()),
   ('ScopeModel', ScopeModelDemo()),
   ('ScopeNotifier', ScopeNotifierDemo()),
-  ('Data access', DataAccessDemo()),
+  ('Data access (old)', DataAccessDemo()),
   ('Async initialization', ScopeInitializerDemo()),
   ('Scope', ScopeDemo()),
 ];
@@ -65,9 +65,6 @@ final class Home extends Scope<Home, HomeDependencies, HomeState> {
     context,
     (widget) => selector(widget),
   );
-
-  static HomeState? maybeOf(BuildContext context) =>
-      Scope.maybeOf<Home, HomeDependencies, HomeState>(context);
 
   /// Provides access the [HomeState] and [HomeDependencies].
   static HomeState of(BuildContext context) =>
@@ -161,16 +158,11 @@ class HomeAppBar extends AppBar {
 
 /// The screen displays the progress of dependency initialization, mimicking
 /// the [Home] screen.
-class _FakeContent extends StatefulWidget {
+class _FakeContent extends StatelessWidget {
   final double? progress;
 
   const _FakeContent(this.progress);
 
-  @override
-  State<_FakeContent> createState() => _FakeContentState();
-}
-
-class _FakeContentState extends State<_FakeContent> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -179,7 +171,7 @@ class _FakeContentState extends State<_FakeContent> {
         padding: const EdgeInsets.all(8),
         child: Center(
           child: AnimatedProgressIndicator(
-            value: widget.progress,
+            value: progress,
             builder: (value) {
               return CircularProgressIndicator(value: value);
             },
@@ -187,34 +179,6 @@ class _FakeContentState extends State<_FakeContent> {
         ),
       ),
     );
-  }
-}
-
-mixin ChangeNotifierOnState<T extends StatefulWidget> on State<T>
-    implements ChangeNotifier {
-  final _innerNotifier = ChangeNotifier();
-
-  @override
-  bool get hasListeners => _innerNotifier.hasListeners;
-
-  @override
-  void dispose() {
-    _innerNotifier.dispose();
-    super.dispose();
-  }
-
-  @override
-  void addListener(VoidCallback listener) =>
-      _innerNotifier.addListener(listener);
-
-  @override
-  void removeListener(VoidCallback listener) =>
-      _innerNotifier.removeListener(listener);
-
-  @override
-  void notifyListeners() {
-    // ignore: invalid_use_of_visible_for_testing_member, invalid_use_of_protected_member
-    _innerNotifier.notifyListeners();
   }
 }
 
@@ -333,57 +297,27 @@ class _Common extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return ListView(
-      children: [
-        _Timer(tag: Home.paramsOf(context).tag),
-        const Text('You have pushed this buttons many times:'),
-        const HomeCounter(),
-        const SizedBox(height: 20),
-        const SizedBox(height: 20),
-        const SizedBox(height: 20),
-        const HomeNavigationBlock(),
-        const SizedBox(height: 20),
+      padding: const EdgeInsets.only(top: 20),
+      children: const [
+        Center(child: Text('You have pushed this buttons many times:')),
+        Center(child: HomeCounter()),
+        SizedBox(height: 20),
+        _LifecycleIndicator(),
+        SizedBox(height: 40),
+        HomeNavigationBlock(),
+        SizedBox(height: 20),
       ],
     );
   }
 }
 
-class _Timer extends StatefulWidget {
-  final String? tag;
-
-  const _Timer({required this.tag});
-
-  @override
-  State<_Timer> createState() => _TimerState();
-}
-
-class _TimerState extends State<_Timer> {
-  final _counter = ValueNotifier<int>(0);
-  late final Timer _timer;
-
-  @override
-  void initState() {
-    super.initState();
-    _timer = Timer.periodic(const Duration(milliseconds: 300), (timer) {
-      _counter.value++;
-      if (widget.tag case final tag?) {
-        print('$tag: ${_counter.value}');
-      }
-    });
-  }
-
-  @override
-  void dispose() {
-    _timer.cancel();
-    super.dispose();
-  }
+class _LifecycleIndicator extends StatelessWidget {
+  const _LifecycleIndicator();
 
   @override
   Widget build(BuildContext context) {
-    return ValueListenableBuilder(
-      valueListenable: _counter,
-      builder: (context, value, _) {
-        return Text('$value');
-      },
+    return const Center(
+      child: SizedBox(width: 100, child: LinearProgressIndicator(minHeight: 1)),
     );
   }
 }

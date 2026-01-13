@@ -4,17 +4,26 @@ abstract base class ScopeAsyncInitializerBase<
         W extends ScopeAsyncInitializerBase<W, T>, T extends Object?>
     extends ScopeAsyncInitializerCore<W, ScopeAsyncInitializerElement<W, T>,
         T> {
-  final bool onlyOneInstance;
-  final Duration? disposeTimeout;
-  final void Function()? onDisposeTimeout;
+  final LifecycleCoordinator<Object>? exclusiveCoordinator;
+  final Key? exclusiveCoordinatorKey;
+  final LifecycleCoordinator<Object>? disposeCoordinator;
+  final Key? disposeCoordinatorKey;
 
   const ScopeAsyncInitializerBase({
     super.key,
     super.tag,
-    this.onlyOneInstance = false,
-    this.disposeTimeout,
-    this.onDisposeTimeout,
-  });
+    this.exclusiveCoordinator,
+    this.exclusiveCoordinatorKey,
+    this.disposeCoordinator,
+    this.disposeCoordinatorKey,
+  })  : assert(
+          exclusiveCoordinatorKey == null || exclusiveCoordinator == null,
+          '`exclusiveCoordinator` and `exclusiveCoordinatorKey` cannot be both set',
+        ),
+        assert(
+          disposeCoordinatorKey == null || disposeCoordinator == null,
+          '`disposeCoordinator` and `disposeCoordinatorKey` cannot be both set',
+        );
 
   Future<T> init();
 
@@ -74,13 +83,18 @@ final class ScopeAsyncInitializerElement<
   ScopeAsyncInitializerElement(super.widget);
 
   @override
-  bool get onlyOneInstance => widget.onlyOneInstance;
+  LifecycleCoordinator<Object>? get exclusiveCoordinator =>
+      widget.exclusiveCoordinator;
 
   @override
-  Duration? get disposeTimeout => widget.disposeTimeout;
+  Key? get exclusiveCoordinatorKey => widget.exclusiveCoordinatorKey;
 
   @override
-  void Function()? get onDisposeTimeout => widget.onDisposeTimeout;
+  LifecycleCoordinator<Object>? get disposeCoordinator =>
+      widget.disposeCoordinator;
+
+  @override
+  Key? get disposeCoordinatorKey => widget.disposeCoordinatorKey;
 
   @override
   Future<T> initAsync() => widget.init();

@@ -18,14 +18,23 @@ typedef ScopeOnErrorCallback = Widget Function(
 abstract base class Scope<W extends Scope<W, D, S>, D extends ScopeDependencies,
         S extends ScopeState<W, D, S>>
     extends ScopeStreamInitializerCore<W, ScopeElement<W, D, S>, D> {
-  final bool onlyOneInstance;
+  final LifecycleCoordinator<Object>? exclusiveCoordinator;
+
+  final Key? exclusiveCoordinatorKey;
+
+  final LifecycleCoordinator<Object>? disposeCoordinator;
+
+  final Key? disposeCoordinatorKey;
 
   final Duration? pauseAfterInitialization;
 
   const Scope({
     super.key,
     super.tag,
-    this.onlyOneInstance = false,
+    this.exclusiveCoordinator,
+    this.exclusiveCoordinatorKey,
+    this.disposeCoordinator,
+    this.disposeCoordinatorKey,
     this.pauseAfterInitialization,
   });
 
@@ -117,20 +126,29 @@ final class ScopeElement<W extends Scope<W, D, S>, D extends ScopeDependencies,
 
   ScopeElement(super.widget);
 
+  // Создаём копию!
   @override
-  bool get onlyOneInstance => widget.onlyOneInstance;
+  late final LifecycleCoordinator<Object>? exclusiveCoordinator =
+      widget.exclusiveCoordinator;
+
+  // Создаём копию!
+  @override
+  late final Key? exclusiveCoordinatorKey = widget.exclusiveCoordinatorKey;
+
+  // Создаём копию!
+  @override
+  late final LifecycleCoordinator<Object>? disposeCoordinator =
+      widget.disposeCoordinator;
+
+  // Создаём копию!
+  @override
+  late final Key? disposeCoordinatorKey = widget.disposeCoordinatorKey;
 
   @override
   bool get autoSelfDependence => _autoSelfDependence;
 
   @override
   Duration? get pauseAfterInitialization => widget.pauseAfterInitialization;
-
-  @override
-  Duration? get disposeTimeout => widget.disposeTimeout;
-
-  @override
-  void Function()? get onDisposeTimeout => widget.onDisposeTimeout;
 
   @override
   Stream<ScopeInitState<Object, D>> initAsync() => widget.init();
@@ -168,13 +186,15 @@ final class ScopeElement<W extends Scope<W, D, S>, D extends ScopeDependencies,
     return widget.wrapState(
       this,
       dependencies,
-      switch (_closeCompleter) {
+      switch (_screenshotCompleter) {
         null => child,
-        _ => Stack(
+        final screenshotCompleter => Stack(
             children: [
               ScreenshotReplacer(
                 onCompleted: () {
-                  _screenshotCompleter?.complete();
+                  if (!screenshotCompleter.isCompleted) {
+                    screenshotCompleter.complete();
+                  }
                 },
                 child: child,
               ),
@@ -205,10 +225,12 @@ final class ScopeElement<W extends Scope<W, D, S>, D extends ScopeDependencies,
 
     final completer = Completer<void>();
     _closeCompleter = completer;
-    final screenshotCompleter = Completer<void>();
-    _screenshotCompleter = screenshotCompleter;
+
     markNeedsBuild();
-    await screenshotCompleter.future;
+
+    if (_screenshotCompleter case final screenshotCompleter?) {
+      await screenshotCompleter.future;
+    }
 
     try {
       await super._runDisposeAsync(widget);
@@ -217,7 +239,12 @@ final class ScopeElement<W extends Scope<W, D, S>, D extends ScopeDependencies,
     }
   }
 
+  /// Закрывает скоуп до вызова dispose.
+  ///
+  /// Даёт возможность показать экран закрытия скоупа, заменяя содержимое
+  /// виджета скриншотом.
   Future<void> close() async {
+    _screenshotCompleter = Completer<void>();
     await _runDisposeAsync(widget);
   }
 }
