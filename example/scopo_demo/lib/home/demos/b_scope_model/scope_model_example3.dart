@@ -40,9 +40,15 @@ class CounterScopeState extends State<CounterScope> {
     return ScopeModel.value(
       value: this,
       builder:
-          (context) => const Row(
+          (context) => Column(
             mainAxisAlignment: MainAxisAlignment.center,
-            children: [_CounterView(), _IncrementAction()],
+            children: [
+              Text('$ScopeModelExample3'),
+              const Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [_CounterView(), _IncrementAction()],
+              ),
+            ],
           ),
     );
   }

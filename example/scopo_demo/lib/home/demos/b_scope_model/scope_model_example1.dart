@@ -26,14 +26,20 @@ class _ScopeModelExample1State extends State<ScopeModelExample1> {
 
   @override
   Widget build(BuildContext context) {
-    return Row(
+    return Column(
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
-        CounterScope(model: _model),
-        IconButton(
-          color: Theme.of(context).colorScheme.primary,
-          onPressed: _increment,
-          icon: const Icon(Icons.add_circle),
+        Text('$ScopeModelExample1'),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            CounterScope(model: _model),
+            IconButton(
+              color: Theme.of(context).colorScheme.primary,
+              onPressed: _increment,
+              icon: const Icon(Icons.add_circle),
+            ),
+          ],
         ),
       ],
     );

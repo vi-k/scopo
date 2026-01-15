@@ -48,8 +48,20 @@ abstract base class ScopeWidgetCore<W extends ScopeWidgetCore<W, E>,
 abstract base class ScopeWidgetElementBase<W extends ScopeWidgetCore<W, E>,
         E extends ScopeWidgetElementBase<W, E>> extends InheritedElement
     implements ScopeInheritedElement<W> {
-  var _shouldNotify = false;
-  var _updateChild = true;
+  /// Список зависимостей при подписке элемента на самого себя.
+  ///
+  /// [InheritedElement] не поддерживает подписку на самого себя (блокируется
+  /// assert-ом в [notifyClients]). Обходим это ограничение через отдельное
+  /// поле.
+  List<_ScopeDependency<E, Object?>>? _selfDependencies;
+
+  /// Флаг, показывающий, что во время перестроения ([performRebuild])
+  /// необходимо только уведомить подписчиков, а не перестраивать поддерево.
+  bool _shouldOnlyNotify = false;
+
+  /// Флаг, показывающий, что элемент должен принудительно перестроиться,
+  /// игнорируя флаг [_shouldOnlyNotify].
+  bool _forceRebuild = true;
 
   ScopeWidgetElementBase(W super.widget) {
     init();
@@ -67,10 +79,6 @@ abstract base class ScopeWidgetElementBase<W extends ScopeWidgetCore<W, E>,
   bool get autoSelfDependence => false;
 
   @override
-  Set<InheritedElement>? get dependencies =>
-      autoSelfDependence ? {...?super.dependencies, this} : super.dependencies;
-
-  @override
   void init() {}
 
   @override
@@ -78,99 +86,152 @@ abstract base class ScopeWidgetElementBase<W extends ScopeWidgetCore<W, E>,
 
   List<_ScopeDependency<E, Object?>> _createDependencies() => [];
 
-  @override
-  void updateDependencies(Element dependent, Object? aspect) {
-    final dependencies =
-        getDependencies(dependent) as List<_ScopeDependency<E, Object?>>?;
-
+  List<_ScopeDependency<E, Object?>>? _updateDependencies(
+    List<_ScopeDependency<E, Object?>>? dependencies,
+    Object? aspect,
+  ) {
     /// Уже подписались на все изменения.
     if (dependencies != null && dependencies.isEmpty) {
-      return;
+      return null;
     }
 
     if (aspect == null) {
       // Подписываемся на все изменения.
-      setDependencies(dependent, _createDependencies());
-    } else if (aspect case _ScopeDependency<E, Object?>()) {
-      setDependencies(
-        dependent,
-        (dependencies ?? _createDependencies())..add(aspect),
-      );
+      return _createDependencies();
+    }
+
+    if (aspect case _ScopeDependency<E, Object?>()) {
+      return (dependencies ?? _createDependencies())..add(aspect);
+    }
+
+    assert(false, '`aspect` must be ${_ScopeDependency<E, Object?>}');
+
+    return null;
+  }
+
+  @override
+  void updateDependencies(Element dependent, Object? aspect) {
+    final newDependencies = _updateDependencies(
+      getDependencies(dependent) as List<_ScopeDependency<E, Object?>>?,
+      aspect,
+    );
+    if (newDependencies != null) {
+      setDependencies(dependent, newDependencies);
+    }
+  }
+
+  void _notifyDependent(
+    W oldWidget,
+    Element dependent,
+    List<_ScopeDependency<E, Object?>>? dependencies,
+  ) {
+    if (dependencies == null) {
+      return;
+    }
+
+    var dependenciesChanged = false;
+
+    if (dependencies.isEmpty) {
+      dependenciesChanged = true;
     } else {
-      assert(false, '`aspect` must be ${_ScopeDependency<E, Object?>}');
+      for (final (value, selector) in dependencies) {
+        if (selector(this as E) != value) {
+          dependenciesChanged = true;
+          break;
+        }
+      }
+    }
+
+    if (dependenciesChanged) {
+      if (identical(dependent, this)) {
+        _selfDependencies = null;
+        _forceRebuild = true;
+      } else {
+        setDependencies(dependent, null);
+      }
+      dependent.didChangeDependencies();
     }
   }
 
   @override
   void notifyDependent(W oldWidget, Element dependent) {
-    final dependencies =
-        getDependencies(dependent) as List<_ScopeDependency<E, Object?>>?;
-    if (dependencies == null) {
-      return;
+    _notifyDependent(
+      oldWidget,
+      dependent,
+      getDependencies(dependent) as List<_ScopeDependency<E, Object?>>?,
+    );
+  }
+
+  @override
+  InheritedWidget dependOnInheritedElement(
+    InheritedElement ancestor, {
+    Object? aspect,
+  }) {
+    if (identical(this, ancestor)) {
+      _selfDependencies = _updateDependencies(_selfDependencies, aspect);
+      return widget;
     }
 
-    if (dependencies.isEmpty) {
-      dependent.didChangeDependencies();
-      return;
-    }
-
-    for (final (value, selector) in dependencies) {
-      if (selector(this as E) != value) {
-        setDependencies(dependent, null);
-        dependent.didChangeDependencies();
-        return;
-      }
-    }
+    return super.dependOnInheritedElement(ancestor, aspect: aspect);
   }
 
   /// [InheritedElement.notifyClients] does not support self-subscription,
   /// although this is required in our case.
   @override
   void notifyClients(W oldWidget) {
-    try {
-      for (final dependent in dependents.keys) {
-        assert(() {
-          // check that it really is our descendant
-          if (dependent == this) {
-            return true;
-          }
-
-          Element? ancestor = dependent;
-          dependent.visitAncestorElements((element) {
-            ancestor = element;
-            return element != this;
-          });
-
-          return ancestor == this;
-        }());
-        // check that it really depends on us
-        assert(dependent.dependencies!.contains(this));
-        notifyDependent(oldWidget, dependent);
-      }
-    } finally {
-      _shouldNotify = false;
+    if (_selfDependencies case final dependencies?) {
+      _notifyDependent(oldWidget, this, dependencies);
     }
+
+    super.notifyClients(oldWidget);
   }
 
+  /// Уведомляет подписчиков об изменениях.
+  ///
+  /// Уведомление работает через метод [didChangeDependencies], который может
+  /// быть запущен только во время построения кадра. Поэтому единственным
+  /// вариантом остаётся принудительное обновление дерева и уведомление
+  /// подписчиков из [performRebuild].
   @protected
   void notifyDependents() {
-    _shouldNotify = true;
+    _shouldOnlyNotify = true;
     markNeedsBuild();
   }
 
+  /// Если мы находимся в режиме только уведомления ([notifyDependents]), но
+  /// элемент параллельно обновляется сверху родителем, то принудительно
+  /// перестраиваем поддерево.
+  @override
+  void update(covariant ProxyWidget newWidget) {
+    _forceRebuild = true;
+    super.update(newWidget);
+  }
+
+  /// Суть этого кода в том, чтобы не обновлять всё дерево (не запускать
+  /// [build]), если нужно только уведомить подписчиков об изменениях
+  /// ([notifyDependents]).
+  ///
+  /// Обновление принудительно срабатывает в случаях:
+  /// 1. [autoSelfDependence] - элемент объявил об автоматической подписке на
+  ///    изменения самого себя (используется в инициализаторах на этапах
+  ///    инициализации).
+  /// 2. [_forceRebuild] - принудительное перестроение поддерева, если
+  ///    элемент обновляется родителем или элемент подписался на самого
+  ///    себя.
   @override
   void performRebuild() {
-    if (_shouldNotify) {
+    if (_shouldOnlyNotify) {
       notifyClients(widget);
-      _updateChild = dependencies?.contains(this) ?? false;
+      _shouldOnlyNotify = !autoSelfDependence && !_forceRebuild;
     }
     super.performRebuild();
-    _updateChild = true;
+    _forceRebuild = false;
+    _shouldOnlyNotify = false;
   }
 
   @override
   Element? updateChild(Element? child, Widget? newWidget, Object? newSlot) =>
-      _updateChild ? super.updateChild(child, newWidget, newSlot) : child;
+      _shouldOnlyNotify ? child : super.updateChild(child, newWidget, newSlot);
 
   @nonVirtual
   @override

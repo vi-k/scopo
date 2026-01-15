@@ -1,12 +1,30 @@
 import 'package:flutter/material.dart';
 import 'package:scopo/scopo.dart';
 
-class ScopeNotifierExample1 extends StatelessWidget {
-  const ScopeNotifierExample1({super.key});
+// Проверка одновременной работы notifyDependents и обновление скоупа через
+// setState родителя.
+
+class ScopeNotifierExample1Special extends StatefulWidget {
+  const ScopeNotifierExample1Special({super.key});
+
+  @override
+  State<ScopeNotifierExample1Special> createState() =>
+      _ScopeNotifierExample1SpecialState();
+}
+
+class _ScopeNotifierExample1SpecialState
+    extends State<ScopeNotifierExample1Special> {
+  var _counter = 0;
+
+  void _increment() {
+    setState(() {
+      _counter++;
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
-    return Center(child: CounterScope());
+    return Center(child: CounterScope(_increment, _counter));
   }
 }
 
@@ -21,7 +39,10 @@ final class CounterModel with ChangeNotifier {
 }
 
 final class CounterScope extends ScopeNotifierBase<CounterScope, CounterModel> {
-  CounterScope({super.key})
+  final int _counter;
+  final void Function() _increment;
+
+  CounterScope(this._increment, this._counter, {super.key})
     : super(create: (_) => CounterModel(), dispose: (model) => model.dispose());
 
   static CounterModel of(BuildContext context) =>
@@ -41,10 +62,21 @@ final class CounterScope extends ScopeNotifierBase<CounterScope, CounterModel> {
     return Column(
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
-        Text('$ScopeNotifierExample1'),
-        const Row(
+        Text('$ScopeNotifierExample1Special'),
+        Row(
           mainAxisAlignment: MainAxisAlignment.center,
-          children: [_CounterView(), _IncrementAction()],
+          children: [
+            Text(_counter.toString()),
+            FilledButton(
+              onPressed: () {
+                CounterScope.of(context).increment();
+                _increment();
+              },
+              child: const Text('Increment'),
+            ),
+            const _CounterView(),
+            const _IncrementAction(),
+          ],
         ),
       ],
     );

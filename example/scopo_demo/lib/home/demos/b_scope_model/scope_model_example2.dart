@@ -37,9 +37,15 @@ final class CounterScope
   >(context, (element) => element.model.count);
 
   Widget build(BuildContext context) {
-    return const Row(
+    return Column(
       mainAxisAlignment: MainAxisAlignment.center,
-      children: [_CounterView(), _IncrementAction()],
+      children: [
+        Text('$ScopeModelExample2'),
+        const Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [_CounterView(), _IncrementAction()],
+        ),
+      ],
     );
   }
 

@@ -45,8 +45,8 @@ final class Home extends Scope<Home, HomeDependencies, HomeState> {
     super.tag,
     required ScopeInitFunction<double, HomeDependencies> init,
     this.isRoot = true,
-  }) : _init = init,
-       super(pauseAfterInitialization: const Duration(milliseconds: 500));
+  })  : _init = init,
+        super(pauseAfterInitialization: const Duration(milliseconds: 500));
 
   @override
   Stream<ScopeInitState<double, HomeDependencies>> init() => _init();
@@ -61,10 +61,11 @@ final class Home extends Scope<Home, HomeDependencies, HomeState> {
   static V selectParam<V extends Object?>(
     BuildContext context,
     V Function(Home widget) selector,
-  ) => Scope.selectParam<Home, HomeDependencies, HomeState, V>(
-    context,
-    (widget) => selector(widget),
-  );
+  ) =>
+      Scope.selectParam<Home, HomeDependencies, HomeState, V>(
+        context,
+        (widget) => selector(widget),
+      );
 
   /// Provides access the [HomeState] and [HomeDependencies].
   static HomeState of(BuildContext context) =>
@@ -73,10 +74,11 @@ final class Home extends Scope<Home, HomeDependencies, HomeState> {
   static V select<V extends Object?>(
     BuildContext context,
     V Function(HomeState state) selector,
-  ) => Scope.select<Home, HomeDependencies, HomeState, V>(
-    context,
-    (state) => selector(state),
-  );
+  ) =>
+      Scope.select<Home, HomeDependencies, HomeState, V>(
+        context,
+        (state) => selector(state),
+      );
 
   @override
   Widget buildOnInitializing(BuildContext context, Object? progress) =>
@@ -88,21 +90,23 @@ final class Home extends Scope<Home, HomeDependencies, HomeState> {
     Object error,
     StackTrace stackTrace,
     Object? progress,
-  ) => AppError(error, stackTrace);
+  ) =>
+      AppError(error, stackTrace);
 
   @override
   Widget wrapState(
     BuildContext context,
     HomeDependencies dependencies,
     Widget child,
-  ) => NavigationNode(
-    isRoot: isRoot,
-    onPop: (context, result) async {
-      await Home.of(context).close();
-      return true;
-    },
-    child: child,
-  );
+  ) =>
+      NavigationNode(
+        isRoot: isRoot,
+        onPop: (context, result) async {
+          await Home.of(context).close();
+          return true;
+        },
+        child: child,
+      );
 
   @override
   HomeState createState() => HomeState();
@@ -110,39 +114,41 @@ final class Home extends Scope<Home, HomeDependencies, HomeState> {
 
 class HomeAppBar extends AppBar {
   HomeAppBar(BuildContext context, {super.key, bool withTabs = true})
-    : super(
-        title: Text('$Home'),
-        actions: [
-          ValueListenableBuilder<bool>(
-            valueListenable: App.of(context).dependencies.connectivity,
-            builder: (context, isConnected, _) {
-              return Icon(
-                color: isConnected ? null : Theme.of(context).colorScheme.error,
-                isConnected
-                    ? Icons.signal_cellular_4_bar
-                    : Icons.signal_cellular_connected_no_internet_0_bar,
-              );
-            },
-          ),
-          IconButton(
-            onPressed: () {
-              ThemeManager.of(context, listen: false).toggleBrightness();
-            },
-            onLongPress: () {
-              ThemeManager.of(context, listen: false).resetBrightness();
-            },
-            icon: Icon(switch (ThemeManager.select(
-              context,
-              (m) => m.brightness,
-            )) {
-              Brightness.dark => Icons.light_mode,
-              Brightness.light => Icons.dark_mode,
-            }),
-          ),
-        ],
-        bottom:
-            withTabs
-                ? SizedTabBar(
+      : super(
+          title: Text('$Home'),
+          actions: [
+            ValueListenableBuilder<bool>(
+              valueListenable: App.of(context).dependencies.connectivity,
+              builder: (context, isConnected, _) {
+                return Icon(
+                  color:
+                      isConnected ? null : Theme.of(context).colorScheme.error,
+                  isConnected
+                      ? Icons.signal_cellular_4_bar
+                      : Icons.signal_cellular_connected_no_internet_0_bar,
+                );
+              },
+            ),
+            IconButton(
+              onPressed: () {
+                ThemeManager.of(context, listen: false).toggleBrightness();
+              },
+              onLongPress: () {
+                ThemeManager.of(context, listen: false).resetBrightness();
+              },
+              icon: Icon(
+                switch (ThemeManager.select(
+                  context,
+                  (m) => m.brightness,
+                )) {
+                  Brightness.dark => Icons.light_mode,
+                  Brightness.light => Icons.dark_mode,
+                },
+              ),
+            ),
+          ],
+          bottom: withTabs
+              ? SizedTabBar(
                   height: 32,
                   isScrollable: true,
                   labelStyle: Theme.of(context).textTheme.bodySmall,
@@ -152,8 +158,8 @@ class HomeAppBar extends AppBar {
                   ).colorScheme.onPrimary.withValues(alpha: 0.5),
                   tabs: _tabs.map((e) => Tab(text: e.$1)).toList(),
                 )
-                : null,
-      );
+              : null,
+        );
 }
 
 /// The screen displays the progress of dependency initialization, mimicking
@@ -205,29 +211,29 @@ final class HomeState extends ScopeState<Home, HomeDependencies, HomeState> {
   }
 
   Future<void> openDialog(BuildContext context) => showAdaptiveDialog<void>(
-    useRootNavigator: false,
-    context: context,
-    barrierDismissible: true,
-    builder: (context) {
-      return Dialog(
-        backgroundColor: Theme.of(
-          context,
-        ).colorScheme.surface.withValues(alpha: 0.7),
-        clipBehavior: Clip.antiAlias,
-        child: IntrinsicWidth(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              AppBar(title: const Text('Dialog'), primary: false),
-              const SizedBox(height: 20),
-              const HomeCounter(),
-              const SizedBox(height: 20),
-            ],
-          ),
-        ),
+        useRootNavigator: false,
+        context: context,
+        barrierDismissible: true,
+        builder: (context) {
+          return Dialog(
+            backgroundColor: Theme.of(
+              context,
+            ).colorScheme.surface.withValues(alpha: 0.7),
+            clipBehavior: Clip.antiAlias,
+            child: IntrinsicWidth(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  AppBar(title: const Text('Dialog'), primary: false),
+                  const SizedBox(height: 20),
+                  const HomeCounter(),
+                  const SizedBox(height: 20),
+                ],
+              ),
+            ),
+          );
+        },
       );
-    },
-  );
 
   void openBottomSheet(BuildContext context) {
     showBottomSheet(

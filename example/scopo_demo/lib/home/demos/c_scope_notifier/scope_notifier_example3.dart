@@ -39,9 +39,15 @@ class CounterScopeState extends State<CounterScope> with StateAsNotifier {
     return ScopeNotifier.value(
       value: this,
       builder:
-          (context) => const Row(
+          (context) => Column(
             mainAxisAlignment: MainAxisAlignment.center,
-            children: [_CounterView(), _IncrementAction()],
+            children: [
+              Text('$ScopeNotifierExample3'),
+              const Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [_CounterView(), _IncrementAction()],
+              ),
+            ],
           ),
     );
   }

@@ -43,6 +43,7 @@ final class _NavigationNodeState extends State<NavigationNode> {
           }
 
           if (_navigator.previous case final previous?) {
+            // ignore: discarded_futures
             switch (widget.onPop?.call(context, result)) {
               case final Future<bool> future:
                 // ignore: discarded_futures

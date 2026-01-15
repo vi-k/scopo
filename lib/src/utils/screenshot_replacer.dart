@@ -30,6 +30,7 @@ class _ScreenshotReplacerState extends State<ScreenshotReplacer> {
   @override
   void initState() {
     super.initState();
+    // ignore: discarded_futures
     WidgetsBinding.instance.addPostFrameCallback((_) => _capture());
   }
 

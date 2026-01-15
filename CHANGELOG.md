@@ -1,3 +1,7 @@
+## 0.3.1
+* fix a serious bug: the code is built using a Flutter fork. transfer to the
+  official version.
+
 ## 0.3.0
 
 * add `ScopeModel`, `ScopeNotifier`, `ScopeAsyncInitializer`,

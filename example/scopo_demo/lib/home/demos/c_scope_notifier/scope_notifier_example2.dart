@@ -64,9 +64,15 @@ final class CounterScope
   >(context, (context) => selector(context));
 
   Widget build(BuildContext context) {
-    return const Row(
+    return Column(
       mainAxisAlignment: MainAxisAlignment.center,
-      children: [_CounterView(), _IncrementAction()],
+      children: [
+        Text('$ScopeNotifierExample2'),
+        const Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [_CounterView(), _IncrementAction()],
+        ),
+      ],
     );
   }
 

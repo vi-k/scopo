@@ -29,8 +29,6 @@ class SizedTabBar extends TabBar {
     super.mouseCursor,
     super.enableFeedback,
     super.onTap,
-    super.onHover,
-    super.onFocusChange,
     super.physics,
     super.splashFactory,
     super.splashBorderRadius,
@@ -38,10 +36,10 @@ class SizedTabBar extends TabBar {
     super.textScaler,
     super.indicatorAnimation,
   }) : super(
-         tabs: tabs
-             .map((e) => SizedBox(height: height, child: e))
-             .toList(growable: false),
-       );
+          tabs: tabs
+              .map((e) => SizedBox(height: height, child: e))
+              .toList(growable: false),
+        );
 
   @override
   Size get preferredSize => Size.fromHeight(height + indicatorWeight);

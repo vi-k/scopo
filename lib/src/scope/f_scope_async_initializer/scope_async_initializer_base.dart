@@ -82,19 +82,23 @@ final class ScopeAsyncInitializerElement<
         ScopeAsyncInitializerElement<W, T>, T> {
   ScopeAsyncInitializerElement(super.widget);
 
+  // Создаём копию!
   @override
-  LifecycleCoordinator<Object>? get exclusiveCoordinator =>
+  late final LifecycleCoordinator<Object>? exclusiveCoordinator =
       widget.exclusiveCoordinator;
 
+  // Создаём копию!
   @override
-  Key? get exclusiveCoordinatorKey => widget.exclusiveCoordinatorKey;
+  late final Key? exclusiveCoordinatorKey = widget.exclusiveCoordinatorKey;
 
+  // Создаём копию!
   @override
-  LifecycleCoordinator<Object>? get disposeCoordinator =>
+  late final LifecycleCoordinator<Object>? disposeCoordinator =
       widget.disposeCoordinator;
 
+  // Создаём копию!
   @override
-  Key? get disposeCoordinatorKey => widget.disposeCoordinatorKey;
+  late final Key? disposeCoordinatorKey = widget.disposeCoordinatorKey;
 
   @override
   Future<T> initAsync() => widget.init();
