@@ -81,7 +81,7 @@ final class ScopeLog {
       '${source == null ? '' : ' $source:'}'
       ' ${message ?? 'null'}'
       '${error == null ? '' : ': $error'}'
-      '${stackTrace == null ? '' : ':${stackTrace == StackTrace.empty ? ' no stack trace' : '\n$stackTrace'}'}';
+      '${stackTrace == null ? '' : '\n${stackTrace == StackTrace.empty ? 'no stack trace' : '$stackTrace'}'}';
 }
 
 String source(Diagnosticable diagnosticable, String method) =>

@@ -1,3 +1,7 @@
+## 0.3.2
+* add `ScopeDependenciesQueue` for sequiential async initialization and
+  disposal from list of dependencies.
+
 ## 0.3.1
 * fix a serious bug: the code is built using a Flutter fork. transfer to the
   official version.

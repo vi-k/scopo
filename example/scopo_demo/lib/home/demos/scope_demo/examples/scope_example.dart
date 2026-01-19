@@ -220,10 +220,11 @@ final class MyScope extends Scope<MyScope, MyScopeDependencies, MyScopeState> {
   static V selectParam<V extends Object?>(
     BuildContext context,
     V Function(MyScope widget) selector,
-  ) => Scope.selectParam<MyScope, MyScopeDependencies, MyScopeState, V>(
-    context,
-    selector,
-  );
+  ) =>
+      Scope.selectParam<MyScope, MyScopeDependencies, MyScopeState, V>(
+        context,
+        selector,
+      );
 
   static MyScopeState of(BuildContext context) =>
       Scope.of<MyScope, MyScopeDependencies, MyScopeState>(context);
@@ -231,10 +232,11 @@ final class MyScope extends Scope<MyScope, MyScopeDependencies, MyScopeState> {
   static V select<V extends Object?>(
     BuildContext context,
     V Function(MyScopeState state) selector,
-  ) => Scope.select<MyScope, MyScopeDependencies, MyScopeState, V>(
-    context,
-    selector,
-  );
+  ) =>
+      Scope.select<MyScope, MyScopeDependencies, MyScopeState, V>(
+        context,
+        selector,
+      );
 }
 
 class _ConsumerAOutside extends StatelessWidget {

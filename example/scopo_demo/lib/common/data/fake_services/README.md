@@ -1,1 +1,1 @@
- Mock implementations of dependencies to simulate real-world delays and errors.
+ Fake implementations of dependencies to simulate real-world delays and errors.

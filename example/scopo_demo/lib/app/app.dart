@@ -1,17 +1,17 @@
 import 'package:flutter/material.dart';
 import 'package:scopo/scopo.dart';
 
-import '../common/data/fake_services/analytics.dart';
-import '../common/data/fake_services/connectivity.dart';
-import '../common/data/fake_services/http_client.dart';
-import 'app_deps.dart';
+import '../common/data/fake_services/fake_analytics.dart';
+import '../common/data/fake_services/fake_app_http_client.dart';
+import '../common/data/fake_services/fake_service.dart';
+import 'app_dependencies.dart';
 import 'app_error.dart';
 import 'theme_manager/theme_manager.dart';
 
 /// The root scope.
 ///
-/// Initializes global dependencies like [HttpClient], [Connectivity], and
-/// [Analytics].
+/// Initializes global dependencies like [FakeAppHttpClient], [FakeService], and
+/// [FakeAnalytics].
 final class App extends Scope<App, AppDependencies, AppState> {
   final ScopeInitFunction<double, AppDependencies> _init;
   final ScopeOnInitCallback<double> _onInit;
@@ -22,9 +22,9 @@ final class App extends Scope<App, AppDependencies, AppState> {
     required ScopeInitFunction<double, AppDependencies> init,
     required ScopeOnInitCallback<double> initBuilder,
     required this.builder,
-  }) : _init = init,
-       _onInit = initBuilder,
-       super(pauseAfterInitialization: const Duration(milliseconds: 500));
+  })  : _init = init,
+        _onInit = initBuilder,
+        super(pauseAfterInitialization: const Duration(milliseconds: 500));
 
   @override
   Stream<ScopeInitState<double, AppDependencies>> init() => _init();
@@ -36,10 +36,11 @@ final class App extends Scope<App, AppDependencies, AppState> {
   static V selectParam<V extends Object?>(
     BuildContext context,
     V Function(App widget) selector,
-  ) => Scope.selectParam<App, AppDependencies, AppState, V>(
-    context,
-    (widget) => selector(widget),
-  );
+  ) =>
+      Scope.selectParam<App, AppDependencies, AppState, V>(
+        context,
+        (widget) => selector(widget),
+      );
 
   static AppState? maybeOf(BuildContext context) =>
       Scope.maybeOf<App, AppDependencies, AppState>(context);
@@ -51,10 +52,11 @@ final class App extends Scope<App, AppDependencies, AppState> {
   static V select<V extends Object?>(
     BuildContext context,
     V Function(AppState state) selector,
-  ) => Scope.select<App, AppDependencies, AppState, V>(
-    context,
-    (state) => selector(state),
-  );
+  ) =>
+      Scope.select<App, AppDependencies, AppState, V>(
+        context,
+        (state) => selector(state),
+      );
 
   Widget _app({
     ThemeMode mode = ThemeMode.system,
@@ -82,41 +84,43 @@ final class App extends Scope<App, AppDependencies, AppState> {
     Object error,
     StackTrace stackTrace,
     Object? progress,
-  ) => _app(child: AppError(error, stackTrace));
+  ) =>
+      _app(child: AppError(error, stackTrace));
 
   @override
   Widget wrapState(
     BuildContext context,
     AppDependencies dependencies,
     Widget child,
-  ) => ThemeManager(
-    keyValueService: dependencies.keyValueService('theme.'),
-    builder: (context) {
-      final themeModel = ThemeManager.of(context);
+  ) =>
+      ThemeManager(
+        keyValueService: dependencies.keyValueService('theme.'),
+        builder: (context) {
+          final themeModel = ThemeManager.of(context);
 
-      return Directionality(
-        textDirection: TextDirection.ltr,
-        child: Banner(
-          message: 'scopo',
-          location: BannerLocation.bottomEnd,
-          color: themeModel.theme.colorScheme.primary,
-          textStyle: TextStyle(
-            color: themeModel.theme.colorScheme.onPrimary,
-            fontSize: 11,
-            fontWeight: FontWeight.bold,
-            height: 1,
-          ),
-          shadow: const BoxShadow(color: Colors.transparent),
-          child: _app(
-            mode: themeModel.mode,
-            light: themeModel.lightTheme,
-            dark: themeModel.darkTheme,
-            child: child,
-          ),
-        ),
+          return Directionality(
+            textDirection: TextDirection.ltr,
+            child: Banner(
+              message: 'scopo',
+              location: BannerLocation.bottomEnd,
+              color: themeModel.theme.colorScheme.primary,
+              textStyle: TextStyle(
+                color: themeModel.theme.colorScheme.onPrimary,
+                fontSize: 11,
+                fontWeight: FontWeight.bold,
+                height: 1,
+              ),
+              shadow: const BoxShadow(color: Colors.transparent),
+              child: _app(
+                mode: themeModel.mode,
+                light: themeModel.lightTheme,
+                dark: themeModel.darkTheme,
+                child: child,
+              ),
+            ),
+          );
+        },
       );
-    },
-  );
 
   @override
   AppState createState() => AppState();

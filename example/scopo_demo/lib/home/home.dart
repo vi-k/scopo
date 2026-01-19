@@ -3,11 +3,10 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:scopo/scopo.dart';
 
-import '../app/app.dart';
 import '../app/app_error.dart';
 import '../app/theme_manager/theme_manager.dart';
-import '../common/data/fake_services/some_bloc.dart';
-import '../common/data/fake_services/some_controller.dart';
+import '../common/data/fake_services/fake_bloc.dart';
+import '../common/data/fake_services/fake_controller.dart';
 import '../common/presentation/animated_progress_indicator.dart';
 import '../common/presentation/sized_tab_bar.dart';
 import 'demos/a_scope_widget/scope_widget_demo.dart';
@@ -34,8 +33,8 @@ const _tabs = <(String, Widget)>[
 
 /// A child scope.
 ///
-/// Initializes feature-specific dependencies like [SomeBloc] and
-/// [SomeController].
+/// Initializes feature-specific dependencies like [FakeBloc] and
+/// [FakeController].
 final class Home extends Scope<Home, HomeDependencies, HomeState> {
   final ScopeInitFunction<double, HomeDependencies> _init;
   final bool isRoot;
@@ -117,18 +116,6 @@ class HomeAppBar extends AppBar {
       : super(
           title: Text('$Home'),
           actions: [
-            ValueListenableBuilder<bool>(
-              valueListenable: App.of(context).dependencies.connectivity,
-              builder: (context, isConnected, _) {
-                return Icon(
-                  color:
-                      isConnected ? null : Theme.of(context).colorScheme.error,
-                  isConnected
-                      ? Icons.signal_cellular_4_bar
-                      : Icons.signal_cellular_connected_no_internet_0_bar,
-                );
-              },
-            ),
             IconButton(
               onPressed: () {
                 ThemeManager.of(context, listen: false).toggleBrightness();
@@ -197,7 +184,9 @@ final class HomeState extends ScopeState<Home, HomeDependencies, HomeState> {
   void initState() {
     super.initState();
 
-    print(dependencies.someController);
+    // Пример использования
+    // ignore: unused_local_variable
+    final controller = dependencies.controller;
   }
 
   void increment() {
@@ -304,26 +293,44 @@ class _Common extends StatelessWidget {
   Widget build(BuildContext context) {
     return ListView(
       padding: const EdgeInsets.only(top: 20),
-      children: const [
-        Center(child: Text('You have pushed this buttons many times:')),
-        Center(child: HomeCounter()),
-        SizedBox(height: 20),
-        _LifecycleIndicator(),
-        SizedBox(height: 40),
-        HomeNavigationBlock(),
-        SizedBox(height: 20),
+      children: [
+        const Center(child: Text('You have pushed this buttons many times:')),
+        const Center(child: HomeCounter()),
+        const SizedBox(height: 20),
+        if (!Home.paramsOf(context).isRoot) ...[
+          const _LiveIndicator(),
+          const SizedBox(height: 40),
+        ],
+        const HomeNavigationBlock(),
+        const SizedBox(height: 20),
       ],
     );
   }
 }
 
-class _LifecycleIndicator extends StatelessWidget {
-  const _LifecycleIndicator();
+class _LiveIndicator extends StatelessWidget {
+  const _LiveIndicator();
 
   @override
   Widget build(BuildContext context) {
-    return const Center(
-      child: SizedBox(width: 100, child: LinearProgressIndicator(minHeight: 1)),
+    return Center(
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Transform.flip(
+            flipX: true,
+            child: const SizedBox(
+              width: 50,
+              child: LinearProgressIndicator(minHeight: 2),
+            ),
+          ),
+          const Text('  Live indicator  '),
+          const SizedBox(
+            width: 50,
+            child: LinearProgressIndicator(minHeight: 2),
+          ),
+        ],
+      ),
     );
   }
 }

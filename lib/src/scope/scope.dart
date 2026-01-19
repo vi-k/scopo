@@ -3,7 +3,9 @@ import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
+import '../environment/scope_config.dart';
 import '../utils/lifecycle_coordinator/lifecycle_coordinator.dart';
+import '../utils/progress_iterator/double_progress_iterator.dart';
 import '../utils/screenshot_replacer.dart';
 
 part 'a_scope_widget/base.dart';
@@ -32,4 +34,5 @@ part 'g_scope_stream_initializer/scope_stream_initializer_core.dart';
 part 'h_scope/scope.dart';
 part 'h_scope/scope_consumer.dart';
 part 'h_scope/scope_dependencies.dart';
+part 'h_scope/scope_dependencies_queue.dart';
 part 'h_scope/scope_state.dart';
