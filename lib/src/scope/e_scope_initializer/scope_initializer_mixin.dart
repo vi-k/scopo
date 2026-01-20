@@ -12,11 +12,11 @@ base mixin ScopeInitializerElementMixin<W extends ScopeInheritedWidget,
 
   bool get autoSelfDependence => true;
 
-  LifecycleCoordinator<Object>? get exclusiveCoordinator;
-  Key? get exclusiveCoordinatorKey;
+  LifecycleCoordinator<Object>? get exclusiveCoordinator => null;
+  Key? get exclusiveCoordinatorKey => null;
 
-  LifecycleCoordinator<Object>? get disposeCoordinator;
-  Key? get disposeCoordinatorKey;
+  LifecycleCoordinator<Object>? get disposeCoordinator => null;
+  Key? get disposeCoordinatorKey => null;
 
   bool get isInitialized => model.state is ScopeInitializerReady<T>;
 

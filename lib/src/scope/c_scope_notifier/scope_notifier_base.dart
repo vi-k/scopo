@@ -21,6 +21,7 @@ abstract base class ScopeNotifierBase<W extends ScopeNotifierBase<W, M>,
     super.tag,
     required this.create,
     required this.dispose,
+    super.child, // Not used by default. You can use it at your own discretion.
   })  : hasValue = false,
         value = null;
 

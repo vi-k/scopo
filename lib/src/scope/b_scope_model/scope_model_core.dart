@@ -7,6 +7,7 @@ abstract base class ScopeModelCore<
   const ScopeModelCore({
     super.key,
     super.tag,
+    super.child, // Not used by default. You can use it at your own discretion.
   });
 
   @override

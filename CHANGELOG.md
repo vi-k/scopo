@@ -1,3 +1,6 @@
+## 0.3.3
+* return `child` back. by default, it is not used, but you can use it yourself.
+
 ## 0.3.2
 * add `ScopeDependenciesQueue` for sequiential async initialization and
   disposal from list of dependencies.

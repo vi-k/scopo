@@ -16,6 +16,7 @@ abstract base class ScopeAsyncInitializerBase<
     this.exclusiveCoordinatorKey,
     this.disposeCoordinator,
     this.disposeCoordinatorKey,
+    super.child, // Not used by default. You can use it at your own discretion.
   })  : assert(
           exclusiveCoordinatorKey == null || exclusiveCoordinator == null,
           '`exclusiveCoordinator` and `exclusiveCoordinatorKey` cannot be both set',

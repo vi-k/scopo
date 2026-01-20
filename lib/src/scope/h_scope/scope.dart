@@ -36,6 +36,7 @@ abstract base class Scope<W extends Scope<W, D, S>, D extends ScopeDependencies,
     this.disposeCoordinator,
     this.disposeCoordinatorKey,
     this.pauseAfterInitialization,
+    super.child, // Not used by default. You can use it at your own discretion.
   });
 
   Stream<ScopeInitState<Object, D>> init();

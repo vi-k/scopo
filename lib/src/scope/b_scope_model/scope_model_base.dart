@@ -20,6 +20,7 @@ abstract base class ScopeModelBase<W extends ScopeModelBase<W, M>,
     super.tag,
     required this.create,
     required this.dispose,
+    super.child, // Not used by default. You can use it at your own discretion.
   })  : hasValue = false,
         value = null;
 

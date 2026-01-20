@@ -1,10 +1,11 @@
 # TODO
 
-- В State добавить initAsync и disposeAsync. Возможно ли?
 - LiteScope - скоуп без инициализации и диспоуза зависимостей.
 - Добавить buildOnClosing, заменить текущую реализацию
 - Удалить из scope_demo Connectivity. Отвлекает
 - Тесты: одновременно notifyDependents и перестроение дерева сверху.
+- В State добавить initAsync и disposeAsync. Возможно ли?
+- StatefulScope - скоуп со стейтом и асинхронной инициализацией
 
 План scopo_demo:
 

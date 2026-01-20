@@ -18,6 +18,7 @@ abstract base class ScopeStreamInitializerBase<
     this.disposeCoordinator,
     this.disposeCoordinatorKey,
     this.pauseAfterInitialization,
+    super.child, // Not used by default. You can use it at your own discretion.
   });
 
   Stream<ScopeInitState<Object, T>> init();

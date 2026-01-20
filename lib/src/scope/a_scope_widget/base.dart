@@ -3,10 +3,13 @@ part of '../scope.dart';
 abstract base class ScopeInheritedWidget extends InheritedWidget {
   final Object? tag;
 
+  /// saaa
   const ScopeInheritedWidget({
     super.key,
     this.tag,
-  }) : super(child: const _NullWidget());
+    // Not used by default. You can use it at your own discretion.
+    super.child = const _NullWidget(),
+  });
 }
 
 final class _NullWidget extends Widget {
