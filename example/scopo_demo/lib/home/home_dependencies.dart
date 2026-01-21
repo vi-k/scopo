@@ -8,8 +8,6 @@ import '../common/data/fake_services/fake_user_http_client.dart';
 import 'home.dart';
 
 /// Dependencies for [Home] scope.
-///
-/// They are initialized asynchronously in the [init] stream.
 final class HomeDependencies extends ScopeDependenciesQueue<HomeDependencies> {
   late final FakeUserHttpClient httpClient;
   late final FakeBloc bloc;
@@ -18,23 +16,21 @@ final class HomeDependencies extends ScopeDependenciesQueue<HomeDependencies> {
   HomeDependencies();
 
   @override
-  List<List<ScopeDependencyBase>> queue() => [
+  List<List<ScopeDependencyBase>> buildQueue(_) => [
         [
           ScopeDependency(
-            name: 'httpClient',
-            init: () async {
+            'httpClient',
+            () async {
               httpClient = FakeUserHttpClient();
               await httpClient.init();
             },
-            dispose: () async {
-              await httpClient.close();
-            },
+            onDispose: () => httpClient.close(),
           ),
         ],
         [
           ScopeDependency(
-            name: 'bloc',
-            init: () async {
+            'bloc',
+            () async {
               final completer = Completer<void>();
               bloc = FakeBloc()..add(FakeBlocLoad());
               bloc.stream.listen((state) {
@@ -52,25 +48,18 @@ final class HomeDependencies extends ScopeDependenciesQueue<HomeDependencies> {
               });
               await completer.future;
             },
-            dispose: () async {
-              await bloc.close();
-            },
+            onDispose: () => bloc.close(),
           ),
           ScopeDependency(
-            name: 'controller',
-            init: () async {
+            'controller',
+            () async {
               controller = FakeController();
               await controller.init();
             },
-            dispose: () async {
-              await controller.dispose();
-            },
+            onDispose: () => controller.dispose(),
           ),
         ],
       ];
-
-  static Stream<ScopeInitState<double, HomeDependencies>> init() =>
-      HomeDependencies().initQueue();
 
   @override
   Future<void> dispose() async {

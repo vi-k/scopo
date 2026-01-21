@@ -146,7 +146,9 @@ final class MyScope extends Scope<MyScope, MyScopeDependencies, MyScopeState> {
   }) : super(exclusiveCoordinatorKey: const ValueKey('my_scope'));
 
   @override
-  Stream<ScopeInitState<double, MyScopeDependencies>> init() async* {
+  Stream<ScopeInitState<double, MyScopeDependencies>> initDependencies(
+    BuildContext context,
+  ) async* {
     const count = 4;
     for (var i = 1; i <= count; i++) {
       await Future<void>.delayed(const Duration(milliseconds: 500));

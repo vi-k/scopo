@@ -11,7 +11,7 @@ final class _Owner<T extends Object> {
 /// владеющему контроллером.
 final class LifecycleCoordinator<T extends Object> {
   final Duration? timeout;
-  final void Function(T owner)? onTimeout;
+  final void Function(T owner, T acquirer)? onTimeout;
   var _queueSize = 0;
 
   _Owner<T>? _owner;
@@ -53,7 +53,7 @@ final class LifecycleCoordinator<T extends Object> {
           rethrow;
         }
 
-        onTimeout(previousOwner.instance);
+        onTimeout(previousOwner.instance, instance);
 
         // В случае зависания предыдущего владельца необходимо вручную
         // освободить и захватить контроллер, но в этом месте могут оказаться

@@ -111,9 +111,6 @@ abstract base class ScopeDependencyBase {
     }
   }
 
-  @override
-  String toString() => '`$name` $state';
-
   FutureOr<void> _callDispose() {
     if (_state is! _ScopeDependencyStateInitialized) {
       return null;
@@ -139,39 +136,49 @@ abstract base class ScopeDependencyBase {
       rethrow;
     }
   }
+
+  @override
+  String toString() => '`$name` $state';
 }
 
 final class ScopeDependency extends ScopeDependencyBase {
   @override
   final String name;
 
-  final FutureOr<void> Function() _init;
-  final FutureOr<void> Function() _dispose;
+  final FutureOr<void> Function() onInit;
+  final FutureOr<void> Function()? onDispose;
 
-  ScopeDependency({
-    required this.name,
-    required FutureOr<void> Function() init,
-    required FutureOr<void> Function() dispose,
-  })  : _init = init,
-        _dispose = dispose;
-
-  @override
-  FutureOr<void> init() => _init();
+  ScopeDependency(
+    this.name,
+    this.onInit, {
+    this.onDispose,
+  });
 
   @override
-  FutureOr<void> dispose() => _dispose();
+  FutureOr<void> init() => onInit();
+
+  @override
+  FutureOr<void> dispose() => onDispose?.call();
 }
 
 abstract base class ScopeDependenciesQueue<T extends ScopeDependencies>
     implements ScopeDependencies {
-  late final List<List<ScopeDependencyBase>> _queue = queue();
-  List<List<ScopeDependencyBase>> queue();
+  List<List<ScopeDependencyBase>>? _queue;
 
-  Stream<ScopeInitState<double, T>> initQueue() async* {
+  /// Set the queue of dependencies.
+  // ignore: use_setters_to_change_properties
+  void setQueue(List<List<ScopeDependencyBase>> queue) {
+    _queue = queue;
+  }
+
+  List<List<ScopeDependencyBase>> buildQueue(BuildContext context);
+
+  /// Initialize the scope dependencies.
+  Stream<ScopeInitState<double, T>> init(BuildContext context) async* {
     var isInitialized = false;
 
     try {
-      final queue = _queue;
+      final queue = _queue ??= buildQueue(context);
       final progressIterator = DoubleProgressIterator(count: queue.length);
 
       d(T, 'init');
@@ -210,12 +217,16 @@ abstract base class ScopeDependenciesQueue<T extends ScopeDependencies>
 
   @override
   Future<void> dispose() async {
+    final queue = _queue;
+    if (queue == null) {
+      return;
+    }
+
     d(T, 'dispose (in reverse order)');
 
-    final queue = _queue;
-
-    for (final (index, group) in queue.reversed.indexed) {
-      d(T, 'dispose group ${queue.length - index - 1}');
+    for (var i = queue.length - 1; i >= 0; i--) {
+      final group = queue[i];
+      d(T, 'dispose group $i');
 
       try {
         await group.map((e) => e._callDispose()).whereType<Future<void>>().wait;

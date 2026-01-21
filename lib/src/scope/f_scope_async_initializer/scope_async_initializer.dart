@@ -2,7 +2,7 @@ part of '../scope.dart';
 
 final class ScopeAsyncInitializer<T extends Object?>
     extends ScopeAsyncInitializerBase<ScopeAsyncInitializer<T>, T> {
-  final Future<T> Function() _init;
+  final Future<T> Function(BuildContext context) _init;
   final FutureOr<void> Function(T value) _dispose;
   final Widget Function(BuildContext context)? _buildOnWaitingForPrevious;
   final Widget Function(BuildContext context) _buildOnInitializing;
@@ -20,7 +20,7 @@ final class ScopeAsyncInitializer<T extends Object?>
     super.exclusiveCoordinatorKey,
     super.disposeCoordinator,
     super.disposeCoordinatorKey,
-    required Future<T> Function() init,
+    required Future<T> Function(BuildContext context) init,
     required FutureOr<void> Function(T value) dispose,
     Widget Function(BuildContext context)? buildOnWaitingForPrevious,
     required Widget Function(BuildContext context) buildOnInitializing,
@@ -38,7 +38,7 @@ final class ScopeAsyncInitializer<T extends Object?>
         _buildOnError = buildOnError;
 
   @override
-  Future<T> init() => _init();
+  Future<T> init(BuildContext context) => _init(context);
 
   @override
   FutureOr<void> dispose(T value) => _dispose(value);

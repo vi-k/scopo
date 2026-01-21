@@ -7,15 +7,15 @@ void main() {
 }
 
 final class App extends Scope<App, AppDependencies, AppState> {
-  final ScopeInitFunction<String, AppDependencies> _init;
+  final ScopeInitFunction<String, AppDependencies> init;
 
-  const App({
-    super.key,
-    required ScopeInitFunction<String, AppDependencies> init,
-  }) : _init = init;
+  const App({super.key, required this.init});
 
   @override
-  Stream<ScopeInitState<String, AppDependencies>> init() => _init();
+  Stream<ScopeInitState<String, AppDependencies>> initDependencies(
+    BuildContext context,
+  ) =>
+      init(context);
 
   static App paramsOf(BuildContext context, {bool listen = true}) =>
       Scope.paramsOf<App, AppDependencies, AppState>(context, listen: listen);
@@ -26,10 +26,11 @@ final class App extends Scope<App, AppDependencies, AppState> {
   static V select<V extends Object?>(
     BuildContext context,
     V Function(AppState state) selector,
-  ) => Scope.select<App, AppDependencies, AppState, V>(
-    context,
-    (state) => selector(state),
-  );
+  ) =>
+      Scope.select<App, AppDependencies, AppState, V>(
+        context,
+        (state) => selector(state),
+      );
 
   Widget _app({required Widget child}) {
     return MaterialApp(
@@ -51,14 +52,16 @@ final class App extends Scope<App, AppDependencies, AppState> {
     Object error,
     StackTrace stackTrace,
     Object? progress,
-  ) => _app(child: _ErrorScreen(error: error));
+  ) =>
+      _app(child: _ErrorScreen(error: error));
 
   @override
   Widget wrapState(
     BuildContext context,
     AppDependencies dependencies,
     Widget child,
-  ) => _app(child: child);
+  ) =>
+      _app(child: child);
 
   @override
   AppState createState() => AppState();
@@ -88,8 +91,8 @@ class _ErrorScreen extends StatelessWidget {
         child: Text(
           '$error',
           style: Theme.of(context).textTheme.labelLarge?.copyWith(
-            color: Theme.of(context).colorScheme.onError,
-          ),
+                color: Theme.of(context).colorScheme.onError,
+              ),
         ),
       ),
     );
@@ -101,7 +104,7 @@ class AppDependencies implements ScopeDependencies {
 
   AppDependencies({required this.sharedPreferences});
 
-  static Stream<ScopeInitState<String, AppDependencies>> init() async* {
+  static Stream<ScopeInitState<String, AppDependencies>> init(_) async* {
     SharedPreferences? sharedPreferences;
 
     yield ScopeProgress('init $SharedPreferences');

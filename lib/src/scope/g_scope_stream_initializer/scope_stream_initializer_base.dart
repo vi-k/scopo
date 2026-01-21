@@ -21,7 +21,7 @@ abstract base class ScopeStreamInitializerBase<
     super.child, // Not used by default. You can use it at your own discretion.
   });
 
-  Stream<ScopeInitState<Object, T>> init();
+  Stream<ScopeInitState<Object, T>> init(BuildContext context);
 
   FutureOr<void> dispose(T value);
 
@@ -101,7 +101,7 @@ final class ScopeStreamInitializerElement<
   Duration? get pauseAfterInitialization => widget.pauseAfterInitialization;
 
   @override
-  Stream<ScopeInitState<Object, T>> initAsync() => widget.init();
+  Stream<ScopeInitState<Object, T>> initAsync() => widget.init(this);
 
   @override
   FutureOr<void> disposeAsync(W widget, T value) => widget.dispose(value);

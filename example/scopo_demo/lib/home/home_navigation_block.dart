@@ -55,11 +55,10 @@ class HomeNavigationBlock extends StatelessWidget {
         ),
         const SizedBox(height: 20),
         ElevatedButton(
-          onPressed:
-              Navigator.of(context).canPop()
-                  // ignore: discarded_futures
-                  ? () => Navigator.of(context).maybePop(123)
-                  : null,
+          onPressed: Navigator.of(context).canPop()
+              // ignore: discarded_futures
+              ? () => Navigator.of(context).maybePop(123)
+              : null,
           child: const Text('close screen'),
         ),
         const SizedBox(height: 20),
@@ -69,12 +68,11 @@ class HomeNavigationBlock extends StatelessWidget {
             Navigator.push(
               context,
               MaterialPageRoute<void>(
-                builder:
-                    (_) => const Home(
-                      tag: 'secondary',
-                      init: HomeDependencies.init,
-                      isRoot: false,
-                    ),
+                builder: (_) => Home(
+                  tag: 'secondary',
+                  init: HomeDependencies().init,
+                  isRoot: false,
+                ),
               ),
             );
           },

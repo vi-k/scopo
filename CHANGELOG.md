@@ -1,3 +1,7 @@
+## 0.4.0
+* [breaking changes] add context to init.
+* add `AsyncInitializer` and `AsyncState`.
+
 ## 0.3.3
 * return `child` back. by default, it is not used, but you can use it yourself.
 

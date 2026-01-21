@@ -26,7 +26,7 @@ abstract base class ScopeAsyncInitializerBase<
           '`disposeCoordinator` and `disposeCoordinatorKey` cannot be both set',
         );
 
-  Future<T> init();
+  Future<T> init(BuildContext context);
 
   FutureOr<void> dispose(T value);
 
@@ -102,7 +102,7 @@ final class ScopeAsyncInitializerElement<
   late final Key? disposeCoordinatorKey = widget.disposeCoordinatorKey;
 
   @override
-  Future<T> initAsync() => widget.init();
+  Future<T> initAsync() => widget.init(this);
 
   @override
   FutureOr<void> disposeAsync(W widget, T value) => widget.dispose(value);

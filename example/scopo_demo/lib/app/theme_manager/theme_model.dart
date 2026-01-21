@@ -19,17 +19,17 @@ abstract interface class ThemeModel implements Listenable {
 final class _ThemeModelNotifier extends ChangeNotifier implements ThemeModel {
   static const String _modeKey = 'mode';
 
-  final KeyValueService keyValueService;
+  final KeyValueStorage keyValueService;
 
   Brightness Function()? _systemBrightness;
 
   _ThemeModelNotifier({
     required this.keyValueService,
     required Brightness Function() systemBrightness,
-  }) : _mode = _initialMode(keyValueService),
-       _systemBrightness = systemBrightness;
+  })  : _mode = _initialMode(keyValueService),
+        _systemBrightness = systemBrightness;
 
-  static ThemeMode _initialMode(KeyValueService keyValueService) {
+  static ThemeMode _initialMode(KeyValueStorage keyValueService) {
     final modeIndex = keyValueService.getInt(_modeKey) ?? 0;
     try {
       return ThemeMode.values[modeIndex];
@@ -53,16 +53,16 @@ final class _ThemeModelNotifier extends ChangeNotifier implements ThemeModel {
 
   @override
   Brightness get brightness => switch (_mode) {
-    ThemeMode.system => _systemBrightness!(),
-    ThemeMode.light => Brightness.light,
-    ThemeMode.dark => Brightness.dark,
-  };
+        ThemeMode.system => _systemBrightness!(),
+        ThemeMode.light => Brightness.light,
+        ThemeMode.dark => Brightness.dark,
+      };
 
   @override
   ThemeData get theme => switch (brightness) {
-    Brightness.light => lightTheme,
-    Brightness.dark => darkTheme,
-  };
+        Brightness.light => lightTheme,
+        Brightness.dark => darkTheme,
+      };
 
   @override
   ThemeData get lightTheme => StaticThemes.lightTheme;

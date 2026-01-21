@@ -18,7 +18,7 @@ class ScopeStreamInitializerExample extends StatelessWidget {
       builder: (context, withError, log) {
         return ScopeStreamInitializer<int>(
           exclusiveCoordinatorKey: const ValueKey('scope_stream_initializer'),
-          init: () async* {
+          init: (context) async* {
             const step = Duration(milliseconds: 200);
             final progress = DoubleProgressIterator(count: 4);
 

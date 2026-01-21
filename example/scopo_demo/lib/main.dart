@@ -75,7 +75,7 @@ void main() {
       init: AppDependencies.init,
       initBuilder: (context, progress) => SplashScreen(progress: progress),
       builder: (context) {
-        return const Home(init: HomeDependencies.init);
+        return Home(init: HomeDependencies().init);
       },
     ),
   );

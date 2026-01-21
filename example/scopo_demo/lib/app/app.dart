@@ -13,21 +13,23 @@ import 'theme_manager/theme_manager.dart';
 /// Initializes global dependencies like [FakeAppHttpClient], [FakeService], and
 /// [FakeAnalytics].
 final class App extends Scope<App, AppDependencies, AppState> {
-  final ScopeInitFunction<double, AppDependencies> _init;
-  final ScopeOnInitCallback<double> _onInit;
+  final ScopeInitFunction<String, AppDependencies> init;
+  final ScopeOnInitCallback<String> _onInit;
   final Widget Function(BuildContext context) builder;
 
   const App({
     super.key,
-    required ScopeInitFunction<double, AppDependencies> init,
-    required ScopeOnInitCallback<double> initBuilder,
+    required this.init,
+    required ScopeOnInitCallback<String> initBuilder,
     required this.builder,
-  })  : _init = init,
-        _onInit = initBuilder,
+  })  : _onInit = initBuilder,
         super(pauseAfterInitialization: const Duration(milliseconds: 500));
 
   @override
-  Stream<ScopeInitState<double, AppDependencies>> init() => _init();
+  Stream<ScopeInitState<String, AppDependencies>> initDependencies(
+    BuildContext context,
+  ) =>
+      init(context);
 
   /// Provides access the scope params, i.e. to the widget [App].
   static App paramsOf(BuildContext context, {bool listen = true}) =>
@@ -76,7 +78,7 @@ final class App extends Scope<App, AppDependencies, AppState> {
 
   @override
   Widget buildOnInitializing(BuildContext context, Object? progress) =>
-      _app(child: _onInit(context, progress as double?));
+      _app(child: _onInit(context, progress as String?));
 
   @override
   Widget buildOnError(
@@ -94,7 +96,7 @@ final class App extends Scope<App, AppDependencies, AppState> {
     Widget child,
   ) =>
       ThemeManager(
-        keyValueService: dependencies.keyValueService('theme.'),
+        keyValueService: dependencies.keyValueStorage('theme.'),
         builder: (context) {
           final themeModel = ThemeManager.of(context);
 

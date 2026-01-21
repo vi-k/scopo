@@ -1,7 +1,7 @@
 part of '../scope.dart';
 
 typedef ScopeInitFunction<P extends Object, D extends ScopeDependencies>
-    = Stream<ScopeInitState<P, D>> Function();
+    = Stream<ScopeInitState<P, D>> Function(BuildContext context);
 
 typedef ScopeOnInitCallback<P extends Object> = Widget Function(
   BuildContext context,
@@ -39,7 +39,7 @@ abstract base class Scope<W extends Scope<W, D, S>, D extends ScopeDependencies,
     super.child, // Not used by default. You can use it at your own discretion.
   });
 
-  Stream<ScopeInitState<Object, D>> init();
+  Stream<ScopeInitState<Object, D>> initDependencies(BuildContext context);
 
   Widget Function(BuildContext context)? get buildOnWaitingForPrevious => null;
 
@@ -152,7 +152,8 @@ final class ScopeElement<W extends Scope<W, D, S>, D extends ScopeDependencies,
   Duration? get pauseAfterInitialization => widget.pauseAfterInitialization;
 
   @override
-  Stream<ScopeInitState<Object, D>> initAsync() => widget.init();
+  Stream<ScopeInitState<Object, D>> initAsync() =>
+      widget.initDependencies(this);
 
   @override
   FutureOr<void> disposeAsync(W widget, D value) => value.dispose();

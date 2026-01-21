@@ -4,7 +4,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../common/data/fake_services/fake_analytics.dart';
 import '../common/data/fake_services/fake_app_http_client.dart';
 import '../common/data/fake_services/fake_service.dart';
-import '../common/data/real_services/key_value_service.dart';
+import '../common/data/real_services/key_value_storage.dart';
 import '../utils/app_environment.dart';
 import 'app.dart';
 
@@ -24,15 +24,15 @@ class AppDependencies implements ScopeDependencies {
     required this.analytics,
   }) : _sharedPreferences = sharedPreferences;
 
-  KeyValueService keyValueService(String prefix) =>
-      KeyValueService(sharedPreferences: _sharedPreferences, prefix: prefix);
+  KeyValueStorage keyValueStorage(String prefix) =>
+      KeyValueStorage(sharedPreferences: _sharedPreferences, prefix: prefix);
 
   /// Method uses [DoubleProgressIterator] to track and report granular
   /// initialization progress ([double] 0.0 to 1.0).
   ///
   /// It simulates random initialization errors using [AppEnvironment]
   /// probabilities.
-  static Stream<ScopeInitState<double, AppDependencies>> init() async* {
+  static Stream<ScopeInitState<String, AppDependencies>> init(_) async* {
     SharedPreferences? sharedPreferences;
     FakeAppHttpClient? httpClient;
     FakeService? service;
@@ -45,24 +45,22 @@ class AppDependencies implements ScopeDependencies {
     // отменён или завершился успешно узнаем с помощью данного флага.
     var isInitialized = false;
 
-    // Остлеживает прогресс инициализации.
-    final progressIterator = DoubleProgressIterator(count: 4);
-
     try {
+      yield ScopeProgress('init storage');
       sharedPreferences = await SharedPreferences.getInstance();
-      yield ScopeProgress(progressIterator.nextProgress());
+      await Future<void>.delayed(AppEnvironment.defaultInitPause);
 
+      yield ScopeProgress('init analytics');
       analytics = FakeAnalytics();
       await analytics.init();
-      yield ScopeProgress(progressIterator.nextProgress());
 
+      yield ScopeProgress('init http client');
       httpClient = FakeAppHttpClient();
       await httpClient.init();
-      yield ScopeProgress(progressIterator.nextProgress());
 
+      yield ScopeProgress('init awesome service');
       service = FakeService();
       await service.init();
-      yield ScopeProgress(progressIterator.nextProgress());
 
       yield ScopeReady(
         AppDependencies(
@@ -87,6 +85,7 @@ class AppDependencies implements ScopeDependencies {
 
   @override
   Future<void> dispose() async {
+    // Утилизируем все зависимости параллельно.
     await [
       httpClient.close(),
       service.dispose(),

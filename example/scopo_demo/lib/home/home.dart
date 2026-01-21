@@ -36,19 +36,21 @@ const _tabs = <(String, Widget)>[
 /// Initializes feature-specific dependencies like [FakeBloc] and
 /// [FakeController].
 final class Home extends Scope<Home, HomeDependencies, HomeState> {
-  final ScopeInitFunction<double, HomeDependencies> _init;
+  final ScopeInitFunction<double, HomeDependencies> init;
   final bool isRoot;
 
   const Home({
     super.key,
     super.tag,
-    required ScopeInitFunction<double, HomeDependencies> init,
+    required this.init,
     this.isRoot = true,
-  })  : _init = init,
-        super(pauseAfterInitialization: const Duration(milliseconds: 500));
+  }) : super(pauseAfterInitialization: const Duration(milliseconds: 500));
 
   @override
-  Stream<ScopeInitState<double, HomeDependencies>> init() => _init();
+  Stream<ScopeInitState<double, HomeDependencies>> initDependencies(
+    BuildContext context,
+  ) =>
+      init(context);
 
   /// Provides access the scope params, i.e. to the widget [Home].
   static Home paramsOf(BuildContext context, {bool listen = true}) =>

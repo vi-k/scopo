@@ -1,10 +1,10 @@
 import 'package:shared_preferences/shared_preferences.dart';
 
-final class KeyValueService {
+final class KeyValueStorage {
   final SharedPreferences sharedPreferences;
   final String prefix;
 
-  KeyValueService({required this.sharedPreferences, required this.prefix});
+  KeyValueStorage({required this.sharedPreferences, required this.prefix});
 
   String _prefixedKey(String key) => '$prefix$key';
 
@@ -45,9 +45,9 @@ final class KeyValueService {
       sharedPreferences.remove(_prefixedKey(key));
 
   Set<String> getKeys() => {
-    for (final key in sharedPreferences.getKeys())
-      if (key.startsWith(prefix)) key.substring(prefix.length),
-  };
+        for (final key in sharedPreferences.getKeys())
+          if (key.startsWith(prefix)) key.substring(prefix.length),
+      };
 
   Future<void> clear() async {
     for (final key in sharedPreferences.getKeys()) {
