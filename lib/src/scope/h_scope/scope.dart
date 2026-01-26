@@ -50,6 +50,8 @@ abstract base class Scope<W extends Scope<W, D, S>, D extends ScopeDependencies,
   /// Wraps [ScopeState].
   Widget wrapState(BuildContext context, D dependencies, Widget child) => child;
 
+  Widget Function(BuildContext context)? get buildOnClosing => null;
+
   Duration? get disposeTimeout => null;
 
   void Function()? get onDisposeTimeout => null;
@@ -184,21 +186,25 @@ final class ScopeElement<W extends Scope<W, D, S>, D extends ScopeDependencies,
                 child: child,
               ),
               Positioned.fill(
-                child: ColoredBox(
-                  color: Theme.of(context)
-                      .colorScheme
-                      .surface
-                      .withValues(alpha: 0.8),
-                  child: const Center(
-                    child: CircularProgressIndicator.adaptive(),
-                  ),
-                ),
+                child: buildOnClosing?.call(context) ??
+                    ColoredBox(
+                      color: Theme.of(context)
+                          .colorScheme
+                          .surface
+                          .withValues(alpha: 0.8),
+                      child: const Center(
+                        child: CircularProgressIndicator.adaptive(),
+                      ),
+                    ),
               ),
             ],
           ),
       },
     );
   }
+
+  Widget Function(BuildContext context)? get buildOnClosing =>
+      widget.buildOnClosing;
 
   S _createState() => _state = widget.createState().._scopeElement = this;
 

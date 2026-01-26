@@ -1,5 +1,3 @@
-import 'dart:async';
-
 import 'package:flutter/material.dart';
 import 'package:scopo/scopo.dart';
 
@@ -16,14 +14,12 @@ import 'demos/d_async_scope/async_scope_demo.dart';
 import 'demos/e_stream_scope/stream_scope_demo.dart';
 import 'demos/f_scope/scope_demo.dart';
 import 'demos/g_navigation_node/navigation_node_demo.dart';
-import 'home_counter.dart';
+import 'demos/i_deffered_closing/deffered_closing_demo.dart';
 import 'home_dependencies.dart';
-import 'home_navigation_block.dart';
 
 typedef HomeConsumer = ScopeConsumer<Home, HomeDependencies, HomeState>;
 
 const _tabs = <(String, Widget)>[
-  ('Common', _Common()),
   ('ScopeWidget', ScopeWidgetDemo()),
   ('ScopeModel', ScopeModelDemo()),
   ('ScopeNotifier', ScopeNotifierDemo()),
@@ -31,6 +27,7 @@ const _tabs = <(String, Widget)>[
   ('StreamScope', StreamScopeDemo()),
   ('Scope', ScopeDemo()),
   ('NavigationNode', NavigationNodeDemo()),
+  ('Deffered closing', DefferedClosingDemo()),
 ];
 
 /// A child scope.
@@ -204,77 +201,6 @@ final class HomeState extends ScopeState<Home, HomeDependencies, HomeState> {
     notifyDependents();
   }
 
-  Future<void> openDialog(BuildContext context) => showAdaptiveDialog<void>(
-        useRootNavigator: false,
-        context: context,
-        barrierDismissible: true,
-        builder: (context) {
-          return Dialog(
-            backgroundColor: Theme.of(
-              context,
-            ).colorScheme.surface.withValues(alpha: 0.7),
-            clipBehavior: Clip.antiAlias,
-            child: IntrinsicWidth(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  AppBar(title: const Text('Dialog'), primary: false),
-                  const SizedBox(height: 20),
-                  const HomeCounter(),
-                  const SizedBox(height: 20),
-                ],
-              ),
-            ),
-          );
-        },
-      );
-
-  void openBottomSheet(BuildContext context) {
-    showBottomSheet(
-      context: context,
-      clipBehavior: Clip.antiAlias,
-      builder: (context) {
-        return SafeArea(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              AppBar(title: const Text('Bottom sheet')),
-              const SizedBox(height: 20),
-              const HomeCounter(),
-              const SizedBox(height: 20),
-              ElevatedButton(
-                onPressed: () {
-                  openBottomSheet(context);
-                },
-                child: const Text('more'),
-              ),
-              const SizedBox(height: 20),
-            ],
-          ),
-        );
-      },
-    );
-  }
-
-  Future<void> openModalBottomSheet(BuildContext context) =>
-      showModalBottomSheet(
-        context: context,
-        clipBehavior: Clip.antiAlias,
-        builder: (context) {
-          return SafeArea(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                AppBar(title: const Text('Bottom sheet')),
-                const SizedBox(height: 20),
-                const HomeCounter(),
-                const SizedBox(height: 20),
-              ],
-            ),
-          );
-        },
-      );
-
   @override
   Widget build(BuildContext context) {
     return Builder(
@@ -289,55 +215,6 @@ final class HomeState extends ScopeState<Home, HomeDependencies, HomeState> {
           ),
         );
       },
-    );
-  }
-}
-
-class _Common extends StatelessWidget {
-  const _Common();
-
-  @override
-  Widget build(BuildContext context) {
-    return ListView(
-      padding: const EdgeInsets.only(top: 20),
-      children: [
-        const Center(child: Text('You have pushed this buttons many times:')),
-        const Center(child: HomeCounter()),
-        const SizedBox(height: 20),
-        if (!Home.paramsOf(context).isRoot) ...[
-          const _LiveIndicator(),
-          const SizedBox(height: 40),
-        ],
-        const HomeNavigationBlock(),
-        const SizedBox(height: 20),
-      ],
-    );
-  }
-}
-
-class _LiveIndicator extends StatelessWidget {
-  const _LiveIndicator();
-
-  @override
-  Widget build(BuildContext context) {
-    return Center(
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Transform.flip(
-            flipX: true,
-            child: const SizedBox(
-              width: 50,
-              child: LinearProgressIndicator(minHeight: 2),
-            ),
-          ),
-          const Text('  Live indicator  '),
-          const SizedBox(
-            width: 50,
-            child: LinearProgressIndicator(minHeight: 2),
-          ),
-        ],
-      ),
     );
   }
 }

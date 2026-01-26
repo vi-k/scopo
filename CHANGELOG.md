@@ -1,3 +1,7 @@
+## 0.5.1
+* add `buildOnClosing` for `Scope`.
+* add more examples.
+
 ## 0.5.0
 * [breaking changes] refactor, rename.
 * [breaking changes] `exclusiveCoordinator` transformed to `scopeKey`.
