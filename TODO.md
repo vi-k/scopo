@@ -1,29 +1,13 @@
 # TODO
 
-- LiteScope - скоуп без инициализации и диспоуза зависимостей.
+- LiteScope - скоуп со стейтом без зависимостей.
 - Добавить buildOnClosing, заменить текущую реализацию
-- Тесты: одновременно notifyDependents и перестроение дерева сверху.
-- StatefulScope - скоуп со стейтом и асинхронной инициализацией
-- AsyncScopeState для Scope
 
-План scopo_demo:
+Examples:
+- Отдельный пример для ScreenshotReplacer (отложенный выход).
 
-Common
-ScopeWidget
-ScopeModel
-ScopeNotifier
-ScopeStateBuilder
-ScopeAsyncInitializer
-ScopeStreamInitializer
-Scope
-
-Common:
-Пример счётчика: dialog, modal bottom sheet, non modal bottom sheet, another
-screen (+NavigationNode), clone this scope
-
-Этот пример демонстрирует работу скоупа на примере счётчика. Данные счётчика
-доступны внутри скоупа в любом виджете, в том числе в диалогах, боттом
-шитах и других окнах.
+Тесты:
+- одновременно notifyDependents и перестроение дерева сверху.
 
 README
 

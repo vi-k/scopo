@@ -12,9 +12,10 @@ import '../common/presentation/sized_tab_bar.dart';
 import 'demos/a_scope_widget/scope_widget_demo.dart';
 import 'demos/b_scope_model/scope_model_demo.dart';
 import 'demos/c_scope_notifier/scope_notifier_demo.dart';
-import 'demos/data_access_demo/data_access_demo.dart';
-import 'demos/scope_demo/scope_demo.dart';
-import 'demos/scope_initializer_demo/scope_initializer_demo.dart';
+import 'demos/d_async_scope/async_scope_demo.dart';
+import 'demos/e_stream_scope/stream_scope_demo.dart';
+import 'demos/f_scope/scope_demo.dart';
+import 'demos/g_navigation_node/navigation_node_demo.dart';
 import 'home_counter.dart';
 import 'home_dependencies.dart';
 import 'home_navigation_block.dart';
@@ -26,9 +27,10 @@ const _tabs = <(String, Widget)>[
   ('ScopeWidget', ScopeWidgetDemo()),
   ('ScopeModel', ScopeModelDemo()),
   ('ScopeNotifier', ScopeNotifierDemo()),
-  ('Data access (old)', DataAccessDemo()),
-  ('Async initialization', ScopeInitializerDemo()),
+  ('AsyncScope', AsyncScopeDemo()),
+  ('StreamScope', StreamScopeDemo()),
   ('Scope', ScopeDemo()),
+  ('NavigationNode', NavigationNodeDemo()),
 ];
 
 /// A child scope.
@@ -36,7 +38,7 @@ const _tabs = <(String, Widget)>[
 /// Initializes feature-specific dependencies like [FakeBloc] and
 /// [FakeController].
 final class Home extends Scope<Home, HomeDependencies, HomeState> {
-  final ScopeInitFunction<double, HomeDependencies> init;
+  final ScopeInitFunction<ScopeQueueProgress, HomeDependencies> init;
   final bool isRoot;
 
   const Home({
@@ -47,9 +49,7 @@ final class Home extends Scope<Home, HomeDependencies, HomeState> {
   }) : super(pauseAfterInitialization: const Duration(milliseconds: 500));
 
   @override
-  Stream<ScopeInitState<double, HomeDependencies>> initDependencies(
-    BuildContext context,
-  ) =>
+  ScopeQueueStream<HomeDependencies> initDependencies(BuildContext context) =>
       init(context);
 
   /// Provides access the scope params, i.e. to the widget [Home].
@@ -82,15 +82,18 @@ final class Home extends Scope<Home, HomeDependencies, HomeState> {
       );
 
   @override
-  Widget buildOnInitializing(BuildContext context, Object? progress) =>
-      _FakeContent(progress as double?);
+  Widget buildOnInitializing(
+    BuildContext context,
+    covariant ScopeQueueProgress? progress,
+  ) =>
+      _FakeContent(progress);
 
   @override
   Widget buildOnError(
     BuildContext context,
     Object error,
     StackTrace stackTrace,
-    Object? progress,
+    covariant ScopeQueueProgress? progress,
   ) =>
       AppError(error, stackTrace);
 
@@ -116,7 +119,7 @@ final class Home extends Scope<Home, HomeDependencies, HomeState> {
 class HomeAppBar extends AppBar {
   HomeAppBar(BuildContext context, {super.key, bool withTabs = true})
       : super(
-          title: Text('$Home'),
+          title: const Text('scopo demo'),
           actions: [
             IconButton(
               onPressed: () {
@@ -154,7 +157,7 @@ class HomeAppBar extends AppBar {
 /// The screen displays the progress of dependency initialization, mimicking
 /// the [Home] screen.
 class _FakeContent extends StatelessWidget {
-  final double? progress;
+  final ScopeQueueProgress? progress;
 
   const _FakeContent(this.progress);
 
@@ -166,7 +169,7 @@ class _FakeContent extends StatelessWidget {
         padding: const EdgeInsets.all(8),
         child: Center(
           child: AnimatedProgressIndicator(
-            value: progress,
+            value: progress?.progress,
             builder: (value) {
               return CircularProgressIndicator(value: value);
             },
@@ -280,7 +283,9 @@ final class HomeState extends ScopeState<Home, HomeDependencies, HomeState> {
           length: _tabs.length,
           child: Scaffold(
             appBar: HomeAppBar(context),
-            body: TabBarView(children: _tabs.map((e) => e.$2).toList()),
+            body: TabBarView(
+              children: _tabs.map((e) => e.$2).toList(),
+            ),
           ),
         );
       },

@@ -2,22 +2,17 @@ import 'dart:async';
 
 import 'package:flutter/foundation.dart';
 
-import '../lifecycle_coordinator/lifecycle_coordinator.dart';
+import '../exclusive_sequencer/exclusive_sequencer_old.dart';
+import '../sequencers/sequencer.dart';
 import 'async_initializer_state.dart';
 
-final _exclusiveCoordinators = <Object, LifecycleCoordinator<Object>>{};
-LifecycleCoordinator<Object> exclusiveCoordinatorByKey(Object key) =>
-    _exclusiveCoordinators[key] ??= LifecycleCoordinator<Object>();
-
-final _disposeCoordinators = <Object, LifecycleCoordinator<Object>>{};
-LifecycleCoordinator<Object> disposeCoordinatorByKey(Object key) =>
-    _disposeCoordinators[key] ??= LifecycleCoordinator<Object>();
-
 mixin AsyncInitializerMixin implements Listenable {
-  LifecycleCoordinator<Object>? get exclusiveCoordinator => null;
-  LifecycleCoordinator<Object>? get disposeCoordinator => null;
+  ExclusiveSequencerOld<Object>? get exclusiveSequencer => null;
+  Sequencer? get disposeSequencer => null;
 
   final _initCompleter = Completer<void>();
+
+  SequencerEntry? _disposeSequencerEntry;
 
   final ValueNotifier<AsyncInitializerState> _state =
       ValueNotifier<AsyncInitializerState>(const AsyncInitializerInitial());
@@ -64,11 +59,15 @@ mixin AsyncInitializerMixin implements Listenable {
   Future<void> initInitializer() async {
     assert(_state.value is AsyncInitializerInitial);
 
-    if (exclusiveCoordinator case final exclusiveCoordinator?) {
-      if (exclusiveCoordinator.isNotEmpty) {
+    if (exclusiveSequencer case final exclusiveSequencer?) {
+      if (exclusiveSequencer.isNotEmpty) {
         _state.value = const AsyncInitializerWaitingForInitialization();
       }
-      await exclusiveCoordinator.acquire(this);
+      await exclusiveSequencer.enter(this);
+    }
+
+    if (disposeSequencer case final disposeSequencer?) {
+      _disposeSequencerEntry = disposeSequencer.enter();
     }
 
     try {
@@ -90,17 +89,13 @@ mixin AsyncInitializerMixin implements Listenable {
       await _initCompleter.future;
     }
 
-    final disposeCoordinator = this.disposeCoordinator;
+    final disposeSequencerEntry = _disposeSequencerEntry;
 
     try {
       if (_state.value case AsyncInitializerInitialized()) {
-        if (disposeCoordinator != null) {
-          if (disposeCoordinator.isNotEmpty) {
-            _state.value = const AsyncInitializerWaitingForDisposal();
-          }
-          await disposeCoordinator.acquire(this);
+        if (disposeSequencerEntry != null) {
+          await disposeSequencerEntry.wait();
         }
-
         _state.value = const AsyncInitializerDisposing();
         await onDispose();
         _state.value = const AsyncInitializerDisposed();
@@ -110,46 +105,13 @@ mixin AsyncInitializerMixin implements Listenable {
     } finally {
       _state.dispose();
 
-      if (disposeCoordinator != null) {
-        disposeCoordinator.release(this);
-
-        // Если это был внутренний координатор и очередь на его захват пуста,
-        // удаляем его из списка.
-        if (disposeCoordinator.isEmpty) {
-          Object? disposeCoordinatorKey;
-
-          for (final e in _disposeCoordinators.entries) {
-            if (identical(e.value, disposeCoordinator)) {
-              disposeCoordinatorKey = e.key;
-              break;
-            }
-          }
-
-          if (disposeCoordinatorKey != null) {
-            _disposeCoordinators.remove(disposeCoordinatorKey);
-          }
-        }
+      if (disposeSequencerEntry != null) {
+        disposeSequencerEntry.exit();
+        _disposeSequencerEntry = null;
       }
 
-      if (exclusiveCoordinator case final exclusiveCoordinator?) {
-        exclusiveCoordinator.release(this);
-
-        // Если это был внутренний координатор и очередь на его захват пуста,
-        // удаляем его из списка.
-        if (exclusiveCoordinator.isEmpty) {
-          Object? exclusiveCoordinatorKey;
-
-          for (final e in _exclusiveCoordinators.entries) {
-            if (identical(e.value, exclusiveCoordinator)) {
-              exclusiveCoordinatorKey = e.key;
-              break;
-            }
-          }
-
-          if (exclusiveCoordinatorKey != null) {
-            _exclusiveCoordinators.remove(exclusiveCoordinatorKey);
-          }
-        }
+      if (exclusiveSequencer case final exclusiveSequencer?) {
+        exclusiveSequencer.exit(this);
       }
     }
   }

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:scopo/scopo.dart';
+import 'package:scopo_demo/common/presentation/blinking_box.dart';
 
 class ScopeNotifierExample1 extends StatelessWidget {
   const ScopeNotifierExample1({super.key});
@@ -22,7 +23,10 @@ final class CounterModel with ChangeNotifier {
 
 final class CounterScope extends ScopeNotifierBase<CounterScope, CounterModel> {
   CounterScope({super.key})
-    : super(create: (_) => CounterModel(), dispose: (model) => model.dispose());
+      : super(
+          create: (_) => CounterModel(),
+          dispose: (model) => model.dispose(),
+        );
 
   static CounterModel of(BuildContext context) =>
       ScopeNotifierBase.of<CounterScope, CounterModel>(
@@ -38,15 +42,21 @@ final class CounterScope extends ScopeNotifierBase<CounterScope, CounterModel> {
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: [
-        Text('$ScopeNotifierExample1'),
-        const Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [_CounterView(), _IncrementAction()],
+    return Center(
+      child: BlinkingBox(
+        blinkingColor:
+            Theme.of(context).colorScheme.primary.withValues(alpha: 0.2),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text('$ScopeNotifierExample1'),
+            const Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [_CounterView(), _IncrementAction()],
+            ),
+          ],
         ),
-      ],
+      ),
     );
   }
 }
@@ -57,7 +67,13 @@ class _CounterView extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final count = CounterScope.countOf(context);
-    return Center(child: Text('$count'));
+    return Center(
+      child: BlinkingBox(
+        blinkingColor:
+            Theme.of(context).colorScheme.primary.withValues(alpha: 0.2),
+        child: Text('$count'),
+      ),
+    );
   }
 }
 

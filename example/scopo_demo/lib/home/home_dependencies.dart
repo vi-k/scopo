@@ -8,7 +8,8 @@ import '../common/data/fake_services/fake_user_http_client.dart';
 import 'home.dart';
 
 /// Dependencies for [Home] scope.
-final class HomeDependencies extends ScopeDependenciesQueue<HomeDependencies> {
+final class HomeDependencies extends ScopeDependencies
+    with ScopeQueueMixin<HomeDependencies> {
   late final FakeUserHttpClient httpClient;
   late final FakeBloc bloc;
   late final FakeController controller;

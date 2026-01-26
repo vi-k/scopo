@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:scopo/scopo.dart';
 
+import '../../../common/presentation/blinking_box.dart';
+
 class ScopeNotifierExample2 extends StatelessWidget {
   const ScopeNotifierExample2({super.key});
 
@@ -47,32 +49,34 @@ final class CounterScope
       ).model;
 
   static int countOf(BuildContext context) => ScopeNotifierCore.select<
-    CounterScope,
-    CounterScopeElement,
-    CounterModel,
-    int
-  >(context, (context) => context.model.count);
+      CounterScope,
+      CounterScopeElement,
+      CounterModel,
+      int>(context, (context) => context.model.count);
 
   static V select<V>(
     BuildContext context,
     V Function(ScopeModelContext<CounterScope, CounterModel> context) selector,
-  ) => ScopeNotifierCore.select<
-    CounterScope,
-    CounterScopeElement,
-    CounterModel,
-    V
-  >(context, (context) => selector(context));
+  ) =>
+      ScopeNotifierCore.select<CounterScope, CounterScopeElement, CounterModel,
+          V>(context, (context) => selector(context));
 
   Widget build(BuildContext context) {
-    return Column(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: [
-        Text('$ScopeNotifierExample2'),
-        const Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [_CounterView(), _IncrementAction()],
+    return Center(
+      child: BlinkingBox(
+        blinkingColor:
+            Theme.of(context).colorScheme.primary.withValues(alpha: 0.2),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text('$ScopeNotifierExample2'),
+            const Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [_CounterView(), _IncrementAction()],
+            ),
+          ],
         ),
-      ],
+      ),
     );
   }
 
@@ -80,13 +84,8 @@ final class CounterScope
   CounterScopeElement createScopeElement() => CounterScopeElement(this);
 }
 
-final class CounterScopeElement
-    extends
-        ScopeNotifierElementBase<
-          CounterScope,
-          CounterScopeElement,
-          CounterModel
-        > {
+final class CounterScopeElement extends ScopeNotifierElementBase<CounterScope,
+    CounterScopeElement, CounterModel> {
   final _CounterModelImpl _model = _CounterModelImpl();
 
   @override
@@ -112,7 +111,13 @@ class _CounterView extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final count = CounterScope.countOf(context);
-    return Center(child: Text('$count'));
+    return Center(
+      child: BlinkingBox(
+        blinkingColor:
+            Theme.of(context).colorScheme.primary.withValues(alpha: 0.2),
+        child: Text('$count'),
+      ),
+    );
   }
 }
 

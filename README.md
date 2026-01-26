@@ -1,5 +1,8 @@
 # scopo
 
+> [!WARNING]
+> Description needs updating!
+
 A robust Flutter package for managing scopes, dependency injection, and state management within the widget tree. `scopo` provides a clean, extensive API for handling dependencies and state with a focus on lifecycle management and async initialization.
 
 ## Features
@@ -10,15 +13,6 @@ A robust Flutter package for managing scopes, dependency injection, and state ma
 - **Async Initialization**: Robust handling of async dependency initialization with loading and error states.
 - **Specialized Scopes**: specialized widgets for simple values, models, and listenables.
 - **Selectors**: Efficient rebuilding of widgets by selecting specific parts of state or dependencies.
-
-## Installation
-
-Add `scopo` to your `pubspec.yaml`:
-
-```yaml
-dependencies:
-  scopo: ^0.3.0
-```
 
 ## Core Concepts
 
@@ -80,18 +74,27 @@ final class App extends Scope<App, AppDependencies, AppState> {
   const App({super.key});
 
   @override
-  Stream<ScopeInitState<String, AppDependencies>> init() => AppDependencies.init();
+  Stream<ScopeInitState<String, AppDependencies>> init(BuildContext context) =>
+      AppDependencies.init();
 
   @override
   AppState createState() => AppState();
 
   // Initialization UI handlers
   @override
-  Widget buildOnInitializing(BuildContext context, Object? progress) =>
+  Widget buildOnInitializing(
+    BuildContext context,
+    covariant String? progress,
+  ) =>
       const CircularProgressIndicator();
 
   @override
-  Widget buildOnError(BuildContext context, Object error, StackTrace stack, Object? progress) =>
+  Widget buildOnError(
+    BuildContext context,
+    Object error,
+    StackTrace stack,
+    covariant String? progress,
+  ) =>
       Text('Error: $error');
 
   // Helper accessors
@@ -99,7 +102,7 @@ final class App extends Scope<App, AppDependencies, AppState> {
       Scope.of<App, AppDependencies, AppState>(context);
 
   static V select<V>(BuildContext context, V Function(AppState state) selector) =>
-      Scope.select<App, AppDependencies, AppState, V>(context, (state) => selector(state));
+      Scope.select<App, AppDependencies, AppState, V>(context, selector);
 }
 ```
 
@@ -114,8 +117,9 @@ Inject a simple generic value or widget-specific data down the tree.
 ```dart
 class MyConfig extends ScopeWidgetBase<MyConfig> {
   final String apiKey;
-  const MyConfig({required this.apiKey, required this.child});
   final Widget child;
+
+  const MyConfig({required this.apiKey, required this.child});
 
   @override
   Widget build(BuildContext context) => child;
@@ -132,22 +136,28 @@ Inject a pure Dart class (Model) that doesn't need the full overhead of a `Scope
 ```dart
 class UserModel {
   final String name;
+
   UserModel(this.name);
+
+  void dispose() {
+    // Dipose resources if needed
+  }
 }
 
 // In widget tree
 ScopeModel<UserModel>(
   create: (context) => UserModel('Alice'),
-  child: ConsumerWidget(),
+  dispose: (model) => model.dispose(),
+  builder: (context) => ConsumerWidget(),
 )
 
 // Access
-final user = ScopeModel.of<UserModel>(context);
+final user = ScopeModel.of<UserModel>(context, listen: true);
 ```
 
 ### ScopeNotifier
 
-Automatically manage `Listenable`s (like `ChangeNotifier` or `ValueNotifier`). It handles disposal automatically.
+Automatically manage `Listenable`s (like `ChangeNotifier` or `ValueNotifier`).
 
 ```dart
 class Counter extends ValueNotifier<int> {
@@ -157,7 +167,8 @@ class Counter extends ValueNotifier<int> {
 // In widget tree
 ScopeNotifier<Counter>(
   create: (context) => Counter(),
-  child: CounterView(),
+  dispose: (model) => model.dispose(),
+  builder: (context) => CounterView(),
 )
 ```
 

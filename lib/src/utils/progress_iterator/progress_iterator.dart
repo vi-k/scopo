@@ -1,0 +1,55 @@
+/// A helper class to track initialization progress as an [Progress] value.
+///
+/// ```dart
+/// static Stream<ScopeInitState<ProgressValue, MyFeatureDeps>> init() async* {
+///   final progressIterator = ProgressIterator(count: 3);
+///
+///   // Step 1
+///   yield ScopeProgress(progressIterator.nextStep()); // 1/3
+///
+///   // Step 2
+///   yield ScopeProgress(progressIterator.nextStep()); // 2/3
+///
+///   // Step 3
+///   yield ScopeProgress(progressIterator.nextStep()); // 3/3
+///
+///   ...
+/// }
+/// ```
+final class ProgressIterator {
+  /// The total number of steps.
+  final int total;
+
+  /// The current step.
+  Progress _currentStep;
+
+  ProgressIterator(this.total) : _currentStep = Progress(0, total);
+
+  /// The current step.
+  Progress get currentStep => _currentStep;
+
+  bool get isCompleted => _currentStep.number >= total;
+
+  /// Add [n] steps.
+  Progress add(int n) {
+    final newNum = _currentStep.number + n;
+    assert(newNum <= total, 'next step ($newNum) > count ($total)');
+
+    return _currentStep = Progress(newNum, total);
+  }
+
+  /// Returns the next step.
+  Progress nextStep() => add(1);
+}
+
+final class Progress {
+  final int number;
+  final int total;
+
+  const Progress(this.number, this.total);
+
+  double get progress => number / total;
+
+  @override
+  String toString() => '$number/$total';
+}

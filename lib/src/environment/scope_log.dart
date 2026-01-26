@@ -31,7 +31,7 @@ final class ScopeLog {
 
   ScopeLogCallback _userLog = _defaultLog;
 
-  static String? _objToStr(Object? obj) =>
+  static String? objToString(Object? obj) =>
       obj == null ? null : '${obj is Object? Function() ? obj() : obj}';
 
   static void _noLog(
@@ -48,8 +48,8 @@ final class ScopeLog {
     StackTrace? stackTrace,
   }) =>
       _userLog(
-        _objToStr(source),
-        _objToStr(message),
+        objToString(source),
+        objToString(message),
         error,
         stackTrace,
       );

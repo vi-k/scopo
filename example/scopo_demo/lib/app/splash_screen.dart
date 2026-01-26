@@ -14,10 +14,13 @@ class SplashScreen extends StatelessWidget {
         backgroundColor: Colors.lightBlue,
       ),
       backgroundColor: Colors.lightBlueAccent,
-      body: Padding(
-        padding: const EdgeInsets.all(8),
-        child: Center(
-          child: Text(progress ?? ''),
+      body: DefaultTextStyle(
+        style: const TextStyle(color: Colors.black),
+        child: Padding(
+          padding: const EdgeInsets.all(8),
+          child: Center(
+            child: Text(progress ?? ''),
+          ),
         ),
       ),
     );

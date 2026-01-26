@@ -1,3 +1,13 @@
+## 0.5.0
+* [breaking changes] refactor, rename.
+* [breaking changes] `exclusiveCoordinator` transformed to `scopeKey`.
+* parent scopes now depend on their children (`asyncInit`, `asyncDispose`).
+* scope states can now also be initialized and disposed asynchronously
+  (`asyncInit`, `asyncDispose`).
+
+## 0.4.1
+* update example's README.md.
+
 ## 0.4.0
 * [breaking changes] add context to init.
 * add `AsyncInitializer` and `AsyncState`.

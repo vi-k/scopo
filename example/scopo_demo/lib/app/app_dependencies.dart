@@ -11,7 +11,7 @@ import 'app.dart';
 /// Dependencies for [App] scope.
 ///
 /// They are initialized asynchronously in the [init] stream.
-class AppDependencies implements ScopeDependencies {
+final class AppDependencies extends ScopeDependencies {
   final SharedPreferences _sharedPreferences;
   final FakeAnalytics analytics;
   final FakeAppHttpClient httpClient;
@@ -27,11 +27,6 @@ class AppDependencies implements ScopeDependencies {
   KeyValueStorage keyValueStorage(String prefix) =>
       KeyValueStorage(sharedPreferences: _sharedPreferences, prefix: prefix);
 
-  /// Method uses [DoubleProgressIterator] to track and report granular
-  /// initialization progress ([double] 0.0 to 1.0).
-  ///
-  /// It simulates random initialization errors using [AppEnvironment]
-  /// probabilities.
   static Stream<ScopeInitState<String, AppDependencies>> init(_) async* {
     SharedPreferences? sharedPreferences;
     FakeAppHttpClient? httpClient;

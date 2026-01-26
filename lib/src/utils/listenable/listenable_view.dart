@@ -1,9 +1,9 @@
 import 'package:flutter/foundation.dart';
 
-final class ListenableView implements Listenable {
-  final Listenable _listenable;
+base class ListenableView<T extends Listenable> implements Listenable {
+  final T _listenable;
 
-  ListenableView(Listenable listenable) : _listenable = listenable;
+  ListenableView(T listenable) : _listenable = listenable;
 
   @override
   void addListener(VoidCallback listener) => _listenable.addListener(listener);

@@ -63,9 +63,9 @@ class _ListenableSelectorState<L extends Listenable, T extends Object?>
     _subscription = widget.listenable.select(
       widget.selector,
       (_, __) {
-        if (!mounted) return;
-
-        setState(() {});
+        if (mounted) {
+          setState(() {});
+        }
       },
       compare: widget.compare,
     );

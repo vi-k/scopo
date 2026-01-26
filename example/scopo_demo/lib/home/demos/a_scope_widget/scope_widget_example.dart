@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:scopo/scopo.dart';
 
+import '../../../common/presentation/blinking_box.dart';
+
 class ScopeWidgetExample extends StatefulWidget {
   const ScopeWidgetExample({super.key});
 
@@ -19,22 +21,28 @@ class _ScopeWidgetExampleState extends State<ScopeWidgetExample> {
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: [
-        Text('$ScopeWidgetExample'),
-        Row(
-          mainAxisAlignment: MainAxisAlignment.center,
+    return Center(
+      child: BlinkingBox(
+        blinkingColor:
+            Theme.of(context).colorScheme.primary.withValues(alpha: 0.2),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
           children: [
-            CounterScope(count: _count),
-            IconButton(
-              color: Theme.of(context).colorScheme.primary,
-              onPressed: _increment,
-              icon: const Icon(Icons.add_circle),
+            Text('$ScopeWidgetExample'),
+            Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                CounterScope(count: _count),
+                IconButton(
+                  color: Theme.of(context).colorScheme.primary,
+                  onPressed: _increment,
+                  icon: const Icon(Icons.add_circle),
+                ),
+              ],
             ),
           ],
         ),
-      ],
+      ),
     );
   }
 }
@@ -62,6 +70,12 @@ class _CounterView extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final count = CounterScope.countOf(context);
-    return Center(child: Text('$count'));
+    return Center(
+      child: BlinkingBox(
+        blinkingColor:
+            Theme.of(context).colorScheme.primary.withValues(alpha: 0.2),
+        child: Text('$count'),
+      ),
+    );
   }
 }

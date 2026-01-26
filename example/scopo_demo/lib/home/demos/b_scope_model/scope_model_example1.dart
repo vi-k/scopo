@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:scopo/scopo.dart';
+import 'package:scopo_demo/common/presentation/blinking_box.dart';
 
 final class CounterModel {
   int _count = 0;
@@ -26,29 +27,35 @@ class _ScopeModelExample1State extends State<ScopeModelExample1> {
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: [
-        Text('$ScopeModelExample1'),
-        Row(
-          mainAxisAlignment: MainAxisAlignment.center,
+    return Center(
+      child: BlinkingBox(
+        blinkingColor:
+            Theme.of(context).colorScheme.primary.withValues(alpha: 0.2),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
           children: [
-            CounterScope(model: _model),
-            IconButton(
-              color: Theme.of(context).colorScheme.primary,
-              onPressed: _increment,
-              icon: const Icon(Icons.add_circle),
+            Text('$ScopeModelExample1'),
+            Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                CounterScope(model: _model),
+                IconButton(
+                  color: Theme.of(context).colorScheme.primary,
+                  onPressed: _increment,
+                  icon: const Icon(Icons.add_circle),
+                ),
+              ],
             ),
           ],
         ),
-      ],
+      ),
     );
   }
 }
 
 final class CounterScope extends ScopeModelBase<CounterScope, CounterModel> {
   const CounterScope({super.key, required CounterModel model})
-    : super.value(value: model);
+      : super.value(value: model);
 
   static int countOf(BuildContext context) =>
       ScopeModelBase.select<CounterScope, CounterModel, int>(
@@ -68,6 +75,12 @@ class _CounterView extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final count = CounterScope.countOf(context);
-    return Center(child: Text('$count'));
+    return Center(
+      child: BlinkingBox(
+        blinkingColor:
+            Theme.of(context).colorScheme.primary.withValues(alpha: 0.2),
+        child: Text('$count'),
+      ),
+    );
   }
 }

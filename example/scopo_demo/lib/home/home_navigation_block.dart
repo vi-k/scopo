@@ -12,13 +12,11 @@ class HomeNavigationBlock extends StatelessWidget {
     return Column(
       children: [
         ElevatedButton(
-          // ignore: discarded_futures
           onPressed: () => Home.of(context).openDialog(context),
           child: const Text('Dialog'),
         ),
         const SizedBox(height: 20),
         ElevatedButton(
-          // ignore: discarded_futures
           onPressed: () => Home.of(context).openModalBottomSheet(context),
           child: const Text('Bottom sheet'),
         ),

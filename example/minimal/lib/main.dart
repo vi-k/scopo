@@ -3,38 +3,76 @@ import 'package:scopo/scopo.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {
-  runApp(App(init: AppDependencies.init));
+  runApp(App(title: 'scopo minimal demo'));
 }
 
+/// [App] scope.
+///
+/// Consists of three components:
+///
+/// 1. [App] - the main widget of scope. Provides access to its own parameters
+///    via [App.paramsOf] and [App.selectParam], and to [AppState] via [App.of]
+///    and [App.select].
+///
+/// 2. [AppDependencies] - the container of dependencies with asynchronous
+///    initialization.
+///
+/// 3. [AppState] - the state. Same as [State] in [StatefulWidget], but with
+///    fast access to dependencies.
 final class App extends Scope<App, AppDependencies, AppState> {
-  final ScopeInitFunction<String, AppDependencies> init;
+  final String title;
 
-  const App({super.key, required this.init});
+  const App({
+    super.key,
+    required this.title,
+  }) : super(pauseAfterInitialization: const Duration(milliseconds: 500));
 
+  /// Метод инициализации зависимостей.
   @override
   Stream<ScopeInitState<String, AppDependencies>> initDependencies(
     BuildContext context,
   ) =>
-      init(context);
+      AppDependencies.init(context);
 
+  /// [App.paramsOf] provides access to the [App] widget parameters, such as
+  /// [title].
+  ///
+  /// If [listen] is set to `true` (by default), the consumer subscribes to
+  /// changes.
+  ///
+  /// In reality, the subscription fires every time the widget is rebuilt,
+  /// regardless of whether the parameters have changed, because [Widget]
+  /// does not provide a mechanism for comparing parameters. For more precise
+  /// subscription, use [App.selectParam].
   static App paramsOf(BuildContext context, {bool listen = true}) =>
       Scope.paramsOf<App, AppDependencies, AppState>(context, listen: listen);
 
+  /// [App.selectParam] provides access to the selected parameter of [App].
+  static V selectParam<V>(
+    BuildContext context,
+    V Function(App widget) selector,
+  ) =>
+      Scope.selectParam<App, AppDependencies, AppState, V>(context, selector);
+
+  /// [App.of] provides access to the [AppState].
+  ///
+  /// In our case, without subscription to changes. To subscribe to changes,
+  /// use [App.select].
   static AppState of(BuildContext context) =>
       Scope.of<App, AppDependencies, AppState>(context);
 
-  static V select<V extends Object?>(
+  /// [App.select] provides access to the selected parameter of [AppState].
+  static V select<V>(
     BuildContext context,
     V Function(AppState state) selector,
   ) =>
-      Scope.select<App, AppDependencies, AppState, V>(
-        context,
-        (state) => selector(state),
-      );
+      Scope.select<App, AppDependencies, AppState, V>(context, selector);
 
+  /// At the [App] scope level, we need to create [MaterialApp] in each of the
+  /// branches.
   Widget _app({required Widget child}) {
     return MaterialApp(
-      title: 'scopo minimal demo',
+      title: title,
       theme: ThemeData(
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
       ),
@@ -42,19 +80,28 @@ final class App extends Scope<App, AppDependencies, AppState> {
     );
   }
 
+  /// A branch that is created during scope initialization.
   @override
-  Widget buildOnInitializing(BuildContext context, Object? progress) =>
-      _app(child: _SplashScreen(progress: progress as String?));
+  Widget buildOnInitializing(
+    BuildContext context,
+    covariant String? progress,
+  ) =>
+      _app(child: SplashScreen(progress: progress));
 
+  /// A branch that is created when an initialization error occurs.
   @override
   Widget buildOnError(
     BuildContext context,
     Object error,
     StackTrace stackTrace,
-    Object? progress,
+    covariant String? progress,
   ) =>
-      _app(child: _ErrorScreen(error: error));
+      _app(child: ErrorScreen(error: error));
 
+  /// Widgets that will be placed in the widget-tree between [App] and
+  /// [AppState].
+  ///
+  /// [wrapState] is only called when the scope is in ready state.
   @override
   Widget wrapState(
     BuildContext context,
@@ -63,12 +110,71 @@ final class App extends Scope<App, AppDependencies, AppState> {
   ) =>
       _app(child: child);
 
+  /// [createState] is only called when the scope is in ready state.
   @override
   AppState createState() => AppState();
 }
 
-class _SplashScreen extends StatelessWidget {
-  const _SplashScreen({required this.progress});
+/// [AppDependencies] is the container of dependencies with asynchronous
+/// initialization.
+final class AppDependencies extends ScopeDependencies {
+  final SharedPreferences sharedPreferences;
+
+  AppDependencies({required this.sharedPreferences});
+
+  /// Dependency initialization is implemented via a stream generator. This
+  /// allows us to track the progress of initialization and cancel it when the
+  /// widget is removed from the tree before initialization is complete.
+  static Stream<ScopeInitState<String, AppDependencies>> init(
+    BuildContext context,
+  ) async* {
+    SharedPreferences? sharedPreferences;
+
+    yield ScopeProgress('init $SharedPreferences');
+    sharedPreferences = await SharedPreferences.getInstance();
+
+    yield ScopeReady(AppDependencies(sharedPreferences: sharedPreferences));
+  }
+
+  @override
+  Future<void> dispose() async {}
+}
+
+/// Scope state, same as [State] in [StatefulWidget].
+///
+/// [params] - quick access to scope parameters ([App] widget parameters).
+///
+/// [dependencies] - quick access to scope dependencies ([AppDependencies]).
+///
+/// [notifyDependents] - notifies and updates subscribers (dependents) without
+/// using [setState], i.e. without rebuilding itself and its own subtree
+/// (without calling its own [build]). Only those subscribers who have
+/// subscribed to the relevant changes will be rebuilded.
+final class AppState extends ScopeState<App, AppDependencies, AppState> {
+  late int _counter;
+  int get counter => _counter;
+
+  @override
+  void initState() {
+    super.initState();
+    _counter = dependencies.sharedPreferences.getInt('counter') ?? 0;
+  }
+
+  /// Increases the counter and notifies subscribers (dependents).
+  Future<void> increment() async {
+    _counter++;
+    notifyDependents();
+    await dependencies.sharedPreferences.setInt('counter', _counter);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return HomeScreen();
+  }
+}
+
+class SplashScreen extends StatelessWidget {
+  const SplashScreen({super.key, required this.progress});
 
   final String? progress;
 
@@ -78,8 +184,8 @@ class _SplashScreen extends StatelessWidget {
   }
 }
 
-class _ErrorScreen extends StatelessWidget {
-  const _ErrorScreen({required this.error});
+class ErrorScreen extends StatelessWidget {
+  const ErrorScreen({super.key, required this.error});
 
   final Object error;
 
@@ -99,59 +205,23 @@ class _ErrorScreen extends StatelessWidget {
   }
 }
 
-class AppDependencies implements ScopeDependencies {
-  final SharedPreferences sharedPreferences;
-
-  AppDependencies({required this.sharedPreferences});
-
-  static Stream<ScopeInitState<String, AppDependencies>> init(_) async* {
-    SharedPreferences? sharedPreferences;
-
-    yield ScopeProgress('init $SharedPreferences');
-    sharedPreferences = await SharedPreferences.getInstance();
-
-    await Future<void>.delayed(const Duration(milliseconds: 500));
-
-    yield ScopeReady(AppDependencies(sharedPreferences: sharedPreferences));
-  }
-
-  @override
-  Future<void> dispose() async {}
-}
-
-final class AppState extends ScopeState<App, AppDependencies, AppState> {
-  late int _counter;
-  int get counter => _counter;
-
-  @override
-  void initState() {
-    super.initState();
-    _counter =
-        App.of(context).dependencies.sharedPreferences.getInt('counter') ?? 0;
-  }
-
-  Future<void> increment() async {
-    _counter++;
-    notifyDependents();
-    await App.of(
-      context,
-    ).dependencies.sharedPreferences.setInt('counter', _counter);
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return HomeScreen();
-  }
-}
-
 class HomeScreen extends StatelessWidget {
   const HomeScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
+    // Subscribe to title changes.
+    final title = App.selectParam(context, (state) => state.title);
+
+    // Subscribe to counter changes.
     final counter = App.select(context, (state) => state.counter);
 
     return Scaffold(
+      appBar: AppBar(
+        title: Text(title),
+        backgroundColor: Theme.of(context).colorScheme.primary,
+        foregroundColor: Theme.of(context).colorScheme.onPrimary,
+      ),
       body: Center(
         child: Text(
           '$counter',
@@ -159,7 +229,10 @@ class HomeScreen extends StatelessWidget {
         ),
       ),
       floatingActionButton: FloatingActionButton(
-        onPressed: App.of(context).increment,
+        onPressed: () {
+          // Access [AppState] and call [AppState.increment].
+          App.of(context).increment();
+        },
         child: Icon(Icons.add),
       ),
     );

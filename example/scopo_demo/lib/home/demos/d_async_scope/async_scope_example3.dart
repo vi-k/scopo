@@ -1,0 +1,45 @@
+import 'package:flutter/material.dart';
+
+import 'counter_scope.dart';
+
+int _num = 0;
+
+class AsyncScopeExample3 extends StatefulWidget {
+  const AsyncScopeExample3({super.key});
+
+  @override
+  State<AsyncScopeExample3> createState() => _AsyncScopeExample3State();
+}
+
+class _AsyncScopeExample3State extends State<AsyncScopeExample3> {
+  @override
+  void initState() {
+    super.initState();
+    _num++;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Center(
+            child: CounterScope(
+              scopeKey: AsyncScopeExample3,
+              title: '$AsyncScopeExample3 (parent & child)',
+              childScope: Center(
+                child: CounterScope(
+                  debugSource: AsyncScopeExample3,
+                  debugName: 'child $_num',
+                ),
+              ),
+              debugSource: AsyncScopeExample3,
+              debugName: 'parent $_num',
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}

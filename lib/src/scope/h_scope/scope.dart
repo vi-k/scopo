@@ -3,38 +3,28 @@ part of '../scope.dart';
 typedef ScopeInitFunction<P extends Object, D extends ScopeDependencies>
     = Stream<ScopeInitState<P, D>> Function(BuildContext context);
 
-typedef ScopeOnInitCallback<P extends Object> = Widget Function(
+typedef ScopeInitBuilder<P extends Object> = Widget Function(
   BuildContext context,
   P? progress,
 );
 
-typedef ScopeOnErrorCallback = Widget Function(
+typedef ScopeErrorBuilder<P extends Object> = Widget Function(
   BuildContext context,
   Object error,
   StackTrace stackTrace,
-  Object? progress,
+  P? progress,
 );
 
 abstract base class Scope<W extends Scope<W, D, S>, D extends ScopeDependencies,
         S extends ScopeState<W, D, S>>
-    extends ScopeStreamInitializerCore<W, ScopeElement<W, D, S>, D> {
-  final LifecycleCoordinator<Object>? exclusiveCoordinator;
-
-  final Key? exclusiveCoordinatorKey;
-
-  final LifecycleCoordinator<Object>? disposeCoordinator;
-
-  final Key? disposeCoordinatorKey;
-
+    extends StreamScopeCore<W, ScopeElement<W, D, S>, D> {
+  final Object? scopeKey;
   final Duration? pauseAfterInitialization;
 
   const Scope({
     super.key,
     super.tag,
-    this.exclusiveCoordinator,
-    this.exclusiveCoordinatorKey,
-    this.disposeCoordinator,
-    this.disposeCoordinatorKey,
+    this.scopeKey,
     this.pauseAfterInitialization,
     super.child, // Not used by default. You can use it at your own discretion.
   });
@@ -72,11 +62,17 @@ abstract base class Scope<W extends Scope<W, D, S>, D extends ScopeDependencies,
     BuildContext context, {
     required bool listen,
   }) =>
-      ScopeModelCore.of<W, ScopeElement<W, D, S>,
-          ScopeStateModel<ScopeInitializerState<D>>>(
-        context,
-        listen: listen,
-      ).widget;
+      listen
+          ? ScopeModelCore.select<
+              W,
+              ScopeElement<W, D, S>,
+              ScopeStateModel<AsyncScopeState<D>>,
+              W>(context, (element) => element.widget)
+          : ScopeModelCore.of<W, ScopeElement<W, D, S>,
+              ScopeStateModel<AsyncScopeState<D>>>(
+              context,
+              listen: false,
+            ).widget;
 
   static V selectParam<W extends Scope<W, D, S>, D extends ScopeDependencies,
           S extends ScopeState<W, D, S>, V extends Object?>(
@@ -86,13 +82,13 @@ abstract base class Scope<W extends Scope<W, D, S>, D extends ScopeDependencies,
       ScopeModelCore.select<
           W,
           ScopeElement<W, D, S>,
-          ScopeStateModel<ScopeInitializerState<D>>,
+          ScopeStateModel<AsyncScopeState<D>>,
           V>(context, (element) => selector(element.widget));
 
   static S? maybeOf<W extends Scope<W, D, S>, D extends ScopeDependencies,
           S extends ScopeState<W, D, S>>(BuildContext context) =>
       ScopeModelCore.maybeOf<W, ScopeElement<W, D, S>,
-          ScopeStateModel<ScopeInitializerState<D>>>(
+          ScopeStateModel<AsyncScopeState<D>>>(
         context,
         listen: false,
       )?._globalStateKey.currentState;
@@ -100,7 +96,7 @@ abstract base class Scope<W extends Scope<W, D, S>, D extends ScopeDependencies,
   static S of<W extends Scope<W, D, S>, D extends ScopeDependencies,
           S extends ScopeState<W, D, S>>(BuildContext context) =>
       ScopeModelCore.of<W, ScopeElement<W, D, S>,
-          ScopeStateModel<ScopeInitializerState<D>>>(
+          ScopeStateModel<AsyncScopeState<D>>>(
         context,
         listen: false,
       )._globalStateKey.currentState!;
@@ -111,7 +107,7 @@ abstract base class Scope<W extends Scope<W, D, S>, D extends ScopeDependencies,
     V Function(S scope) selector,
   ) =>
       ScopeModelCore.select<W, ScopeElement<W, D, S>,
-          ScopeStateModel<ScopeInitializerState<D>>, V>(
+          ScopeStateModel<AsyncScopeState<D>>, V>(
         context,
         (element) => selector(element._globalStateKey.currentState!),
       );
@@ -119,31 +115,18 @@ abstract base class Scope<W extends Scope<W, D, S>, D extends ScopeDependencies,
 
 final class ScopeElement<W extends Scope<W, D, S>, D extends ScopeDependencies,
         S extends ScopeState<W, D, S>>
-    extends ScopeStreamInitializerElementBase<W, ScopeElement<W, D, S>, D> {
+    extends StreamScopeElementBase<W, ScopeElement<W, D, S>, D> {
   var _autoSelfDependence = true;
   final _globalStateKey = GlobalKey<S>();
+  S? _state;
   Completer<void>? _closeCompleter;
   Completer<void>? _screenshotCompleter;
 
-  ScopeElement(super.widget);
-
-  // Создаём копию!
+  // Создаём копию, чтобы позже использовать в dispose.
   @override
-  late final LifecycleCoordinator<Object>? exclusiveCoordinator =
-      widget.exclusiveCoordinator;
+  final Object? scopeKey;
 
-  // Создаём копию!
-  @override
-  late final Key? exclusiveCoordinatorKey = widget.exclusiveCoordinatorKey;
-
-  // Создаём копию!
-  @override
-  late final LifecycleCoordinator<Object>? disposeCoordinator =
-      widget.disposeCoordinator;
-
-  // Создаём копию!
-  @override
-  late final Key? disposeCoordinatorKey = widget.disposeCoordinatorKey;
+  ScopeElement(super.widget) : scopeKey = widget.scopeKey;
 
   @override
   bool get autoSelfDependence => _autoSelfDependence;
@@ -152,27 +135,27 @@ final class ScopeElement<W extends Scope<W, D, S>, D extends ScopeDependencies,
   Duration? get pauseAfterInitialization => widget.pauseAfterInitialization;
 
   @override
-  Stream<ScopeInitState<Object, D>> initAsync() =>
+  Stream<ScopeInitState<Object, D>> asyncInit() =>
       widget.initDependencies(this);
 
   @override
-  FutureOr<void> disposeAsync(W widget, D value) => value.dispose();
+  Future<void> asyncDispose(W widget, D data) async {
+    if (_state case final state?) {
+      await state._performAsyncDispose();
+    }
+    await data.dispose();
+  }
 
   @override
-  Widget buildOnState(ScopeInitializerState<D> state) => widget.wrap(
+  Widget buildOnState(AsyncScopeState<D> state) => widget.wrap(
         this,
         switch (state) {
-          ScopeInitializerWaitingForPrevious() =>
-            widget.buildOnWaitingForPrevious?.call(this) ??
-                widget.buildOnInitializing(this, null),
-          ScopeInitializerProgress(:final progress) =>
+          AsyncScopeWaiting() => widget.buildOnWaitingForPrevious?.call(this) ??
+              widget.buildOnInitializing(this, null),
+          AsyncScopeProgress(:final progress) =>
             widget.buildOnInitializing(this, progress),
-          ScopeInitializerReady(:final value) => buildOnReady(this, value),
-          ScopeInitializerError(
-            :final error,
-            :final stackTrace,
-            :final progress
-          ) =>
+          AsyncScopeReady(:final data) => buildOnReady(this, data),
+          AsyncScopeError(:final error, :final stackTrace, :final progress) =>
             widget.buildOnError(this, error, stackTrace, progress),
         },
       );
@@ -217,16 +200,16 @@ final class ScopeElement<W extends Scope<W, D, S>, D extends ScopeDependencies,
     );
   }
 
-  S _createState() => widget.createState().._scopeElement = this;
+  S _createState() => _state = widget.createState().._scopeElement = this;
 
   @override
-  Future<void> _runDisposeAsync(W widget) async {
+  Future<void> _performAsyncDispose(W widget) async {
     if (_closeCompleter case final closeCompleter?) {
       return closeCompleter.future;
     }
 
-    final completer = Completer<void>();
-    _closeCompleter = completer;
+    final closeCompleter = Completer<void>();
+    _closeCompleter = closeCompleter;
 
     markNeedsBuild();
 
@@ -235,9 +218,9 @@ final class ScopeElement<W extends Scope<W, D, S>, D extends ScopeDependencies,
     }
 
     try {
-      await super._runDisposeAsync(widget);
+      await super._performAsyncDispose(widget);
     } finally {
-      completer.complete();
+      closeCompleter.complete();
     }
   }
 
@@ -247,6 +230,6 @@ final class ScopeElement<W extends Scope<W, D, S>, D extends ScopeDependencies,
   /// виджета скриншотом.
   Future<void> close() async {
     _screenshotCompleter = Completer<void>();
-    await _runDisposeAsync(widget);
+    await _performAsyncDispose(widget);
   }
 }
