@@ -20,7 +20,7 @@ final class ScreenDependencies extends ScopeDependencies
             },
             onDispose: () async {
               console.log(ScreenScope, 'dispose 1');
-              await Future<void>.delayed(const Duration(milliseconds: 500));
+              await Future<void>.delayed(const Duration(milliseconds: 1000));
             },
           ),
         ],
@@ -33,7 +33,7 @@ final class ScreenDependencies extends ScopeDependencies
             },
             onDispose: () async {
               console.log(ScreenScope, 'dispose 2');
-              await Future<void>.delayed(const Duration(milliseconds: 500));
+              await Future<void>.delayed(const Duration(milliseconds: 1000));
             },
           ),
         ],
@@ -46,7 +46,7 @@ final class ScreenDependencies extends ScopeDependencies
             },
             onDispose: () async {
               console.log(ScreenScope, 'dispose 3');
-              await Future<void>.delayed(const Duration(milliseconds: 500));
+              await Future<void>.delayed(const Duration(milliseconds: 1000));
             },
           ),
         ],
@@ -59,7 +59,7 @@ final class ScreenDependencies extends ScopeDependencies
             },
             onDispose: () async {
               console.log(ScreenScope, 'dispose 4');
-              await Future<void>.delayed(const Duration(milliseconds: 500));
+              await Future<void>.delayed(const Duration(milliseconds: 1000));
             },
           ),
         ],
@@ -83,7 +83,7 @@ final class ScreenScope
   ) =>
           ScreenDependencies().init(context);
 
-  Widget _page({required Widget child}) {
+  Widget _wrap({required Widget child}) {
     return Scaffold(
       appBar: AppBar(title: const Text('screen scope')),
       body: child,
@@ -95,7 +95,7 @@ final class ScreenScope
     BuildContext context,
     covariant ScopeQueueProgress? progress,
   ) {
-    return _page(
+    return _wrap(
       child: Center(
         child: Text(
           'Initializing'
@@ -112,7 +112,7 @@ final class ScreenScope
     StackTrace stackTrace,
     covariant ScopeQueueProgress? progress,
   ) {
-    return _page(
+    return _wrap(
       child: Center(
         child: Text(
           'Error${progress == null ? '' : ' on step $progress'}: $error',
@@ -134,7 +134,7 @@ final class ScreenScope
           console.log(ScreenScope, 'closed');
           return true;
         },
-        child: _page(
+        child: _wrap(
           child: child,
         ),
       );
@@ -143,28 +143,38 @@ final class ScreenScope
   ScreenState createState() => ScreenState();
 
   @override
-  Widget Function(BuildContext context)? get buildOnClosing {
-    return (context) => ColoredBox(
-          color: Theme.of(context).colorScheme.surface.withValues(alpha: 0.8),
-          child: Center(
+  Widget buildOnClosing(BuildContext context) {
+    return Material(
+      color: Theme.of(context).colorScheme.tertiary.withValues(alpha: 0.5),
+      child: Stack(
+        children: [
+          Align(
+            alignment: const Alignment(0, 0.9),
             child: Container(
               decoration: BoxDecoration(
-                color: Theme.of(context)
-                    .colorScheme
-                    .primary
-                    .withValues(alpha: 0.8),
-                borderRadius: BorderRadius.circular(4),
+                color: Theme.of(context).colorScheme.tertiary,
+                borderRadius: BorderRadius.circular(8),
+                boxShadow: const [
+                  BoxShadow(blurRadius: 2),
+                ],
               ),
-              padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
               child: Text(
-                'This is a screenshot',
+                'This is a screenshot'
+                '\nThe actual widget has been removed',
+                textAlign: TextAlign.center,
                 style: TextStyle(
-                  color: Theme.of(context).colorScheme.onPrimary,
+                  color: Theme.of(context).colorScheme.onTertiary,
                 ),
               ),
             ),
           ),
-        );
+          const Center(
+            child: CircularProgressIndicator.adaptive(),
+          ),
+        ],
+      ),
+    );
   }
 }
 

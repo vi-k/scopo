@@ -13,7 +13,7 @@ abstract base class ScopeWidgetCore<W extends ScopeWidgetCore<W, E>,
     super.child, // Not used by default. You can use it at your own discretion.
   });
 
-  E createScopeElement();
+  InheritedElement createScopeElement();
 
   @override
   InheritedElement createElement() => createScopeElement();

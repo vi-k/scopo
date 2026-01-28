@@ -7,39 +7,71 @@ import '../../../common/presentation/blinking_box.dart';
 import '../../../utils/console/console.dart';
 
 final class CounterModel with ChangeNotifier {
+  static const int steps = 10;
+
   final Object debugSource;
   final String debugName;
 
-  CounterModel({
+  CounterModel._({
     required this.debugSource,
     required this.debugName,
   });
 
-  int? _count;
-  int get count => _count ?? (throw StateError('Not initialized'));
+  int _count = 0;
+  int get count => _count;
 
   void increment() {
-    _count = count + 1;
+    _count++;
     notifyListeners();
   }
 
-  Future<void> init() async {
-    await Future<void>.delayed(const Duration(seconds: 1));
-    _count = 0;
+  static Stream<AsyncDataScopeInitState<Progress, CounterModel>> init({
+    required Object debugSource,
+    required String debugName,
+  }) async* {
+    console.log(debugSource, '$debugName: initialize');
+
+    var isInitialized = false;
+    final iterator = ProgressIterator(steps);
+
+    try {
+      yield AsyncDataScopeProgress(iterator.currentStep);
+      for (var i = 0; i < steps; i++) {
+        await Future<void>.delayed(const Duration(milliseconds: 100));
+        yield AsyncDataScopeProgress(iterator.nextStep());
+      }
+
+      yield AsyncDataScopeReady(
+        CounterModel._(
+          debugSource: debugSource,
+          debugName: debugName,
+        ),
+      );
+
+      isInitialized = true;
+      console.log(debugSource, '$debugName: initialized');
+    } finally {
+      if (!isInitialized) {
+        console.log(debugSource, '$debugName: cancelled');
+      }
+    }
   }
 
   @override
   Future<void> dispose() async {
     super.dispose();
 
-    await Future<void>.delayed(const Duration(seconds: 1));
-    _count = null;
+    await null;
+    console.log(debugSource, '$debugName: dispose');
+
+    await Future<void>.delayed(const Duration(seconds: 2));
+
+    console.log(debugSource, '$debugName: disposed');
   }
 }
 
 final class CounterScope
-    extends AsyncScopeCore<CounterScope, CounterScopeElement> {
-  final Object? scopeKey;
+    extends AsyncDataScopeBase<CounterScope, CounterModel> {
   final String? title;
   final Widget? childScope;
   final Object debugSource;
@@ -47,80 +79,67 @@ final class CounterScope
 
   const CounterScope({
     super.key,
-    this.scopeKey,
+    super.scopeKey,
     this.title,
     this.childScope,
     required this.debugSource,
     required this.debugName,
   });
 
-  @override
-  CounterScopeElement createScopeElement() => CounterScopeElement(this);
-
   static CounterModel of(BuildContext context) =>
-      AsyncScopeCore.of<CounterScope, CounterScopeElement>(
+      AsyncDataScopeBase.of<CounterScope, CounterModel>(
         context,
         listen: false,
-      )._model;
+      ).data;
 
   static int countOf(BuildContext context) =>
-      AsyncScopeCore.select<CounterScope, CounterScopeElement, int>(
+      AsyncDataScopeBase.select<CounterScope, CounterModel, int>(
         context,
-        (context) => context._model.count,
+        (context) => context.data.count,
       );
-}
-
-final class CounterScopeElement
-    extends AsyncScopeElementBase<CounterScope, CounterScopeElement> {
-  late final CounterModel _model;
-
-  CounterScopeElement(super.widget);
 
   @override
-  Object? get scopeKey => widget.scopeKey;
+  Stream<AsyncDataScopeInitState<Progress, CounterModel>> initData(
+    BuildContext context,
+  ) =>
+      CounterModel.init(
+        debugSource: debugSource,
+        debugName: debugName,
+      );
 
   @override
-  Duration? get pauseAfterInitialization => const Duration(milliseconds: 1000);
-
-  @override
-  void init() {
-    super.init();
-    _model = CounterModel(
-      debugSource: widget.debugSource,
-      debugName: widget.debugName,
-    );
+  Future<void> disposeData(CounterModel data) async {
+    await data.dispose();
   }
 
   @override
-  Stream<AsyncScopeInitState> initAsync() async* {
-    console.log(widget.debugSource, '${widget.debugName}: initialize');
-    await _model.init();
-    yield AsyncScopeReady();
-    console.log(widget.debugSource, '${widget.debugName}: initialized');
+  Widget? buildOnWaiting(BuildContext context) {
+    return const Text('Waiting...');
   }
 
   @override
-  Future<void> disposeAsync() async {
-    console.log(widget.debugSource, '${widget.debugName}: dispose');
-    await _model.dispose();
-    console.log(widget.debugSource, '${widget.debugName}: disposed');
+  Widget buildOnInitializing(
+    BuildContext context,
+    covariant Progress? progress,
+  ) {
+    return Text('Initializing${progress == null ? '' : ' $progress'}');
   }
 
   @override
-  Widget buildOnState(AsyncScopeState state) {
-    return switch (state) {
-      AsyncScopeWaiting() => const Text('Waiting...'),
-      AsyncScopeError(:final error) => Text('Error: $error'),
-      AsyncScopeProgress() => const Text('Initializing...'),
-      AsyncScopeReady() => buildOnReady(),
-    };
+  Widget buildOnError(
+    BuildContext context,
+    Object error,
+    StackTrace stackTrace,
+  ) {
+    return Text('Error: $error');
   }
 
-  Widget buildOnReady() {
+  @override
+  Widget buildOnReady(BuildContext context, CounterModel value) {
     Widget body = Center(
       child: BlinkingBox(
         blinkingColor:
-            Theme.of(this).colorScheme.primary.withValues(alpha: 0.2),
+            Theme.of(context).colorScheme.primary.withValues(alpha: 0.2),
         child: const Column(
           mainAxisSize: MainAxisSize.min,
           children: [
@@ -133,7 +152,7 @@ final class CounterScopeElement
       ),
     );
 
-    if (widget.childScope case final child?) {
+    if (childScope case final child?) {
       body = Row(
         children: [
           Expanded(child: body),
@@ -143,7 +162,7 @@ final class CounterScopeElement
       );
     }
 
-    if (widget.title case final title?) {
+    if (title case final title?) {
       body = Column(
         mainAxisSize: MainAxisSize.min,
         children: [

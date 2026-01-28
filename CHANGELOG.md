@@ -1,6 +1,8 @@
-## 0.5.1
+## 0.6.0
+* fix some bugs.
 * add `buildOnClosing` for `Scope`.
 * add more examples.
+* add `AsyncScope`, `AsyncDataScope`, `LiteScope` with `LiteScopeState`.
 
 ## 0.5.0
 * [breaking changes] refactor, rename.

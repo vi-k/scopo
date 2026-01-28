@@ -2,17 +2,18 @@ import 'package:flutter/material.dart';
 
 import 'counter_scope.dart';
 
-class AsyncScopeExample1 extends StatelessWidget {
+class LiteScopeExample2 extends StatelessWidget {
   static int _num = 0;
 
-  const AsyncScopeExample1({super.key});
+  const LiteScopeExample2({super.key});
 
   @override
   Widget build(BuildContext context) {
     return Center(
       child: CounterScope(
-        title: '$AsyncScopeExample1 (independent scope)',
-        debugSource: AsyncScopeExample1,
+        scopeKey: LiteScopeExample2,
+        title: '$LiteScopeExample2 (only one working scope)',
+        debugSource: LiteScopeExample2,
         debugName: '${++_num}',
       ),
     );

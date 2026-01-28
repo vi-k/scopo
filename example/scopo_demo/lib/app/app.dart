@@ -4,7 +4,7 @@ import 'package:scopo/scopo.dart';
 import '../common/data/fake_services/fake_analytics.dart';
 import '../common/data/fake_services/fake_app_http_client.dart';
 import '../common/data/fake_services/fake_service.dart';
-import '../home/demos/g_navigation_node/counter_scope.dart';
+import '../home/demos/h_navigation_node/counter_scope.dart';
 import 'app_dependencies.dart';
 import 'app_error.dart';
 import 'theme_manager/theme_manager.dart';
@@ -60,7 +60,7 @@ final class App extends Scope<App, AppDependencies, AppState> {
         (state) => selector(state),
       );
 
-  Widget _app({
+  Widget _wrap({
     ThemeMode mode = ThemeMode.system,
     ThemeData? light,
     ThemeData? dark,
@@ -81,7 +81,7 @@ final class App extends Scope<App, AppDependencies, AppState> {
     BuildContext context,
     covariant String? progress,
   ) =>
-      _app(child: initBuilder(context, progress));
+      _wrap(child: initBuilder(context, progress));
 
   @override
   Widget buildOnError(
@@ -90,7 +90,7 @@ final class App extends Scope<App, AppDependencies, AppState> {
     StackTrace stackTrace,
     covariant String? progress,
   ) =>
-      _app(child: AppError(error, stackTrace));
+      _wrap(child: AppError(error, stackTrace));
 
   @override
   Widget wrapState(
@@ -106,8 +106,8 @@ final class App extends Scope<App, AppDependencies, AppState> {
           return Directionality(
             textDirection: TextDirection.ltr,
             child: CounterScope(
-              title: 'Global counter above MaterialApp',
-              child: _app(
+              title: 'Global counter above $MaterialApp',
+              child: _wrap(
                 mode: themeModel.mode,
                 light: themeModel.lightTheme,
                 dark: themeModel.darkTheme,

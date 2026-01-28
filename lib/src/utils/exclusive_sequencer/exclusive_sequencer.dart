@@ -25,6 +25,8 @@ final class ExclusiveSequencerEntry {
 }
 
 sealed class ExclusiveSequencer {
+  static final _sequensers = <Object, _ExclusiveSequencer>{};
+
   factory ExclusiveSequencer() = _ExclusiveSequencer;
 
   factory ExclusiveSequencer.forKey(Object key) = _DeferredExclusiveSequencer;
@@ -34,6 +36,18 @@ sealed class ExclusiveSequencer {
   bool get isEmpty;
 
   bool get isNotEmpty;
+
+  static Future<void> closeAll() async {
+    final futures = <Future<void>>[];
+
+    for (final sequenser in _sequensers.values) {
+      futures.add(sequenser.close());
+    }
+
+    await Future.wait(futures);
+  }
+
+  Future<void> close();
 
   ExclusiveSequencerEntry createEntry();
 
@@ -58,6 +72,14 @@ final class _ExclusiveSequencer extends ExclusiveSequencer {
 
   @override
   bool get isNotEmpty => _count != 0;
+
+  @override
+  Future<void> close() async {
+    for (var previous = _owner; previous != null; previous = _owner) {
+      _exit(previous);
+      await Future(() {});
+    }
+  }
 
   @override
   ExclusiveSequencerEntry createEntry() =>
@@ -111,23 +133,30 @@ final class _ExclusiveSequencer extends ExclusiveSequencer {
 }
 
 final class _DeferredExclusiveSequencer extends ExclusiveSequencer {
-  static final _cache = <Object, _ExclusiveSequencer>{};
-
   final Object _key;
 
   _DeferredExclusiveSequencer(this._key) : super._();
 
   _ExclusiveSequencer _cachedSequencer() =>
-      _cache[_key] ??
+      ExclusiveSequencer._sequensers[_key] ??
       (throw StateError(
         'Exclusive sequencer with key $_key not found in the cache',
       ));
 
   @override
-  bool get isEmpty => _cache[_key]?.isEmpty ?? true;
+  bool get isEmpty => ExclusiveSequencer._sequensers[_key]?.isEmpty ?? true;
 
   @override
-  bool get isNotEmpty => _cache[_key]?.isNotEmpty ?? false;
+  bool get isNotEmpty =>
+      ExclusiveSequencer._sequensers[_key]?.isNotEmpty ?? false;
+
+  @override
+  Future<void> close() async {
+    final cachedSequencer = ExclusiveSequencer._sequensers[_key];
+    if (cachedSequencer != null) {
+      await cachedSequencer.close();
+    }
+  }
 
   @override
   ExclusiveSequencerEntry createEntry() =>
@@ -135,7 +164,8 @@ final class _DeferredExclusiveSequencer extends ExclusiveSequencer {
 
   @override
   Future<void> _enter(ExclusiveSequencerEntry entry, {Duration? timeout}) {
-    final cachedSequencer = _cache.putIfAbsent(_key, () {
+    final cachedSequencer =
+        ExclusiveSequencer._sequensers.putIfAbsent(_key, () {
       final sequencer = _ExclusiveSequencer();
       d(sequencer, 'created');
       return sequencer;
@@ -149,13 +179,13 @@ final class _DeferredExclusiveSequencer extends ExclusiveSequencer {
     final cachedSequencer = _cachedSequencer().._exit(entry);
     if (cachedSequencer.isEmpty) {
       d(cachedSequencer, 'removed from cache');
-      _cache.remove(_key);
+      ExclusiveSequencer._sequensers.remove(_key);
     }
   }
 
   @override
   String toString() {
-    final cachedSequencer = _cache[_key];
+    final cachedSequencer = ExclusiveSequencer._sequensers[_key];
     return '$ExclusiveSequencer($_key)'
         ' ${cachedSequencer == null ? 'absent' : '#${cachedSequencer.hashCode}'}';
   }

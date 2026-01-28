@@ -1,29 +1,31 @@
 part of '../scope.dart';
 
-sealed class AsyncScopeState<T extends Object?> {
-  const AsyncScopeState();
+sealed class AsyncScopeState {
+  AsyncScopeState();
 }
 
-final class AsyncScopeWaiting<T extends Object?> extends AsyncScopeState<T> {
-  const AsyncScopeWaiting();
+final class AsyncScopeWaiting extends AsyncScopeState {
+  AsyncScopeWaiting();
 }
 
-final class AsyncScopeProgress<T extends Object?> extends AsyncScopeState<T> {
+sealed class AsyncScopeInitState extends AsyncScopeState {
+  AsyncScopeInitState();
+}
+
+final class AsyncScopeProgress extends AsyncScopeInitState {
   final Object? progress;
 
-  const AsyncScopeProgress([this.progress]);
+  AsyncScopeProgress([this.progress]);
 }
 
-final class AsyncScopeReady<T extends Object?> extends AsyncScopeState<T> {
-  final T data;
-
-  const AsyncScopeReady(this.data);
+final class AsyncScopeReady extends AsyncScopeInitState {
+  AsyncScopeReady();
 }
 
-final class AsyncScopeError<T extends Object?> extends AsyncScopeState<T> {
+final class AsyncScopeError extends AsyncScopeState {
   final Object error;
   final StackTrace stackTrace;
   final Object? progress;
 
-  const AsyncScopeError(this.error, this.stackTrace, {this.progress});
+  AsyncScopeError(this.error, this.stackTrace, {this.progress});
 }

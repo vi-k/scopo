@@ -1,9 +1,9 @@
 import 'dart:collection';
 
 import 'package:flutter/foundation.dart';
+import 'package:flutter/scheduler.dart';
 import 'package:flutter/widgets.dart';
-
-import 'is_building.dart';
+import 'package:scopo/scopo.dart';
 
 final console = Console();
 
@@ -40,6 +40,6 @@ final class Console with ChangeNotifier {
 
   @override
   void notifyListeners() {
-    runOutsideFrame(super.notifyListeners);
+    SchedulerBinding.instance.runOutsideFrame(super.notifyListeners);
   }
 }
