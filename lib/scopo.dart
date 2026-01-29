@@ -1,9 +1,7 @@
 export 'src/environment/scope_config.dart'
     hide RawScopeLogCallback, d, e, source;
-export 'src/scope/scope.dart'
-    hide AsyncScopeCoordinator, AsyncScopeCoordinatorElement, AsyncScopeEntry;
+export 'src/scope/scope.dart';
 export 'src/utils/compare_utils.dart';
-export 'src/utils/exclusive_sequencer/exclusive_sequencer.dart';
 export 'src/utils/is_building.dart';
 export 'src/utils/listenable/listen.dart';
 export 'src/utils/listenable/listenable_selector.dart';

@@ -11,7 +11,7 @@ abstract base class LiteScopeCore<
   });
 
   @override
-  E createScopeElement();
+  InheritedElement createScopeElement();
 
   static W paramsOf<
           W extends LiteScopeCore<W, E, S>,

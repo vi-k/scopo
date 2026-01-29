@@ -12,7 +12,7 @@ abstract base class ScopeCore<
   });
 
   @override
-  E createScopeElement();
+  InheritedElement createScopeElement();
 
   static W paramsOf<
           W extends ScopeCore<W, E, D, S>,

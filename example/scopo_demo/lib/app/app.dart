@@ -66,13 +66,15 @@ final class App extends Scope<App, AppDependencies, AppState> {
     ThemeData? dark,
     required Widget child,
   }) {
-    return MaterialApp(
-      title: 'Scope demo',
-      themeMode: mode,
-      theme: light ?? StaticThemes.lightTheme,
-      darkTheme: dark ?? StaticThemes.darkTheme,
-      debugShowCheckedModeBanner: false,
-      home: child,
+    return AsyncScopeCoordinator(
+      child: MaterialApp(
+        title: 'Scope demo',
+        themeMode: mode,
+        theme: light ?? StaticThemes.lightTheme,
+        darkTheme: dark ?? StaticThemes.darkTheme,
+        debugShowCheckedModeBanner: false,
+        home: child,
+      ),
     );
   }
 

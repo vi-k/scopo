@@ -1,7 +1,7 @@
 # scopo
 
 > [!WARNING]
-> Description needs updating!
+> README needs updating!
 
 A robust Flutter package for managing scopes, dependency injection, and state management within the widget tree. `scopo` provides a clean, extensive API for handling dependencies and state with a focus on lifecycle management and async initialization.
 

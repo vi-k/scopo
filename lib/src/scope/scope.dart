@@ -5,7 +5,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
 
 import '../environment/scope_config.dart';
-import '../utils/exclusive_sequencer/exclusive_sequencer.dart';
 import '../utils/is_building.dart';
 import '../utils/progress_iterator/progress_iterator.dart';
 import '../utils/screenshot_replacer.dart';

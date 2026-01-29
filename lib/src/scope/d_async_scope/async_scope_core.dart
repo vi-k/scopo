@@ -79,7 +79,7 @@ abstract base class AsyncScopeElementBase<W extends AsyncScopeCore<W, E>,
   /// Therefore, we use [_initCompleter] for synchronization.
   final _initCompleter = Completer<void>();
 
-  ExclusiveSequencerEntry? _asyncScopeEntry;
+  AsyncScopeCoordinatorEntry? _asyncScopeEntry;
 
   AsyncScopeParentEntry? _asyncScopeParentEntry;
 
@@ -172,15 +172,16 @@ abstract base class AsyncScopeElementBase<W extends AsyncScopeCore<W, E>,
       _registerWithParent();
     });
 
-    // Wait for key release.
+    // Wait for access.
     if (scopeKey case final scopeKey?) {
-      final exclusiveSequencer = ExclusiveSequencer.forKey(scopeKey);
-      final entry = exclusiveSequencer.createEntry();
-      _asyncScopeEntry = entry;
-
-      _d('init', 'wait for key [$scopeKey] release');
-      await entry.enter();
-      _d('init', 'key [$scopeKey] released');
+      _asyncScopeEntry = AsyncScopeCoordinatorEntry();
+      _d('init', 'wait for access by key [$scopeKey]');
+      await AsyncScopeCoordinator.enter(
+        this,
+        scopeKey,
+        entry: _asyncScopeEntry,
+      );
+      _d('init', 'access by key [$scopeKey] obtained');
 
       if (!mounted) {
         _d('init', 'cancelled');
@@ -293,8 +294,9 @@ abstract base class AsyncScopeElementBase<W extends AsyncScopeCore<W, E>,
       _asyncScopeParentEntry?.unregister();
 
       if (_asyncScopeEntry case final asyncScopeEntry?) {
-        _d('dispose', 'exit from exclusive sequencer');
+        _d('dispose', 'exit from $AsyncScopeCoordinator');
         asyncScopeEntry.exit();
+        _asyncScopeEntry = null;
       }
 
       _model.dispose();

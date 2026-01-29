@@ -11,7 +11,7 @@ abstract base class ScopeModelCore<
   });
 
   @override
-  E createScopeElement();
+  InheritedElement createScopeElement();
 
   static E? maybeOf<W extends ScopeModelCore<W, E, M>,
           E extends ScopeModelElementBase<W, E, M>, M extends Object>(

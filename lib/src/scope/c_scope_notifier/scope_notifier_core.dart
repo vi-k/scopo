@@ -11,7 +11,7 @@ abstract base class ScopeNotifierCore<
   });
 
   @override
-  E createScopeElement();
+  InheritedElement createScopeElement();
 
   static E? maybeOf<W extends ScopeNotifierCore<W, E, M>,
           E extends ScopeNotifierElementBase<W, E, M>, M extends Listenable>(

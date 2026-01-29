@@ -4,8 +4,7 @@
 - Написать нормальную документацию.
 - посмотреть везде debugFillProperties.
 - добавить обязательный timeout для exclusive sequencer и waitForChildren.
-- для exclusive sequencer сделать отдельный виджет (ScopeCoordinator)
-  и пользоваться только им.
+- _source -> toStringShort() + hashCode
 
 Тесты:
 - одновременно notifyDependents и перестроение дерева сверху (setState).
