@@ -1,11 +1,11 @@
 part of '../scope.dart';
 
-final class AsyncParentEntry {
-  AsyncParent? _parent;
+final class AsyncScopeParentEntry {
+  AsyncScopeParent? _parent;
 
   final completer = Completer<void>();
 
-  AsyncParentEntry(this._parent);
+  AsyncScopeParentEntry(this._parent);
 
   void unregister() {
     assert(_parent != null);
@@ -17,17 +17,17 @@ final class AsyncParentEntry {
   }
 }
 
-mixin AsyncParent {
+mixin AsyncScopeParent {
   final _children = <Future<void>>[];
 
   bool get hasChildren => _children.isNotEmpty;
 
   int get childrenCount => _children.length;
 
-  Future<void> get waitForChildren => _children.wait;
+  Future<void> waitForChildren() => _children.wait;
 
-  AsyncParentEntry registerChild() {
-    final entry = AsyncParentEntry(this);
+  AsyncScopeParentEntry registerChild() {
+    final entry = AsyncScopeParentEntry(this);
     _children.add(entry.completer.future);
     return entry;
   }

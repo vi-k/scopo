@@ -26,8 +26,8 @@ const _tabs = <(String, Widget)>[
   ('AsyncDataScope', AsyncDataScopeDemo()),
   ('LiteScope', LiteScopeDemo()),
   ('Scope', ScopeDemo()),
-  ('NavigationNode', NavigationNodeDemo()),
   ('Deffered closing', DefferedClosingDemo()),
+  ('NavigationNode', NavigationNodeDemo()),
 ];
 
 /// A child scope.

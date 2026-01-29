@@ -1,3 +1,7 @@
+## 0.6.1
+* add `asyncScopeRoot` to register scopes that do not have a parent, so that
+  you can wait for them to complete.
+
 ## 0.6.0
 * fix some bugs.
 * add `buildOnClosing` for `Scope`.

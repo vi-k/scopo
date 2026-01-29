@@ -43,7 +43,7 @@ abstract base class AsyncScopeCore<W extends AsyncScopeCore<W, E>,
 abstract base class AsyncScopeElementBase<W extends AsyncScopeCore<W, E>,
         E extends AsyncScopeElementBase<W, E>>
     extends ScopeNotifierElementBase<W, E, AsyncScopeModel>
-    with AsyncParent
+    with AsyncScopeParent
     implements AsyncScopeContext<W> {
   //
   // Overriding block
@@ -81,7 +81,7 @@ abstract base class AsyncScopeElementBase<W extends AsyncScopeCore<W, E>,
 
   ExclusiveSequencerEntry? _asyncScopeEntry;
 
-  AsyncParentEntry? _asyncParentEntry;
+  AsyncScopeParentEntry? _asyncScopeParentEntry;
 
   String get _source => '$W #$hashCode';
 
@@ -145,19 +145,21 @@ abstract base class AsyncScopeElementBase<W extends AsyncScopeCore<W, E>,
   }
 
   void _registerWithParent() {
-    if (_asyncParentEntry case final AsyncParentEntry entry) {
+    if (_asyncScopeParentEntry case final AsyncScopeParentEntry entry) {
       entry.unregister();
-      _asyncParentEntry = null;
+      _asyncScopeParentEntry = null;
     }
 
+    AsyncScopeParent? parent;
     visitAncestorElements((e) {
-      if (e case final AsyncParent parent) {
-        final entry = parent.registerChild();
-        _asyncParentEntry = entry;
+      if (e case final AsyncScopeParent e) {
+        parent = e;
         return false;
       }
       return true;
     });
+
+    _asyncScopeParentEntry = (parent ?? asyncScopeRoot).registerChild();
   }
 
   Future<void> _performAsyncInit() async {
@@ -272,7 +274,7 @@ abstract base class AsyncScopeElementBase<W extends AsyncScopeCore<W, E>,
 
     if (hasChildren) {
       _d('dispose', () => 'wait children (count: $childrenCount)');
-      await waitForChildren;
+      await waitForChildren();
     }
 
     try {
@@ -288,7 +290,7 @@ abstract base class AsyncScopeElementBase<W extends AsyncScopeCore<W, E>,
 
       _d('dispose', 'done');
     } finally {
-      _asyncParentEntry?.unregister();
+      _asyncScopeParentEntry?.unregister();
 
       if (_asyncScopeEntry case final asyncScopeEntry?) {
         _d('dispose', 'exit from exclusive sequencer');

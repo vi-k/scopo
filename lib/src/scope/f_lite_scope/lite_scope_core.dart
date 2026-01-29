@@ -293,7 +293,10 @@ abstract base class LiteScopeCoreState<
       await _initCompleter.future;
     }
 
-    await disposeAsync();
+    final result = disposeAsync();
+    if (result is Future<void>) {
+      await result;
+    }
   }
 
   void onInitialized() {}
