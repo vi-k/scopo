@@ -92,4 +92,10 @@ abstract base class AsyncDataScopeElementBase<
           }
         },
       );
+
+  @override
+  void debugFillProperties(DiagnosticPropertiesBuilder properties) {
+    super.debugFillProperties(properties);
+    properties.add(DiagnosticsProperty<T?>('data', _data));
+  }
 }

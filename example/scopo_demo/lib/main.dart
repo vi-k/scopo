@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:ansi_escape_codes/ansi_escape_codes.dart' as ansi;
 import 'package:flutter/material.dart';
 import 'package:scopo/scopo.dart';
@@ -11,41 +13,35 @@ import 'home/home_dependencies.dart';
 import 'utils/app_environment.dart';
 
 void main() {
-  final defaultPrinter = ansi.AnsiPrinter(
-    defaultState: const ansi.SgrPlainState(
-      foreground: ansi.Color256(ansi.Colors.gray12),
-    ),
-  );
+  ScopeConfig.isDebug = true;
+
+  final ansiCodesEnabled = !Platform.isIOS;
 
   ScopeConfig.log.isEnabled = true;
-  ScopeConfig.log.log = (source, message, error, stackTrace) {
-    defaultPrinter.print(
-      ScopeLog.buildDefaultMessage(
-        source,
-        message,
-        error: error,
-        stackTrace: stackTrace,
+  ScopeConfig.log.log = _logByPrinter(
+    ansi.AnsiPrinter(
+      ansiCodesEnabled: ansiCodesEnabled,
+      defaultState: const ansi.SgrPlainState(
+        foreground: ansi.Color256(ansi.Colors.gray8),
       ),
-    );
-  };
-
-  final errorPrinter = ansi.AnsiPrinter(
-    defaultState: const ansi.SgrPlainState(
-      foreground: ansi.Color256(ansi.Colors.rgb500),
     ),
   );
-
-  ScopeConfig.logError.isEnabled = true;
-  ScopeConfig.logError.log = (source, message, error, stackTrace) {
-    errorPrinter.print(
-      ScopeLog.buildDefaultMessage(
-        source,
-        message,
-        error: error,
-        stackTrace: stackTrace,
+  ScopeConfig.logInfo.log = _logByPrinter(
+    ansi.AnsiPrinter(
+      ansiCodesEnabled: ansiCodesEnabled,
+      defaultState: const ansi.SgrPlainState(
+        foreground: ansi.Color256(ansi.Colors.gray16),
       ),
-    );
-  };
+    ),
+  );
+  ScopeConfig.logError.log = _logByPrinter(
+    ansi.AnsiPrinter(
+      ansiCodesEnabled: ansiCodesEnabled,
+      defaultState: const ansi.SgrPlainState(
+        foreground: ansi.Color256(ansi.Colors.rgb500),
+      ),
+    ),
+  );
 
   // Fake errors block
 
@@ -80,3 +76,17 @@ void main() {
     ),
   );
 }
+
+void Function(String?, String?, Object?, StackTrace?) _logByPrinter(
+  ansi.AnsiPrinter printer,
+) =>
+    (source, message, error, stackTrace) {
+      printer.print(
+        ScopeLog.buildDefaultMessage(
+          source,
+          message,
+          error: error,
+          stackTrace: stackTrace,
+        ),
+      );
+    };

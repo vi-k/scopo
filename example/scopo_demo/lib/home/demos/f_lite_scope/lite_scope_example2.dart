@@ -12,7 +12,7 @@ class LiteScopeExample2 extends StatelessWidget {
     return Center(
       child: CounterScope(
         scopeKey: LiteScopeExample2,
-        title: '$LiteScopeExample2 (only one working scope)',
+        title: '$LiteScopeExample2 (has scopeKey)',
         debugSource: LiteScopeExample2,
         debugName: '${++_num}',
       ),

@@ -33,7 +33,7 @@ final class AsyncScopeCoordinator extends ScopeWidgetCore<AsyncScopeCoordinator,
 final class _AsyncScopeCoordinatorElement extends ScopeWidgetElementBase<
     AsyncScopeCoordinator, _AsyncScopeCoordinatorElement> {
   _AsyncScopeCoordinatorElement(super.widget);
-  static final _controllers = <Object, _AsyncScopeCoordinatorController>{};
+  static final _queues = <Object, _AsyncScopeCoordinatorQueue>{};
 
   @override
   Widget buildChild() => widget.child;
@@ -43,28 +43,24 @@ final class _AsyncScopeCoordinatorElement extends ScopeWidgetElementBase<
     AsyncScopeCoordinatorEntry? entry,
     Duration? timeout,
   }) {
-    final controller = _controllers.putIfAbsent(key, () {
-      final controller = _AsyncScopeCoordinatorController(
+    final queue = _queues.putIfAbsent(key, () {
+      final q = _AsyncScopeCoordinatorQueue(
         key,
         remove: () {
-          _controllers.remove(key);
-          _d('controller for key [$key] removed');
+          _queues.remove(key);
+          _i(null, 'queue for [$key] removed');
         },
       );
-      _d('controller for key [$key] created');
-      return controller;
+      _i(null, 'queue for [$key] created');
+      return q;
     });
 
-    return controller.enter(entry: entry, timeout: timeout);
-  }
-
-  void _d(Object? message) {
-    d(() => '${toStringShort()} #$hashCode', message);
+    return queue.enter(entry: entry, timeout: timeout);
   }
 }
 
 final class AsyncScopeCoordinatorEntry {
-  _AsyncScopeCoordinatorController? _controller;
+  _AsyncScopeCoordinatorQueue? _queue;
   final _completer = Completer<void>();
 
   AsyncScopeCoordinatorEntry();
@@ -73,21 +69,21 @@ final class AsyncScopeCoordinatorEntry {
 
   /// Покинуть очередь.
   void exit() {
-    _checkController()._exit(this);
+    _checkQueue()._exit(this);
   }
 
-  _AsyncScopeCoordinatorController _checkController() =>
-      _controller ??
+  _AsyncScopeCoordinatorQueue _checkQueue() =>
+      _queue ??
       (throw StateError('$AsyncScopeCoordinatorEntry is not attached'));
 }
 
-final class _AsyncScopeCoordinatorController {
+final class _AsyncScopeCoordinatorQueue {
   final Object key;
   void Function()? remove;
 
   final _entries = <AsyncScopeCoordinatorEntry>{};
 
-  _AsyncScopeCoordinatorController(this.key, {this.remove});
+  _AsyncScopeCoordinatorQueue(this.key, {this.remove});
 
   bool get isEmpty => _entries.isEmpty;
 
@@ -116,12 +112,12 @@ final class _AsyncScopeCoordinatorController {
   }) async {
     entry ??= AsyncScopeCoordinatorEntry();
 
-    assert(entry._controller == null, 'Entry is already attached');
+    assert(entry._queue == null, 'Entry is already attached');
     assert(!entry._completer.isCompleted, 'Entry is already completed');
 
     final previous = List.of(_entries);
 
-    entry._controller = this;
+    entry._queue = this;
     _entries.add(entry);
 
     if (previous.isEmpty) {
@@ -163,14 +159,14 @@ final class _AsyncScopeCoordinatorController {
 
   void _exit(AsyncScopeCoordinatorEntry entry) {
     assert(
-      identical(entry._controller, this),
-      'Entry is not attached to this controller',
+      identical(entry._queue, this),
+      'Entry is not attached to this queue',
     );
     assert(!entry._completer.isCompleted, 'Entry is already completed');
 
     _entries.remove(entry);
     entry._completer.complete();
-    entry._controller = null;
+    entry._queue = null;
 
     if (_entries.isEmpty) {
       remove?.call();
@@ -179,5 +175,5 @@ final class _AsyncScopeCoordinatorController {
   }
 
   @override
-  String toString() => '$_AsyncScopeCoordinatorController($key)';
+  String toString() => '$_AsyncScopeCoordinatorQueue($key)';
 }

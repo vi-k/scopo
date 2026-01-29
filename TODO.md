@@ -2,9 +2,7 @@
 
 - Описать все примеры.
 - Написать нормальную документацию.
-- посмотреть везде debugFillProperties.
-- добавить обязательный timeout для exclusive sequencer и waitForChildren.
-- _source -> toStringShort() + hashCode
+- добавить обязательный timeout для AsyncScopeCoordinator и waitForChildren.
 
 Тесты:
 - одновременно notifyDependents и перестроение дерева сверху (setState).

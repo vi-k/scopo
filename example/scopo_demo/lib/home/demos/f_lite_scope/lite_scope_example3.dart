@@ -27,7 +27,7 @@ class _LiteScopeExample3State extends State<LiteScopeExample3> {
           Center(
             child: CounterScope(
               scopeKey: LiteScopeExample3,
-              title: '$LiteScopeExample3 (parent & child)',
+              title: '$LiteScopeExample3 (scopeKey + parent & child)',
               childScope: Center(
                 child: CounterScope(
                   debugSource: LiteScopeExample3,

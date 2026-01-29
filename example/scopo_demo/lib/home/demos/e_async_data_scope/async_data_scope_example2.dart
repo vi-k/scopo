@@ -12,7 +12,7 @@ class AsyncDataScopeExample2 extends StatelessWidget {
     return Center(
       child: CounterScope(
         scopeKey: AsyncDataScopeExample2,
-        title: '$AsyncDataScopeExample2 (only one working scope)',
+        title: '$AsyncDataScopeExample2 (has scopeKey)',
         debugSource: AsyncDataScopeExample2,
         debugName: '${++_num}',
       ),

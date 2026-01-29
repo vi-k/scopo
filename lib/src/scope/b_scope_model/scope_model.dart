@@ -5,22 +5,19 @@ final class ScopeModel<M extends Object>
   @override
   final Widget Function(BuildContext context) builder;
 
-  @override
-  final String? debugName;
-
   const ScopeModel({
     super.key,
+    super.tag,
     required super.create,
     required super.dispose,
     required this.builder,
-    this.debugName,
   });
 
   const ScopeModel.value({
     super.key,
+    super.tag,
     required super.value,
     required this.builder,
-    this.debugName,
   }) : super.value();
 
   static M? maybeOf<M extends Object>(

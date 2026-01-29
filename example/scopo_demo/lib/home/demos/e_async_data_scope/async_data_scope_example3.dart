@@ -29,7 +29,7 @@ class _AsyncDataScopeExample3State extends State<AsyncDataScopeExample3> {
           Center(
             child: CounterScope(
               scopeKey: AsyncDataScopeExample3,
-              title: '$AsyncDataScopeExample3 (parent & child)',
+              title: '$AsyncDataScopeExample3 (scopeKey + parent & child)',
               childScope: Center(
                 child: CounterScope(
                   key: _childGlobalKey,

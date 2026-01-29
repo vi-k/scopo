@@ -5,23 +5,18 @@ final class ScopeNotifier<M extends Listenable>
   @override
   final Widget Function(BuildContext context) builder;
 
-  @override
-  final String? debugName;
-
   const ScopeNotifier({
     super.key,
     super.tag,
     required super.create,
     required super.dispose,
     required this.builder,
-    this.debugName,
   });
 
   const ScopeNotifier.value({
     super.key,
     required super.value,
     required this.builder,
-    this.debugName,
   }) : super.value();
 
   static M? maybeOf<M extends Listenable>(

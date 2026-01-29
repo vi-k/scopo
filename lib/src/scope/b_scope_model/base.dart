@@ -38,30 +38,13 @@ base mixin ScopeModelBaseMixin<M extends Object> on ScopeInheritedWidget {
   void Function(M model)? get dispose;
 
   Widget build(BuildContext context);
-
-  @override
-  void debugFillProperties(DiagnosticPropertiesBuilder properties) {
-    super.debugFillProperties(properties);
-    if (hasValue) {
-      properties.add(MessageProperty('value', '$value'));
-    }
-    if (create != null) {
-      properties
-        ..add(MessageProperty('create', '$create'))
-        ..add(MessageProperty('dispose', '$dispose'));
-    }
-  }
 }
 
 base mixin ScopeModelMixin<M extends Object> on ScopeModelBaseMixin<M> {
   Widget Function(BuildContext context) get builder;
-  String? get debugName;
 
   @override
   Widget build(BuildContext context) => builder(context);
-
-  @override
-  String toStringShort() => debugName ?? super.toStringShort();
 }
 
 base mixin ScopeModelElementMixin<W extends ScopeModelBaseMixin<M>,
@@ -90,12 +73,4 @@ base mixin ScopeModelElementMixin<W extends ScopeModelBaseMixin<M>,
 
   @override
   Widget buildChild() => widget.build(this);
-
-  @override
-  void debugFillProperties(DiagnosticPropertiesBuilder properties) {
-    super.debugFillProperties(properties);
-    if (_model != null) {
-      properties.add(MessageProperty('model', '$_model'));
-    }
-  }
 }

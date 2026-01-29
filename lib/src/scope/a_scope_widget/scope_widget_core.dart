@@ -22,7 +22,9 @@ abstract base class ScopeWidgetCore<W extends ScopeWidgetCore<W, E>,
   bool updateShouldNotify(ScopeWidgetCore<W, E> oldWidget) => true;
 
   @override
-  String toStringShort() => '$W${tag == null ? '' : '(tag: $tag)'}';
+  String toStringShort({bool showHashCode = false}) =>
+      '$W${tag == null ? showHashCode //
+          ? '(#${shortHash(this)})' : '' : '($tag)'}';
 
   static E? maybeOf<W extends ScopeWidgetCore<W, E>,
           E extends ScopeWidgetElementBase<W, E>>(
@@ -237,4 +239,40 @@ abstract base class ScopeWidgetElementBase<W extends ScopeWidgetCore<W, E>,
   @nonVirtual
   @override
   Widget build() => buildChild();
+
+  String _buildMessage(String? method, Object? message) {
+    final text = ScopeLog.objToString(message);
+    return '${method == null ? '' : '[$method] '}${text ?? ''}';
+  }
+
+  void _d(String? method, [Object? message]) {
+    assert(method != null || message != null);
+    d(
+      () => widget.toStringShort(showHashCode: true),
+      () => _buildMessage(method, message),
+    );
+  }
+
+  void _i(String? method, [Object? message]) {
+    assert(method != null || message != null);
+    i(
+      () => widget.toStringShort(showHashCode: true),
+      () => _buildMessage(method, message),
+    );
+  }
+
+  void _e(
+    String? method,
+    Object? message, {
+    Object? error,
+    StackTrace? stackTrace,
+  }) {
+    assert(method != null || message != null);
+    e(
+      () => widget.toStringShort(showHashCode: true),
+      () => _buildMessage(method, message),
+      error: error,
+      stackTrace: stackTrace,
+    );
+  }
 }

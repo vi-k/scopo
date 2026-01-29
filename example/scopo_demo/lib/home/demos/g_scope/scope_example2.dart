@@ -12,7 +12,7 @@ class ScopeExample2 extends StatelessWidget {
     return Center(
       child: CounterScope(
         scopeKey: ScopeExample2,
-        title: '$ScopeExample2 (only one working scope)',
+        title: '$ScopeExample2 (has scopeKey)',
         debugSource: ScopeExample2,
         debugName: '${++_num}',
       ),

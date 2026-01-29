@@ -6,11 +6,23 @@ typedef ScopeQueueStream<T extends ScopeDependencies>
 base mixin ScopeQueueMixin<T extends ScopeDependencies> on ScopeDependencies {
   List<List<ScopeDependencyBase>>? _queue;
 
-  String get _source => '$T #$hashCode';
+  String _buildMessage(String method, Object? message) {
+    final text = ScopeLog.objToString(message);
+    return '[$method]${text == null ? '' : ' $text'}';
+  }
 
-  void _d(String method, Object? message) {
-    final messageStr = ScopeLog.objToString(message);
-    d(_source, '[$method]${messageStr == null ? '' : ' $messageStr'}');
+  void _d(String method, [Object? message]) {
+    d(
+      () => '$T(#${shortHash(this)})',
+      () => _buildMessage(method, message),
+    );
+  }
+
+  void _i(String method, [Object? message]) {
+    i(
+      () => '$T(#${shortHash(this)})',
+      () => _buildMessage(method, message),
+    );
   }
 
   void _e(
@@ -20,11 +32,8 @@ base mixin ScopeQueueMixin<T extends ScopeDependencies> on ScopeDependencies {
     StackTrace? stackTrace,
   }) {
     e(
-      () => _source,
-      () {
-        final messageStr = ScopeLog.objToString(message);
-        return '[$method]${messageStr == null ? '' : ' $messageStr'}';
-      },
+      () => '$T(#$hashCode)',
+      () => _buildMessage(method, message),
       error: error,
       stackTrace: stackTrace,
     );
@@ -39,7 +48,7 @@ base mixin ScopeQueueMixin<T extends ScopeDependencies> on ScopeDependencies {
     var isInitialized = false;
 
     try {
-      _d('init', 'start');
+      _i('init');
 
       final queue = _queue ??= buildQueue(context);
       final count = queue.fold<int>(0, (p, e) => p + e.length);

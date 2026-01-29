@@ -15,8 +15,8 @@ typedef RawScopeLogCallback = void Function(
 });
 
 final class ScopeLog {
-  bool _isEnabled = false;
-  bool get isEnabled => _isEnabled;
+  bool? _isEnabled;
+  bool get isEnabled => _isEnabled ?? ScopeConfig.isDebug;
   set isEnabled(bool value) {
     _isEnabled = value;
     _log = value ? _prepareLog : _noLog;
@@ -27,7 +27,7 @@ final class ScopeLog {
     _userLog = value;
   }
 
-  RawScopeLogCallback _log = _noLog;
+  late RawScopeLogCallback _log = isEnabled ? _prepareLog : _noLog;
 
   ScopeLogCallback _userLog = _defaultLog;
 

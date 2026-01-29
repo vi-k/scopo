@@ -11,7 +11,7 @@ class AsyncDataScopeExample1 extends StatelessWidget {
   Widget build(BuildContext context) {
     return Center(
       child: CounterScope(
-        title: '$AsyncDataScopeExample1 (independent scope)',
+        title: '$AsyncDataScopeExample1 (no scopeKey)',
         debugSource: AsyncDataScopeExample1,
         debugName: '${++_num}',
       ),

@@ -16,6 +16,7 @@ final class CounterScope extends ScopeNotifierBase<CounterScope, CounterModel> {
 
   CounterScope({
     super.key,
+    super.tag,
     required this.title,
     super.child,
   }) : super(

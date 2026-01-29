@@ -5,6 +5,7 @@ import '../common/data/fake_services/fake_analytics.dart';
 import '../common/data/fake_services/fake_app_http_client.dart';
 import '../common/data/fake_services/fake_service.dart';
 import '../home/demos/h_navigation_node/counter_scope.dart';
+import '../home/demos/h_navigation_node/navigation_node_demo.dart';
 import 'app_dependencies.dart';
 import 'app_error.dart';
 import 'theme_manager/theme_manager.dart';
@@ -108,6 +109,7 @@ final class App extends Scope<App, AppDependencies, AppState> {
           return Directionality(
             textDirection: TextDirection.ltr,
             child: CounterScope(
+              tag: 'global counter for $NavigationNodeDemo',
               title: 'Global counter above $MaterialApp',
               child: _wrap(
                 mode: themeModel.mode,

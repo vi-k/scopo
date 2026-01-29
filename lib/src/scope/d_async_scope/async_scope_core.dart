@@ -83,8 +83,6 @@ abstract base class AsyncScopeElementBase<W extends AsyncScopeCore<W, E>,
 
   AsyncScopeParentEntry? _asyncScopeParentEntry;
 
-  String get _source => '$W #$hashCode';
-
   @override
   bool get autoSelfDependence => true;
 
@@ -165,7 +163,7 @@ abstract base class AsyncScopeElementBase<W extends AsyncScopeCore<W, E>,
   Future<void> _performAsyncInit() async {
     assert(model.state is AsyncScopeWaiting);
 
-    _d('init', 'start');
+    _i('init');
 
     // Register with parent scope.
     SchedulerBinding.instance.addPostFrameCallback((_) {
@@ -257,7 +255,7 @@ abstract base class AsyncScopeElementBase<W extends AsyncScopeCore<W, E>,
   }
 
   Future<void> _performAsyncDispose() async {
-    _d('dispose', 'start');
+    _i('dispose');
 
     // Прерываем инициализацию, если она не завершена.
     if (_subscription case final subscription?) {
@@ -308,25 +306,20 @@ abstract base class AsyncScopeElementBase<W extends AsyncScopeCore<W, E>,
   @override
   Widget buildChild() => buildOnState(model.state);
 
-  void _d(String method, [Object? message]) {
-    final messageStr = ScopeLog.objToString(message);
-    d(_source, '[$method]${messageStr == null ? '' : ' $messageStr'}');
-  }
-
-  void _e(
-    String method,
-    Object? message, {
-    Object? error,
-    StackTrace? stackTrace,
-  }) {
-    e(
-      () => _source,
-      () {
-        final messageStr = ScopeLog.objToString(message);
-        return '[$method]${messageStr == null ? '' : ' $messageStr'}';
-      },
-      error: error,
-      stackTrace: stackTrace,
-    );
+  @override
+  void debugFillProperties(DiagnosticPropertiesBuilder properties) {
+    super.debugFillProperties(properties);
+    properties.add(DiagnosticsProperty<AsyncScopeState>('state', model.state));
+    if (scopeKey case final scopeKey?) {
+      properties.add(DiagnosticsProperty<Object?>('scopeKey', scopeKey));
+    }
+    if (pauseAfterInitialization case final pauseAfterInitialization?) {
+      properties.add(
+        DiagnosticsProperty<Duration>(
+          'pauseAfterInitialization',
+          pauseAfterInitialization,
+        ),
+      );
+    }
   }
 }

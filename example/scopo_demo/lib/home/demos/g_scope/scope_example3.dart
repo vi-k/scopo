@@ -27,7 +27,7 @@ class _ScopeExample3State extends State<ScopeExample3> {
           Center(
             child: CounterScope(
               scopeKey: ScopeExample3,
-              title: '$ScopeExample3 (parent & child)',
+              title: '$ScopeExample3 (scopeKey + parent & child)',
               childScope: Center(
                 child: Builder(
                   builder: (context) {

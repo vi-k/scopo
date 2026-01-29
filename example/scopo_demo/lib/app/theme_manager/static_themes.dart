@@ -50,6 +50,12 @@ abstract interface class StaticThemes {
       tabBarTheme: const TabBarThemeData(
         labelPadding: EdgeInsets.symmetric(horizontal: 8),
       ),
+      tooltipTheme: TooltipThemeData(
+        decoration: BoxDecoration(
+          color: colorScheme.secondary,
+          borderRadius: BorderRadius.circular(4),
+        ),
+      ),
     );
   }
 }

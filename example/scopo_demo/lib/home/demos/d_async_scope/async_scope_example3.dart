@@ -27,7 +27,7 @@ class _AsyncScopeExample3State extends State<AsyncScopeExample3> {
           Center(
             child: CounterScope(
               scopeKey: AsyncScopeExample3,
-              title: '$AsyncScopeExample3 (parent & child)',
+              title: '$AsyncScopeExample3 (scopeKey + parent & child)',
               childScope: Center(
                 child: CounterScope(
                   debugSource: AsyncScopeExample3,

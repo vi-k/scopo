@@ -1,5 +1,6 @@
 ## 0.6.2
 * add `AsyncScopeCoordinator` for coordination of scopes with the same key.
+* minor fixes.
 
 ## 0.6.1
 * add `asyncScopeRoot` to register scopes that do not have a parent, so that

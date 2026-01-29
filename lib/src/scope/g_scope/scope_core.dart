@@ -145,6 +145,12 @@ abstract base class ScopeElementBase<
       await result;
     }
   }
+
+  @override
+  void debugFillProperties(DiagnosticPropertiesBuilder properties) {
+    super.debugFillProperties(properties);
+    properties.add(DiagnosticsProperty<D?>('dependencies', _dependencies));
+  }
 }
 
 abstract base class ScopeCoreState<

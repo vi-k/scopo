@@ -119,6 +119,7 @@ class HomeAppBar extends AppBar {
           title: const Text('scopo demo'),
           actions: [
             IconButton(
+              tooltip: 'Long tap for the system theme',
               onPressed: () {
                 ThemeManager.of(context, listen: false).toggleBrightness();
               },
@@ -203,18 +204,14 @@ final class HomeState extends ScopeState<Home, HomeDependencies, HomeState> {
 
   @override
   Widget build(BuildContext context) {
-    return Builder(
-      builder: (context) {
-        return DefaultTabController(
-          length: _tabs.length,
-          child: Scaffold(
-            appBar: HomeAppBar(context),
-            body: TabBarView(
-              children: _tabs.map((e) => e.$2).toList(),
-            ),
-          ),
-        );
-      },
+    return DefaultTabController(
+      length: _tabs.length,
+      child: Scaffold(
+        appBar: HomeAppBar(context),
+        body: TabBarView(
+          children: _tabs.map((e) => e.$2).toList(),
+        ),
+      ),
     );
   }
 }

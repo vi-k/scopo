@@ -56,4 +56,10 @@ abstract base class ScopeModelElementBase<
 
   @override
   Widget buildChild();
+
+  @override
+  void debugFillProperties(DiagnosticPropertiesBuilder properties) {
+    super.debugFillProperties(properties);
+    properties.add(MessageProperty('model', '$model'));
+  }
 }
