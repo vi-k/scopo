@@ -1,5 +1,6 @@
 part of 'scope_config.dart';
 
+/// {@category debug}
 typedef ScopeLogCallback = void Function(
   String? source,
   String? message,
@@ -14,6 +15,7 @@ typedef RawScopeLogCallback = void Function(
   StackTrace? stackTrace,
 });
 
+/// {@category debug}
 final class ScopeLog {
   bool? _isEnabled;
   bool get isEnabled => _isEnabled ?? ScopeConfig.isDebug;
@@ -77,12 +79,8 @@ final class ScopeLog {
     Object? error,
     StackTrace? stackTrace,
   }) =>
-      '[scopo]'
-      '${source == null ? '' : ' $source:'}'
+      '${source == null ? '' : '$source:'}'
       ' ${message ?? 'null'}'
       '${error == null ? '' : ': $error'}'
       '${stackTrace == null ? '' : '\n${stackTrace == StackTrace.empty ? 'no stack trace' : '$stackTrace'}'}';
 }
-
-String source(Diagnosticable diagnosticable, String method) =>
-    '${diagnosticable.toStringShort()}.$method';

@@ -2,7 +2,10 @@
 
 - Описать все примеры.
 - Написать нормальную документацию.
-- добавить обязательный timeout для AsyncScopeCoordinator и waitForChildren.
+- example для `ScopeWidgetCore`.
+- helper для `ScopeDependency`.
+- `waitForChildren`, `asyncScopeRoot` - переделать. `asyncScopeRoot` перенести
+  логику в `AsyncScopeCoordinator`. timeout перенести внутрь `waitForChildren`.
 
 Тесты:
 - одновременно notifyDependents и перестроение дерева сверху (setState).

@@ -1,0 +1,43 @@
+dartdoc:
+  categories:
+    base:
+      markdown: doc/a_base.md
+    ScopeWidget:
+      markdown: doc/b_scope_widget.md
+    ScopeModel:
+      markdown: doc/c_scope_model.md
+    ScopeNotifier:
+      markdown: doc/d_scope_notifier.md
+    AsyncScope:
+      markdown: doc/e_async_scope.md
+    AsyncDataScope:
+      markdown: doc/f_async_data_scope.md
+    LiteScope:
+      markdown: doc/g_lite_scope.md
+    Scope:
+      markdown: doc/h_scope.md
+    debug:
+      markdown: doc/i_debug.md
+  categoryOrder:
+    [
+      base,
+      ScopeWidget,
+      ScopeModel,
+      ScopeNotifier,
+      AsyncScope,
+      AsyncDataScope,
+      LiteScope,
+      Scope,
+      debug,
+    ]
+  # includeExternal: ["bin/unusually_located_library.dart"]
+  # nodoc: ["lib/sekret/*.dart"]
+  # linkTo:
+  #   url: "https://my.dartdocumentationsite.org/dev/%v%"
+  showUndocumentedCategories: true
+  ignore:
+    - ambiguous-doc-reference
+  errors:
+    - unresolved-doc-reference
+  warnings:
+    - tool-error

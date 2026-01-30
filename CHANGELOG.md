@@ -1,3 +1,5 @@
+## 0.6.4
+
 ## 0.6.3
 * add timeouts for waiting for access (`scopeKey`) and waiting for children to
   complete (`AsyncScopeParent`, `waitForChildren`)
