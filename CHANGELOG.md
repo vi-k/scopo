@@ -1,3 +1,9 @@
+## 0.6.3
+* add timeouts for waiting for access (`scopeKey`) and waiting for children to
+  complete (`AsyncScopeParent`, `waitForChildren`)
+* set default timeouts to 3 seconds.
+* add info logging (`ScopeLog.logInfo`) for important messages.
+
 ## 0.6.2
 * add `AsyncScopeCoordinator` for coordination of scopes with the same key.
 * minor fixes.

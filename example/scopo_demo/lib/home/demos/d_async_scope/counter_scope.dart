@@ -52,7 +52,7 @@ final class CounterScope
     this.childScope,
     required this.debugSource,
     required this.debugName,
-  });
+  }) : super(tag: debugName);
 
   @override
   CounterScopeElement createScopeElement() => CounterScopeElement(this);

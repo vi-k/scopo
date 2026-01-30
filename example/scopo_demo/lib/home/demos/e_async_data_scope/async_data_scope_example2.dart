@@ -11,10 +11,10 @@ class AsyncDataScopeExample2 extends StatelessWidget {
   Widget build(BuildContext context) {
     return Center(
       child: CounterScope(
+        debugSource: AsyncDataScopeExample2,
+        debugName: '2.${++_num}',
         scopeKey: AsyncDataScopeExample2,
         title: '$AsyncDataScopeExample2 (has scopeKey)',
-        debugSource: AsyncDataScopeExample2,
-        debugName: '${++_num}',
       ),
     );
   }

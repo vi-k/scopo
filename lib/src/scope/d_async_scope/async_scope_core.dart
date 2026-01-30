@@ -53,6 +53,14 @@ abstract base class AsyncScopeElementBase<W extends AsyncScopeCore<W, E>,
 
   Duration? get pauseAfterInitialization => null;
 
+  Duration? get scopeKeyTimeout => null;
+
+  void onScopeKeyTimeout() {}
+
+  Duration? get waitForChildrenTimeout => null;
+
+  void onWaitForChildrenTimeout() {}
+
   Stream<AsyncScopeInitState> initAsync() => Stream.value(AsyncScopeReady());
 
   FutureOr<void> disposeAsync() {}
@@ -81,7 +89,7 @@ abstract base class AsyncScopeElementBase<W extends AsyncScopeCore<W, E>,
 
   AsyncScopeCoordinatorEntry? _asyncScopeEntry;
 
-  AsyncScopeParentEntry? _asyncScopeParentEntry;
+  ScopeChildEntry? _asyncScopeParentEntry;
 
   @override
   bool get autoSelfDependence => true;
@@ -143,7 +151,7 @@ abstract base class AsyncScopeElementBase<W extends AsyncScopeCore<W, E>,
   }
 
   void _registerWithParent() {
-    if (_asyncScopeParentEntry case final AsyncScopeParentEntry entry) {
+    if (_asyncScopeParentEntry case final ScopeChildEntry entry) {
       entry.unregister();
       _asyncScopeParentEntry = null;
     }
@@ -157,7 +165,8 @@ abstract base class AsyncScopeElementBase<W extends AsyncScopeCore<W, E>,
       return true;
     });
 
-    _asyncScopeParentEntry = (parent ?? asyncScopeRoot).registerChild();
+    _asyncScopeParentEntry = (parent ?? asyncScopeRoot)
+        .registerChild(widget.toStringShort(showHashCode: true));
   }
 
   Future<void> _performAsyncInit() async {
@@ -172,23 +181,32 @@ abstract base class AsyncScopeElementBase<W extends AsyncScopeCore<W, E>,
 
     // Wait for access.
     if (scopeKey case final scopeKey?) {
-      _asyncScopeEntry = AsyncScopeCoordinatorEntry();
-      _d('init', 'wait for access by key [$scopeKey]');
+      final entry = AsyncScopeCoordinatorEntry(
+        widget.toStringShort(showHashCode: true),
+      );
+      _asyncScopeEntry = entry;
+      _d('init', 'wait for access to [$scopeKey]');
       await AsyncScopeCoordinator.enter(
         this,
         scopeKey,
-        entry: _asyncScopeEntry,
+        entry,
+        timeout: scopeKeyTimeout ?? ScopeConfig.defaultScopeKeysTimeout,
+        onTimeout: onScopeKeyTimeout,
       );
-      _d('init', 'access by key [$scopeKey] obtained');
+      if (entry.isCancelled) {
+        _i('init', 'access to [$scopeKey] cancelled');
+      } else {
+        _d('init', 'access to [$scopeKey] obtained');
+      }
 
-      if (!mounted) {
-        _d('init', 'cancelled');
+      if (entry.isCancelled || !mounted) {
+        _i('init', 'cancelled');
         _initCompleter.complete();
         return;
       }
     }
 
-    _subscription = initAsync().asyncMap((state) async {
+    _subscription = initAsync().asyncMap((state) {
       _d(
         'init',
         () => switch (state) {
@@ -211,9 +229,13 @@ abstract base class AsyncScopeElementBase<W extends AsyncScopeCore<W, E>,
         case AsyncScopeProgress():
           _model.update(state);
         case AsyncScopeReady():
-          if (pauseAfterInitialization case final pauseAfterInitialization?) {
-            await Future<void>.delayed(pauseAfterInitialization);
-            _model.update(state);
+          if (pauseAfterInitialization case final pauseAfterInitialization?
+              when ScopeConfig.pauseAfterInitializationEnabled) {
+            Future<void>.delayed(pauseAfterInitialization, () {
+              if (mounted) {
+                _model.update(state);
+              }
+            });
           } else {
             // Делаем так, чтобы последний прогресс успел отобразиться.
             SchedulerBinding.instance
@@ -222,7 +244,7 @@ abstract base class AsyncScopeElementBase<W extends AsyncScopeCore<W, E>,
                 _model.update(state);
               });
           }
-          _d('init', 'done');
+          _i('init', 'done');
           _initCompleter.complete();
       }
     }).listen(
@@ -257,6 +279,12 @@ abstract base class AsyncScopeElementBase<W extends AsyncScopeCore<W, E>,
   Future<void> _performAsyncDispose() async {
     _i('dispose');
 
+    // Прерываем ожидание доступа, если ещё не завершено.
+    if (_asyncScopeEntry case final entry? when entry.isWaiting) {
+      _d('dispose', 'cancel waiting for access to [$scopeKey]');
+      entry.cancel();
+    }
+
     // Прерываем инициализацию, если она не завершена.
     if (_subscription case final subscription?) {
       await subscription.cancel();
@@ -267,13 +295,37 @@ abstract base class AsyncScopeElementBase<W extends AsyncScopeCore<W, E>,
     }
 
     if (!_initCompleter.isCompleted) {
-      _d('dispose', 'wait initialization');
+      _d('dispose', 'wait for initialization');
       await _initCompleter.future;
     }
 
     if (hasChildren) {
-      _d('dispose', () => 'wait children (count: $childrenCount)');
-      await waitForChildren();
+      _d('dispose', () => 'wait for children (count: $childrenCount)');
+      var future = waitForChildren();
+      final timeout =
+          waitForChildrenTimeout ?? ScopeConfig.defaultWaitForChildrenTimeout;
+      if (timeout != null) {
+        future = future.timeout(timeout);
+      }
+
+      try {
+        await future;
+      } on TimeoutException catch (error, stackTrace) {
+        FlutterError.reportError(
+          FlutterErrorDetails(
+            exception: TimeoutException(
+              '${widget.toStringShort(showHashCode: true)}'
+              " couldn't wait for the children to complete: $_children",
+              timeout,
+            ),
+            stack: stackTrace,
+            library: 'scopo',
+          ),
+        );
+        onWaitForChildrenTimeout();
+      } finally {
+        _children.clear();
+      }
     }
 
     try {
@@ -287,12 +339,12 @@ abstract base class AsyncScopeElementBase<W extends AsyncScopeCore<W, E>,
         _d('dispose', 'do not dispose of');
       }
 
-      _d('dispose', 'done');
+      _i('dispose', 'done');
     } finally {
       _asyncScopeParentEntry?.unregister();
 
       if (_asyncScopeEntry case final asyncScopeEntry?) {
-        _d('dispose', 'exit from $AsyncScopeCoordinator');
+        _d('dispose', 'exit from [$scopeKey]');
         asyncScopeEntry.exit();
         _asyncScopeEntry = null;
       }

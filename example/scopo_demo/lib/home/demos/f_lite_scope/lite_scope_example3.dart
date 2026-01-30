@@ -26,16 +26,16 @@ class _LiteScopeExample3State extends State<LiteScopeExample3> {
         children: [
           Center(
             child: CounterScope(
+              debugSource: LiteScopeExample3,
+              debugName: '3.$_num.parent',
               scopeKey: LiteScopeExample3,
               title: '$LiteScopeExample3 (scopeKey + parent & child)',
               childScope: Center(
                 child: CounterScope(
                   debugSource: LiteScopeExample3,
-                  debugName: 'child $_num',
+                  debugName: '3.$_num.child',
                 ),
               ),
-              debugSource: LiteScopeExample3,
-              debugName: 'parent $_num',
             ),
           ),
         ],

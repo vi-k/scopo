@@ -12,8 +12,6 @@ class AsyncDataScopeExample3 extends StatefulWidget {
 }
 
 class _AsyncDataScopeExample3State extends State<AsyncDataScopeExample3> {
-  final _childGlobalKey = GlobalKey();
-
   @override
   void initState() {
     super.initState();
@@ -28,17 +26,16 @@ class _AsyncDataScopeExample3State extends State<AsyncDataScopeExample3> {
         children: [
           Center(
             child: CounterScope(
+              debugSource: AsyncDataScopeExample3,
+              debugName: '3.$_num.parent',
               scopeKey: AsyncDataScopeExample3,
               title: '$AsyncDataScopeExample3 (scopeKey + parent & child)',
               childScope: Center(
                 child: CounterScope(
-                  key: _childGlobalKey,
                   debugSource: AsyncDataScopeExample3,
-                  debugName: 'child $_num',
+                  debugName: '3.$_num.child',
                 ),
               ),
-              debugSource: AsyncDataScopeExample3,
-              debugName: 'parent $_num',
             ),
           ),
         ],

@@ -24,6 +24,7 @@ class NavigationNodeDemo extends StatelessWidget {
               children: [
                 Expanded(
                   child: CounterScope(
+                    tag: 'w/o node',
                     title: 'Local counter w/o navigation node',
                     child: const Center(
                       child: _CounterAndUsecases(),
@@ -33,6 +34,7 @@ class NavigationNodeDemo extends StatelessWidget {
                 const VerticalDivider(),
                 Expanded(
                   child: CounterScope(
+                    tag: 'with node',
                     title: 'Local counter with navigation node',
                     child: const NavigationNode(
                       child: Center(

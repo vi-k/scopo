@@ -50,7 +50,7 @@ final class CounterScope extends LiteScope<CounterScope, CounterState> {
     this.childScope,
     required this.debugSource,
     required this.debugName,
-  });
+  }) : super(tag: debugName);
 
   static CounterScope paramsOf(BuildContext context) =>
       LiteScope.paramsOf<CounterScope, CounterState>(

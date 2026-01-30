@@ -11,17 +11,23 @@ final class AsyncScopeCoordinator extends ScopeWidgetCore<AsyncScopeCoordinator,
   @override
   InheritedElement createScopeElement() => _AsyncScopeCoordinatorElement(this);
 
-  static Future<AsyncScopeCoordinatorEntry> enter(
+  static Future<void> enter(
     BuildContext context,
-    Object key, {
-    AsyncScopeCoordinatorEntry? entry,
+    Object key,
+    AsyncScopeCoordinatorEntry entry, {
     Duration? timeout,
+    void Function()? onTimeout,
   }) =>
       ScopeWidgetCore.maybeOf<AsyncScopeCoordinator,
           _AsyncScopeCoordinatorElement>(
         context,
         listen: false,
-      )?.enter(key, entry: entry, timeout: timeout) ??
+      )?.enter(
+        key,
+        entry,
+        timeout: timeout,
+        onTimeout: onTimeout,
+      ) ??
       (throw FlutterError('No `$AsyncScopeCoordinator`.\n'
           'You are trying to use `scopeKey`, but the `$AsyncScopeCoordinator`'
           ' is missing in the context. Add it to the widget tree so that'
@@ -38,10 +44,11 @@ final class _AsyncScopeCoordinatorElement extends ScopeWidgetElementBase<
   @override
   Widget buildChild() => widget.child;
 
-  Future<AsyncScopeCoordinatorEntry> enter(
-    Object key, {
-    AsyncScopeCoordinatorEntry? entry,
+  Future<void> enter(
+    Object key,
+    AsyncScopeCoordinatorEntry entry, {
     Duration? timeout,
+    void Function()? onTimeout,
   }) {
     final queue = _queues.putIfAbsent(key, () {
       final q = _AsyncScopeCoordinatorQueue(
@@ -55,26 +62,51 @@ final class _AsyncScopeCoordinatorElement extends ScopeWidgetElementBase<
       return q;
     });
 
-    return queue.enter(entry: entry, timeout: timeout);
+    return queue.enter(
+      entry,
+      timeout: timeout,
+      onTimeout: onTimeout,
+    );
   }
 }
 
 final class AsyncScopeCoordinatorEntry {
+  final String _debugName;
   _AsyncScopeCoordinatorQueue? _queue;
   final _completer = Completer<void>();
+  final _cancelCompleter = Completer<void>();
+  bool _isWaiting = false;
 
-  AsyncScopeCoordinatorEntry();
+  AsyncScopeCoordinatorEntry(this._debugName);
 
   bool get isCompleted => _completer.isCompleted;
+
+  bool get isWaiting => _isWaiting;
+
+  bool get isCancelled => _cancelCompleter.isCompleted;
 
   /// Покинуть очередь.
   void exit() {
     _checkQueue()._exit(this);
   }
 
+  /// Прервать ожидание доступа.
+  void cancel() {
+    assert(isWaiting, 'Entry is not waiting');
+    if (!_cancelCompleter.isCompleted) {
+      _cancelCompleter.complete();
+    }
+  }
+
   _AsyncScopeCoordinatorQueue _checkQueue() =>
       _queue ??
       (throw StateError('$AsyncScopeCoordinatorEntry is not attached'));
+
+  @override
+  String toString() => '$_debugName'
+      ' ${isCompleted ? 'completed' : //
+          isWaiting ? 'waiting' : //
+              isCancelled ? 'cancelled' : 'not completed'}';
 }
 
 final class _AsyncScopeCoordinatorQueue {
@@ -106,12 +138,11 @@ final class _AsyncScopeCoordinatorQueue {
     }
   }
 
-  Future<AsyncScopeCoordinatorEntry> enter({
-    AsyncScopeCoordinatorEntry? entry,
+  Future<void> enter(
+    AsyncScopeCoordinatorEntry entry, {
     Duration? timeout,
+    void Function()? onTimeout,
   }) async {
-    entry ??= AsyncScopeCoordinatorEntry();
-
     assert(entry._queue == null, 'Entry is already attached');
     assert(!entry._completer.isCompleted, 'Entry is already completed');
 
@@ -121,14 +152,16 @@ final class _AsyncScopeCoordinatorQueue {
     _entries.add(entry);
 
     if (previous.isEmpty) {
-      return entry;
+      return;
     }
 
     // Ждем, пока все предыдущие владельцы освободят контроллер,
     // ИЛИ пока текущий не будет отменён.
+    entry._isWaiting = true;
     var future = Future.any([
       previous.map((entry) => entry._completer.future).wait,
       entry._completer.future,
+      entry._cancelCompleter.future,
     ]);
     if (timeout != null) {
       future = future.timeout(timeout);
@@ -139,22 +172,22 @@ final class _AsyncScopeCoordinatorQueue {
     try {
       await future;
     } on TimeoutException catch (error, stackTrace) {
-      final uncompletedCount =
-          previous.where((e) => !e._completer.isCompleted).length;
       FlutterError.reportError(
         FlutterErrorDetails(
-          exception: error,
+          exception: TimeoutException(
+            '${entry._debugName}'
+            " couldn't wait to get access to [$key]:"
+            ' $previous',
+            timeout,
+          ),
           stack: stackTrace,
           library: 'scopo',
-          context: ErrorDescription(
-            'The previous $uncompletedCount entries'
-            ' did not complete within $timeout.',
-          ),
         ),
       );
+      onTimeout?.call();
+    } finally {
+      entry._isWaiting = false;
     }
-
-    return entry;
   }
 
   void _exit(AsyncScopeCoordinatorEntry entry) {
@@ -175,5 +208,5 @@ final class _AsyncScopeCoordinatorQueue {
   }
 
   @override
-  String toString() => '$_AsyncScopeCoordinatorQueue($key)';
+  String toString() => '$AsyncScopeCoordinator:queue[$key]';
 }

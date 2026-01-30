@@ -4,12 +4,20 @@ abstract base class AsyncDataScopeBase<W extends AsyncDataScopeBase<W, T>,
         T extends Object?>
     extends AsyncDataScopeCore<W, AsyncDataScopeElement<W, T>, T> {
   final Object? scopeKey;
+  final Duration? scopeKeyTimeout;
+  final void Function()? onScopeKeyTimeout;
+  final Duration? waitForChildrenTimeout;
+  final void Function()? onWaitForChildrenTimeout;
   final Duration? pauseAfterInitialization;
 
   const AsyncDataScopeBase({
     super.key,
     super.tag,
     this.scopeKey,
+    this.scopeKeyTimeout,
+    this.onScopeKeyTimeout,
+    this.waitForChildrenTimeout,
+    this.onWaitForChildrenTimeout,
     this.pauseAfterInitialization,
     super.child, // Not used by default. You can use it at your own discretion.
   });
@@ -80,6 +88,18 @@ final class AsyncDataScopeElement<W extends AsyncDataScopeBase<W, T>,
 
   @override
   Object? get scopeKey => widget.scopeKey;
+
+  @override
+  Duration? get scopeKeyTimeout => widget.scopeKeyTimeout;
+
+  @override
+  void onScopeKeyTimeout() => widget.onScopeKeyTimeout?.call();
+
+  @override
+  Duration? get waitForChildrenTimeout => widget.waitForChildrenTimeout;
+
+  @override
+  void onWaitForChildrenTimeout() => widget.onWaitForChildrenTimeout?.call();
 
   @override
   Duration? get pauseAfterInitialization => widget.pauseAfterInitialization;

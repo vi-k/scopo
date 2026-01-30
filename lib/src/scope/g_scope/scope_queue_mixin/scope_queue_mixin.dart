@@ -118,12 +118,12 @@ base mixin ScopeQueueMixin<T extends ScopeDependencies> on ScopeDependencies {
 
       yield ScopeReady(this as T);
       isInitialized = true;
-      _d('init', 'done');
+      _i('init', 'done');
     } on Object catch (e, s) {
       _e('init', 'failed', error: e, stackTrace: s);
     } finally {
       if (!isInitialized) {
-        _d('init', 'cancelled');
+        _i('init', 'cancelled');
         await dispose();
       }
     }
@@ -136,7 +136,7 @@ base mixin ScopeQueueMixin<T extends ScopeDependencies> on ScopeDependencies {
       return;
     }
 
-    _d('dispose', '(in reverse order)');
+    _i('dispose', '(in reverse order)');
 
     for (var i = queue.length - 1; i >= 0; i--) {
       final group = queue[i];
@@ -163,5 +163,7 @@ base mixin ScopeQueueMixin<T extends ScopeDependencies> on ScopeDependencies {
         }
       }
     }
+
+    _i('dispose', 'done');
   }
 }

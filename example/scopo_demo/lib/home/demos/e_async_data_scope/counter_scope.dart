@@ -84,7 +84,7 @@ final class CounterScope
     this.childScope,
     required this.debugSource,
     required this.debugName,
-  });
+  }) : super(tag: debugName);
 
   static CounterModel of(BuildContext context) =>
       AsyncDataScopeBase.of<CounterScope, CounterModel>(

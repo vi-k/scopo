@@ -275,4 +275,8 @@ abstract base class ScopeWidgetElementBase<W extends ScopeWidgetCore<W, E>,
       stackTrace: stackTrace,
     );
   }
+
+  @override
+  String toStringShort({bool showHashCode = false}) =>
+      '$E(#${shortHash(this)})';
 }

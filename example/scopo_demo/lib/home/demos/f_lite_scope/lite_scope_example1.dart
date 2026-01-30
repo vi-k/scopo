@@ -11,9 +11,9 @@ class LiteScopeExample1 extends StatelessWidget {
   Widget build(BuildContext context) {
     return Center(
       child: CounterScope(
-        title: '$LiteScopeExample1 (no scopeKey)',
         debugSource: LiteScopeExample1,
-        debugName: '${++_num}',
+        debugName: '1.${++_num}',
+        title: '$LiteScopeExample1 (no scopeKey)',
       ),
     );
   }

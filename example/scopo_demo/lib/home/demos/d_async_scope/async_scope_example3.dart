@@ -26,16 +26,16 @@ class _AsyncScopeExample3State extends State<AsyncScopeExample3> {
         children: [
           Center(
             child: CounterScope(
+              debugSource: AsyncScopeExample3,
+              debugName: '3.$_num.parent',
               scopeKey: AsyncScopeExample3,
               title: '$AsyncScopeExample3 (scopeKey + parent & child)',
               childScope: Center(
                 child: CounterScope(
                   debugSource: AsyncScopeExample3,
-                  debugName: 'child $_num',
+                  debugName: '3.$_num.child',
                 ),
               ),
-              debugSource: AsyncScopeExample3,
-              debugName: 'parent $_num',
             ),
           ),
         ],

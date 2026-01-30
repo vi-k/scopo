@@ -26,6 +26,8 @@ class _ScopeExample3State extends State<ScopeExample3> {
         children: [
           Center(
             child: CounterScope(
+              debugSource: ScopeExample3,
+              debugName: '3.$_num.parent',
               scopeKey: ScopeExample3,
               title: '$ScopeExample3 (scopeKey + parent & child)',
               childScope: Center(
@@ -35,13 +37,11 @@ class _ScopeExample3State extends State<ScopeExample3> {
                         ? const Text('Initializing...')
                         : CounterScope(
                             debugSource: ScopeExample3,
-                            debugName: 'child $_num',
+                            debugName: '3.$_num.child',
                           );
                   },
                 ),
               ),
-              debugSource: ScopeExample3,
-              debugName: 'parent $_num',
             ),
           ),
         ],

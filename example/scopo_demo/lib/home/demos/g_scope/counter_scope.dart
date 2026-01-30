@@ -104,7 +104,10 @@ final class CounterScope
     this.childScope,
     required this.debugSource,
     required this.debugName,
-  }) : super(pauseAfterInitialization: const Duration(milliseconds: 1000));
+  }) : super(
+          tag: debugName,
+          pauseAfterInitialization: const Duration(milliseconds: 1000),
+        );
 
   static CounterScope paramsOf(BuildContext context) =>
       Scope.paramsOf<CounterScope, CounterDependencies, CounterState>(

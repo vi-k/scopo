@@ -11,10 +11,10 @@ class ScopeExample2 extends StatelessWidget {
   Widget build(BuildContext context) {
     return Center(
       child: CounterScope(
+        debugSource: ScopeExample2,
+        debugName: '2.${++_num}',
         scopeKey: ScopeExample2,
         title: '$ScopeExample2 (has scopeKey)',
-        debugSource: ScopeExample2,
-        debugName: '${++_num}',
       ),
     );
   }

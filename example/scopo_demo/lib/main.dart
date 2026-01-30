@@ -15,9 +15,12 @@ import 'utils/app_environment.dart';
 void main() {
   ScopeConfig.isDebug = true;
 
+  //
+  // Logging
+  //
+
   final ansiCodesEnabled = !Platform.isIOS;
 
-  ScopeConfig.log.isEnabled = true;
   ScopeConfig.log.log = _logByPrinter(
     ansi.AnsiPrinter(
       ansiCodesEnabled: ansiCodesEnabled,
@@ -43,9 +46,18 @@ void main() {
     ),
   );
 
-  // Fake errors block
+  //
+  // Scope timeouts
+  //
 
-  // App scope
+  // ScopeConfig.defaultScopeKeysTimeout = const Duration(milliseconds: 500);
+  // ScopeConfig.defaultWaitForChildrenTimeout = const Duration(milliseconds: 500);
+
+  //
+  // Fake errors block
+  //
+
+  // `App` scope
 
   // AppEnvironment.errorOnFakeAnalyticsInit = true;
   // AppEnvironment.errorOnFakeAnalyticsDispose = true;
@@ -56,7 +68,7 @@ void main() {
   // AppEnvironment.errorOnFakeServiceInit = true;
   // AppEnvironment.errorOnFakeServiceDispose = true;
 
-  // Home scope
+  // `Home` scope
 
   // AppEnvironment.errorOnFakeUserHttpClientInit = true;
   // AppEnvironment.errorOnFakeUserHttpClientClose = true;

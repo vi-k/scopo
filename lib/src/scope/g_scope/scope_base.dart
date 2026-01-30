@@ -21,12 +21,20 @@ abstract base class Scope<W extends Scope<W, D, S>, D extends ScopeDependencies,
         S extends ScopeState<W, D, S>>
     extends ScopeCore<W, ScopeElement<W, D, S>, D, S> {
   final Object? scopeKey;
+  final Duration? scopeKeyTimeout;
+  final void Function()? onScopeKeyTimeout;
+  final Duration? waitForChildrenTimeout;
+  final void Function()? onWaitForChildrenTimeout;
   final Duration? pauseAfterInitialization;
 
   const Scope({
     super.key,
     super.tag,
     this.scopeKey,
+    this.scopeKeyTimeout,
+    this.onScopeKeyTimeout,
+    this.waitForChildrenTimeout,
+    this.onWaitForChildrenTimeout,
     this.pauseAfterInitialization,
     super.child, // Not used by default. You can use it at your own discretion.
   });
@@ -111,6 +119,18 @@ final class ScopeElement<W extends Scope<W, D, S>, D extends ScopeDependencies,
 
   @override
   Object? get scopeKey => widget.scopeKey;
+
+  @override
+  Duration? get scopeKeyTimeout => widget.scopeKeyTimeout;
+
+  @override
+  void onScopeKeyTimeout() => widget.onScopeKeyTimeout?.call();
+
+  @override
+  Duration? get waitForChildrenTimeout => widget.waitForChildrenTimeout;
+
+  @override
+  void onWaitForChildrenTimeout() => widget.onWaitForChildrenTimeout?.call();
 
   @override
   Duration? get pauseAfterInitialization => widget.pauseAfterInitialization;

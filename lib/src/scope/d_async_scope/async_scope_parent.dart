@@ -1,34 +1,39 @@
 part of '../scope.dart';
 
-final class AsyncScopeParentEntry {
+final class ScopeChildEntry {
+  final String _debugName;
   AsyncScopeParent? _parent;
+  final _completer = Completer<void>();
 
-  final completer = Completer<void>();
-
-  AsyncScopeParentEntry(this._parent);
+  ScopeChildEntry(this._debugName, this._parent);
 
   void unregister() {
     assert(_parent != null);
-    assert(!completer.isCompleted);
+    assert(!_completer.isCompleted);
 
-    completer.complete();
-    _parent?._children.remove(completer.future);
+    _completer.complete();
+    _parent?._children.remove(this);
     _parent = null;
   }
+
+  @override
+  String toString() => '$_debugName'
+      ' ${_completer.isCompleted ? 'completed' : 'not completed'}';
 }
 
-mixin AsyncScopeParent {
-  final _children = <Future<void>>[];
+mixin AsyncScopeParent on Diagnosticable {
+  final _children = <ScopeChildEntry>[];
 
   bool get hasChildren => _children.isNotEmpty;
 
   int get childrenCount => _children.length;
 
-  Future<void> waitForChildren() => _children.wait;
+  Future<void> waitForChildren() =>
+      _children.map((e) => e._completer.future).wait;
 
-  AsyncScopeParentEntry registerChild() {
-    final entry = AsyncScopeParentEntry(this);
-    _children.add(entry.completer.future);
+  ScopeChildEntry registerChild(String debugName) {
+    final entry = ScopeChildEntry(debugName, this);
+    _children.add(entry);
     return entry;
   }
 }
