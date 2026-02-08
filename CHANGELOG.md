@@ -1,4 +1,8 @@
-## 0.6.4
+## 0.7.0
+* [breaking changes] rename `ScopeQueueMixin` to `ScopeAutoDependencies` and
+  refactor.
+* [breaking changes] rename `waitBuilder` to `waitingBuilder`.
+
 
 ## 0.6.3
 * add timeouts for waiting for access (`scopeKey`) and waiting for children to

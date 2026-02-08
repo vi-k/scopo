@@ -53,12 +53,11 @@ class _BlinkingBoxState extends State<BlinkingBox>
       animation: _controller,
       builder: (context, child) {
         return ColoredBox(
-          color:
-              Color.lerp(
-                widget.backgroundColor,
-                widget.blinkingColor,
-                _controller.value,
-              )!,
+          color: Color.lerp(
+            widget.backgroundColor,
+            widget.blinkingColor,
+            _controller.value,
+          )!,
           child: child,
         );
       },

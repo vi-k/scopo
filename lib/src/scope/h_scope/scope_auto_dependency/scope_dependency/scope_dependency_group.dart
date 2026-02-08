@@ -1,0 +1,262 @@
+part of '../../../scope.dart';
+
+/// {@category Scope}
+abstract base class ScopeDependencyGroup with ScopeDependencyMixin {
+  @override
+  final String name;
+
+  late final List<ScopeDependency> _dependencies;
+  List<ScopeDependency> get dependencies => List.of(_dependencies);
+
+  late final int _count;
+
+  ScopeDependencyGroup._(this.name, Iterable<ScopeDependency> dependencies)
+      : assert(
+          dependencies.every((d) => d.name.isNotEmpty),
+          'The name of the child dependency cannot be empty',
+        ),
+        assert(
+          dependencies.every((d) => d.name != 'root'),
+          'The name of the child dependency cannot be "root"',
+        ) {
+    _dependencies = List.of(dependencies, growable: false);
+    _count = _dependencies.fold<int>(0, (p, e) => p + e.count);
+  }
+
+  @override
+  int get count => _count;
+
+  @override
+  bool get disposalRequired =>
+      state is ScopeDependencyInitialized ||
+      state is ScopeDependencyFailed ||
+      state is ScopeDependencyCancelled;
+
+  String _path(String name) => '${this.name}/$name';
+
+  @override
+  String get wrappedName => '[${name.isEmpty ? 'root' : name}]';
+
+  @override
+  String stateToString() {
+    switch (state) {
+      case final ScopeDependencyFailedStates state:
+        final failedChildren = state
+            .errors()
+            .where((e) => e.error is ScopeDependencyException)
+            .map(
+              (e) => switch (e.error) {
+                ScopeDependencyException(:final name) => name,
+                _ => null,
+              },
+            )
+            .nonNulls
+            .toList();
+        final errors = state
+            .errors()
+            .where((e) => e.error is! ScopeDependencyException)
+            .toList();
+
+        return '${state.toString(showCount: false, showErrors: false)}'
+            ': ${failedChildren.join(', ')}'
+            '${errors.isEmpty //
+                ? '' : '. Unresolved errors: $errors'}';
+
+      case final ScopeDependencyState state:
+        return '$state';
+    }
+  }
+}
+
+/// {@category Scope}
+final class _ScopeDependencySequential extends ScopeDependencyGroup {
+  _ScopeDependencySequential(super.name, super._dependencies)
+      : //assert(name.isNotEmpty, 'name must not be empty'),
+        super._();
+
+  @override
+  Stream<String> init() async* {
+    final dependencies = _dependencies //
+        .where((d) => d.initializationRequired);
+    for (final dependency in dependencies) {
+      yield* dependency.runInit().map(_path);
+    }
+  }
+
+  @override
+  Stream<String> dispose() async* {
+    final dependencies = _dependencies //
+        .reversed
+        .where((dep) => dep.disposalRequired);
+    for (final dependency in dependencies) {
+      yield* dependency.runDispose().map(_path);
+    }
+  }
+}
+
+/// {@category Scope}
+final class _ScopeDependencyConcurrent extends ScopeDependencyGroup {
+  _ScopeDependencyConcurrent(super.name, super._dependencies)
+      : assert(name.isNotEmpty, 'name must not be empty'),
+        super._();
+
+  @override
+  Stream<String> init() async* {
+    yield* _dependencies //
+        .where((dep) => dep.initializationRequired)
+        .map((dep) => dep.runInit())
+        ._mergeStreams()
+        .map(_path);
+  }
+
+  @override
+  Stream<String> dispose() async* {
+    yield* _dependencies.reversed
+        .where((dep) => dep.disposalRequired)
+        .map((dep) => dep.runDispose())
+        ._mergeStreams()
+        .map(_path);
+  }
+}
+
+extension<T> on Iterable<Stream<T>> {
+  /// Объединяет потоки в один, запуская их параллельно.
+  Stream<T> _mergeStreams() {
+    final controller = StreamController<T>(sync: true);
+
+    controller.onListen = () {
+      final subscriptions = <StreamSubscription<T>>[];
+
+      for (final stream in this) {
+        final subscription =
+            stream.listen(controller.add, onError: controller.addError);
+        subscription.onDone(() {
+          subscriptions.remove(subscription);
+          if (subscriptions.isEmpty) {
+            controller.close(); // ignore: discarded_futures
+          }
+        });
+        subscriptions.add(subscription);
+      }
+
+      controller
+        ..onPause = () {
+          for (final subscription in subscriptions) {
+            subscription.pause();
+          }
+        }
+        ..onResume = () {
+          for (final subscription in subscriptions) {
+            subscription.resume();
+          }
+        }
+        ..onCancel = () {
+          if (subscriptions.isEmpty) {
+            return null;
+          }
+
+          return subscriptions
+              .map((s) => s.cancel()) // ignore: discarded_futures
+              .wait
+              .then((_) => null); // ignore: discarded_futures
+        };
+    };
+    return controller.stream;
+  }
+
+  // /// Запускает все потоки параллельно и прерывает их при ошибке в одном из них.
+  // ///
+  // /// При ошибке результирующий поток дожидается закрытия всех потоков и
+  // /// передаёт все ошибки, возникшие после отмены. То же самое происходит при
+  // /// закрытии результирующего потока.
+  // Stream<T> _concurrent() {
+  //   // Не sync, чтобы во время передачи ошибок в [cancel] контроллер не был
+  //   // закрыт.
+  //   final controller = StreamController<T>();
+
+  //   controller.onListen = () {
+  //     final subscriptions = <StreamSubscription<T>>[];
+  //     Completer<void>? cancelCompleter;
+
+  //     void pause() {
+  //       for (final subscription in subscriptions) {
+  //         subscription.pause();
+  //       }
+  //     }
+
+  //     void resume() {
+  //       for (final subscription in subscriptions) {
+  //         subscription.resume();
+  //       }
+  //     }
+
+  //     /// Отменяет все подписки, ждёт их завершения и передаёт возникшие
+  //     /// ошибки.
+  //     Future<void> cancel() async {
+  //       d('_concurrent', 'cancel');
+
+  //       var innerCompleter = cancelCompleter;
+
+  //       try {
+  //         if (innerCompleter == null) {
+  //           // +++
+  //           controller.close(); // ignore: unawaited_futures
+  //           // controller.addError(Exception('test'), StackTrace.empty);
+
+  //           innerCompleter = cancelCompleter = Completer<void>();
+  //           try {
+  //             d('_concurrent', 'await subscriptions');
+  //             await subscriptions.map((s) => s.cancel()).wait;
+  //             d('_concurrent', 'await subscriptions done');
+  //             innerCompleter.complete();
+
+  //             // ignore: avoid_catching_errors
+  //           } on ParallelWaitError<void, List<AsyncError?>> catch (error) {
+  //             if (controller.isClosed) {
+  //               innerCompleter.completeError(error);
+  //             } else {
+  //               for (final entry in error.errors.nonNulls) {
+  //                 controller.addError(entry.error, entry.stackTrace);
+  //               }
+  //               innerCompleter.complete();
+  //             }
+  //           }
+  //         }
+
+  //         await innerCompleter.future;
+  //       } finally {
+  //         // +++
+  //         // controller.close(); // ignore: unawaited_futures
+  //         d('_concurrent', 'cancel done');
+  //       }
+  //     }
+
+  //     controller
+  //       ..onPause = pause
+  //       ..onResume = resume
+  //       ..onCancel = cancel;
+
+  //     for (final stream in this) {
+  //       final subscription = stream.listen(
+  //         controller.add,
+  //         onError: (Object error, StackTrace stacktrace) {
+  //           d('_concurrent', 'error: $error');
+  //           controller.addError(error, stacktrace);
+  //           cancel(); // ignore: discarded_futures
+  //         },
+  //       );
+
+  //       subscription.onDone(() {
+  //         subscriptions.remove(subscription);
+  //         if (subscriptions.isEmpty) {
+  //           d('_concurrent', 'subscriptions.isEmpty / controller.close()');
+  //           controller.close(); // ignore: discarded_futures
+  //         }
+  //       });
+
+  //       subscriptions.add(subscription);
+  //     }
+  //   };
+  //   return controller.stream;
+  // }
+}

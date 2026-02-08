@@ -35,7 +35,7 @@ const _tabs = <(String, Widget)>[
 /// Initializes feature-specific dependencies like [FakeBloc] and
 /// [FakeController].
 final class Home extends Scope<Home, HomeDependencies, HomeState> {
-  final ScopeInitFunction<ScopeQueueProgress, HomeDependencies> init;
+  final ScopeInitFunction<ScopeAutoDependenciesProgress, HomeDependencies> init;
   final bool isRoot;
 
   const Home({
@@ -46,7 +46,9 @@ final class Home extends Scope<Home, HomeDependencies, HomeState> {
   }) : super(pauseAfterInitialization: const Duration(milliseconds: 500));
 
   @override
-  ScopeQueueStream<HomeDependencies> initDependencies(BuildContext context) =>
+  ScopeAutoDependenciesStream<HomeDependencies> initDependencies(
+    BuildContext context,
+  ) =>
       init(context);
 
   /// Provides access the scope params, i.e. to the widget [Home].
@@ -81,7 +83,7 @@ final class Home extends Scope<Home, HomeDependencies, HomeState> {
   @override
   Widget buildOnInitializing(
     BuildContext context,
-    covariant ScopeQueueProgress? progress,
+    covariant ScopeAutoDependenciesProgress? progress,
   ) =>
       _FakeContent(progress);
 
@@ -90,7 +92,7 @@ final class Home extends Scope<Home, HomeDependencies, HomeState> {
     BuildContext context,
     Object error,
     StackTrace stackTrace,
-    covariant ScopeQueueProgress? progress,
+    covariant ScopeAutoDependenciesProgress? progress,
   ) =>
       AppError(error, stackTrace);
 
@@ -155,7 +157,7 @@ class HomeAppBar extends AppBar {
 /// The screen displays the progress of dependency initialization, mimicking
 /// the [Home] screen.
 class _FakeContent extends StatelessWidget {
-  final ScopeQueueProgress? progress;
+  final ScopeAutoDependenciesProgress? progress;
 
   const _FakeContent(this.progress);
 

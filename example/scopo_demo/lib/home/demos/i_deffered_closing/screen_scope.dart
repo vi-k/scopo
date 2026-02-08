@@ -5,65 +5,45 @@ import 'package:scopo/scopo.dart';
 
 import '../../../utils/console/console.dart';
 
-final class ScreenDependencies extends ScopeDependencies
-    with ScopeQueueMixin<ScreenDependencies> {
+final class ScreenDependencies
+    extends ScopeAutoDependencies<ScreenDependencies, BuildContext> {
   ScreenDependencies();
 
   @override
-  List<List<ScopeDependencyBase>> buildQueue(BuildContext context) => [
-        [
-          ScopeDependency(
-            '1',
-            () async {
-              console.log(ScreenScope, 'initialize 1');
-              await Future<void>.delayed(const Duration(milliseconds: 200));
-            },
-            onDispose: () async {
-              console.log(ScreenScope, 'dispose 1');
-              await Future<void>.delayed(const Duration(milliseconds: 1000));
-            },
-          ),
-        ],
-        [
-          ScopeDependency(
-            '2',
-            () async {
-              console.log(ScreenScope, 'initialize 2');
-              await Future<void>.delayed(const Duration(milliseconds: 200));
-            },
-            onDispose: () async {
-              console.log(ScreenScope, 'dispose 2');
-              await Future<void>.delayed(const Duration(milliseconds: 1000));
-            },
-          ),
-        ],
-        [
-          ScopeDependency(
-            '3',
-            () async {
-              console.log(ScreenScope, 'initialize 3');
-              await Future<void>.delayed(const Duration(milliseconds: 200));
-            },
-            onDispose: () async {
-              console.log(ScreenScope, 'dispose 3');
-              await Future<void>.delayed(const Duration(milliseconds: 1000));
-            },
-          ),
-        ],
-        [
-          ScopeDependency(
-            '4',
-            () async {
-              console.log(ScreenScope, 'initialize 4');
-              await Future<void>.delayed(const Duration(milliseconds: 200));
-            },
-            onDispose: () async {
-              console.log(ScreenScope, 'dispose 4');
-              await Future<void>.delayed(const Duration(milliseconds: 1000));
-            },
-          ),
-        ],
-      ];
+  ScopeDependency buildDependencies(BuildContext context) => sequential('', [
+        dep('1', (dep) async {
+          console.log(ScreenScope, 'initialize 1');
+          await Future<void>.delayed(const Duration(milliseconds: 200));
+          dep.dispose = () async {
+            console.log(ScreenScope, 'dispose 1');
+            await Future<void>.delayed(const Duration(milliseconds: 1000));
+          };
+        }),
+        dep('2', (dep) async {
+          console.log(ScreenScope, 'initialize 2');
+          await Future<void>.delayed(const Duration(milliseconds: 200));
+          dep.dispose = () async {
+            console.log(ScreenScope, 'dispose 2');
+            await Future<void>.delayed(const Duration(milliseconds: 1000));
+          };
+        }),
+        dep('3', (dep) async {
+          console.log(ScreenScope, 'initialize 3');
+          await Future<void>.delayed(const Duration(milliseconds: 200));
+          dep.dispose = () async {
+            console.log(ScreenScope, 'dispose 3');
+            await Future<void>.delayed(const Duration(milliseconds: 1000));
+          };
+        }),
+        dep('4', (dep) async {
+          console.log(ScreenScope, 'initialize 4');
+          await Future<void>.delayed(const Duration(milliseconds: 200));
+          dep.dispose = () async {
+            console.log(ScreenScope, 'dispose 4');
+            await Future<void>.delayed(const Duration(milliseconds: 1000));
+          };
+        }),
+      ]);
 }
 
 final class ScreenScope
@@ -77,7 +57,7 @@ final class ScreenScope
       Scope.of<ScreenScope, ScreenDependencies, ScreenState>(context);
 
   @override
-  Stream<ScopeInitState<ScopeQueueProgress, ScreenDependencies>>
+  Stream<ScopeInitState<ScopeAutoDependenciesProgress, ScreenDependencies>>
       initDependencies(
     BuildContext context,
   ) =>
@@ -93,7 +73,7 @@ final class ScreenScope
   @override
   Widget buildOnInitializing(
     BuildContext context,
-    covariant ScopeQueueProgress? progress,
+    covariant ScopeAutoDependenciesProgress? progress,
   ) {
     return _wrap(
       child: Center(
@@ -110,7 +90,7 @@ final class ScreenScope
     BuildContext context,
     Object error,
     StackTrace stackTrace,
-    covariant ScopeQueueProgress? progress,
+    covariant ScopeAutoDependenciesProgress? progress,
   ) {
     return _wrap(
       child: Center(

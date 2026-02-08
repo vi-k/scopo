@@ -73,11 +73,11 @@ class _AnimatedProgressIndicatorState extends State<AnimatedProgressIndicator>
     return switch (_animationController) {
       null => widget.builder(null),
       final AnimationController controller => AnimatedBuilder(
-        animation: controller,
-        builder: (_, __) {
-          return widget.builder(controller.value);
-        },
-      ),
+          animation: controller,
+          builder: (_, __) {
+            return widget.builder(controller.value);
+          },
+        ),
     };
   }
 }

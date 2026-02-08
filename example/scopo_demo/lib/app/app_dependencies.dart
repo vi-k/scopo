@@ -11,7 +11,7 @@ import 'app.dart';
 /// Dependencies for [App] scope.
 ///
 /// They are initialized asynchronously in the [init] stream.
-final class AppDependencies extends ScopeDependencies {
+final class AppDependencies implements ScopeDependencies {
   final SharedPreferences _sharedPreferences;
   final FakeAnalytics analytics;
   final FakeAppHttpClient httpClient;

@@ -289,6 +289,7 @@ abstract base class AsyncScopeElementBase<W extends AsyncScopeCore<W, E>,
 
     // Прерываем инициализацию, если она не завершена.
     if (_subscription case final subscription?) {
+      // TODO(nashol): сюда прилетят ошибки, возникшие уже после отмены
       await subscription.cancel();
       if (!_initCompleter.isCompleted) {
         _d('init', 'cancelled');

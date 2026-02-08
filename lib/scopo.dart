@@ -1,3 +1,7 @@
+/// A set of tools for creating and managing scopes on Flutter. Including
+/// dependency injection, asynchronous initialization and disposal.
+library;
+
 export 'src/environment/scope_config.dart' hide RawScopeLogCallback, d, e, i;
 export 'src/scope/scope.dart';
 export 'src/utils/compare_utils.dart';

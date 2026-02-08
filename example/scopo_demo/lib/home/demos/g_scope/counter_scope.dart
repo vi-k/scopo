@@ -37,8 +37,8 @@ final class CounterController with ChangeNotifier {
   }
 }
 
-final class CounterDependencies extends ScopeDependencies
-    with ScopeQueueMixin<CounterDependencies> {
+final class CounterDependencies
+    extends ScopeAutoDependencies<CounterDependencies, BuildContext> {
   final Object debugSource;
   final String debugName;
 
@@ -57,37 +57,26 @@ final class CounterDependencies extends ScopeDependencies
   }
 
   @override
-  List<List<ScopeDependencyBase>> buildQueue(BuildContext context) => [
-        [
-          ScopeDependency(
-            'counterController',
-            () async {
-              counterController = CounterController(
-                debugSource: debugSource,
-                debugName: debugName,
-              );
-              await counterController.init();
-            },
-            onDispose: () async {
-              await counterController.dispose();
-            },
-          ),
-          ScopeDependency(
-            'test 1',
-            () async {
-              await Future<void>.delayed(const Duration(milliseconds: 500));
-            },
-          ),
-        ],
-        [
-          ScopeDependency(
-            'test 2',
-            () async {
-              await Future<void>.delayed(const Duration(milliseconds: 500));
-            },
-          ),
-        ],
-      ];
+  ScopeDependency buildDependencies(BuildContext context) {
+    return sequential('', [
+      concurrent('concurrent group', [
+        dep('counterController', (dep) async {
+          counterController = CounterController(
+            debugSource: debugSource,
+            debugName: debugName,
+          );
+          await counterController.init();
+          dep.dispose = counterController.dispose;
+        }),
+        dep('test1', (_) async {
+          await Future<void>.delayed(const Duration(milliseconds: 500));
+        }),
+      ]),
+      dep('test2', (_) async {
+        await Future<void>.delayed(const Duration(milliseconds: 500));
+      }),
+    ]);
+  }
 }
 
 final class CounterScope
@@ -155,7 +144,7 @@ final class CounterScope
       );
 
   @override
-  Stream<ScopeInitState<ScopeQueueProgress, CounterDependencies>>
+  Stream<ScopeInitState<ScopeAutoDependenciesProgress, CounterDependencies>>
       initDependencies(
     BuildContext context,
   ) {
@@ -175,7 +164,7 @@ final class CounterScope
   @override
   Widget buildOnInitializing(
     BuildContext context,
-    covariant ScopeQueueProgress? progress,
+    covariant ScopeAutoDependenciesProgress? progress,
   ) {
     return Text(
       'Initializing'
@@ -188,7 +177,7 @@ final class CounterScope
     BuildContext context,
     Object error,
     StackTrace stackTrace,
-    covariant ScopeQueueProgress? progress,
+    covariant ScopeAutoDependenciesProgress? progress,
   ) {
     return Text(
       'Error${progress == null ? '' : ' on step $progress'}: $error',

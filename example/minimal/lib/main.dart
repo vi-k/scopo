@@ -117,7 +117,7 @@ final class App extends Scope<App, AppDependencies, AppState> {
 
 /// [AppDependencies] is the container of dependencies with asynchronous
 /// initialization.
-final class AppDependencies extends ScopeDependencies {
+final class AppDependencies implements ScopeDependencies {
   final SharedPreferences sharedPreferences;
 
   AppDependencies({required this.sharedPreferences});
