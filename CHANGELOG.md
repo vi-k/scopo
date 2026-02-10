@@ -2,6 +2,7 @@
 * [breaking changes] rename `ScopeQueueMixin` to `ScopeAutoDependencies` and
   refactor.
 * [breaking changes] rename `waitBuilder` to `waitingBuilder`.
+* minor: add package `pkglog` for logging.
 
 
 ## 0.6.3

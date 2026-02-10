@@ -70,9 +70,7 @@ abstract base class ScopeDependencyGroup with ScopeDependencyMixin {
 
 /// {@category Scope}
 final class _ScopeDependencySequential extends ScopeDependencyGroup {
-  _ScopeDependencySequential(super.name, super._dependencies)
-      : //assert(name.isNotEmpty, 'name must not be empty'),
-        super._();
+  _ScopeDependencySequential(super.name, super._dependencies) : super._();
 
   @override
   Stream<String> init() async* {
@@ -96,9 +94,7 @@ final class _ScopeDependencySequential extends ScopeDependencyGroup {
 
 /// {@category Scope}
 final class _ScopeDependencyConcurrent extends ScopeDependencyGroup {
-  _ScopeDependencyConcurrent(super.name, super._dependencies)
-      : assert(name.isNotEmpty, 'name must not be empty'),
-        super._();
+  _ScopeDependencyConcurrent(super.name, super._dependencies) : super._();
 
   @override
   Stream<String> init() async* {

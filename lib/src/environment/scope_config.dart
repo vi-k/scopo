@@ -1,22 +1,19 @@
-part 'scope_log.dart';
+import 'package:pkglog/pkglog.dart';
 
-RawScopeLogCallback get d => ScopeConfig.log._log;
-RawScopeLogCallback get i => ScopeConfig.logInfo._log;
-RawScopeLogCallback get e => ScopeConfig.logError._log;
+final Logger log = ScopeConfig.logger;
 
 // ignore: avoid_classes_with_only_static_members
 /// {@category debug}
 abstract final class ScopeConfig {
-  static bool isDebug = false;
+  // ignore: avoid_setters_without_getters
+  static set isDebug(bool value) {
+    logger.level = value ? LogLevel.debug : LogLevel.info;
+  }
 
-  /// Debug logging.
-  static final log = ScopeLog();
-
-  /// Info logging.
-  static final logInfo = ScopeLog();
-
-  /// Error logging.
-  static final logError = ScopeLog();
+  static final logger = Logger(
+    'scopo',
+    level: LogLevel.info,
+  );
 
   /// Forces pause to be disabled during testing and debugging.
   static bool pauseAfterInitializationEnabled = true;

@@ -2,6 +2,9 @@ part of '../../../scope.dart';
 
 /// {@category Scope}
 mixin ScopeDependencyMixin implements ScopeDependency {
+  late final _log =
+      log.withSource('$ScopeDependencyMixin(#${shortHash(this)})');
+
   @override
   ScopeDependencyState get state => _state;
   ScopeDependencyState _state = const ScopeDependencyInitial();
@@ -85,7 +88,7 @@ mixin ScopeDependencyMixin implements ScopeDependency {
     ScopeDependencyFailedStates Function(Object error, StackTrace stackTrace)
         defaultState,
   ) {
-    print('[handleError] {$name}: $error');
+    _log.d(() => '[handleError] $wrappedName', error);
 
     // Добавляем ошибку в состояние.
     _addErrorToState(error, stackTrace, defaultState);
@@ -130,7 +133,7 @@ mixin ScopeDependencyMixin implements ScopeDependency {
     ScopeDependencyCancelledStates Function(Object error, StackTrace stackTrace)
         defaultState,
   ) {
-    print('[handlePostCancelError] {$name}: $error');
+    _log.d(() => '[handlePostCancelError] $wrappedName', error);
 
     if (error is ParallelWaitError<void, List<AsyncError?>>) {
       for (final error in error.errors.nonNulls) {

@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
+import 'package:pkglog/pkglog.dart';
 
 import '../environment/scope_config.dart';
 import '../utils/is_building.dart';

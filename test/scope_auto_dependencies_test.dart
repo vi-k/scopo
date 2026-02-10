@@ -3,10 +3,16 @@
 import 'dart:async';
 
 import 'package:scopo/scopo.dart';
+import 'package:scopo/src/environment/scope_config.dart';
 import 'package:test/test.dart';
 
 import 'utils/logging.dart';
 import 'utils/my_fake_async.dart';
+
+final _log = log.withSourceAndParam<String>(
+  'test',
+  (method, message) => '$method: $message',
+);
 
 final class TestDependencies
     extends ScopeAutoDependencies<TestDependencies, void> {
@@ -26,22 +32,24 @@ final class TestDependencies
     bool dispose = true,
   }) =>
       (dep) async {
-        print('[test] init: ${dep.name} delay');
+        _log.v('init', () => '${dep.name} delay');
         await Future<void>.delayed(delay);
-        print('[test] init: ${dep.name} after delay');
+        _log.v('init', () => '${dep.name} after delay');
         if (failed.contains(dep.name)) {
-          print('[test] init: ${dep.name} fail');
+          _log.d('init', () => '${dep.name} fail');
           throw Exception('${dep.name} failed');
         }
         if (dispose) {
           dep.dispose = () async {
-            print('[test] dispose: ${dep.name}');
+            _log.v('dispose', () => dep.name);
             await Future<void>.delayed(step);
-            print('[test] dispose: ${dep.name} after delay');
+            _log.v('dispose', () => '${dep.name} after delay');
           };
         }
       };
 
+  // For debug
+  //
   // @override
   // ScopeDependency build(_) => concurrent('#0', [
   //       concurrent('#1', [
@@ -97,7 +105,7 @@ void main() {
       void stateToBuf(
         ScopeInitState<ScopeAutoDependenciesProgress, TestDependencies> state,
       ) {
-        print('[test] state=$state');
+        _log.v('handleInit', () => 'state=$state');
         progress.add(
           switch (state) {
             ScopeProgress(:final progress) => '$progress',
@@ -135,21 +143,23 @@ void main() {
             )
             .toList();
 
-    test('not failed', () {
-      myFakeAsync((fakeAsync) {
-        final dependencies = TestDependencies();
-        final progress = fakeAsync
-            .waitFuture(
-              handleInit(
-                dependencies,
-                cancel: const Duration(milliseconds: 50),
-              ),
-            )
-            .result;
-        print(progress.join('\n'));
-        print(states(dependencies).join('\n'));
-      });
-    });
+    // For debug
+    //
+    // test('not failed', () {
+    //   myFakeAsync((fakeAsync) {
+    //     final dependencies = TestDependencies();
+    //     final progress = fakeAsync
+    //         .waitFuture(
+    //           handleInit(
+    //             dependencies,
+    //             cancel: const Duration(milliseconds: 50),
+    //           ),
+    //         )
+    //         .result;
+    //     print(progress.join('\n'));
+    //     print(states(dependencies).join('\n'));
+    //   });
+    // });
 
     test('normal', () {
       myFakeAsync((fakeAsync) {
@@ -220,35 +230,41 @@ void main() {
     });
 
     group('one error', () {
-      test('failed: #4', () {
-        myFakeAsync((fakeAsync) {
-          final dependencies = TestDependencies(failed: {'#4'});
-          final progress =
-              fakeAsync.waitFuture(handleInit(dependencies)).result;
-          print(progress);
-          print(states(dependencies).join('\n'));
-        });
-      });
+      // For debug
+      //
+      // test('failed: #4', () {
+      //   myFakeAsync((fakeAsync) {
+      //     final dependencies = TestDependencies(failed: {'#4'});
+      //     final progress =
+      //         fakeAsync.waitFuture(handleInit(dependencies)).result;
+      //     print(progress);
+      //     print(states(dependencies).join('\n'));
+      //   });
+      // });
 
-      test('failed: #4 and #3', () {
-        myFakeAsync((fakeAsync) {
-          final dependencies = TestDependencies(failed: {'#4', '#3'});
-          final progress =
-              fakeAsync.waitFuture(handleInit(dependencies)).result;
-          print(progress);
-          print(states(dependencies).join('\n'));
-        });
-      });
+      // For debug
+      //
+      // test('failed: #4 and #3', () {
+      //   myFakeAsync((fakeAsync) {
+      //     final dependencies = TestDependencies(failed: {'#4', '#3'});
+      //     final progress =
+      //         fakeAsync.waitFuture(handleInit(dependencies)).result;
+      //     print(progress);
+      //     print(states(dependencies).join('\n'));
+      //   });
+      // });
 
-      test('failed: #4, #3 and #2', () {
-        myFakeAsync((fakeAsync) {
-          final dependencies = TestDependencies(failed: {'#4', '#3', '#2'});
-          final progress =
-              fakeAsync.waitFuture(handleInit(dependencies)).result;
-          print(progress);
-          print(states(dependencies).join('\n'));
-        });
-      });
+      // For debug
+      //
+      // test('failed: #4, #3 and #2', () {
+      //   myFakeAsync((fakeAsync) {
+      //     final dependencies = TestDependencies(failed: {'#4', '#3', '#2'});
+      //     final progress =
+      //         fakeAsync.waitFuture(handleInit(dependencies)).result;
+      //     print(progress);
+      //     print(states(dependencies).join('\n'));
+      //   });
+      // });
 
       test('failed: dep1', () {
         myFakeAsync((fakeAsync) {

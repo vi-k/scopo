@@ -9,12 +9,12 @@ environment:
 dependencies:
   ansi_escape_codes: ^2.1.0
   bloc: ^9.1.0
-  cupertino_icons: ^1.0.8
   equatable: ^2.0.7
   flutter:
     sdk: flutter
   flutter_markdown_plus: ^1.0.5
   flutter_syntax_view: ^4.1.7
+  pkglog: ^0.1.1
   scopo:
     path: ../..
   shared_preferences: ^2.5.3

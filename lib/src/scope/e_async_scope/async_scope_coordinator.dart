@@ -58,10 +58,10 @@ final class _AsyncScopeCoordinatorElement extends ScopeWidgetElementBase<
         key,
         remove: () {
           _queues.remove(key);
-          _i(null, 'queue for [$key] removed');
+          _log.d('exit', () => 'queue for [$key] removed');
         },
       );
-      _i(null, 'queue for [$key] created');
+      _log.d('enter', () => 'queue for [$key] created');
       return q;
     });
 

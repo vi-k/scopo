@@ -32,8 +32,8 @@ Stream<T> runStreamGuarded<T>(
   StreamSubscription<T>? subscription;
   Completer<void>? cancelCompleter;
 
-  String source() =>
-      'runStreamGuarded${debugName == null ? '' : '($debugName)'}';
+  final l = log
+      .withSource('runStreamGuarded${debugName == null ? '' : '($debugName)'}');
 
   void pause() {
     subscription?.pause();
@@ -46,7 +46,7 @@ Stream<T> runStreamGuarded<T>(
   /// Отменяет все подписки, ждёт их завершения и передаёт возникшие
   /// ошибки.
   Future<void> cancel() async {
-    d(source, 'cancel');
+    l.v('cancel');
 
     var innerCompleter = cancelCompleter;
     if (innerCompleter == null) {
@@ -56,12 +56,12 @@ Stream<T> runStreamGuarded<T>(
       cancelCompleter = innerCompleter;
 
       try {
-        d(source, 'await subscription.cancel()');
+        l.v('await subscription.cancel()');
         await subscription?.cancel();
-        d(source, 'await subscription.cancel() done');
+        l.v('await subscription.cancel() done');
         // ignore: avoid_catching_errors
       } on Object catch (error, stackTrace) {
-        d(source, 'onPostCancelError($error)');
+        l.v(() => 'onPostCancelError($error)');
         onPostCancelError(error, stackTrace);
       } finally {
         subscription = null;
@@ -70,7 +70,7 @@ Stream<T> runStreamGuarded<T>(
     }
 
     await innerCompleter.future;
-    d(source, 'cancel done');
+    l.v('cancel done');
   }
 
   controller
@@ -81,12 +81,12 @@ Stream<T> runStreamGuarded<T>(
       subscription = stream.listen(
         controller.add,
         onError: (Object error, StackTrace stacktrace) {
-          d(source, 'controller.addError($error)');
+          l.v(() => 'controller.addError($error)');
           controller.addError(error, stacktrace);
           cancel(); // ignore: discarded_futures
         },
         onDone: () {
-          d(source, 'subscription.onDone');
+          l.v('subscription.onDone');
           subscription = null;
           controller.close(); // ignore: discarded_futures
         },

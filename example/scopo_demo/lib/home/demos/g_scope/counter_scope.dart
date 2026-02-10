@@ -24,7 +24,7 @@ final class CounterController with ChangeNotifier {
   }
 
   Future<void> init() async {
-    await Future<void>.delayed(const Duration(seconds: 2));
+    await Future<void>.delayed(const Duration(milliseconds: 1000));
     _count = 0;
   }
 
@@ -32,7 +32,7 @@ final class CounterController with ChangeNotifier {
   Future<void> dispose() async {
     super.dispose();
 
-    await Future<void>.delayed(const Duration(seconds: 1));
+    await Future<void>.delayed(const Duration(milliseconds: 500));
     _count = null;
   }
 }
@@ -58,20 +58,18 @@ final class CounterDependencies
 
   @override
   ScopeDependency buildDependencies(BuildContext context) {
-    return sequential('', [
-      concurrent('concurrent group', [
-        dep('counterController', (dep) async {
-          counterController = CounterController(
-            debugSource: debugSource,
-            debugName: debugName,
-          );
-          await counterController.init();
-          dep.dispose = counterController.dispose;
-        }),
-        dep('test1', (_) async {
-          await Future<void>.delayed(const Duration(milliseconds: 500));
-        }),
-      ]),
+    return concurrent('', [
+      dep('counterController', (dep) async {
+        counterController = CounterController(
+          debugSource: debugSource,
+          debugName: debugName,
+        );
+        await counterController.init();
+        dep.dispose = counterController.dispose;
+      }),
+      dep('test1', (_) async {
+        await Future<void>.delayed(const Duration(milliseconds: 500));
+      }),
       dep('test2', (_) async {
         await Future<void>.delayed(const Duration(milliseconds: 500));
       }),
@@ -200,7 +198,7 @@ final class CounterState
 
     console.log(_debugSource, '$_debugName: initialize state');
 
-    await Future<void>.delayed(const Duration(seconds: 2));
+    await Future<void>.delayed(const Duration(milliseconds: 1000));
 
     console.log(_debugSource, '$_debugName: initialized');
   }
@@ -208,7 +206,7 @@ final class CounterState
   @override
   Future<void> disposeAsync() async {
     console.log(_debugSource, '$_debugName: dispose state');
-    await Future<void>.delayed(const Duration(seconds: 1));
+    await Future<void>.delayed(const Duration(milliseconds: 500));
   }
 
   @override

@@ -53,6 +53,14 @@ abstract base class ScopeWidgetCore<W extends ScopeWidgetCore<W, E>,
 abstract base class ScopeWidgetElementBase<W extends ScopeWidgetCore<W, E>,
         E extends ScopeWidgetElementBase<W, E>> extends InheritedElement
     implements ScopeInheritedElement<W> {
+  late final _log = log.withSourceAndParam<String>(
+    widget.toStringShort(showHashCode: true),
+    (method, message) {
+      final text = Logger.objToString(message);
+      return '[$method]${text == null ? '' : ' $text'}';
+    },
+  );
+
   /// Список зависимостей при подписке элемента на самого себя.
   ///
   /// [InheritedElement] не поддерживает подписку на самого себя (блокируется
@@ -241,42 +249,6 @@ abstract base class ScopeWidgetElementBase<W extends ScopeWidgetCore<W, E>,
   @nonVirtual
   @override
   Widget build() => buildChild();
-
-  String _buildMessage(String? method, Object? message) {
-    final text = ScopeLog.objToString(message);
-    return '${method == null ? '' : '[$method] '}${text ?? ''}';
-  }
-
-  void _d(String? method, [Object? message]) {
-    assert(method != null || message != null);
-    d(
-      () => widget.toStringShort(showHashCode: true),
-      () => _buildMessage(method, message),
-    );
-  }
-
-  void _i(String? method, [Object? message]) {
-    assert(method != null || message != null);
-    i(
-      () => widget.toStringShort(showHashCode: true),
-      () => _buildMessage(method, message),
-    );
-  }
-
-  void _e(
-    String? method,
-    Object? message, {
-    Object? error,
-    StackTrace? stackTrace,
-  }) {
-    assert(method != null || message != null);
-    e(
-      () => widget.toStringShort(showHashCode: true),
-      () => _buildMessage(method, message),
-      error: error,
-      stackTrace: stackTrace,
-    );
-  }
 
   @override
   String toStringShort({bool showHashCode = false}) =>

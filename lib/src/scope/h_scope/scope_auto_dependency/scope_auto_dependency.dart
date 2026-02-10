@@ -7,6 +7,14 @@ typedef ScopeAutoDependenciesStream<T extends ScopeDependencies>
 /// {@category Scope}
 abstract base class ScopeAutoDependencies<T extends ScopeDependencies,
     C extends Object?> implements ScopeDependencies {
+  late final _log = log.withSourceAndParam<String>(
+    '$T(#${shortHash(this)})',
+    (method, message) {
+      final text = Logger.objToString(message);
+      return '[$method]${text == null ? '' : ' $text'}';
+    },
+  );
+
   bool get autoDisposeOnError => true;
 
   ScopeDependency get root =>
@@ -24,10 +32,9 @@ abstract base class ScopeAutoDependencies<T extends ScopeDependencies,
     final progressIterator = ProgressIterator(dependencies.count);
 
     try {
-      print(T);
       yield* dependencies.runInit().map((path) {
         final step = progressIterator.nextStep();
-        _d('init', '$path ($step)');
+        _log.d('init', () => '$path ($step)');
         return ScopeProgress(ScopeAutoDependenciesProgress(path, step));
       });
 
@@ -35,11 +42,9 @@ abstract base class ScopeAutoDependencies<T extends ScopeDependencies,
         yield ScopeReady(this as T);
       }
     } finally {
-      print('$T finally');
       if (!dependencies.isInitialized && autoDisposeOnError) {
         await dispose();
       }
-      // autoDisposeOnError
     }
   }
 
@@ -50,13 +55,13 @@ abstract base class ScopeAutoDependencies<T extends ScopeDependencies,
       return;
     }
 
-    _i('dispose');
+    _log.d('dispose', null);
 
     final completer = Completer<void>();
 
     dependencies.runDispose().listen(
-      (dep) {
-        print('disposed: $dep');
+      (path) {
+        _log.d('dispose', path);
       },
       onError: (Object e) {},
       onDone: completer.complete,
@@ -65,7 +70,7 @@ abstract base class ScopeAutoDependencies<T extends ScopeDependencies,
 
     await completer.future;
 
-    _i('dispose', 'done');
+    _log.d('dispose', 'done');
   }
 
   ScopeDependency dep(String name, FutureOr<void> Function(DepHelper) init) =>
@@ -111,39 +116,6 @@ abstract base class ScopeAutoDependencies<T extends ScopeDependencies,
           ScopeDependencySuccessStates() => false,
         },
       );
-
-  String _buildMessage(String method, Object? message) {
-    final text = ScopeLog.objToString(message);
-    return '[$method]${text == null ? '' : ' $text'}';
-  }
-
-  void _d(String method, [Object? message]) {
-    d(
-      () => '$T(#${shortHash(this)})',
-      () => _buildMessage(method, message),
-    );
-  }
-
-  void _i(String method, [Object? message]) {
-    i(
-      () => '$T(#${shortHash(this)})',
-      () => _buildMessage(method, message),
-    );
-  }
-
-  void _e(
-    String method,
-    Object? message, {
-    Object? error,
-    StackTrace? stackTrace,
-  }) {
-    e(
-      () => '$T(#$hashCode)',
-      () => _buildMessage(method, message),
-      error: error,
-      stackTrace: stackTrace,
-    );
-  }
 }
 
 final class ScopeDependencyInfo {

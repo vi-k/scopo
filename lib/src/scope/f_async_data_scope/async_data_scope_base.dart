@@ -123,28 +123,4 @@ final class _AsyncDataScopeElement<W extends AsyncDataScopeBase<W, T>,
         AsyncScopeError(:final error, :final stackTrace) =>
           widget.buildOnError(this, error, stackTrace),
       };
-
-  @override
-  void mount(Element? parent, Object? newSlot) {
-    _d('mount');
-    super.mount(parent, newSlot);
-  }
-
-  @override
-  void unmount() {
-    _d('unmount');
-    super.unmount();
-  }
-
-  @override
-  void activate() {
-    _d('activate');
-    super.activate();
-  }
-
-  @override
-  void deactivate() {
-    _d('deactivate');
-    super.deactivate();
-  }
 }

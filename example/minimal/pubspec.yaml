@@ -1,5 +1,5 @@
 name: minimal
-description: "A new Flutter project."
+description: "Minimal scopo demo"
 publish_to: "none"
 version: 0.1.0
 
@@ -7,8 +7,10 @@ environment:
   sdk: ^3.1.0
 
 dependencies:
+  ansi_escape_codes: ^2.1.0
   flutter:
     sdk: flutter
+  pkglog: ^0.1.1
   scopo:
     path: ../..
   shared_preferences: ^2.5.3
