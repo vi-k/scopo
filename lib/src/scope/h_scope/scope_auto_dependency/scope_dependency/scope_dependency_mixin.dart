@@ -88,7 +88,7 @@ mixin ScopeDependencyMixin implements ScopeDependency {
     ScopeDependencyFailedStates Function(Object error, StackTrace stackTrace)
         defaultState,
   ) {
-    _log.d(() => '[handleError] $wrappedName', error);
+    _log.d(() => '[handleError] $wrappedName', error: error);
 
     // Добавляем ошибку в состояние.
     _addErrorToState(error, stackTrace, defaultState);
@@ -133,7 +133,7 @@ mixin ScopeDependencyMixin implements ScopeDependency {
     ScopeDependencyCancelledStates Function(Object error, StackTrace stackTrace)
         defaultState,
   ) {
-    _log.d(() => '[handlePostCancelError] $wrappedName', error);
+    _log.d(() => '[handlePostCancelError] $wrappedName', error: error);
 
     if (error is ParallelWaitError<void, List<AsyncError?>>) {
       for (final error in error.errors.nonNulls) {

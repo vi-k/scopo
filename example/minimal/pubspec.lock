@@ -185,13 +185,12 @@ packages:
     source: hosted
     version: "2.3.0"
   pkglog:
-    dependency: "direct main"
+    dependency: transitive
     description:
-      name: pkglog
-      sha256: "16645e511c0d728bfe23be253ffd579ec91939c4c128271f9318c384f661680e"
-      url: "https://pub.dev"
-    source: hosted
-    version: "0.1.1"
+      path: "../../../pkglog"
+      relative: true
+    source: path
+    version: "0.2.3"
   platform:
     dependency: transitive
     description:

@@ -245,7 +245,7 @@ abstract base class AsyncScopeElementBase<W extends AsyncScopeCore<W, E>,
     }).listen(
       (_) {},
       onError: (Object error, StackTrace stackTrace) {
-        _log.e('init', 'failed', error, stackTrace);
+        _log.e('init', 'failed', error: error, stackTrace: stackTrace);
 
         _model.update(
           AsyncScopeError(

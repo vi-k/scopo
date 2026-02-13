@@ -14,7 +14,6 @@ dependencies:
     sdk: flutter
   flutter_markdown_plus: ^1.0.5
   flutter_syntax_view: ^4.1.7
-  pkglog: ^0.1.1
   scopo:
     path: ../..
   shared_preferences: ^2.5.3

@@ -7,12 +7,9 @@ typedef ScopeAutoDependenciesStream<T extends ScopeDependencies>
 /// {@category Scope}
 abstract base class ScopeAutoDependencies<T extends ScopeDependencies,
     C extends Object?> implements ScopeDependencies {
-  late final _log = log.withSourceAndParam<String>(
-    '$T(#${shortHash(this)})',
-    (method, message) {
-      final text = Logger.objToString(message);
-      return '[$method]${text == null ? '' : ' $text'}';
-    },
+  late final _log = log.withContext<String>(
+    () => '$T(#${shortHash(this)})',
+    (method, message) => '$method${message.isEmpty ? '' : ' | $message'}',
   );
 
   bool get autoDisposeOnError => true;

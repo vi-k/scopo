@@ -1,3 +1,7 @@
+## 0.7.1
+
+* update logging
+
 ## 0.7.0
 * [breaking changes] rename `ScopeQueueMixin` to `ScopeAutoDependencies` and
   refactor.

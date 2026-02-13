@@ -10,7 +10,6 @@ dependencies:
   ansi_escape_codes: ^2.1.0
   flutter:
     sdk: flutter
-  pkglog: ^0.1.1
   scopo:
     path: ../..
   shared_preferences: ^2.5.3

@@ -2,37 +2,26 @@ import 'dart:io';
 
 import 'package:ansi_escape_codes/ansi_escape_codes.dart' as ansi;
 import 'package:flutter/material.dart';
-import 'package:pkglog/pkglog.dart';
 import 'package:scopo/scopo.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {
-  ScopeConfig.isDebug = true;
+  ScopeConfig.logLevel = ScopeLogLevel.debug;
 
-  for (final level in LogLevel.values) {
+  for (final level in ScopeLogLevel.values) {
     final printer = ansi.AnsiPrinter(
       ansiCodesEnabled: !Platform.isIOS,
       defaultState: ansi.SgrPlainState(
         foreground: switch (level) {
-          LogLevel.verbose => const ansi.Color256(ansi.Colors.gray8),
-          LogLevel.debug => const ansi.Color256(ansi.Colors.gray12),
-          LogLevel.info => const ansi.Color256(ansi.Colors.rgb345),
-          LogLevel.warning => const ansi.Color256(ansi.Colors.rgb440),
-          LogLevel.error => const ansi.Color256(ansi.Colors.rgb400),
-          LogLevel.shout => const ansi.Color256(ansi.Colors.rgb550),
-        },
-        background: switch (level) {
-          LogLevel.verbose => null,
-          LogLevel.debug => null,
-          LogLevel.info => null,
-          LogLevel.warning => null,
-          LogLevel.error => null,
-          LogLevel.shout => const ansi.Color256(ansi.Colors.rgb300),
+          ScopeLogLevel.debug => const ansi.Color256(ansi.Colors.gray12),
+          ScopeLogLevel.info => const ansi.Color256(ansi.Colors.rgb345),
+          ScopeLogLevel.warning => const ansi.Color256(ansi.Colors.rgb440),
+          ScopeLogLevel.error => const ansi.Color256(ansi.Colors.rgb400),
         },
       ),
     );
 
-    ScopeConfig.logger[level].print = printer.print;
+    ScopeConfig.setLogPrinterFor(level, printer.print);
   }
 
   runApp(App(title: 'scopo minimal demo'));

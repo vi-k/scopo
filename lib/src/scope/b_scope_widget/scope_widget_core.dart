@@ -53,12 +53,9 @@ abstract base class ScopeWidgetCore<W extends ScopeWidgetCore<W, E>,
 abstract base class ScopeWidgetElementBase<W extends ScopeWidgetCore<W, E>,
         E extends ScopeWidgetElementBase<W, E>> extends InheritedElement
     implements ScopeInheritedElement<W> {
-  late final _log = log.withSourceAndParam<String>(
-    widget.toStringShort(showHashCode: true),
-    (method, message) {
-      final text = Logger.objToString(message);
-      return '[$method]${text == null ? '' : ' $text'}';
-    },
+  late final _log = log.withContext<String>(
+    () => widget.toStringShort(showHashCode: true),
+    (method, message) => '$method${message.isEmpty ? '' : ' | $message'}',
   );
 
   /// Список зависимостей при подписке элемента на самого себя.

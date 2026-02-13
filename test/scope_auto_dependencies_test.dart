@@ -9,7 +9,7 @@ import 'package:test/test.dart';
 import 'utils/logging.dart';
 import 'utils/my_fake_async.dart';
 
-final _log = log.withSourceAndParam<String>(
+final _log = log.withContext<String>(
   'test',
   (method, message) => '$method: $message',
 );
