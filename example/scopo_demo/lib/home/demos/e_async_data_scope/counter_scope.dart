@@ -130,6 +130,7 @@ final class CounterScope
     BuildContext context,
     Object error,
     StackTrace stackTrace,
+    Object? progress,
   ) {
     return Text('Error: $error');
   }

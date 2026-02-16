@@ -187,10 +187,11 @@ packages:
   pkglog:
     dependency: transitive
     description:
-      path: "../../../pkglog"
-      relative: true
-    source: path
-    version: "0.2.3"
+      name: pkglog
+      sha256: b21693aee11332afcdf4fc493d34266057a52e33c1e058934ac68f2eae39a410
+      url: "https://pub.dev"
+    source: hosted
+    version: "0.2.4"
   platform:
     dependency: transitive
     description:
@@ -213,7 +214,7 @@ packages:
       path: "../.."
       relative: true
     source: path
-    version: "0.7.0"
+    version: "0.7.1"
   shared_preferences:
     dependency: "direct main"
     description:

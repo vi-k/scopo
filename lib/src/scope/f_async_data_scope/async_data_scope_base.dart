@@ -39,6 +39,7 @@ abstract base class AsyncDataScopeBase<W extends AsyncDataScopeBase<W, T>,
     BuildContext context,
     Object error,
     StackTrace stackTrace,
+    Object? progress,
   );
 
   Widget buildOnReady(BuildContext context, T data);
@@ -120,7 +121,7 @@ final class _AsyncDataScopeElement<W extends AsyncDataScopeBase<W, T>,
         AsyncScopeProgress(:final progress) =>
           widget.buildOnInitializing(this, progress),
         AsyncScopeReady() => widget.buildOnReady(this, data),
-        AsyncScopeError(:final error, :final stackTrace) =>
-          widget.buildOnError(this, error, stackTrace),
+        AsyncScopeError(:final error, :final stackTrace, :final progress) =>
+          widget.buildOnError(this, error, stackTrace, progress),
       };
 }

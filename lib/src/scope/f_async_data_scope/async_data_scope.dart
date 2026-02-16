@@ -13,6 +13,7 @@ final class AsyncDataScope<T extends Object?>
     BuildContext context,
     Object error,
     StackTrace stackTrace,
+    Object? progress,
   ) errorBuilder;
   final Widget Function(BuildContext context, T data) builder;
 
@@ -47,8 +48,9 @@ final class AsyncDataScope<T extends Object?>
     BuildContext context,
     Object error,
     StackTrace stackTrace,
+    Object? progress,
   ) =>
-      errorBuilder(context, error, stackTrace);
+      errorBuilder(context, error, stackTrace, progress);
 
   @override
   Widget buildOnReady(BuildContext context, T data) => builder(context, data);

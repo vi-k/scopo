@@ -24,6 +24,7 @@ void main() {
       ansiCodesEnabled: !Platform.isIOS,
       defaultState: ansi.SgrPlainState(
         foreground: switch (level) {
+          ScopeLogLevel.verbose => const ansi.Color256(ansi.Colors.gray7),
           ScopeLogLevel.debug => const ansi.Color256(ansi.Colors.gray12),
           ScopeLogLevel.info => const ansi.Color256(ansi.Colors.rgb345),
           ScopeLogLevel.warning => const ansi.Color256(ansi.Colors.rgb440),

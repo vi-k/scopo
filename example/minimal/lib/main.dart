@@ -6,13 +6,14 @@ import 'package:scopo/scopo.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {
-  ScopeConfig.logLevel = ScopeLogLevel.debug;
+  ScopeConfig.logLevel = ScopeLogLevel.info;
 
   for (final level in ScopeLogLevel.values) {
     final printer = ansi.AnsiPrinter(
       ansiCodesEnabled: !Platform.isIOS,
       defaultState: ansi.SgrPlainState(
         foreground: switch (level) {
+          ScopeLogLevel.verbose => const ansi.Color256(ansi.Colors.gray7),
           ScopeLogLevel.debug => const ansi.Color256(ansi.Colors.gray12),
           ScopeLogLevel.info => const ansi.Color256(ansi.Colors.rgb345),
           ScopeLogLevel.warning => const ansi.Color256(ansi.Colors.rgb440),

@@ -29,6 +29,7 @@ abstract base class ScopeAutoDependencies<T extends ScopeDependencies,
     final progressIterator = ProgressIterator(dependencies.count);
 
     try {
+      _log.d('init', 'initialize...');
       yield* dependencies.runInit().map((path) {
         final step = progressIterator.nextStep();
         _log.d('init', () => '$path ($step)');
@@ -37,10 +38,14 @@ abstract base class ScopeAutoDependencies<T extends ScopeDependencies,
 
       if (dependencies.isInitialized) {
         yield ScopeReady(this as T);
+        _log.d('init', 'initialized');
       }
     } finally {
-      if (!dependencies.isInitialized && autoDisposeOnError) {
-        await dispose();
+      if (!dependencies.isInitialized) {
+        _log.d('init', 'not initialized');
+        if (autoDisposeOnError) {
+          await dispose();
+        }
       }
     }
   }
@@ -52,10 +57,9 @@ abstract base class ScopeAutoDependencies<T extends ScopeDependencies,
       return;
     }
 
-    _log.d('dispose', null);
-
     final completer = Completer<void>();
 
+    _log.d('dispose', 'dispose...');
     dependencies.runDispose().listen(
       (path) {
         _log.d('dispose', path);
@@ -66,8 +70,7 @@ abstract base class ScopeAutoDependencies<T extends ScopeDependencies,
     );
 
     await completer.future;
-
-    _log.d('dispose', 'done');
+    _log.d('dispose', 'disposed');
   }
 
   ScopeDependency dep(String name, FutureOr<void> Function(DepHelper) init) =>

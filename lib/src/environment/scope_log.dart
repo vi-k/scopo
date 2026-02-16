@@ -3,14 +3,16 @@ part of 'scope_config.dart';
 final Logger log = ScopeConfig.logger;
 
 enum ScopeLogLevel {
+  verbose,
   debug,
   info,
   warning,
   error;
 
-  static const ScopeLogLevel all = debug;
+  static const ScopeLogLevel all = verbose;
 
   LoggerLevel toLoggerLevel() => switch (this) {
+        ScopeLogLevel.verbose => LogLevel.verbose,
         ScopeLogLevel.debug => LogLevel.debug,
         ScopeLogLevel.info => LogLevel.info,
         ScopeLogLevel.warning => LogLevel.warning,
@@ -18,7 +20,7 @@ enum ScopeLogLevel {
       };
 
   static ScopeLogLevel fromLoggerLevel(LoggerLevel level) => switch (level) {
-        LogLevel.verbose => ScopeLogLevel.debug,
+        LogLevel.verbose => ScopeLogLevel.verbose,
         LogLevel.debug => ScopeLogLevel.debug,
         LogLevel.info => ScopeLogLevel.info,
         LogLevel.warning => ScopeLogLevel.warning,

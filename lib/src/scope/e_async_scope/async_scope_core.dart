@@ -174,7 +174,7 @@ abstract base class AsyncScopeElementBase<W extends AsyncScopeCore<W, E>,
   Future<void> _performAsyncInit() async {
     assert(model.state is AsyncScopeWaiting);
 
-    _log.i('init', null);
+    _log.d('init', 'prepare');
 
     // Register with parent scope.
     SchedulerBinding.instance.addPostFrameCallback((_) {
@@ -187,7 +187,7 @@ abstract base class AsyncScopeElementBase<W extends AsyncScopeCore<W, E>,
         widget.toStringShort(showHashCode: true),
       );
       _asyncScopeEntry = entry;
-      _log.d('init', 'wait for access to [$scopeKey]');
+      _log.d('init', () => 'wait for access to [$scopeKey]');
       await AsyncScopeCoordinator.enter(
         this,
         scopeKey,
@@ -196,7 +196,7 @@ abstract base class AsyncScopeElementBase<W extends AsyncScopeCore<W, E>,
         onTimeout: onScopeKeyTimeout,
       );
       if (entry.isCancelled) {
-        _log.i('init', () => 'access to [$scopeKey] cancelled');
+        _log.d('init', () => 'access to [$scopeKey] cancelled');
       } else {
         _log.d('init', () => 'access to [$scopeKey] obtained');
       }
@@ -208,6 +208,7 @@ abstract base class AsyncScopeElementBase<W extends AsyncScopeCore<W, E>,
       }
     }
 
+    _log.i('init', 'initialize...');
     _subscription = initAsync().asyncMap((state) {
       switch (_model.state) {
         case AsyncScopeWaiting():
@@ -239,7 +240,7 @@ abstract base class AsyncScopeElementBase<W extends AsyncScopeCore<W, E>,
                 _model.update(state);
               });
           }
-          _log.d('init', 'done');
+          _log.i('init', 'initialized');
           _initCompleter.complete();
       }
     }).listen(
@@ -260,6 +261,12 @@ abstract base class AsyncScopeElementBase<W extends AsyncScopeCore<W, E>,
 
         _initCompleter.complete();
       },
+      onDone: () {
+        if (!_initCompleter.isCompleted) {
+          _log.i('init', 'not initialized');
+          _initCompleter.complete();
+        }
+      },
       cancelOnError: true,
     );
 
@@ -267,7 +274,7 @@ abstract base class AsyncScopeElementBase<W extends AsyncScopeCore<W, E>,
   }
 
   Future<void> _performAsyncDispose() async {
-    _log.i('dispose', null);
+    _log.d('dispose', 'prepare');
 
     // Прерываем ожидание доступа, если ещё не завершено.
     if (_asyncScopeEntry case final entry? when entry.isWaiting) {
@@ -321,7 +328,7 @@ abstract base class AsyncScopeElementBase<W extends AsyncScopeCore<W, E>,
 
     try {
       if (model.state case AsyncScopeReady()) {
-        _log.d('dispose', 'dispose');
+        _log.i('dispose', 'dispose...');
         final result = disposeAsync();
         if (result is Future<void>) {
           await result;
@@ -330,7 +337,10 @@ abstract base class AsyncScopeElementBase<W extends AsyncScopeCore<W, E>,
         _log.d('dispose', 'do not dispose of');
       }
 
-      _log.d('dispose', 'done');
+      _log.i('dispose', 'disposed');
+    } on Object {
+      _log.e('dispose', 'failed', error: error, stackTrace: stackTrace);
+      rethrow;
     } finally {
       _asyncScopeParentEntry?.unregister();
 

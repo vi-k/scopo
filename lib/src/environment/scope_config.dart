@@ -32,13 +32,13 @@ abstract final class ScopeConfig {
   }
 
   // ignore: use_setters_to_change_properties
-  static void setLogPrinter(void Function(String) printer) {
+  static void setLogPrinter(void Function(String)? printer) {
     logger.printer = printer;
   }
 
   static void setLogPrinterFor(
     ScopeLogLevel level,
-    void Function(String) printer,
+    void Function(String)? printer,
   ) {
     logger[level.toLoggerLevel()].printer = printer;
   }

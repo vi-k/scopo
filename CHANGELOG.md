@@ -1,6 +1,7 @@
-## 0.7.1
+## 0.7.1-0.7.2
 
 * update logging
+* minor changes
 
 ## 0.7.0
 * [breaking changes] rename `ScopeQueueMixin` to `ScopeAutoDependencies` and
