@@ -3,9 +3,11 @@ part of '../scope.dart';
 /// {@category AsyncDataScope}
 final class AsyncDataScope<T extends Object?>
     extends AsyncDataScopeBase<AsyncDataScope<T>, T> {
+  final void Function(BuildContext context)? mount;
   final Stream<AsyncDataScopeInitState<Object, T>> Function(
     BuildContext context,
   ) init;
+  final void Function()? unmount;
   final FutureOr<void> Function(T data) dispose;
   final Widget Function(BuildContext context)? waitingBuilder;
   final Widget Function(BuildContext context, Object? progress) initBuilder;
@@ -21,7 +23,9 @@ final class AsyncDataScope<T extends Object?>
     super.key,
     super.tag,
     super.scopeKey,
+    this.mount,
     required this.init,
+    this.unmount,
     required this.dispose,
     this.waitingBuilder,
     required this.initBuilder,
@@ -30,8 +34,14 @@ final class AsyncDataScope<T extends Object?>
   });
 
   @override
+  void onMount(BuildContext context) => mount?.call(context);
+
+  @override
   Stream<AsyncDataScopeInitState<Object, T>> initData(BuildContext context) =>
       init(context);
+
+  @override
+  void onUnmount() => unmount?.call();
 
   @override
   FutureOr<void> disposeData(T data) => dispose(data);

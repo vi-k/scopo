@@ -79,6 +79,9 @@ final class AppDependencies implements ScopeDependencies {
   }
 
   @override
+  void unmount() {}
+
+  @override
   Future<void> dispose() async {
     // Утилизируем все зависимости параллельно.
     await [

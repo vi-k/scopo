@@ -22,7 +22,15 @@ abstract base class AsyncScopeBase<W extends AsyncScopeBase<W>>
     super.child, // Not used by default. You can use it at your own discretion.
   });
 
+  //
+  // Overriding block
+  //
+
+  void onMount(BuildContext context) {}
+
   Stream<AsyncScopeInitState> initAsync(BuildContext context);
+
+  void onUnmount() {}
 
   FutureOr<void> disposeAsync();
 
@@ -37,6 +45,10 @@ abstract base class AsyncScopeBase<W extends AsyncScopeBase<W>>
     Object error,
     StackTrace stackTrace,
   );
+
+  //
+  // End of overriding block
+  //
 
   @override
   // ignore: library_private_types_in_public_api
@@ -94,7 +106,19 @@ final class _AsyncScopeElement<W extends AsyncScopeBase<W>>
   Duration? get pauseAfterInitialization => widget.pauseAfterInitialization;
 
   @override
+  void mount(Element? parent, Object? newSlot) {
+    super.mount(parent, newSlot);
+    widget.onMount(this);
+  }
+
+  @override
   Stream<AsyncScopeInitState> initAsync() => widget.initAsync(this);
+
+  @override
+  void unmount() {
+    widget.onUnmount();
+    super.unmount();
+  }
 
   @override
   FutureOr<void> disposeAsync() => widget.disposeAsync();

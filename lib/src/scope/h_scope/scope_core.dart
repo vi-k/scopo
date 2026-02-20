@@ -137,6 +137,12 @@ abstract base class ScopeElementBase<
       );
 
   @override
+  void unmount() {
+    _dependencies?.unmount();
+    super.unmount();
+  }
+
+  @override
   Future<void> disposeAsync() async {
     await super.disposeAsync();
     final result = _dependencies?.dispose();

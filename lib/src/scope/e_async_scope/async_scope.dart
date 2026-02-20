@@ -2,7 +2,9 @@ part of '../scope.dart';
 
 /// {@category AsyncScope}
 final class AsyncScope extends AsyncScopeBase<AsyncScope> {
+  final void Function(BuildContext context)? mount;
   final Stream<AsyncScopeInitState> Function(BuildContext context) init;
+  final void Function()? unmount;
   final FutureOr<void> Function() dispose;
   final Widget Function(BuildContext context)? waitingBuilder;
   final Widget Function(BuildContext context) initBuilder;
@@ -17,7 +19,9 @@ final class AsyncScope extends AsyncScopeBase<AsyncScope> {
     super.key,
     super.tag,
     super.scopeKey,
+    this.mount,
     required this.init,
+    this.unmount,
     required this.dispose,
     this.waitingBuilder,
     required this.initBuilder,
@@ -26,7 +30,13 @@ final class AsyncScope extends AsyncScopeBase<AsyncScope> {
   });
 
   @override
+  void onMount(BuildContext context) => mount?.call(context);
+
+  @override
   Stream<AsyncScopeInitState> initAsync(BuildContext context) => init(context);
+
+  @override
+  void onUnmount() => unmount?.call();
 
   @override
   FutureOr<void> disposeAsync() => dispose();

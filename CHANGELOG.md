@@ -1,3 +1,8 @@
+## 0.7.3
+
+* add `onMount`/`onUnmount` calls to `AsyncScope` and `AsyncDataScope`.
+* add `unmount` to `ScopeDependencies`, `ScopeDependency` and `DepHelper`.
+
 ## 0.7.1-0.7.2
 
 * update logging

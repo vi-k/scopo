@@ -29,6 +29,7 @@ abstract interface class ScopeDependency {
   Stream<String> init();
   Stream<String> runInit();
 
+  void unmount();
   Stream<String> dispose();
   Stream<String> runDispose();
 

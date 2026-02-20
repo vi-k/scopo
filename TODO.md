@@ -1,5 +1,6 @@
 # TODO
 
+- В DepHelper добавить unmount, или dispose/disposeAsync.
 - Переделать логгер: добавить verbose, сделать включение/отключение по уровням,
   сделать общий класс, чтобы было `log.d` вместо `d`.
 - Навести порядок логов в `ScopeAutoDependencies`:

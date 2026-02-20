@@ -30,6 +30,11 @@ final class _ScopeDependencyImpl with ScopeDependencyMixin {
   }
 
   @override
+  void unmount() {
+    _helper?.unmount?.call();
+  }
+
+  @override
   Stream<String> dispose() async* {
     if (_state is! ScopeDependencyInitialized) {
       return;
@@ -61,6 +66,8 @@ final class DepHelper {
 
   String get name =>
       _dep?.name ?? (throw StateError('helper already disposed'));
+
+  void Function()? unmount;
 
   FutureOr<void> Function()? dispose;
 }

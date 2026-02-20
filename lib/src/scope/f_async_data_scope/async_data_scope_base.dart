@@ -27,7 +27,11 @@ abstract base class AsyncDataScopeBase<W extends AsyncDataScopeBase<W, T>,
   // Overriding block
   //
 
+  void onMount(BuildContext context) {}
+
   Stream<AsyncDataScopeInitState<Object, T>> initData(BuildContext context);
+
+  void onUnmount() {}
 
   FutureOr<void> disposeData(T data);
 
@@ -108,8 +112,20 @@ final class _AsyncDataScopeElement<W extends AsyncDataScopeBase<W, T>,
   Duration? get pauseAfterInitialization => widget.pauseAfterInitialization;
 
   @override
+  void mount(Element? parent, Object? newSlot) {
+    super.mount(parent, newSlot);
+    widget.onMount(this);
+  }
+
+  @override
   Stream<AsyncDataScopeInitState<Object, T>> initDataAsync() =>
       widget.initData(this);
+
+  @override
+  void unmount() {
+    widget.onUnmount();
+    super.unmount();
+  }
 
   @override
   FutureOr<void> disposeAsync() => widget.disposeData(data);

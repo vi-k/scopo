@@ -51,6 +51,11 @@ abstract base class ScopeAutoDependencies<T extends ScopeDependencies,
   }
 
   @override
+  void unmount() {
+    _root?.unmount();
+  }
+
+  @override
   Future<void> dispose() async {
     final dependencies = _root;
     if (dependencies == null) {

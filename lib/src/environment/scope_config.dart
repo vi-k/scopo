@@ -7,7 +7,7 @@ part 'scope_log.dart';
 /// {@category debug}
 abstract final class ScopeConfig {
   @visibleForTesting
-  static final logger = Logger('scopo', level: LogLevel.info);
+  static final logger = Logger('scopo', level: LogLevel.off);
 
   // ignore: avoid_setters_without_getters
   static set logLevel(ScopeLogLevel level) {

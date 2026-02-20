@@ -5,6 +5,8 @@ part of '../scope.dart';
 /// {@category Scope}
 // ignore: one_member_abstracts
 abstract interface class ScopeDependencies {
+  void unmount();
+
   FutureOr<void> dispose();
 }
 

@@ -82,6 +82,13 @@ final class _ScopeDependencySequential extends ScopeDependencyGroup {
   }
 
   @override
+  void unmount() {
+    for (final dependency in _dependencies) {
+      dependency.unmount();
+    }
+  }
+
+  @override
   Stream<String> dispose() async* {
     final dependencies = _dependencies //
         .reversed
@@ -103,6 +110,13 @@ final class _ScopeDependencyConcurrent extends ScopeDependencyGroup {
         .map((dep) => dep.runInit())
         ._mergeStreams()
         .map(_path);
+  }
+
+  @override
+  void unmount() {
+    for (final dependency in _dependencies) {
+      dependency.unmount();
+    }
   }
 
   @override
@@ -159,100 +173,4 @@ extension<T> on Iterable<Stream<T>> {
     };
     return controller.stream;
   }
-
-  // /// Запускает все потоки параллельно и прерывает их при ошибке в одном из них.
-  // ///
-  // /// При ошибке результирующий поток дожидается закрытия всех потоков и
-  // /// передаёт все ошибки, возникшие после отмены. То же самое происходит при
-  // /// закрытии результирующего потока.
-  // Stream<T> _concurrent() {
-  //   // Не sync, чтобы во время передачи ошибок в [cancel] контроллер не был
-  //   // закрыт.
-  //   final controller = StreamController<T>();
-
-  //   controller.onListen = () {
-  //     final subscriptions = <StreamSubscription<T>>[];
-  //     Completer<void>? cancelCompleter;
-
-  //     void pause() {
-  //       for (final subscription in subscriptions) {
-  //         subscription.pause();
-  //       }
-  //     }
-
-  //     void resume() {
-  //       for (final subscription in subscriptions) {
-  //         subscription.resume();
-  //       }
-  //     }
-
-  //     /// Отменяет все подписки, ждёт их завершения и передаёт возникшие
-  //     /// ошибки.
-  //     Future<void> cancel() async {
-  //       d('_concurrent', 'cancel');
-
-  //       var innerCompleter = cancelCompleter;
-
-  //       try {
-  //         if (innerCompleter == null) {
-  //           // +++
-  //           controller.close(); // ignore: unawaited_futures
-  //           // controller.addError(Exception('test'), StackTrace.empty);
-
-  //           innerCompleter = cancelCompleter = Completer<void>();
-  //           try {
-  //             d('_concurrent', 'await subscriptions');
-  //             await subscriptions.map((s) => s.cancel()).wait;
-  //             d('_concurrent', 'await subscriptions done');
-  //             innerCompleter.complete();
-
-  //             // ignore: avoid_catching_errors
-  //           } on ParallelWaitError<void, List<AsyncError?>> catch (error) {
-  //             if (controller.isClosed) {
-  //               innerCompleter.completeError(error);
-  //             } else {
-  //               for (final entry in error.errors.nonNulls) {
-  //                 controller.addError(entry.error, entry.stackTrace);
-  //               }
-  //               innerCompleter.complete();
-  //             }
-  //           }
-  //         }
-
-  //         await innerCompleter.future;
-  //       } finally {
-  //         // +++
-  //         // controller.close(); // ignore: unawaited_futures
-  //         d('_concurrent', 'cancel done');
-  //       }
-  //     }
-
-  //     controller
-  //       ..onPause = pause
-  //       ..onResume = resume
-  //       ..onCancel = cancel;
-
-  //     for (final stream in this) {
-  //       final subscription = stream.listen(
-  //         controller.add,
-  //         onError: (Object error, StackTrace stacktrace) {
-  //           d('_concurrent', 'error: $error');
-  //           controller.addError(error, stacktrace);
-  //           cancel(); // ignore: discarded_futures
-  //         },
-  //       );
-
-  //       subscription.onDone(() {
-  //         subscriptions.remove(subscription);
-  //         if (subscriptions.isEmpty) {
-  //           d('_concurrent', 'subscriptions.isEmpty / controller.close()');
-  //           controller.close(); // ignore: discarded_futures
-  //         }
-  //       });
-
-  //       subscriptions.add(subscription);
-  //     }
-  //   };
-  //   return controller.stream;
-  // }
 }
