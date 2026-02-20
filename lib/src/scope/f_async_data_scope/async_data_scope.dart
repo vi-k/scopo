@@ -7,7 +7,7 @@ final class AsyncDataScope<T extends Object?>
   final Stream<AsyncDataScopeInitState<Object, T>> Function(
     BuildContext context,
   ) init;
-  final void Function()? unmount;
+  final void Function(T data)? unmount;
   final FutureOr<void> Function(T data) dispose;
   final Widget Function(BuildContext context)? waitingBuilder;
   final Widget Function(BuildContext context, Object? progress) initBuilder;
@@ -41,7 +41,7 @@ final class AsyncDataScope<T extends Object?>
       init(context);
 
   @override
-  void onUnmount() => unmount?.call();
+  void onUnmount(T data) => unmount?.call(data);
 
   @override
   FutureOr<void> disposeData(T data) => dispose(data);

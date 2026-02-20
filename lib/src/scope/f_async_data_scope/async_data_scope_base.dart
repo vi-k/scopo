@@ -31,7 +31,7 @@ abstract base class AsyncDataScopeBase<W extends AsyncDataScopeBase<W, T>,
 
   Stream<AsyncDataScopeInitState<Object, T>> initData(BuildContext context);
 
-  void onUnmount() {}
+  void onUnmount(T data) {}
 
   FutureOr<void> disposeData(T data);
 
@@ -123,7 +123,7 @@ final class _AsyncDataScopeElement<W extends AsyncDataScopeBase<W, T>,
 
   @override
   void unmount() {
-    widget.onUnmount();
+    widget.onUnmount(data);
     super.unmount();
   }
 
