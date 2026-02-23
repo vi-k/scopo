@@ -74,7 +74,10 @@ abstract base class AsyncDataScopeElementBase<
   //
 
   @override
-  T get data => _data ?? (throw StateError('Not initialized'));
+  T get data => switch (_data) {
+        final T data => data,
+        _ => throw StateError('Not initialized'),
+      };
   T? _data;
 
   @override

@@ -1,3 +1,9 @@
+## 0.7.5
+
+* fix bug: `data` in `AsyncDataScope` may be `null`.
+* fix bug: `unmount` in `AsyncDataScope` can be called before `data`
+  initialization.
+
 ## 0.7.3-0.7.4
 
 * add `onMount`/`onUnmount` calls to `AsyncScope` and `AsyncDataScope`.
