@@ -1,6 +1,6 @@
 name: scopo
 description: "A Flutter package for managing scopes and dependency injection within the widget tree"
-version: 0.7.5
+version: 0.8.0
 homepage: https://github.com/vi-k/scopo
 
 environment:
@@ -10,8 +10,8 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
+  logger_builder: ^0.1.3
   meta: ^1.16.0
-  pkglog: ^0.2.4
 
 dev_dependencies:
   ansi_escape_codes: ^2.1.0

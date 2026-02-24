@@ -128,6 +128,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "5.1.1"
+  logger_builder:
+    dependency: transitive
+    description:
+      name: logger_builder
+      sha256: "303d44bb190e5455ec8bf6707e9fa585cda7187ad2ffadbe44032cf09642c910"
+      url: "https://pub.dev"
+    source: hosted
+    version: "0.1.3"
   matcher:
     dependency: transitive
     description:
@@ -184,14 +192,6 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "2.3.0"
-  pkglog:
-    dependency: transitive
-    description:
-      name: pkglog
-      sha256: b21693aee11332afcdf4fc493d34266057a52e33c1e058934ac68f2eae39a410
-      url: "https://pub.dev"
-    source: hosted
-    version: "0.2.4"
   platform:
     dependency: transitive
     description:
@@ -214,7 +214,7 @@ packages:
       path: "../.."
       relative: true
     source: path
-    version: "0.7.1"
+    version: "0.7.5"
   shared_preferences:
     dependency: "direct main"
     description:

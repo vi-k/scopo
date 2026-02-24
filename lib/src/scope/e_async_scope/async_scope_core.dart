@@ -15,30 +15,21 @@ abstract base class AsyncScopeCore<W extends AsyncScopeCore<W, E>,
     BuildContext context, {
     required bool listen,
   }) =>
-      ScopeContext.maybeOf<W, E>(
-        context,
-        listen: listen,
-      );
+      ScopeContext.maybeOf<W, E>(context, listen: listen);
 
   static E
       of<W extends AsyncScopeCore<W, E>, E extends AsyncScopeElementBase<W, E>>(
     BuildContext context, {
     required bool listen,
   }) =>
-          ScopeContext.of<W, E>(
-            context,
-            listen: listen,
-          );
+          ScopeContext.of<W, E>(context, listen: listen);
 
   static V select<W extends AsyncScopeCore<W, E>,
           E extends AsyncScopeElementBase<W, E>, V extends Object?>(
     BuildContext context,
     V Function(E element) selector,
   ) =>
-      ScopeContext.select<W, E, V>(
-        context,
-        selector,
-      );
+      ScopeContext.select<W, E, V>(context, selector);
 }
 
 /// {@category AsyncScope}
@@ -167,14 +158,16 @@ abstract base class AsyncScopeElementBase<W extends AsyncScopeCore<W, E>,
       return true;
     });
 
-    _asyncScopeParentEntry = (parent ?? asyncScopeRoot)
-        .registerChild(widget.toStringShort(showHashCode: true));
+    _asyncScopeParentEntry = (parent ?? asyncScopeRoot).registerChild(
+      widget.toStringShort(showHashCode: true),
+    );
   }
 
   Future<void> _performAsyncInit() async {
     assert(model.state is AsyncScopeWaiting);
 
-    _log.d('init', 'prepare');
+    final initLog = _log.withAddedName('init');
+    initLog.d('prepare');
 
     // Register with parent scope.
     SchedulerBinding.instance.addPostFrameCallback((_) {
@@ -187,7 +180,7 @@ abstract base class AsyncScopeElementBase<W extends AsyncScopeCore<W, E>,
         widget.toStringShort(showHashCode: true),
       );
       _asyncScopeEntry = entry;
-      _log.d('init', () => 'wait for access to [$scopeKey]');
+      initLog.d(() => 'wait for access to [$scopeKey]');
       await AsyncScopeCoordinator.enter(
         this,
         scopeKey,
@@ -196,19 +189,19 @@ abstract base class AsyncScopeElementBase<W extends AsyncScopeCore<W, E>,
         onTimeout: onScopeKeyTimeout,
       );
       if (entry.isCancelled) {
-        _log.d('init', () => 'access to [$scopeKey] cancelled');
+        initLog.d(() => 'access to [$scopeKey] cancelled');
       } else {
-        _log.d('init', () => 'access to [$scopeKey] obtained');
+        initLog.d(() => 'access to [$scopeKey] obtained');
       }
 
       if (entry.isCancelled || !mounted) {
-        _log.i('init', 'cancelled');
+        initLog.i('cancelled');
         _initCompleter.complete();
         return;
       }
     }
 
-    _log.i('init', 'initialize...');
+    initLog.i('initialize...');
     _subscription = initAsync().asyncMap((state) {
       switch (_model.state) {
         case AsyncScopeWaiting():
@@ -222,7 +215,7 @@ abstract base class AsyncScopeElementBase<W extends AsyncScopeCore<W, E>,
 
       switch (state) {
         case AsyncScopeProgress():
-          _log.i('init', () => '${state.progress}');
+          initLog.i(() => '${state.progress}');
           _model.update(state);
         case AsyncScopeReady():
           if (pauseAfterInitialization case final pauseAfterInitialization?
@@ -240,13 +233,13 @@ abstract base class AsyncScopeElementBase<W extends AsyncScopeCore<W, E>,
                 _model.update(state);
               });
           }
-          _log.i('init', 'initialized');
+          initLog.i('initialized');
           _initCompleter.complete();
       }
     }).listen(
       (_) {},
       onError: (Object error, StackTrace stackTrace) {
-        _log.e('init', 'failed', error: error, stackTrace: stackTrace);
+        initLog.e('failed', error: error, stackTrace: stackTrace);
 
         _model.update(
           AsyncScopeError(
@@ -263,7 +256,7 @@ abstract base class AsyncScopeElementBase<W extends AsyncScopeCore<W, E>,
       },
       onDone: () {
         if (!_initCompleter.isCompleted) {
-          _log.i('init', 'not initialized');
+          initLog.i('not initialized');
           _initCompleter.complete();
         }
       },
@@ -274,11 +267,12 @@ abstract base class AsyncScopeElementBase<W extends AsyncScopeCore<W, E>,
   }
 
   Future<void> _performAsyncDispose() async {
-    _log.d('dispose', 'prepare');
+    final disposeLog = _log.withAddedName('dispose');
+    disposeLog.d('prepare');
 
     // Прерываем ожидание доступа, если ещё не завершено.
     if (_asyncScopeEntry case final entry? when entry.isWaiting) {
-      _log.d('dispose', () => 'cancel waiting for access to [$scopeKey]');
+      disposeLog.d(() => 'cancel waiting for access to [$scopeKey]');
       entry.cancel();
     }
 
@@ -287,18 +281,18 @@ abstract base class AsyncScopeElementBase<W extends AsyncScopeCore<W, E>,
       // TODO(nashol): сюда прилетят ошибки, возникшие уже после отмены
       await subscription.cancel();
       if (!_initCompleter.isCompleted) {
-        _log.i('init', 'cancelled');
+        _log.withAddedName('init').i('cancelled');
         _initCompleter.complete();
       }
     }
 
     if (!_initCompleter.isCompleted) {
-      _log.d('dispose', 'wait for initialization');
+      disposeLog.d('wait for initialization');
       await _initCompleter.future;
     }
 
     if (hasChildren) {
-      _log.d('dispose', () => 'wait for children (count: $childrenCount)');
+      disposeLog.d(() => 'wait for children (count: $childrenCount)');
       var future = waitForChildren();
       final timeout =
           waitForChildrenTimeout ?? ScopeConfig.defaultWaitForChildrenTimeout;
@@ -328,24 +322,24 @@ abstract base class AsyncScopeElementBase<W extends AsyncScopeCore<W, E>,
 
     try {
       if (model.state case AsyncScopeReady()) {
-        _log.i('dispose', 'dispose...');
+        disposeLog.i('dispose...');
         final result = disposeAsync();
         if (result is Future<void>) {
           await result;
         }
       } else {
-        _log.d('dispose', 'do not dispose of');
+        disposeLog.d('do not dispose of');
       }
 
-      _log.i('dispose', 'disposed');
+      disposeLog.i('disposed');
     } on Object {
-      _log.e('dispose', 'failed', error: error, stackTrace: stackTrace);
+      disposeLog.e('failed', error: error, stackTrace: stackTrace);
       rethrow;
     } finally {
       _asyncScopeParentEntry?.unregister();
 
       if (_asyncScopeEntry case final asyncScopeEntry?) {
-        _log.d('dispose', () => 'exit from [$scopeKey]');
+        disposeLog.d(() => 'exit from [$scopeKey]');
         asyncScopeEntry.exit();
         _asyncScopeEntry = null;
       }

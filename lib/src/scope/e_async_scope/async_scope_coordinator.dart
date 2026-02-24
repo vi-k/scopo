@@ -25,24 +25,25 @@ final class AsyncScopeCoordinator extends ScopeWidgetCore<AsyncScopeCoordinator,
           _AsyncScopeCoordinatorElement>(
         context,
         listen: false,
-      )?.enter(
-        key,
-        entry,
-        timeout: timeout,
-        onTimeout: onTimeout,
-      ) ??
-      (throw FlutterError('No `$AsyncScopeCoordinator`.\n'
-          'You are trying to use `scopeKey`, but the `$AsyncScopeCoordinator`'
-          ' is missing in the context. Add it to the widget tree so that'
-          ' all your scopes that need coordination by `scopeKey` can access'
-          ' it. The most universal solution is to place it above'
-          ' `$MaterialApp`.'));
+      )?.enter(key, entry, timeout: timeout, onTimeout: onTimeout) ??
+      (throw FlutterError(
+        'No `$AsyncScopeCoordinator`.\n'
+        'You are trying to use `scopeKey`, but the `$AsyncScopeCoordinator`'
+        ' is missing in the context. Add it to the widget tree so that'
+        ' all your scopes that need coordination by `scopeKey` can access'
+        ' it. The most universal solution is to place it above'
+        ' `$MaterialApp`.',
+      ));
 }
 
 final class _AsyncScopeCoordinatorElement extends ScopeWidgetElementBase<
     AsyncScopeCoordinator, _AsyncScopeCoordinatorElement> {
   _AsyncScopeCoordinatorElement(super.widget);
+
   static final _queues = <Object, _AsyncScopeCoordinatorQueue>{};
+
+  final _exitLog = log.withAddedName('exit');
+  final _enterLog = log.withAddedName('enter');
 
   @override
   Widget buildChild() => widget.child;
@@ -58,18 +59,14 @@ final class _AsyncScopeCoordinatorElement extends ScopeWidgetElementBase<
         key,
         remove: () {
           _queues.remove(key);
-          _log.d('exit', () => 'queue for [$key] removed');
+          _exitLog.d(() => 'queue for [$key] removed');
         },
       );
-      _log.d('enter', () => 'queue for [$key] created');
+      _enterLog.d(() => 'queue for [$key] created');
       return q;
     });
 
-    return queue.enter(
-      entry,
-      timeout: timeout,
-      onTimeout: onTimeout,
-    );
+    return queue.enter(entry, timeout: timeout, onTimeout: onTimeout);
   }
 }
 

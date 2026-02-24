@@ -2,8 +2,9 @@ part of '../../../scope.dart';
 
 /// {@category Scope}
 mixin ScopeDependencyMixin implements ScopeDependency {
-  late final _log =
-      log.withSource('$ScopeDependencyMixin(#${shortHash(this)})');
+  late final _log = log.withAddedName(
+    () => '$ScopeDependencyMixin(#${shortHash(this)})',
+  );
 
   @override
   ScopeDependencyState get state => _state;
@@ -76,8 +77,10 @@ mixin ScopeDependencyMixin implements ScopeDependency {
         defaultState,
   ) {
     _state = switch (_state) {
-      final _ScopeDependencyWithErrors state =>
-        state.addError(error, stackTrace),
+      final _ScopeDependencyWithErrors state => state.addError(
+          error,
+          stackTrace,
+        ),
       ScopeDependencySuccessStates() => defaultState(error, stackTrace),
     };
   }
@@ -113,17 +116,11 @@ mixin ScopeDependencyMixin implements ScopeDependency {
     }
   }
 
-  void _handleInitializationError(
-    Object error,
-    StackTrace stackTrace,
-  ) {
+  void _handleInitializationError(Object error, StackTrace stackTrace) {
     _handleError(error, stackTrace, ScopeDependencyFailed.new);
   }
 
-  void _handleDisposalError(
-    Object error,
-    StackTrace stackTrace,
-  ) {
+  void _handleDisposalError(Object error, StackTrace stackTrace) {
     _handleError(error, stackTrace, ScopeDependencyDisposalFailed.new);
   }
 
@@ -157,10 +154,7 @@ mixin ScopeDependencyMixin implements ScopeDependency {
     );
   }
 
-  void _handleDisposalPostCancelError(
-    Object error,
-    StackTrace stackTrace,
-  ) {
+  void _handleDisposalPostCancelError(Object error, StackTrace stackTrace) {
     _handlePostCancelError(
       error, //
       stackTrace,

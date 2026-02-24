@@ -7,10 +7,7 @@ typedef ScopeAutoDependenciesStream<T extends ScopeDependencies>
 /// {@category Scope}
 abstract base class ScopeAutoDependencies<T extends ScopeDependencies,
     C extends Object?> implements ScopeDependencies {
-  late final _log = log.withContext<String>(
-    () => '$T(#${shortHash(this)})',
-    (method, message) => '$method${message.isEmpty ? '' : ' | $message'}',
-  );
+  late final _log = log.withAddedName(() => '$T(#${shortHash(this)})');
 
   bool get autoDisposeOnError => true;
 
@@ -27,22 +24,23 @@ abstract base class ScopeAutoDependencies<T extends ScopeDependencies,
   ) async* {
     final dependencies = _root ??= this.buildDependencies(context);
     final progressIterator = ProgressIterator(dependencies.count);
+    final initLog = _log.withAddedName('init');
 
     try {
-      _log.d('init', 'initialize...');
+      initLog.d('initialize...');
       yield* dependencies.runInit().map((path) {
         final step = progressIterator.nextStep();
-        _log.d('init', () => '$path ($step)');
+        initLog.d(() => '$path ($step)');
         return ScopeProgress(ScopeAutoDependenciesProgress(path, step));
       });
 
       if (dependencies.isInitialized) {
         yield ScopeReady(this as T);
-        _log.d('init', 'initialized');
+        initLog.d('initialized');
       }
     } finally {
       if (!dependencies.isInitialized) {
-        _log.d('init', 'not initialized');
+        initLog.d('not initialized');
         if (autoDisposeOnError) {
           await dispose();
         }
@@ -62,12 +60,14 @@ abstract base class ScopeAutoDependencies<T extends ScopeDependencies,
       return;
     }
 
+    final disposeLog = _log.withAddedName('dispose');
+
     final completer = Completer<void>();
 
-    _log.d('dispose', 'dispose...');
+    disposeLog.d('dispose...');
     dependencies.runDispose().listen(
       (path) {
-        _log.d('dispose', path);
+        disposeLog.d(path);
       },
       onError: (Object e) {},
       onDone: completer.complete,
@@ -75,7 +75,7 @@ abstract base class ScopeAutoDependencies<T extends ScopeDependencies,
     );
 
     await completer.future;
-    _log.d('dispose', 'disposed');
+    disposeLog.d('disposed');
   }
 
   ScopeDependency dep(String name, FutureOr<void> Function(DepHelper) init) =>
@@ -116,8 +116,9 @@ abstract base class ScopeAutoDependencies<T extends ScopeDependencies,
   Iterable<ScopeDependencyInfo> flattenDependenciesWithErrors() =>
       flattenDependencies().where(
         (info) => switch (info.dependency.state) {
-          final _ScopeDependencyWithErrors state =>
-            state.errors().any((e) => e.error is! ScopeDependencyException),
+          final _ScopeDependencyWithErrors state => state.errors().any(
+                (e) => e.error is! ScopeDependencyException,
+              ),
           ScopeDependencySuccessStates() => false,
         },
       );

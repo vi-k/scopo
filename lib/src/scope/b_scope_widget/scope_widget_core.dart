@@ -2,7 +2,7 @@ part of '../scope.dart';
 
 typedef _ScopeDependency<T extends Object, V extends Object?> = (
   V,
-  V Function(T),
+  V Function(T)
 );
 
 /// {@category ScopeWidget}
@@ -53,9 +53,8 @@ abstract base class ScopeWidgetCore<W extends ScopeWidgetCore<W, E>,
 abstract base class ScopeWidgetElementBase<W extends ScopeWidgetCore<W, E>,
         E extends ScopeWidgetElementBase<W, E>> extends InheritedElement
     implements ScopeInheritedElement<W> {
-  late final _log = log.withContext<String>(
+  late final _log = log.withAddedName(
     () => widget.toStringShort(showHashCode: true),
-    (method, message) => '$method${message.isEmpty ? '' : ' | $message'}',
   );
 
   /// Список зависимостей при подписке элемента на самого себя.

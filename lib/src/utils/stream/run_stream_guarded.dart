@@ -32,8 +32,9 @@ Stream<T> runStreamGuarded<T>(
   StreamSubscription<T>? subscription;
   Completer<void>? cancelCompleter;
 
-  final l = log
-      .withSource('runStreamGuarded${debugName == null ? '' : '($debugName)'}');
+  final l = log.withAddedName(
+    () => 'runStreamGuarded${debugName == null ? '' : '($debugName)'}',
+  );
 
   void pause() {
     subscription?.pause();

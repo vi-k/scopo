@@ -1,3 +1,8 @@
+## 0.8.0
+
+* [breaking changes] change `pkglog` to `logger_builder`.
+* change license to MIT.
+
 ## 0.7.5
 
 * fix bug: `data` in `AsyncDataScope` may be `null`.
