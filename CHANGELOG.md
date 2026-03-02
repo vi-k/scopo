@@ -1,3 +1,8 @@
+## 0.8.1
+
+* Upgrade ansi_escape_codes to 2.2.1.
+* Upgrade logger_builder to 0.2.0.
+
 ## 0.8.0
 
 * [breaking changes] change `pkglog` to `logger_builder`.

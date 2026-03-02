@@ -35,10 +35,10 @@ void main() {
     ScopeConfig.logger[level].printer = printer.print;
   }
 
-  setLogPrinter(ScopeLogLevel.verbose, const ansi.Color256(ansi.Colors.gray7));
-  setLogPrinter(ScopeLogLevel.debug, const ansi.Color256(ansi.Colors.gray12));
-  setLogPrinter(ScopeLogLevel.info, const ansi.Color256(ansi.Colors.rgb345));
-  setLogPrinter(ScopeLogLevel.error, const ansi.Color256(ansi.Colors.rgb400));
+  setLogPrinter(ScopeLogLevel.verbose, ansi.Color256.gray7);
+  setLogPrinter(ScopeLogLevel.debug, ansi.Color256.gray12);
+  setLogPrinter(ScopeLogLevel.info, ansi.Color256.rgb345);
+  setLogPrinter(ScopeLogLevel.error, ansi.Color256.rgb400);
 
   //
   // Scope timeouts

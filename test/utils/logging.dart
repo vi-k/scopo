@@ -22,8 +22,8 @@ void logInit() {
     ScopeConfig.logger[level].printer = printer.print;
   }
 
-  setPrinter(ScopeLogLevel.verbose, const ansi.Color256(ansi.Colors.gray7));
-  setPrinter(ScopeLogLevel.debug, const ansi.Color256(ansi.Colors.gray12));
-  setPrinter(ScopeLogLevel.info, const ansi.Color256(ansi.Colors.rgb345));
-  setPrinter(ScopeLogLevel.error, const ansi.Color256(ansi.Colors.rgb400));
+  setPrinter(ScopeLogLevel.verbose, ansi.Color256.gray7);
+  setPrinter(ScopeLogLevel.debug, ansi.Color256.gray12);
+  setPrinter(ScopeLogLevel.info, ansi.Color256.rgb345);
+  setPrinter(ScopeLogLevel.error, ansi.Color256.rgb400);
 }

@@ -2,15 +2,6 @@ part of 'scope_config.dart';
 
 final ScopeLogger log = ScopeConfig.logger;
 
-final class LazyNonNullableString extends TypedLazy<String> {
-  final String fallbackValue;
-
-  LazyNonNullableString(super.unresolved, this.fallbackValue);
-
-  @override
-  String convert(Object? resolved) => resolved?.toString() ?? fallbackValue;
-}
-
 abstract final class ScopeLogLevel {
   static const off = Levels.off;
   static const verbose = Levels.verbose;
@@ -70,7 +61,7 @@ final class ScopeLevelLogger extends CustomLevelLogger<ScopeLogger,
 
 final class ScopeLogger extends CustomLogger<ScopeLogger, ScopeLevelLogger,
     ScopeLogFunction, ScopeLogEntry, String> {
-  final LazyNonNullableString _lazyName;
+  final LazyString _lazyName;
   String get name => _lazyName.value;
 
   ScopeLogger? _parent;
@@ -79,11 +70,11 @@ final class ScopeLogger extends CustomLogger<ScopeLogger, ScopeLevelLogger,
 
   ScopeLogger(Object name)
       : _parent = null,
-        _lazyName = LazyNonNullableString(name, 'root');
+        _lazyName = LazyString(name, 'root');
 
   ScopeLogger._(super.parent, Object name)
       : _parent = parent,
-        _lazyName = LazyNonNullableString(name, 'unknown'),
+        _lazyName = LazyString(name),
         super.sub();
 
   ScopeLogger withAddedName(Object name) => ScopeLogger._(this, name);
