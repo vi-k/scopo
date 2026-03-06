@@ -1,3 +1,7 @@
+## 0.8.2
+
+* Upgrade ansi_escape_codes to 3.0.2.
+
 ## 0.8.1
 
 * Upgrade ansi_escape_codes to 2.2.1.

@@ -11,9 +11,9 @@ void logInit() {
     ansi.Color foreground, {
     ansi.Color? background,
   }) {
-    final printer = ansi.AnsiPrinter(
+    final printer = ansi.Printer(
       ansiCodesEnabled: !Platform.isIOS,
-      defaultState: ansi.SgrPlainState(
+      defaultStyle: ansi.Style(
         foreground: foreground,
         background: background,
       ),
