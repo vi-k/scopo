@@ -24,23 +24,22 @@ abstract base class ScopeAutoDependencies<T extends ScopeDependencies,
   ) async* {
     final dependencies = _root ??= this.buildDependencies(context);
     final progressIterator = ProgressIterator(dependencies.count);
-    final initLog = _log.withAddedName('init');
 
     try {
-      initLog.d('initialize...');
+      _log.d('init: initialize...');
       yield* dependencies.runInit().map((path) {
         final step = progressIterator.nextStep();
-        initLog.d(() => '$path ($step)');
+        _log.d(() => 'init: $path ($step)');
         return ScopeProgress(ScopeAutoDependenciesProgress(path, step));
       });
 
       if (dependencies.isInitialized) {
         yield ScopeReady(this as T);
-        initLog.d('initialized');
+        _log.d('init: initialized');
       }
     } finally {
       if (!dependencies.isInitialized) {
-        initLog.d('not initialized');
+        _log.d('init: not initialized');
         if (autoDisposeOnError) {
           await dispose();
         }

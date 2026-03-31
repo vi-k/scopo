@@ -1,5 +1,3 @@
-import 'dart:collection';
-
 import 'package:logger_builder/logger_builder.dart';
 
 part 'scope_logger.dart';

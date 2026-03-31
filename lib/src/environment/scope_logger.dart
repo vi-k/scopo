@@ -1,5 +1,9 @@
 part of 'scope_config.dart';
 
+typedef ScopeLogPublisher = CustomLogPublisher<ScopeLog>;
+typedef ScopeLogFormatter<Out extends Object?>
+    = CustomLogFormatter<ScopeLog, Out>;
+
 final ScopeLogger log = ScopeConfig.logger;
 
 abstract final class ScopeLogLevel {
@@ -11,71 +15,75 @@ abstract final class ScopeLogLevel {
   static const all = Levels.all;
 }
 
-typedef ScopeLogFunction = bool Function(
+typedef ScopeLogFn = bool Function(
   Object? message, {
   Object? error,
   StackTrace? stackTrace,
 });
 
-final class ScopeLogEntry extends CustomLogEntry {
+final class ScopeLog extends CustomLog {
   final DateTime timestamp;
-  final List<String> path;
+  final LazyString _lazyPath;
   final LazyString _lazyMessage;
 
-  ScopeLogEntry(
+  ScopeLog(
     super.levelLogger, {
     super.error,
     super.stackTrace,
-    required this.path,
+    required LazyString path,
     required Object? message,
   })  : timestamp = DateTime.now(),
+        _lazyPath = path,
         _lazyMessage = LazyString(message);
 
+  String get path => _lazyPath.value;
   String? get message => _lazyMessage.value;
 }
 
 final class ScopeLevelLogger extends CustomLevelLogger<ScopeLogger,
-    ScopeLevelLogger, ScopeLogFunction, ScopeLogEntry, String> {
+    ScopeLevelLogger, ScopeLogFn, ScopeLog> {
   ScopeLevelLogger({required super.level, required super.name, super.shortName})
       : super(
           noLog: (_, {error, stackTrace}) => true,
-          builder: ScopeLogger.defaultBuilder,
-          printer: print,
+          publisher: const CustomLogFormatter(
+            format: ScopeLogger.defaultFormat,
+            output: print,
+          ),
         );
 
   @override
-  ScopeLogFunction get processLog => (message, {error, stackTrace}) {
-        final entry = ScopeLogEntry(
-          this,
-          error: error,
-          stackTrace: stackTrace,
-          path: logger.path,
-          message: message,
+  ScopeLogFn get processLog => (message, {error, stackTrace}) {
+        publisher.publish(
+          ScopeLog(
+            this,
+            path: logger._lazyPath,
+            message: message,
+            error: error,
+            stackTrace: stackTrace,
+          ),
         );
-
-        printer(builder(entry));
 
         return true;
       };
 }
 
-final class ScopeLogger extends CustomLogger<ScopeLogger, ScopeLevelLogger,
-    ScopeLogFunction, ScopeLogEntry, String> {
-  final LazyString _lazyName;
-  String get name => _lazyName.value;
+final class ScopeLogger
+    extends CustomLogger<ScopeLogger, ScopeLevelLogger, ScopeLogFn, ScopeLog> {
+  final LazyString _lazyPath;
+  String pathSeparator = ' | ';
 
-  ScopeLogger? _parent;
-
-  late final List<String> path = _buildPath();
-
-  ScopeLogger(Object name)
-      : _parent = null,
-        _lazyName = LazyString(name, 'root');
+  ScopeLogger(Object name) : _lazyPath = LazyString(name);
 
   ScopeLogger._(super.parent, Object name)
-      : _parent = parent,
-        _lazyName = LazyString(name),
+      : _lazyPath = LazyString(
+          () => '${parent.path}'
+              '${parent.pathSeparator}'
+              '${LazyString(name).value}',
+        ),
+        pathSeparator = parent.pathSeparator,
         super.sub();
+
+  String get path => _lazyPath.value;
 
   ScopeLogger withAddedName(Object name) => ScopeLogger._(this, name);
 
@@ -96,10 +104,10 @@ final class ScopeLogger extends CustomLogger<ScopeLogger, ScopeLevelLogger,
     name: 'error',
   );
 
-  ScopeLogFunction get v => _v.log;
-  ScopeLogFunction get d => _d.log;
-  ScopeLogFunction get i => _i.log;
-  ScopeLogFunction get e => _e.log;
+  ScopeLogFn get v => _v.log;
+  ScopeLogFn get d => _d.log;
+  ScopeLogFn get i => _i.log;
+  ScopeLogFn get e => _e.log;
 
   @override
   void registerLevels() {
@@ -109,27 +117,10 @@ final class ScopeLogger extends CustomLogger<ScopeLogger, ScopeLevelLogger,
     registerLevel(_e);
   }
 
-  static String defaultBuilder(ScopeLogEntry entry) =>
-      '[${entry.shortLevelName}]'
-      ' ${entry.path.join(' | ')}'
+  static String defaultFormat(ScopeLog entry) => '[${entry.shortLevelName}]'
+      ' ${entry.path}'
       ' | ${entry.message}'
       '${entry.error == null ? '' : ': ${entry.error}'}'
       '${entry.stackTrace == null || entry.stackTrace == StackTrace.empty //
           ? '' : '\n${entry.stackTrace}'}';
-
-  List<String> _buildPath() {
-    switch (_parent) {
-      case null:
-        return UnmodifiableListView(List.filled(1, name));
-
-      case final parent:
-        _parent = null;
-        return UnmodifiableListView(
-          List.generate(growable: false, parent.path.length + 1, (index) {
-            if (index == parent.path.length) return name;
-            return parent.path[index];
-          }),
-        );
-    }
-  }
 }

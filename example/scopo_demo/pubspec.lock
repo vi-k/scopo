@@ -172,10 +172,10 @@ packages:
     dependency: transitive
     description:
       name: logger_builder
-      sha256: "9e3f663bc675c028d71a472792eb04b219b554dbbed7d633e64344fa9b590b74"
+      sha256: c2a3c6964f82f3795e8f9971e039f2e4785241dfe8520378e9084b1108696238
       url: "https://pub.dev"
     source: hosted
-    version: "0.2.0"
+    version: "0.3.0"
   markdown:
     dependency: transitive
     description:

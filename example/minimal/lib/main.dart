@@ -21,7 +21,10 @@ void main() {
       ),
     );
 
-    ScopeConfig.logger[level].printer = printer.print;
+    ScopeConfig.logger[level].publisher = ScopeLogFormatter(
+      format: ScopeLogger.defaultFormat,
+      output: printer.print,
+    );
   }
 
   setLogPrinter(ScopeLogLevel.verbose, const ansi.Color256(ansi.Colors.gray7));

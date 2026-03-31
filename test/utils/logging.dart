@@ -19,7 +19,10 @@ void logInit() {
       ),
     );
 
-    ScopeConfig.logger[level].printer = printer.print;
+    ScopeConfig.logger[level].publisher = ScopeLogFormatter(
+      format: ScopeLogger.defaultFormat,
+      output: printer.print,
+    );
   }
 
   setPrinter(ScopeLogLevel.verbose, ansi.Color256.gray7);

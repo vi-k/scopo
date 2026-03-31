@@ -10,8 +10,6 @@ import 'utils/logging.dart';
 import 'utils/my_fake_async.dart';
 
 final _log = log.withAddedName('test');
-final _initLog = _log.withAddedName('init');
-final _disposeLog = _log.withAddedName('dispose');
 
 final class TestDependencies
     extends ScopeAutoDependencies<TestDependencies, void> {
@@ -29,18 +27,18 @@ final class TestDependencies
     bool dispose = true,
   }) =>
       (dep) async {
-        _initLog.v(() => '${dep.name} delay');
+        _log.v(() => 'init: ${dep.name} delay');
         await Future<void>.delayed(delay);
-        _initLog.v(() => '${dep.name} after delay');
+        _log.v(() => 'init: ${dep.name} after delay');
         if (failed.contains(dep.name)) {
-          _initLog.d(() => '${dep.name} fail');
+          _log.d(() => 'init: ${dep.name} fail');
           throw Exception('${dep.name} failed');
         }
         if (dispose) {
           dep.dispose = () async {
-            _disposeLog.v(() => dep.name);
+            _log.v(() => 'dispose: ${dep.name}');
             await Future<void>.delayed(step);
-            _disposeLog.v(() => '${dep.name} after delay');
+            _log.v(() => 'dispose: ${dep.name} after delay');
           };
         }
       };
