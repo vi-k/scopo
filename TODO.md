@@ -1,5 +1,6 @@
 # TODO
 
+- Update README!!!
 - Описать все примеры.
 - Написать нормальную документацию.
 - example для `ScopeWidgetCore`.
