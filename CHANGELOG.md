@@ -1,7 +1,8 @@
-## 0.9.0
+## 0.9.0-0.9.1
 
 * Upgrade ansi_escape_codes to 3.0.2.
-* [breaking changes] Upgrade logger_builder to 0.3.0.
+* [breaking changes] Upgrade logger_builder to 0.3.1.
+* Minor changes to the logging.
 
 ## 0.8.1
 

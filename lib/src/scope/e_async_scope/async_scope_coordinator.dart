@@ -42,9 +42,6 @@ final class _AsyncScopeCoordinatorElement extends ScopeWidgetElementBase<
 
   static final _queues = <Object, _AsyncScopeCoordinatorQueue>{};
 
-  final _exitLog = log.withAddedName('exit');
-  final _enterLog = log.withAddedName('enter');
-
   @override
   Widget buildChild() => widget.child;
 
@@ -59,10 +56,10 @@ final class _AsyncScopeCoordinatorElement extends ScopeWidgetElementBase<
         key,
         remove: () {
           _queues.remove(key);
-          _exitLog.d(() => 'queue for [$key] removed');
+          _log.d(() => 'exit: queue for [$key] removed');
         },
       );
-      _enterLog.d(() => 'queue for [$key] created');
+      _log.d(() => 'enter: queue for [$key] created');
       return q;
     });
 
