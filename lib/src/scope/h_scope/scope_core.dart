@@ -1,5 +1,8 @@
 part of '../scope.dart';
 
+/// A core abstract class for scopes, bridging dependency injection with state
+/// management.
+///
 /// {@category Scope}
 abstract base class ScopeCore<
     W extends ScopeCore<W, E, D, S>,
@@ -12,6 +15,9 @@ abstract base class ScopeCore<
     super.child, // Not used by default. You can use it at your own discretion.
   });
 
+  /// Looks up and returns the parameters of the scope [W].
+  ///
+  /// If [listen] is true, the widget will be rebuilt when the scope changes.
   static W paramsOf<
           W extends ScopeCore<W, E, D, S>,
           E extends ScopeElementBase<W, E, D, S>,
@@ -30,6 +36,8 @@ abstract base class ScopeCore<
               listen: false,
             ).widget;
 
+  /// Selects and returns a specific parameter of the scope [W] using the
+  /// [selector] and becomes **dependent** on it.
   static V selectParam<
           W extends ScopeCore<W, E, D, S>,
           E extends ScopeElementBase<W, E, D, S>,
@@ -44,6 +52,10 @@ abstract base class ScopeCore<
         (element) => selector(element.widget),
       );
 
+  /// Tries to find and return the state [S] of the scope [W] from the given
+  /// [context].
+  ///
+  /// Returns `null` if the scope is not found.
   static S? maybeOf<
           W extends ScopeCore<W, E, D, S>,
           E extends ScopeElementBase<W, E, D, S>,
@@ -54,6 +66,10 @@ abstract base class ScopeCore<
         listen: false,
       )?._globalStateKey.currentState;
 
+  /// Finds and returns the state [S] of the scope [W] from the given
+  /// [context].
+  ///
+  /// Throws an error if the scope is not found.
   static S of<
           W extends ScopeCore<W, E, D, S>,
           E extends ScopeElementBase<W, E, D, S>,
@@ -64,6 +80,8 @@ abstract base class ScopeCore<
         listen: false,
       )._globalStateKey.currentState!;
 
+  /// Selects and returns a specific value from the state [S] of the scope [W]
+  /// using the [selector] and becomes **dependent** on it.
   static V select<
           W extends ScopeCore<W, E, D, S>,
           E extends ScopeElementBase<W, E, D, S>,
@@ -79,6 +97,11 @@ abstract base class ScopeCore<
       );
 }
 
+/// The core element base class for [ScopeCore].
+///
+/// Extends [LiteScopeElementBase] to provide dependency initialization and
+/// management.
+///
 /// {@category Scope}
 abstract base class ScopeElementBase<
         W extends ScopeCore<W, E, D, S>,
@@ -88,6 +111,7 @@ abstract base class ScopeElementBase<
     extends LiteScopeElementBase<W, E, S> {
   ScopeElementBase(super.widget);
 
+  /// The initialized dependencies for this scope.
   D get dependencies => _dependencies ?? (throw StateError('Not initialized'));
   D? _dependencies;
 
@@ -95,14 +119,19 @@ abstract base class ScopeElementBase<
   // Overriding block
   //
 
+  /// Initializes the dependencies and returns a stream of their initialization
+  /// states.
   Stream<ScopeInitState<Object, D>> initDependencies();
 
+  /// Builds a widget to display while waiting.
   @override
   Widget? buildOnWaiting();
 
+  /// Builds a widget to display while the scope is initializing.
   @override
   Widget buildOnInitializing(Object? progress);
 
+  /// Builds a widget to display when an error occurs during initialization.
   @override
   Widget buildOnError(
     Object error,
@@ -110,12 +139,15 @@ abstract base class ScopeElementBase<
     Object? progress,
   );
 
+  /// Creates the state for this scope.
   @override
   S createState();
 
+  /// Wraps the state builder with additional widgets, if needed.
   @override
   Widget wrapState(Widget child) => child;
 
+  /// Builds a widget to display while the scope is closing.
   @override
   Widget? buildOnClosing() => null;
 
@@ -158,6 +190,10 @@ abstract base class ScopeElementBase<
   }
 }
 
+/// The core state base class for [ScopeCore].
+///
+/// Provides convenient access to the initialized [dependencies] and supports
+/// asynchronous initialization and disposal.
 abstract base class ScopeCoreState<
     W extends ScopeCore<W, E, D, S>,
     E extends ScopeElementBase<W, E, D, S>,
@@ -169,9 +205,11 @@ abstract base class ScopeCoreState<
   // Overriding block
   //
 
+  /// Initializes the scope asynchronously.
   @override
   FutureOr<void> initAsync() {}
 
+  /// Disposes the scope asynchronously.
   @override
   FutureOr<void> disposeAsync() {}
 
@@ -181,4 +219,23 @@ abstract base class ScopeCoreState<
   //
   // End of overriding block
   //
+
+  /// The parameters defined in the associated scope widget.
+  @override
+  W get params;
+
+  /// Whether the scope initialization is fully completed.
+  @override
+  bool get isInitialized;
+
+  /// Called after the state has been successfully initialized.
+  @override
+  void onInitialized();
+
+  @override
+  void notifyDependents();
+
+  /// Closes the scope gracefully.
+  @override
+  Future<void> close();
 }

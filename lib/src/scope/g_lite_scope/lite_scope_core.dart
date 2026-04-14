@@ -1,5 +1,8 @@
 part of '../scope.dart';
 
+/// A core abstract class for lite scopes, providing minimal dependency
+/// injection and state management.
+///
 /// {@category LiteScope}
 abstract base class LiteScopeCore<
     W extends LiteScopeCore<W, E, S>,
@@ -11,9 +14,13 @@ abstract base class LiteScopeCore<
     super.child, // Not used by default. You can use it at your own discretion.
   });
 
+  /// Creates the scope element for this lite scope.
   @override
   E createScopeElement();
 
+  /// Looks up and returns the parameters of the scope [W].
+  ///
+  /// If [listen] is true, the widget will be rebuilt when the scope changes.
   static W paramsOf<
           W extends LiteScopeCore<W, E, S>,
           E extends LiteScopeElementBase<W, E, S>,
@@ -31,6 +38,8 @@ abstract base class LiteScopeCore<
               listen: false,
             ).widget;
 
+  /// Selects and returns a specific parameter of the scope [W] using the
+  /// [selector] and becomes **dependent** on it.
   static V selectParam<
           W extends LiteScopeCore<W, E, S>,
           E extends LiteScopeElementBase<W, E, S>,
@@ -44,6 +53,10 @@ abstract base class LiteScopeCore<
         (element) => selector(element.widget),
       );
 
+  /// Tries to find and return the state [S] of the scope [W] from the given
+  /// [context].
+  ///
+  /// Returns `null` if the scope is not found.
   static S? maybeOf<
           W extends LiteScopeCore<W, E, S>,
           E extends LiteScopeElementBase<W, E, S>,
@@ -55,6 +68,10 @@ abstract base class LiteScopeCore<
         listen: false,
       )?._globalStateKey.currentState;
 
+  /// Finds and returns the state [S] of the scope [W] from the given
+  /// [context].
+  ///
+  /// Throws an error if the scope is not found.
   static S of<
           W extends LiteScopeCore<W, E, S>,
           E extends LiteScopeElementBase<W, E, S>,
@@ -66,6 +83,8 @@ abstract base class LiteScopeCore<
         listen: false,
       )._globalStateKey.currentState!;
 
+  /// Selects and returns a specific value from the state [S] of the scope [W]
+  /// using the [selector] and becomes **dependent** on it.
   static V select<
           W extends LiteScopeCore<W, E, S>,
           E extends LiteScopeElementBase<W, E, S>,
@@ -80,6 +99,11 @@ abstract base class LiteScopeCore<
       );
 }
 
+/// The core element base class for [LiteScopeCore].
+///
+/// Extends [AsyncScopeElementBase] to provide dependency initialization
+/// management without strict payload rules.
+///
 /// {@category LiteScope}
 abstract base class LiteScopeElementBase<
     W extends LiteScopeCore<W, E, S>,
@@ -100,20 +124,26 @@ abstract base class LiteScopeElementBase<
   @override
   Stream<AsyncScopeInitState> initAsync();
 
+  /// Builds a widget to display while waiting.
   Widget? buildOnWaiting();
 
+  /// Builds a widget to display while the scope is initializing.
   Widget buildOnInitializing(Object? progress);
 
+  /// Builds a widget to display if an error occurs during initialization.
   Widget buildOnError(
     Object error,
     StackTrace stackTrace,
     Object? progress,
   );
 
+  /// Creates the state for this scope.
   S createState();
 
+  /// Wraps the state builder with additional widgets, if needed.
   Widget wrapState(Widget child) => child;
 
+  /// Builds a widget to display while the scope is closing.
   Widget? buildOnClosing() => null;
 
   //
@@ -134,10 +164,10 @@ abstract base class LiteScopeElementBase<
   @override
   Widget buildOnState(AsyncScopeState state) => switch (state) {
         AsyncScopeWaiting() => buildOnWaiting() ?? buildOnInitializing(null),
-        AsyncScopeProgress(:final progress) => buildOnInitializing(progress),
+        AsyncScopeProgress() => buildOnInitializing(state.progress),
         AsyncScopeReady() => buildOnReady(),
-        AsyncScopeError(:final error, :final stackTrace, :final progress) =>
-          buildOnError(error, stackTrace, progress),
+        AsyncScopeError() =>
+          buildOnError(state.error, state.stackTrace, state.progress),
       };
 
   @mustCallSuper
@@ -204,16 +234,17 @@ abstract base class LiteScopeElementBase<
     }
   }
 
-  /// Закрывает скоуп до вызова dispose.
+  /// Closes the scope before the disposal occurs.
   ///
-  /// Даёт возможность показать экран закрытия скоупа, заменяя содержимое
-  /// виджета скриншотом.
+  /// Allows displaying a scope closing screen, optionally replacing the
+  /// internal widget with a screenshot.
   Future<void> close() async {
     _screenshotCompleter = Completer<void>();
     await _performAsyncDispose();
   }
 }
 
+/// The state implementation for [LiteScopeCore].
 final class _LiteScopeCoreWidget<
     W extends LiteScopeCore<W, E, S>,
     E extends LiteScopeElementBase<W, E, S>,
@@ -232,6 +263,7 @@ final class _LiteScopeCoreWidget<
   String toStringShort() => '$S';
 }
 
+/// The core state base class for [LiteScopeCore].
 abstract base class LiteScopeCoreState<
         W extends LiteScopeCore<W, E, S>,
         E extends LiteScopeElementBase<W, E, S>,
@@ -241,8 +273,10 @@ abstract base class LiteScopeCoreState<
   // Overriding block
   //
 
+  /// Initializes the scope asynchronously.
   FutureOr<void> initAsync() {}
 
+  /// Disposes of the scope asynchronously.
   FutureOr<void> disposeAsync() {}
 
   @override
@@ -259,8 +293,10 @@ abstract base class LiteScopeCoreState<
   @visibleForTesting
   Never get widget => throw UnimplementedError();
 
+  /// The parameters defined in the associated scope widget.
   W get params => _scopeElement.widget;
 
+  /// Whether the scope initialization is fully completed.
   bool get isInitialized => _initCompleter.isCompleted;
 
   @override
@@ -301,6 +337,7 @@ abstract base class LiteScopeCoreState<
     }
   }
 
+  /// Called after the state has been successfully initialized.
   void onInitialized() {}
 
   @mustCallSuper
@@ -308,5 +345,6 @@ abstract base class LiteScopeCoreState<
     _scopeElement.notifyDependents();
   }
 
+  /// Closes the scope gracefully.
   Future<void> close() => ScopeContext.of<W, E>(context, listen: false).close();
 }
