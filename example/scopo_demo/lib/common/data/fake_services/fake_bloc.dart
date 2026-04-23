@@ -56,8 +56,8 @@ class FakeBloc extends Bloc<FakeBlocEvent, FakeBlocState> {
 
         final data = FakeBlocData();
         emit(FakeBlocSuccess(data));
-      } on Object catch (e, s) {
-        emit(FakeBlocError(e, s));
+      } on Object catch (error, stackTrace) {
+        emit(FakeBlocError(error, stackTrace));
       }
     });
   }

@@ -66,8 +66,6 @@ class _ScreenshotReplacerState extends State<ScreenshotReplacer> {
           _isCaptured = true;
         });
       }
-    } on Object catch (e) {
-      debugPrint('Error capturing screenshot: $e');
     } finally {
       widget.onCompleted();
     }

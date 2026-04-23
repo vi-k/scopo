@@ -1,3 +1,7 @@
+## 0.9.3
+
+* Fix some bug on dispose `AsyncScopeElementBase`.
+
 ## 0.9.2
 
 * Minor changes to `LiteScope.buildOnWaiting`.

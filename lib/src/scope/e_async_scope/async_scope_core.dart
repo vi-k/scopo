@@ -330,7 +330,7 @@ abstract base class AsyncScopeElementBase<W extends AsyncScopeCore<W, E>,
       }
 
       _log.i('dispose: disposed');
-    } on Object {
+    } on Object catch (error, stackTrace) {
       _log.e('dispose: failed', error: error, stackTrace: stackTrace);
       rethrow;
     } finally {
