@@ -1,6 +1,7 @@
-## 0.9.3
+## 0.9.3-0.9.4
 
 * Fix some bug on dispose `AsyncScopeElementBase`.
+* Minor logging changes.
 
 ## 0.9.2
 

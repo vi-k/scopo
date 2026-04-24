@@ -23,7 +23,7 @@ final class HomeDependencies
           await httpClient.init();
           dep.dispose = httpClient.close;
         }),
-        concurrent('bloc and controller', [
+        concurrent('', [
           dep('bloc', (dep) async {
             final completer = Completer<void>();
             bloc = FakeBloc()..add(FakeBlocLoad());

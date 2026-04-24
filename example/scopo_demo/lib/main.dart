@@ -18,6 +18,7 @@ void main() {
   //
 
   ScopeConfig.logger.level = ScopeLogLevel.info;
+  // ScopeConfig.logger.level = ScopeLogLevel.debug;
 
   void setLogPrinter(
     int level,

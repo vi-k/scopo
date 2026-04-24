@@ -10,15 +10,7 @@ abstract base class ScopeDependencyGroup with ScopeDependencyMixin {
 
   late final int _count;
 
-  ScopeDependencyGroup._(this.name, Iterable<ScopeDependency> dependencies)
-      : assert(
-          dependencies.every((d) => d.name.isNotEmpty),
-          'The name of the child dependency cannot be empty',
-        ),
-        assert(
-          dependencies.every((d) => d.name != 'root'),
-          'The name of the child dependency cannot be "root"',
-        ) {
+  ScopeDependencyGroup._(this.name, Iterable<ScopeDependency> dependencies) {
     _dependencies = List.of(dependencies, growable: false);
     _count = _dependencies.fold<int>(0, (p, e) => p + e.count);
   }
@@ -32,10 +24,10 @@ abstract base class ScopeDependencyGroup with ScopeDependencyMixin {
       state is ScopeDependencyFailed ||
       state is ScopeDependencyCancelled;
 
-  String _path(String name) => '${this.name}/$name';
+  String _path(String name) => this.name.isEmpty ? name : '${this.name}/$name';
 
   @override
-  String get wrappedName => '[${name.isEmpty ? 'root' : name}]';
+  String get wrappedName => '[${name.isEmpty ? 'group' : name}]';
 
   @override
   String stateToString() {
