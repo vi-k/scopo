@@ -95,6 +95,40 @@
 * `AsyncScopeProgress` and `AsyncScopeReady` stay: they are states of the
   model, read through `state` and matched in `buildOnState`, and only their
   second job — being the language an initialization was written in — is over.
+* **Breaking:** `ScopeObserver.onTimeout` is handed the `TimeoutException` and
+  its stack trace beside the label it already had. The label says that a wait
+  expired; the error says which wait, how long it was given, and — for the two
+  waits that queue behind something — what was still pending when the limit ran
+  out. All of that used to travel to `FlutterError.reportError` and nowhere
+  else, so an observer could hear an expiry and still have nothing to report.
+  `ScopePrintObserver` prints the message of the error after its line, and
+  `ScopeCompositeObserver` forwards both new arguments.
+* **New:** `ScopeConfig.timeoutReportsEnabled = false` stops the package
+  reporting an expired wait through `FlutterError.reportError` — and stops
+  nothing else. The wait still gives up on time, the scope still goes on as if
+  it had succeeded, `onScopeKeyTimeout` and the three callbacks beside it are
+  still called, and the observer still hears the expiry with the very error the
+  report would have carried. It is for an application that reports expiries
+  from its own observer: one expiry arriving twice, once as an event and once
+  as a Flutter error, is what makes one of the two look like a second problem.
+* **Behaviour change:** the report of an expired wait names what was still
+  pending **when the limit ran out**, not what is still pending by the time the
+  report is written. Between those two moments lie a few microtasks, and that
+  is enough for the very thing the wait was waiting for to finish: a completer
+  is marked done at once, while the combined future above it carries that news
+  a hop or two later. A wait for children whose last child finished inside that
+  gap reported `couldn't wait for the children to complete: []` — the one line
+  able to name the culprit, blank — and the queue of a `scopeKey` reported the
+  entry ahead as `completed` in the same breath as not having managed to wait
+  for it.
+* **Behaviour change:** an `onTimeout` passed to
+  `AsyncScopeParent.waitForChildren`, or to
+  `AsyncScopeCoordinator.waitForChildren`, is handed the error the default
+  report would have carried — the name of the parent in front of the registry's
+  message — rather than one that names no parent at all. Naming it in a single
+  place is also what let the coordinator's own copy of that report go: it wrote
+  the line the parent writes anyway, from outside the one place the package
+  reports an expiry from.
 
 ## 0.13.0
 

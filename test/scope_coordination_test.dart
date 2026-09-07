@@ -17,6 +17,16 @@ const _limit = Duration(milliseconds: 20);
 /// Waits past [_limit] in real time.
 Future<void> waitOutTheLimit() => Future<void>.delayed(_limit * 5);
 
+/// A zone whose microtasks stay put until [FakeAsync.flushMicrotasks].
+///
+/// The limit of a bounded wait is a timer of the root zone and expires on its
+/// own whatever the zone that waits believes about time; everything that
+/// expiry then schedules waits here until the test lets it go. That gap is
+/// not an invention of the test: a host that drains its microtasks after a
+/// whole batch of expired timers rather than between two of them opens the
+/// same one, and it is the gap the text of an expiry used to be written in.
+FakeAsync heldMicrotasks() => FakeAsync();
+
 void main() {
   group('KeyedAccessQueues', () {
     test('the first entry gets in immediately', () async {
@@ -150,6 +160,80 @@ void main() {
         reason: 'a timed-out entry keeps its slot, so exit() is still'
             ' required',
       );
+    });
+
+    // What the entry ahead was doing *when the limit ran out*, not what it is
+    // doing by the time the expiry is reported. The two differ by a few
+    // microtasks, and `exit()` completes the entry inside them, so the report
+    // used to read `[holder completed]`: a message contradicting itself in
+    // the one line that names the holder.
+    test('the report names who had not left when the limit expired', () async {
+      final queues = KeyedAccessQueues();
+      final holder = AccessEntry('holder');
+      final newcomer = AccessEntry('newcomer');
+      TimeoutException? reported;
+      final held = heldMicrotasks();
+
+      await queues.enter('key', holder);
+      held.run((_) {
+        unawaited(
+          queues.enter(
+            'key',
+            newcomer,
+            timeout: _limit,
+            onTimeout: (error, _) => reported = error,
+          ),
+        );
+      });
+      await waitOutTheLimit();
+
+      // At the wire: the limit has run out, its report has not been written.
+      holder.exit();
+      held.flushMicrotasks();
+
+      expect(reported, isNotNull, reason: 'the limit did run out');
+      expect(
+        reported!.message,
+        "newcomer couldn't wait to get access to [key]: [holder not completed]",
+      );
+    });
+
+    // The other side of the same moment: the key was free when the limit ran
+    // out, and only the news of it was still on its way. Nothing was waited
+    // for in vain, so there is nothing to report.
+    test('a key released before the limit expired reports nothing', () async {
+      final queues = KeyedAccessQueues();
+      final holder = AccessEntry('holder');
+      final newcomer = AccessEntry('newcomer');
+      TimeoutException? reported;
+      var newcomerIsIn = false;
+      final held = heldMicrotasks();
+
+      await queues.enter('key', holder);
+      held.run((_) {
+        unawaited(
+          queues
+              .enter(
+                'key',
+                newcomer,
+                timeout: _limit,
+                onTimeout: (error, _) => reported = error,
+              )
+              .then((_) => newcomerIsIn = true),
+        );
+      });
+
+      holder.exit();
+      await waitOutTheLimit();
+      held.flushMicrotasks();
+
+      expect(
+        reported,
+        isNull,
+        reason: 'the key was free when the limit ran out, so the wait it '
+            'bounded had already succeeded',
+      );
+      expect(newcomerIsIn, isTrue);
     });
 
     // The limit is a timer of the root zone, and this is what says so. A hang
@@ -289,6 +373,77 @@ void main() {
         isFalse,
         reason: 'the children left behind are dropped',
       );
+    });
+
+    // The children that were unfinished *when the limit ran out*, not the
+    // ones still unfinished by the time the expiry is reported. Between those
+    // two moments lie a few microtasks, and a child finishing inside them
+    // used to leave the report empty -- `couldn't wait for the children to
+    // complete: []` -- because `unregister()` marks the completer done at
+    // once while `.wait` carries the news to the wait itself a hop or two
+    // later. The expiry was raised and the one line able to name the culprit
+    // was blank.
+    test('the report names the children unfinished when the limit expired',
+        () async {
+      final registry = ChildRegistry();
+      final held = heldMicrotasks();
+      final child = registry.registerChild('slow');
+      TimeoutException? reported;
+
+      held.run((_) {
+        unawaited(
+          registry.waitForChildren(
+            timeout: _limit,
+            onTimeout: (error, _) => reported = error,
+          ),
+        );
+      });
+      await waitOutTheLimit();
+
+      // At the wire: the limit has run out, its report has not been written.
+      child.unregister();
+      held.flushMicrotasks();
+
+      expect(reported, isNotNull, reason: 'the limit did run out');
+      expect(
+        reported!.message,
+        "couldn't wait for the children to complete: [slow not completed]",
+      );
+    });
+
+    // The other side of the same moment: every child was finished when the
+    // limit ran out, and only the news of it was still on its way. A report
+    // there would be an expiry that never happened.
+    test('children that all finished before the limit expired report nothing',
+        () async {
+      final registry = ChildRegistry();
+      final held = heldMicrotasks();
+      final child = registry.registerChild('slow');
+      TimeoutException? reported;
+      var done = false;
+
+      held.run((_) {
+        unawaited(
+          registry
+              .waitForChildren(
+                timeout: _limit,
+                onTimeout: (error, _) => reported = error,
+              )
+              .then((_) => done = true),
+        );
+      });
+
+      child.unregister();
+      await waitOutTheLimit();
+      held.flushMicrotasks();
+
+      expect(
+        reported,
+        isNull,
+        reason: 'nothing was pending when the limit ran out, so the wait it '
+            'bounded had already succeeded',
+      );
+      expect(done, isTrue, reason: 'the wait still ends');
     });
 
     // The same question as for the queue above, and the same answer: the limit

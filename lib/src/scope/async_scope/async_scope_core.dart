@@ -863,16 +863,8 @@ abstract base class AsyncScopeElementBase<W extends AsyncScopeCore<W, E>,
             ScopeConfig.defaultScopeKeyTimeout,
           ),
           onTimeout: (error, stackTrace) {
-            notifyObserver(
-              (observer) => observer.onTimeout(this, 'access to its scopeKey'),
-            );
-            FlutterError.reportError(
-              FlutterErrorDetails(
-                exception: error,
-                stack: stackTrace,
-                library: 'scopo',
-              ),
-            );
+            notifyTimeout(this, 'access to its scopeKey', error, stackTrace);
+            reportTimeout(error, stackTrace);
             onScopeKeyTimeout();
           },
         );
@@ -1250,18 +1242,14 @@ abstract base class AsyncScopeElementBase<W extends AsyncScopeCore<W, E>,
       }),
     );
 
-    notifyObserver((observer) => observer.onTimeout(this, what));
-    FlutterError.reportError(
-      FlutterErrorDetails(
-        exception: TimeoutException(
-          '${widget.toStringShort(showHashCode: true)} '
-          "couldn't wait for $what",
-          limit,
-        ),
-        stack: StackTrace.current,
-        library: 'scopo',
-      ),
+    final error = TimeoutException(
+      '${widget.toStringShort(showHashCode: true)} '
+      "couldn't wait for $what",
+      limit,
     );
+    final stackTrace = StackTrace.current;
+    notifyTimeout(this, what, error, stackTrace);
+    reportTimeout(error, stackTrace);
     onExpiry();
   }
 
@@ -1378,19 +1366,14 @@ abstract base class AsyncScopeElementBase<W extends AsyncScopeCore<W, E>,
         // resolves it, and resolving twice turns a `ScopeTimeout.none` into
         // the `null` that means "take the default" on the way in.
         timeout: waitForChildrenTimeout,
+        // The report alone, and of the error as it arrives: the parent this
+        // teardown belongs to has already named it and already told the
+        // observer, whichever of the three ways the wait was asked for.
+        // Passing a handler at all is what moves the report here -- see
+        // `AsyncScopeParent.waitForChildren` -- and the hook is why one is
+        // passed.
         onTimeout: (error, stackTrace) {
-          FlutterError.reportError(
-            FlutterErrorDetails(
-              // The message the registry builds knows nothing about the widget
-              // tree, so the scope puts its own name in front of it.
-              exception: TimeoutException(
-                '${widget.toStringShort(showHashCode: true)} ${error.message}',
-                error.duration,
-              ),
-              stack: stackTrace,
-              library: 'scopo',
-            ),
-          );
+          reportTimeout(error, stackTrace);
           onWaitForChildrenTimeout();
         },
       );

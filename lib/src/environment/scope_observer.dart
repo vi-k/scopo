@@ -178,7 +178,19 @@ base class ScopeObserver {
   ) {}
 
   /// A bounded wait expired; [what] names what was waited for.
-  void onTimeout(ScopeObservable target, String what) {}
+  ///
+  /// [error] is the same [TimeoutException] the package reports through
+  /// [FlutterError.reportError] — it names the wait, its limit and, for the
+  /// two waits that queue, what was still pending when the limit ran out.
+  /// It is carried here so that an application reporting expiries from its
+  /// own observer loses nothing by turning
+  /// [ScopeConfig.timeoutReportsEnabled] off.
+  void onTimeout(
+    ScopeObservable target,
+    String what,
+    TimeoutException error,
+    StackTrace stackTrace,
+  ) {}
 
   /// A step of the machinery below the lifecycle.
   ///
@@ -287,8 +299,13 @@ final class ScopeCompositeObserver extends ScopeObserver {
       _each((o) => o.onError(target, phase, error, stackTrace));
 
   @override
-  void onTimeout(ScopeObservable target, String what) =>
-      _each((o) => o.onTimeout(target, what));
+  void onTimeout(
+    ScopeObservable target,
+    String what,
+    TimeoutException error,
+    StackTrace stackTrace,
+  ) =>
+      _each((o) => o.onTimeout(target, what, error, stackTrace));
 
   @override
   void onTrace(ScopeObservable target, String message) =>
@@ -364,9 +381,19 @@ final class ScopePrintObserver extends ScopeObserver {
     _write(target, '${_failureMessage(phase)}: $error$suffix');
   }
 
+  // The message of the error rather than the error itself: the type and the
+  // limit in front of it are what a `TimeoutException` prints, and both are
+  // already in this line -- giving up is what expiring is, and the limit is
+  // the one the scope was written with. What is not here otherwise is the
+  // tail, which for the two waits that queue names who was still pending.
   @override
-  void onTimeout(ScopeObservable target, String what) =>
-      _write(target, 'gave up waiting for $what');
+  void onTimeout(
+    ScopeObservable target,
+    String what,
+    TimeoutException error,
+    StackTrace stackTrace,
+  ) =>
+      _write(target, 'gave up waiting for $what: ${error.message}');
 
   @override
   void onTrace(ScopeObservable target, String message) {

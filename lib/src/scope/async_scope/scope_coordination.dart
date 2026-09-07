@@ -115,20 +115,23 @@ final class _AccessQueue {
       entry._cancelCompleter.future,
     ]);
     if (timeout != null) {
-      future = _boundedByRootZone(future, timeout);
+      future = _boundedByRootZone(
+        future,
+        timeout,
+        // Who was still ahead when the limit ran out. Read there rather than
+        // here, and only the ones that had not left: an entry that leaves
+        // inside the microtasks between the two moments used to be reported
+        // as `[holder completed]` -- a line contradicting itself in the one
+        // place that names the holder.
+        () => "${entry._reportName} couldn't wait to get access to [$key]:"
+            ' ${previous.where((e) => !e._completer.isCompleted).toList()}',
+      );
     }
 
     try {
       await future;
-    } on TimeoutException catch (_, stackTrace) {
-      onTimeout?.call(
-        TimeoutException(
-          "${entry._reportName} couldn't wait to get access to [$key]:"
-          ' $previous',
-          timeout,
-        ),
-        stackTrace,
-      );
+    } on TimeoutException catch (error, stackTrace) {
+      onTimeout?.call(error, stackTrace);
     } finally {
       entry._isWaiting = false;
     }
@@ -202,29 +205,35 @@ final class ChildRegistry {
     // bounded form below is about completion, not about what it completes with.
     Future<void> future = awaited.map((e) => e._completer.future).wait;
     if (timeout != null) {
-      future = _boundedByRootZone(future, timeout);
+      future = _boundedByRootZone(
+        future,
+        timeout,
+        // Which children were unfinished when the limit ran out -- read there
+        // rather than here. `unregister()` marks a child done at once while
+        // `.wait` carries the news to this wait a hop or two later, so a
+        // child finishing in the microtasks between the two moments used to
+        // leave the report empty: `couldn't wait for the children to
+        // complete: []`, the one line able to name the culprit, blank.
+        () => "couldn't wait for the children to complete:"
+            ' ${awaited.where((e) => !e._completer.isCompleted).toList()}',
+      );
     }
 
     try {
       await future;
-    } on TimeoutException catch (_, stackTrace) {
-      final unfinished =
-          awaited.where((e) => !e._completer.isCompleted).toList();
-
+    } on TimeoutException catch (error, stackTrace) {
       try {
-        onTimeout?.call(
-          TimeoutException(
-            "couldn't wait for the children to complete: $unfinished",
-            timeout,
-          ),
-          stackTrace,
-        );
+        onTimeout?.call(error, stackTrace);
       } finally {
         // Dropping the children this wait gave up on keeps a second wait from
         // hanging on entries nobody will complete. It happens even when the
         // report above throws, so a failing reporter cannot leave the registry
-        // wedged. The children registered after this wait started stay.
-        _children.removeWhere(unfinished.contains);
+        // wedged. The children registered after this wait started stay, and so
+        // do the ones that finished after all -- what is dropped is what is
+        // still pending now, not what the report named a few microtasks ago.
+        _children.removeWhere(
+          (child) => !child._completer.isCompleted && awaited.contains(child),
+        );
       }
     }
   }
@@ -264,6 +273,15 @@ final class ChildEntry {
 
 /// [work], bounded by [limit], on a timer of the root zone.
 ///
+/// [describeExpiry] is the message of the [TimeoutException] this throws, and
+/// it is called from the timer -- at the moment the limit runs out, not at the
+/// moment the expiry is answered. Between those two moments lie a few
+/// microtasks, and that is enough for the very thing the wait was waiting for
+/// to finish: a completer is marked done at once, while the combined future
+/// above it carries that news a hop or two later. A message written in that
+/// gap describes a wait that has already ended, which is how the report of an
+/// expired wait for children came to name none of them.
+///
 /// `Future.timeout` does the same thing with a timer of the *current* zone,
 /// and that is what these two waits used to use. A hang of the kind they exist
 /// for outlives frames, and a scope is usually taken down between them, so the
@@ -276,7 +294,11 @@ final class ChildEntry {
 /// if it fails first, a [TimeoutException] if the limit wins. [work] here is
 /// always made of completers this library owns, and those complete with a
 /// value or not at all.
-Future<void> _boundedByRootZone(Future<void> work, Duration limit) async {
+Future<void> _boundedByRootZone(
+  Future<void> work,
+  Duration limit,
+  String Function() describeExpiry,
+) async {
   // Every limit that reaches a timer in this package comes out of
   // `resolveTimeout`, which refuses a negative one. A wait bounded without
   // going through it is how the container of a `Scope` used to expire at once
@@ -285,9 +307,11 @@ Future<void> _boundedByRootZone(Future<void> work, Duration limit) async {
   assert(!limit.isNegative, 'A wait cannot be bounded by $limit');
 
   var finished = false;
+  String? expiry;
   final expired = Completer<void>();
   final timer = Zone.root.createTimer(limit, () {
     if (!expired.isCompleted) {
+      expiry = describeExpiry();
       expired.complete();
     }
   });
@@ -302,6 +326,6 @@ Future<void> _boundedByRootZone(Future<void> work, Duration limit) async {
   }
 
   if (!finished) {
-    throw TimeoutException(null, limit);
+    throw TimeoutException(expiry, limit);
   }
 }

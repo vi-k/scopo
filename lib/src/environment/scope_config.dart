@@ -5,6 +5,8 @@
 // single-line `ignore` then lands on the wrong side of it.
 // ignore_for_file: avoid_classes_with_only_static_members
 
+import 'dart:async';
+
 import 'package:flutter/foundation.dart';
 
 part 'scope_observer.dart';
@@ -29,6 +31,21 @@ abstract final class ScopeConfig {
   /// makes the run longer.
   static bool pauseAfterInitializationEnabled =
       _pauseAfterInitializationEnabled;
+
+  /// Whether an expired wait is reported through [FlutterError.reportError].
+  ///
+  /// On by default. Set it to `false` in an application that has an [observer]
+  /// of its own and reports expiries from there: an expiry arriving twice —
+  /// once as an event, once as a Flutter error — is what makes one of them
+  /// look like a second problem. The observer hears about the expiry either
+  /// way, and hears it with the very `TimeoutException` the report would have
+  /// carried, so nothing is lost by switching this off.
+  ///
+  /// Only the report goes. The wait still gives up on time, the scope still
+  /// goes on as if it had succeeded, and the four callbacks of the scope —
+  /// `onScopeKeyTimeout`, `onInitCancellationTimeout`, `onDisposeScopeTimeout`
+  /// and `onWaitForChildrenTimeout` — are still called.
+  static bool timeoutReportsEnabled = _timeoutReportsEnabled;
 
   /// Timeout for waiting for a `scopeKey` to be released.
   ///
@@ -89,6 +106,9 @@ abstract final class ScopeConfig {
   /// The default of [pauseAfterInitializationEnabled].
   static const _pauseAfterInitializationEnabled = true;
 
+  /// The default of [timeoutReportsEnabled].
+  static const _timeoutReportsEnabled = true;
+
   /// Puts every switch above back to its default.
   ///
   /// These are global and outlive the code that changed them, so a test that
@@ -100,11 +120,56 @@ abstract final class ScopeConfig {
   /// is usually the whole point of the run it was assigned for.
   static void reset() {
     pauseAfterInitializationEnabled = _pauseAfterInitializationEnabled;
+    timeoutReportsEnabled = _timeoutReportsEnabled;
     defaultScopeKeyTimeout = _timeout;
     defaultWaitForChildrenTimeout = _timeout;
     defaultDisposeScopeTimeout = _timeout;
     defaultInitCancellationTimeout = _timeout;
   }
+}
+
+/// Tells the observer that a bounded wait ran out of time.
+///
+/// The other half of an expiry is [reportTimeout], and the two are separate
+/// because they are not always sent from the same place: a wait for children
+/// is recorded by the parent, which is the one point all three ways of asking
+/// for that wait pass through, while the report belongs to whoever asked and
+/// may be replaced by them. What is never conditional is this half — the
+/// recording is what the package says about itself, and
+/// [ScopeConfig.timeoutReportsEnabled] has nothing to say about it.
+///
+/// Not exported: the package notifies, an application observes.
+void notifyTimeout(
+  ScopeObservable target,
+  String what,
+  TimeoutException error,
+  StackTrace stackTrace,
+) =>
+    notifyObserver(
+      (observer) => observer.onTimeout(target, what, error, stackTrace),
+    );
+
+/// Reports an expired wait through [FlutterError.reportError].
+///
+/// Silent when the application switched these reports off — see
+/// [ScopeConfig.timeoutReportsEnabled], which is the one switch this obeys —
+/// and the reason every expiry of the package is reported from here rather
+/// than from the four places that used to write this out for themselves.
+///
+/// Not exported: the package reports, an application decides what to do about
+/// it.
+void reportTimeout(TimeoutException error, StackTrace stackTrace) {
+  if (!ScopeConfig.timeoutReportsEnabled) {
+    return;
+  }
+
+  FlutterError.reportError(
+    FlutterErrorDetails(
+      exception: error,
+      stack: stackTrace,
+      library: 'scopo',
+    ),
+  );
 }
 
 /// Calls [call] on [ScopeConfig.observer], guarded.

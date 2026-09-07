@@ -398,18 +398,13 @@ abstract base class ScopeAutoDependencies<T extends ScopeAutoDependencies<T, C>,
       }),
     );
 
-    notifyObserver((observer) => observer.onTimeout(this, 'the disposal'));
-    FlutterError.reportError(
-      FlutterErrorDetails(
-        exception: TimeoutException(
-          "$T couldn't dispose of what it built before the initialization "
-          'failed',
-          limit,
-        ),
-        stack: StackTrace.current,
-        library: 'scopo',
-      ),
+    final error = TimeoutException(
+      "$T couldn't dispose of what it built before the initialization failed",
+      limit,
     );
+    final stackTrace = StackTrace.current;
+    notifyTimeout(this, 'the disposal', error, stackTrace);
+    reportTimeout(error, stackTrace);
   }
 
   @override

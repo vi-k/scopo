@@ -398,7 +398,8 @@ built-in families offer.
 A child that registers while the wait is running is not awaited by it, and is
 still registered once it is over. On expiry the children that never finished
 are dropped, `onTimeout` is called — by default a `FlutterError.reportError`
-naming the scope — and the future completes normally either way. Nothing here
+naming the scope, and a callback of your own is handed that same named error —
+and the future completes normally either way. Nothing here
 deadlocks; it degrades into a delay and a report.
 
 A scope with neither a parent scope nor a coordinator above it registers

@@ -71,7 +71,10 @@ mixin AsyncScopeParent on Diagnosticable implements ScopeObservable {
   /// [onTimeout] defaults to reporting the [TimeoutException] through
   /// [FlutterError.reportError], the same default
   /// [AsyncScopeCoordinator.waitForChildren] applies, so a dropped child is
-  /// never silent; pass a callback to handle it instead.
+  /// never silent; pass a callback to handle it instead. It is handed the
+  /// error that report would have carried — [reportName] in front of the
+  /// message, so it reads on its own — and the observer is handed the same
+  /// one.
   Future<void> waitForChildren({
     Duration? timeout,
     void Function(TimeoutException error, StackTrace stackTrace)? onTimeout,
@@ -81,7 +84,7 @@ mixin AsyncScopeParent on Diagnosticable implements ScopeObservable {
     // while the parent is still mounted: the wait outlives the tree in the
     // very cases it exists for, and reading `widget` at expiry time would
     // throw on an element that has been unmounted since.
-    final name = onTimeout == null ? reportName : null;
+    final name = reportName;
 
     return _childRegistry.waitForChildren(
       // The default is substituted here rather than left to the registry,
@@ -99,26 +102,25 @@ mixin AsyncScopeParent on Diagnosticable implements ScopeObservable {
         // from a parent, and [AsyncScopeCoordinator.waitForChildren] -- so
         // announcing it here is what makes the expiry visible whichever way
         // the wait was asked for.
-        notifyObserver(
-          (observer) => observer.onTimeout(this, 'its child scopes'),
-        );
+        //
+        // Named once, here, and handed to everyone downstream: the message
+        // the registry builds knows nothing about the widget tree, and this
+        // is the only point that knows which parent the wait belonged to. A
+        // caller that replaces the report gets the error the report would
+        // have carried rather than one missing the name of the parent it
+        // asked -- and the observer, whose record has to read away from the
+        // event that carried it, gets the same one.
+        final named =
+            TimeoutException('$name ${error.message}', error.duration);
+        notifyTimeout(this, 'its child scopes', named, stackTrace);
 
         if (onTimeout != null) {
-          onTimeout(error, stackTrace);
+          onTimeout(named, stackTrace);
 
           return;
         }
 
-        FlutterError.reportError(
-          FlutterErrorDetails(
-            exception: TimeoutException(
-              '$name ${error.message}',
-              error.duration,
-            ),
-            stack: stackTrace,
-            library: 'scopo',
-          ),
-        );
+        reportTimeout(named, stackTrace);
       },
     );
   }

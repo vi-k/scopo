@@ -710,6 +710,15 @@ void main() {
 `ScopeConfig.pauseAfterInitializationEnabled = false` disables the artificial
 `pauseAfterInitialization` delays — useful in tests.
 
+`ScopeConfig.timeoutReportsEnabled = false` stops the package reporting an
+expired wait through `FlutterError.reportError`. Every bounded wait is
+announced twice by default — once to the observer, once as a Flutter error —
+which is one arrival too many for an application that already logs expiries
+from its own observer and does not want each of them raised again as a crash
+to look into. Only the report goes: the wait still gives up on time, the scope
+still goes on, and the observer still hears the expiry with the very
+`TimeoutException` the report would have carried.
+
 ## Testing
 
 The same observer that prints in an app records in a test, which turns the

@@ -84,7 +84,7 @@ fails" below.
 | `onDisposalProgress(target, path)` | one step of it is done |
 | `onDisposed(target)` | a teardown has finished |
 | `onError(target, phase, error, stackTrace)` | something failed |
-| `onTimeout(target, what)` | a bounded wait expired |
+| `onTimeout(target, what, error, stackTrace)` | a bounded wait expired |
 | `onTrace(target, message)` | a step of the machinery below the lifecycle |
 
 Four of them are the dependency container's steps — `onStepStarted` and
@@ -312,13 +312,20 @@ Seven rows and eight labels: a `Scope` has two steps behind `disposeScope` and
 bounds each of them, so it reports one of the middle two rather than
 `its own teardown`, which is what every other family reports.
 
+`error` is the `TimeoutException` the report carries: the scope's name, the
+limit, and — for the two waits that queue behind something — what was still
+pending when that limit ran out, the entries ahead in the queue of a
+`scopeKey` or the children a parent never saw finish. It is everything the
+package knows about the expiry, so an observer that logs it needs nothing
+beside it.
+
 An expiry is never announced through the observer alone. The first two of
 these also reach `onScopeKeyTimeout` and `onWaitForChildrenTimeout` — the
 scope's own callbacks — and every one of them is reported through
-`FlutterError.reportError` unless a callback of yours takes that place. Passing
-your own `onTimeout` to `waitForChildren` replaces that report, not this
-event: the observer is what the package says about itself, not your error
-handling.
+`FlutterError.reportError`, unless a callback of yours takes that place or the
+application switched those reports off. Neither the callback nor the switch
+touches this event: the observer is what the package says about itself, not
+your error handling.
 
 ### What `onTrace` covers
 
@@ -449,6 +456,15 @@ timeout is not fatal: it is reported through `FlutterError.reportError`, and
 the scope then proceeds as if the wait had succeeded — so a dependency that
 never completes its disposal degrades into a delay plus an error report instead
 of a deadlock.
+
+**The report is what `ScopeConfig.timeoutReportsEnabled = false` switches off,
+and all it switches off.** The wait still gives up on time, the scope still
+goes on, the four callbacks are still called, and the observer still hears the
+expiry — with the very `TimeoutException` the report would have carried, so
+nothing is lost by taking the reporting over. It is for an application that
+reports expiries from its own observer: one expiry arriving twice, once as an
+event and once as a Flutter error, is what makes one of the two look like a
+second problem.
 
 Two more waits share one of these defaults. The first takes no override of its
 own.

@@ -386,6 +386,112 @@ void main() {
     await settle(tester, until: () => false);
   });
 
+  // The label alone says an expiry happened; the error says what expired and
+  // what was still pending when it did. An application that reports expiries
+  // from its own observer -- which is what `ScopeConfig.timeoutReportsEnabled`
+  // is for -- would have nothing to report without it.
+  testWidgets('the observer hears the error the report carries',
+      (tester) async {
+    final childGate = Completer<void>();
+    addTearDown(() {
+      if (!childGate.isCompleted) {
+        childGate.complete();
+      }
+    });
+
+    Widget build({required bool present}) => Directionality(
+          textDirection: TextDirection.ltr,
+          child: present
+              ? _parent(
+                  waitForChildrenTimeout: _short,
+                  child: _held(childGate),
+                )
+              : const SizedBox.shrink(),
+        );
+
+    await tester.pumpWidget(build(present: true));
+    await tester.pumpAndSettle();
+
+    await tester.pumpWidget(build(present: false));
+    await settle(
+      tester,
+      until: () => observer.events.contains('disposed AsyncScope(parent)'),
+    );
+
+    expect(observer.timeouts, hasLength(1));
+    final error = observer.timeouts.single;
+    expect(error.duration, _short);
+    expect(
+      error.message,
+      startsWith('AsyncScope(parent)'),
+      reason: 'a record has to read away from the event that carried it, so '
+          'the error names the parent even though the observer was handed it',
+    );
+    expect(
+      error.message,
+      contains(
+        "couldn't wait for the children to complete: [AsyncScope(child)",
+      ),
+      reason: 'and it names the child that was still there when the limit ran '
+          'out -- the one line able to say who held the teardown up',
+    );
+    expect(tester.takeException(), same(error));
+
+    childGate.complete();
+    await settle(tester, until: () => false);
+  });
+
+  // The switch is about the report and nothing else: the wait still gives up
+  // on time, the scope still goes on, and the observer still hears the whole
+  // of it. What goes is the second arrival of one expiry -- as an event and
+  // then again as a Flutter error, which is what makes one of them look like
+  // a problem of its own.
+  testWidgets('a switched-off report leaves the observer the only channel',
+      (tester) async {
+    addTearDown(ScopeConfig.reset);
+    ScopeConfig.timeoutReportsEnabled = false;
+
+    final childGate = Completer<void>();
+    addTearDown(() {
+      if (!childGate.isCompleted) {
+        childGate.complete();
+      }
+    });
+
+    Widget build({required bool present}) => Directionality(
+          textDirection: TextDirection.ltr,
+          child: present
+              ? _parent(
+                  waitForChildrenTimeout: _short,
+                  child: _held(childGate),
+                )
+              : const SizedBox.shrink(),
+        );
+
+    await tester.pumpWidget(build(present: true));
+    await tester.pumpAndSettle();
+
+    await tester.pumpWidget(build(present: false));
+    await settle(
+      tester,
+      until: () => observer.events.contains('disposed AsyncScope(parent)'),
+    );
+
+    expect(
+      tester.takeException(),
+      isNull,
+      reason: 'the report is what was switched off',
+    );
+    expect(
+      observer.events,
+      contains('timeout AsyncScope(parent) its child scopes'),
+    );
+    expect(observer.timeouts, hasLength(1));
+
+    childGate.complete();
+    await settle(tester, until: () => false);
+  });
+
   testWidgets('a throwing observer does not reach the scope', (tester) async {
     final errors = <FlutterErrorDetails>[];
     final previous = FlutterError.onError;
@@ -982,20 +1088,32 @@ void main() {
   test('the print observer covers the rest of the lifecycle', () {
     final lines = <String>[];
     const scope = _FakeObservable('CounterScope(#4e0b7)');
+    // Written out here rather than inside the list below, where a string in
+    // two halves reads as a missing comma.
+    const expiry = 'scopo | CounterScope(#4e0b7) | gave up waiting for the '
+        "disposal: Deps couldn't dispose of what it built";
 
     ScopePrintObserver(output: lines.add)
       ..onProgress(scope, 'dep1 (1/2)')
       ..onCancelled(scope)
       ..onDispose(scope)
       ..onDisposed(scope)
-      ..onTimeout(scope, 'the disposal');
+      ..onTimeout(
+        scope,
+        'the disposal',
+        TimeoutException(
+          "Deps couldn't dispose of what it built",
+          const Duration(seconds: 3),
+        ),
+        StackTrace.empty,
+      );
 
     expect(lines, [
       'scopo | CounterScope(#4e0b7) | progress: dep1 (1/2)',
       'scopo | CounterScope(#4e0b7) | initialization cancelled',
       'scopo | CounterScope(#4e0b7) | dispose…',
       'scopo | CounterScope(#4e0b7) | disposed',
-      'scopo | CounterScope(#4e0b7) | gave up waiting for the disposal',
+      expiry,
     ]);
   });
 

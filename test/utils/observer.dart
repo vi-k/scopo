@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:scopo/scopo.dart';
 
 /// `target.debugLabel` without the trailing `(#hash)`.
@@ -18,6 +20,10 @@ String _label(ScopeObservable target) =>
 final class RecordingObserver extends ScopeObserver {
   /// Every event so far, oldest first.
   final events = <String>[];
+
+  /// The error of every [onTimeout], in order — the half the line for it
+  /// leaves out.
+  final timeouts = <TimeoutException>[];
 
   /// Whether [onTrace] is recorded too.
   final bool trace;
@@ -68,9 +74,20 @@ final class RecordingObserver extends ScopeObserver {
   ) =>
       events.add('error ${_label(target)} ${phase.name} $error');
 
+  // The error goes beside the line rather than into it: it repeats `what` in
+  // prose and carries names with hashes in them, and every expectation over
+  // [events] compares whole lists of strings. A test that is about the error
+  // reads [timeouts].
   @override
-  void onTimeout(ScopeObservable target, String what) =>
-      events.add('timeout ${_label(target)} $what');
+  void onTimeout(
+    ScopeObservable target,
+    String what,
+    TimeoutException error,
+    StackTrace stackTrace,
+  ) {
+    events.add('timeout ${_label(target)} $what');
+    timeouts.add(error);
+  }
 
   @override
   void onTrace(ScopeObservable target, String message) {

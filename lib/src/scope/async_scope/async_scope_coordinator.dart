@@ -74,33 +74,20 @@ final class AsyncScopeCoordinator extends ScopeWidgetCore<AsyncScopeCoordinator,
     BuildContext context, {
     Duration? timeout,
     void Function(TimeoutException error, StackTrace stackTrace)? onTimeout,
-  }) {
-    final element = _elementOf(context);
-    // The message the registry builds knows nothing about the widget tree, so
-    // the coordinator puts its own name in front of it. The name is read here,
-    // while the element is still mounted: the wait outlives the tree in the
-    // very cases this helper exists for, and `Element.widget` throws once the
-    // element has been unmounted.
-    final name = element.widget.toStringShort(showHashCode: true);
-
-    return element.waitForChildren(
-      // Resolved by `waitForChildren` below, and only there: resolving twice
-      // turns a `ScopeTimeout.none` into the `null` that means "take the
-      // default" on the way in.
-      timeout: timeout,
-      onTimeout: onTimeout ??
-          (error, stackTrace) => FlutterError.reportError(
-                FlutterErrorDetails(
-                  exception: TimeoutException(
-                    '$name ${error.message}',
-                    error.duration,
-                  ),
-                  stack: stackTrace,
-                  library: 'scopo',
-                ),
-              ),
-    );
-  }
+  }) =>
+      _elementOf(context).waitForChildren(
+        // Resolved by `waitForChildren` below, and only there: resolving twice
+        // turns a `ScopeTimeout.none` into the `null` that means "take the
+        // default" on the way in.
+        timeout: timeout,
+        // Passed on as it stands, `null` and all. The default report of
+        // `AsyncScopeParent.waitForChildren` puts `reportName` of this element
+        // in front of the registry's message, and that is the very expression a
+        // copy here used to write out -- so the line was the same, while the
+        // report itself sat outside the one place the package reports an expiry
+        // from, and `ScopeConfig.timeoutReportsEnabled` would have missed it.
+        onTimeout: onTimeout,
+      );
 }
 
 final class _AsyncScopeCoordinatorElement extends ScopeWidgetElementBase<
