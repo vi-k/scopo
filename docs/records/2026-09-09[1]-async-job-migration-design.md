@@ -1,0 +1,357 @@
+# Переход на ядро `async_job`
+
+> **Состояние на 2026-09-09:** спека написана, код не тронут. Работа ждёт
+> решений владельца — они собраны в «Решениях», их семь, и без Р1–Р4
+> переписывать нечего.
+> **Что это:** перевод собственной копии контекста задачи на опубликованное
+> ядро `async_job` 0.1.0: отображение член за членом, форма шва, три разницы
+> в поведении, список правок и порядок работ.
+> **Связанные записи:** `2026-09-05[1]-init-wait-family-design.md` (её
+> отложенная половина закрывается здесь),
+> `2026-09-04[1]-init-context-design.md` (та форма, которую переводим),
+> `2026-09-04[2]-init-context-plan.md`,
+> `2026-09-04[3]-streamless-internals-design.md`.
+
+## Откуда это
+
+Владелец, 2026-09-09: «переходи на async_job». Ядро соседнего пакета `solo`
+опубликовано на pub.dev как **`async_job` 0.1.0** — имена `job` и `jobs`
+сервер не принял, разбор в `solo`,
+`docs/records/2026-09-05[8]-job-name-request-report.md`. Для нас это снимает
+блокировку, записанную в `docs/handoff.md`, «Что дальше»: остаток спеки
+`2026-09-05[1]-init-wait-family-design.md` ждал именно этой публикации.
+
+Работа названа и с той стороны: шаг 4 «Следующих шагов» в
+`~/development/my/solo/docs/handoff.md` — «Перевести `scopo` на ядро», с
+конспектом отображения. Постановка на той стороне писалась в
+`solo`, `docs/records/2026-09-05[4]-jobs-design.md`, раздел «Что достаётся
+`scopo`»; здесь она развёрнута до списка правок и сверена с кодом обеих
+сторон.
+
+**Проверено прогоном, а не чтением:**
+
+- `curl https://pub.dev/api/packages/async_job` — 200, `latest` 0.1.0;
+- зависимость разрешается **закреплённым тулчейном**: пробный пакет в
+  песочнице с `sdk: ^3.6.0`, `flutter: ">=3.27.0"`, `async_job: ^0.1.0` и
+  нашими dev-зависимостями (`fake_async 1.3.1`, `flutter_lints 5.0.0`,
+  `flutter_test`, `leak_tracker_flutter_testing 3.0.8`, `test 1.24.0`) —
+  `flutter pub get` из `.fvm/flutter_sdk` прошёл, `async_job 0.1.0`,
+  `meta 1.15.0` — ровно та, что несёт SDK 3.27.0;
+- **пол не двигается**: у ядра `sdk: ^3.6.0`, у нас тот же, и ядро — чистый
+  Dart, без Flutter.
+
+## Что стоит у нас сейчас
+
+Копия контекста задачи живёт в
+`lib/src/scope/async_scope/scope_init_context.dart` (265 строк) и состоит из
+трёх публичных имён:
+
+- **`ScopeInitCancelled`** — исключение отмены;
+- **`ScopeInitContext`** — `progress`, `isCancelled`, `check`, `wait`,
+  `onCancel`;
+- **`ScopeInitHandle`** — `context`, `isCancelled`, `cancel()`, плюс фабрика
+  `ScopeInitHandle.childOf(parent)`.
+
+Кто их водит:
+
+- `async_scope_core.dart:917` — элемент делает handle с `onProgress:
+  _onInitStep` и запускает `_runInitBody(handle)`;
+- `async_scope_core.dart:148` — `_runInitBody` ждёт тело, ловит
+  `ScopeInitCancelled` как обычный конец (`:159`), а падение при разматывании
+  после отмены отправляет наблюдателю и в `FlutterError.reportError`;
+- `async_scope_core.dart:294` — `runInitBody` семейства без значения:
+  `initScopeAsync(ctx)`, и если отменили — `disposeScope()`;
+- `async_scope_core.dart:324` — `canReleaseAfterCancellation =>
+  !_disposalFinished`: есть ли ещё чем освобождать;
+- `async_scope_core.dart:1281`–`:1340` — разбор: `handle.cancel()`,
+  ограниченное `initCancellationTimeout` ожидание `_initRunning`, отчёт об
+  истечении, и разбор идёт дальше в любом случае.
+
+Позднее значение — то, что тело построило уже после отмены, — ловят три
+семейства: `async_data_scope_core.dart:117` и `:156`
+(`releaseLateData` → `disposeData`), `full_scope/scope_core.dart:175` и
+`:202` (`releaseLateDependencies` → `onUnmount` + `dispose`),
+`async_controller_scope_core.dart:251` (свой релиз на всех путях).
+
+Единственная фабрика ребёнка — `ScopeInitHandle.childOf` в параллельной
+группе зависимостей (`scope_dependency_group.dart:288`): общая область
+отмены для ветвей, первая упавшая ветвь отменяет соседей.
+
+Поверхность правки: 17 файлов в `lib/`, 22 файла в `test/`, четыре темы в
+`doc/` с пятью зеркалами в `docs/ru/`, оба `README.md`, оба примера, шаблоны
+`ide/` с копией в `.vscode/` и разложенные скелеты `test/ide/`.
+
+## Что даёт ядро
+
+`async_job` 0.1.0, `lib/src/`:
+
+- **`Job<T>`** (`job_base.dart:21`) — хэндл: `key`, `describe()`, `level`,
+  `isChild`, `isRunning`, `isFinished`, `isCancelled`, `outcome`, `done`,
+  `value`, `whenCancelled`, `cancel()`, `ignore()`. Конструктор `Job(body)`
+  стартует сам на микротаске; `Job.deferred(body)` возвращает
+  `DeferredJob<T>` со своим публичным `start()` (`:970`).
+- **`JobContext`** (`job_context.dart:24`) — `check`, `wait`, `join`,
+  `uncancellable`, `onCancel`, `onDispose`, `onDiscard`, `disown`, `run`,
+  `log`, `unattended`, `job`. Семья ожидания вчетвером: `wait` бросает
+  действие, `join` дожидается и бросает после возврата, `uncancellable`
+  придерживает отмену, `unattended` не ждёт вовсе.
+- **Стек уборки.** У `wait` и `join` есть `dispose:`/`discard:`, у контекста
+  — `onDispose`/`onDiscard`/`disown`. Правило ядра: **значение, не дошедшее
+  до тела, убирают безусловно и на месте; дошедшее — кладут на стек**;
+  `dispose` срабатывает при любом исходе, `discard` — только если значение
+  никому не досталось. Стек разматывается после детей и до исхода, каждого
+  диспозера дожидаются (`job_base.dart:809`–`:840`).
+- **`Outcome<T>`** (`outcome.dart`) — `Done<T>`, `Failed`, `Cancelled`;
+  `switch` по трём случаям исчерпывающий. `Cancelled` несёт `reason`
+  (`CancelReason`, открытый класс), `started`, `description`, `stackTrace`.
+- **`JobObserver`** (`observer.dart`) — `onStart`, `onFinish`, `onError`,
+  `onLog`. В `onError` приходит ровно то, что у нас сейчас разложено руками:
+  ошибка тела, позднее падение действия, брошенного `wait`, ошибка
+  диспозера, ошибка колбэка `onCancel`, падение работы из `unattended`.
+- **`JobBase<T>`** (`:232`) — то, от чего наследуются движки домена:
+  `status`, `bodyEnded`, `isDisposing`, `pendingCancel`, `cancellable`,
+  `children`, `whenDone`, `start()`, `finish()`, `cancelWith()`,
+  `cascadeToChildren()`, хуки `started()`, `finished()`, `adoptedBy()`,
+  `createContext()`, `execute(covariant …)`.
+- **`JobContextBase`** (`job_context.dart:386`) — основа контекста, `check`
+  виртуальный намеренно: домен проверяет больше, чем отмену, и `wait`,
+  `join`, `uncancellable` ходят через него.
+- **`JobStream.each`** (`job_stream.dart:67`) — подписка, живущая ровно
+  столько, сколько задача. Нам сейчас не нужна: стрима в инициализации не
+  осталось.
+
+## Отображение, член за членом
+
+| у нас | в ядре | что меняется |
+|---|---|---|
+| `ScopeInitCancelled` | `Cancelled` | исчезает наше имя; у ядра есть причина, `started`, описание и стек |
+| `ScopeInitContext.check` | `JobContext.check` | одно к одному; в окне уборки ядро бросает `StateError`, а не отмену |
+| `ScopeInitContext.wait` | `JobContext.wait` | добавляются `dispose:`/`discard:` — то, ради чего правило «приобретение не оборачивают» и заводилось |
+| `ScopeInitContext.onCancel` | `JobContext.onCancel` | одно к одному |
+| `ScopeInitContext.isCancelled` | `ctx.job.isCancelled` | член пропадает; см. Р3 |
+| `ScopeInitContext.progress` | нет | остаётся нашим: зовёт `check()` и уходит в модель |
+| `ScopeInitHandle` | `Job`/`DeferredJob` | см. Р2: наружу нужен наш подтип, иначе тело не получит `progress` |
+| `handle.cancel()` (не ждёт) | `job.cancel()` (ждёт) | ждать или нет — решает вызывающий: не дожидаться возвращённой future |
+| `ScopeInitHandle.childOf` | `ctx.run(child)` | не механическая замена, разбор ниже |
+| `releaseLateData` / `releaseLateDependencies` | `ctx.onDiscard` / `discard:` | регистрация **после** того, как значение построено |
+| ловля `ScopeInitCancelled` в `_runInitBody` | `switch (await job.done)` | `Done` — готово, `Cancelled` — молчим, `Failed` — сбой |
+| `FlutterError.reportError` вокруг тела | адаптер `JobObserver` | одна дверь вместо трёх разложенных руками |
+| — | `join`, `uncancellable`, `unattended`, `log`, `disown` | приходят даром; что из них становится идиомой — Р4 |
+
+## Форма шва
+
+**Задача.** `ScopeInitJob<T> extends JobBase<T>` (имя — Р2): не стартует сам,
+`createContext()` отдаёт приватный `_ScopeInitContext extends JobContextBase
+implements ScopeInitContext`, `execute(covariant _ScopeInitContext ctx)` зовёт
+тело. `progress` — член нашего контекста: `check()`, потом колбэк, как сейчас.
+
+**Элемент.** Вместо `ScopeInitHandle(onProgress: _onInitStep)` —
+`ScopeInitJob<void>(…, observer: адаптер)`, старт по месту, и вместо
+`_runInitBody`:
+
+```dart
+switch (await job.done) {
+  case Done(): _settleReady();
+  case Cancelled(): break;              // разбор ждёт ровно этого
+  case Failed(:final error, :final stackTrace):
+    _settleFailure(error, stackTrace);
+}
+```
+
+Разматывание после отмены ядро уже разложило само (`job_base.dart:756`–`:790`):
+тело, упавшее **после** метки, кончается `Cancelled`, а его ошибка уходит в
+`JobObserver.onError`; тело, упавшее **до** метки, кончается `Failed`, и если
+отмена накрыла его позже — ядро отдельно сообщает укрытую ошибку. Это ровно то,
+что сегодня написано руками в `_runInitBody:159`–`:192`, и оно уходит.
+
+**Разбор.** `handle.cancel()` + ограниченное ожидание `_initRunning`
+превращается в ограниченное ожидание `job.cancel()`: у ядра эта future ждёт,
+пока задача действительно кончится. `initCancellationTimeout` остаётся нашим
+(Р5), `_awaitBounded` и отчёт об истечении — как есть.
+
+**Позднее значение.** `releaseLateData(data)` ложится в `discard:` у того
+вызова, который значение произвёл, либо в `ctx.onDiscard(...)`,
+зарегистрированный **после** постройки. Вместе с этим — правка, названная
+ревью соседа: `_data` и `_hasData` сегодня пишутся внутри тела
+(`async_data_scope_core.dart:139`–`:140`), а должны писаться из ветки `Done`.
+Иначе отмена, пришедшая после записи поля, уронит `discard` на значение,
+которое поле уже держит, и освободит его дважды.
+
+**Наблюдатель.** Адаптер `JobObserver` → `ScopeObserver`: `onError` ложится на
+`observer.onError(this, ScopePhase.initialization…, …)` плюс
+`FlutterError.reportError`, `onLog` — на `onTrace`. `onStart`/`onFinish` нам не
+нужны: `onInit`, `onReady`, `onCancelled` элемент зовёт сам и в своих местах.
+
+## Где перевод не механический: параллельная группа
+
+`ScopeInitHandle.childOf` даёт **область отмены без тела**: у ветвей общий
+контекст, первая упавшая зовёт `arm.cancel()`, соседи узнают на своём
+следующем `ctx.check()`, а инициализация, которой группа принадлежит, не
+затронута (`scope_dependency_group.dart:288`–`:305`). В ядре 0.1.0 такого
+примитива нет: ребёнок — это задача с телом.
+
+Прямая замена «ветви в теле одного ребёнка» **ломает распространение отказа**:
+если внутри тела ребёнка позвать `armJob.cancel()`, чтобы сообщить соседям, то
+у задачи окажется `_pendingCancel`, и ошибка, вылетевшая из `Future.wait`,
+станет не исходом, а сообщением наблюдателю — исходом будет `Cancelled`
+(`job_base.dart:774`–`:781`, `:800`–`:806`). Группа, упавшая по вине
+зависимости, доложит наверх «отменена», и `AsyncScopeError` не случится.
+
+**Рекомендация: ветвь — своя дочерняя задача.** `ctx.run` на каждую ветвь,
+тело группы ждёт `Future.wait([...armJobs.map((j) => j.value)])`, первая
+упавшая отменяет остальные и её ошибка летит дальше как обычно. Так же
+уходит и ручное «снять handle с родителя в `finally`»: дети снимаются с
+родителя сами. Цена — родитель завершается после детей (первая из трёх
+разниц ниже), а это как раз то, чего группа и добивается.
+
+**Проверить прогоном до правки** (в спеке не решено, решается тестом):
+ведёт ли `ctx.run` под уже отменённым родителем к `Cancelled`, брошенному в
+тело группы, там, где `childOf` молча отдавал отменённого ребёнка, — и что от
+этого меняется в `scope_dependency_partial_test.dart` и
+`scope_auto_dependencies_test.dart`.
+
+## Три разницы, которые принимаем на себя
+
+Названы в спеке ядра, сверены здесь с кодом:
+
+1. **Дети — поддерево завершения, а не только область отмены.** Родитель
+   завершается после всех детей (`job_base.dart:786`, `_awaitChildren`). Для
+   групп зависимостей разницы по времени нет: группа и так ждёт все ветви.
+2. **`ctx.run` под уже отменённым родителем бросает отмену в тело**, тогда
+   как `ScopeInitHandle.childOf` молча возвращал отменённого ребёнка
+   (`scope_init_context.dart:129`–`:133`). Это меняет форму кода в группе и,
+   возможно, ожидания тестов.
+3. **Сужение `covariant`** идёт к приватной реализации контекста: `execute`
+   принимает `JobContextBase`, а наш подтип сужает его до
+   `_ScopeInitContext`. Публичным интерфейсом остаётся `ScopeInitContext`.
+
+## Что меняется в публичном API
+
+Ломающее — всё перечисленное, но **0.14.0 не опубликована**, так что
+ломается только код в дереве. Наружу:
+
+- `ScopeInitCancelled` исчезает; тот, кто ловил его, ловит `Cancelled`;
+- `ScopeInitHandle` исчезает или меняет форму (Р2);
+- `ScopeInitContext` получает `join`, `uncancellable`, `onDispose`,
+  `onDiscard`, `disown`, `run`, `log`, `unattended`, `job` и теряет
+  `isCancelled` (Р3);
+- у `wait` появляются `dispose:` и `discard:`;
+- `async_job` становится **публичной** зависимостью: его имена стоят в
+  сигнатурах. Отсюда Р1.
+
+## Решения владельцу
+
+**Р1. Реэкспорт имён ядра.** Пользователь ловит `Cancelled`, читает
+`Outcome`, держит `Job`. Либо он сам добавляет `async_job` в свой
+`pubspec.yaml`, либо scopo реэкспортирует нужные имена и остаётся одним
+импортом. **Рекомендация: реэкспортировать выборочно** (`Job`, `DeferredJob`,
+`JobContext`, `Cancelled`, `CancelReason`, `Outcome`, `Done`, `Failed`,
+`JobObserver`), потому что первое, что делает пользователь после отмены, —
+пишет `on Cancelled`, и требовать ради этого второй зависимости незачем.
+
+**Р2. Чем заменить `ScopeInitHandle`.** Он — единственный публичный способ
+водить инициализацию снаружи скоупа: `ScopeAutoDependencies` руками,
+контейнер до виджетов, тест. Голый `Job.deferred` не годится: тело получит
+`JobContext`, а нашим телам нужен `progress`. Значит наружу выходит наш
+подтип задачи. **Рекомендация: публичный `ScopeInitJob<T>`** — конструктор
+принимает тело и `onProgress`, `start()` открыт, всё остальное — от `Job`.
+Имя за владельцем; по правилу из моей памяти новое публичное имя требует
+раздела «зачем» в `README.md`, а не только дартдока.
+
+**Р3. `isCancelled` у контекста.** У ядра его нет, есть `ctx.job.isCancelled`.
+У нас он в дартдоке назван «единственным членом, который отвечает, а не
+бросает», и на нём стоят три `runInitBody` (`async_scope_core.dart:297`,
+`async_data_scope_core.dart:123`, `scope_core.dart:181`). Ядро само
+предлагает добавить его контексту неломающим шагом (открытый вопрос спеки
+ядра). **Рекомендация: не добавлять**, а переписать эти три места на исход
+задачи — они и так уезжают в `switch (await job.done)`.
+
+**Р4. Идиома после перехода — главное решение.** Правило 2026-09-05
+(«приобретение зовут напрямую, обёртка теряет ресурс») держалось на том, что
+у нашего `wait` **нет** способа убрать за собой. У ядра он есть:
+`wait(..., discard:)` и `join(..., discard:)` убирают значение, не дошедшее до
+тела, на месте. То есть ядро **переворачивает** наше правило: теперь
+правильная форма — всё через контекст, уборка объявлена рядом с
+приобретением. **Рекомендация: принять правило ядра.** Цена: раздел «What
+goes through the context, and what does not» в `doc/async_scope.md`, его
+зеркало и запись в `CHANGELOG.md` 0.14.0 переписываются во второй раз за
+неделю; выигрыш — одно правило на два соседних пакета вместо двух разных.
+Это же закрывает старое «Решение 1: брать ли `join`» — берём, потому что он
+приходит с ядром.
+
+**Р5. `initCancellationTimeout` и `canReleaseAfterCancellation`.** Ядро зовёт
+диспозеры независимо от того, ждёт ли кто-то исход, но **не решает за нас**,
+есть ли ещё чем освобождать: релиз — колбэк виджета, а элемент к тому времени
+может всё отдать. Так что старое «Решение 2» не закрывается ядром, а
+упрощается: вариант C («пережить истечение») становится дешевле — значение и
+его диспозер живут на стеке задачи, а не в элементе. **Рекомендация: лимит
+оставить, C рассмотреть отдельной работой после перехода**, чтобы не мешать
+два изменения в одном.
+
+**Р6. Версия.** 0.14.0 собрана, лежит в `main`, на pub.dev не выложена.
+**Рекомендация: сложить переход в неё же** — раздел `CHANGELOG.md` не
+опубликован, правится свободно, и потребитель, взявший `main`
+git-зависимостью, получит одну ломающую волну вместо двух.
+
+**Р7. Публиковать ли 0.14.0 до перехода.** Владелец 2026-09-06 сказал соседу,
+что scopo нужен на pub.dev **с новым `Job`**. **Рекомендация: не публиковать
+до перехода** — иначе придётся ломать идиому, которой сами научили, уже
+опубликованной версией.
+
+## Что переписывается
+
+- **`lib/`**: `scope_init_context.dart` (перекладывается целиком),
+  `async_scope_core.dart` (`_runInitBody`, старт, разбор, `runInitBody`),
+  `async_data_scope_core.dart`, `full_scope/scope_core.dart`,
+  `async_controller_scope_core.dart`, `scope_dependency_group.dart`,
+  `scope_dependency_mixin.dart`, `scope_auto_dependency.dart`,
+  `scope_base.dart`, `lite_scope_base.dart`, `lite_scope_core.dart`,
+  `scope_observer.dart` (адаптер), `scope_config.dart` — итого 17 файлов, где
+  сейчас стоят три имени;
+- **`pubspec.yaml`** — `async_job: ^0.1.0`; оверрайд на путь не нужен, ядро
+  опубликовано;
+- **тесты**: 22 файла, из них целиком — `scope_init_context_test.dart` (255
+  строк, четыре теста про `childOf`) и по местам —
+  `scope_removed_while_initializing_test.dart` (633),
+  `scope_auto_dependencies_test.dart` (2866), `async_scope_test.dart` (1281),
+  `public_facades_test.dart`, `ide_snippets_test.dart`;
+- **темы и зеркала**: `doc/async_scope.md`, `doc/async_data_scope.md`,
+  `doc/full_scope.md`, `doc/lite_scope.md` и пять зеркал в `docs/ru/`,
+  оба `README.md`;
+- **примеры**: `example/minimal`, `example/scopo_demo` — и их `pubspec.yaml`,
+  если пример ловит `Cancelled` сам;
+- **шаблоны IDE**: `ide/scopo.code-snippets`, копия в `.vscode/`,
+  `ide/scopo-live-templates.xml`, скелеты `test/ide/*.dart`;
+- **`CHANGELOG.md`** — раздел 0.14.0.
+
+## Порядок работ
+
+1. решения Р1–Р4 — владельцу; без них не начинать;
+2. зависимость и шов: `ScopeInitJob` + `_ScopeInitContext` на
+   `JobContextBase`, адаптер наблюдателя, — со своей сьютой по образцу
+   `scope_init_context_test.dart`;
+3. элемент: `switch (await job.done)`, старт, разбор с прежним лимитом;
+4. семейства значений: `discard`/`onDiscard` вместо `releaseLate*`, и запись
+   `_data`/`_hasData` из ветки `Done`;
+5. параллельная группа: ветвь — дочерняя задача; **сначала падающий тест на
+   распространение отказа**, потом правка;
+6. документы, зеркала, примеры, шаблоны — одной волной, оригинал и зеркало в
+   одном коммите, потом `sh docs/ru/stamp.sh`;
+7. `CHANGELOG.md`;
+8. гейт §6 целиком.
+
+Каждый шаг по `AGENTS.md` §8: сперва падающий тест, потом правка, потом
+проверка нагруженности откатом.
+
+## Чего в этой спеке нет
+
+- **Кода ядра я не читал целиком** — прочитаны публичные интерфейсы
+  (`job_base.dart:1`–`:230`, `job_context.dart:1`–`:390`, `outcome.dart`,
+  `observer.dart`) и разложение исхода (`job_base.dart:756`–`:860`).
+  Внутренности `_execute`, стека уборки и детей приняты по дартдоку;
+- **не решено, что делать с `each`** — стрима в инициализации у нас нет, но
+  `JobStream.each` может пригодиться `ScopeModel`; отдельный вопрос;
+- **не оценено, сколько тестов упадёт**: 22 файла трогают эти имена, но
+  сколько из них ломается по существу, а не по имени, покажет первый прогон;
+- **вариант C по `initCancellationTimeout`** оставлен отдельной работой
+  (Р5).
