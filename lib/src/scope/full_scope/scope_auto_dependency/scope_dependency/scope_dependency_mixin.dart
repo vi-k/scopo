@@ -96,6 +96,18 @@ mixin ScopeDependencyMixin implements ScopeDependency, ScopeObservable {
   /// would move every progress bar by one.
   void Function(String path)? _onStepStarted;
 
+  /// Turns a path in this dependency's own space into one in the tree's.
+  ///
+  /// Wired the way the callbacks beside it are, and for the same reason: a
+  /// node knows its own name and nothing above it, so the path is composed on
+  /// the way down when the tree is built. The callbacks announce; this one
+  /// answers, which is what a report made *at* the node needs -- the ones sent
+  /// through a callback get their path from the chain that carries them.
+  String Function(String path)? _pathOf;
+
+  /// This dependency's name as the whole tree spells it.
+  String get _fullName => _pathOf?.call(name) ?? name;
+
   /// The same, for the disposal walk.
   void Function(String path)? _onDisposalStepStarted;
 
@@ -154,6 +166,7 @@ mixin ScopeDependencyMixin implements ScopeDependency, ScopeObservable {
     required void Function(String path) onDisposalStepEnded,
     required void Function(String path, Object error, StackTrace stackTrace)
         onDisposalStepFailed,
+    required String Function(String path) pathOf,
   }) {
     if (dependency is! ScopeDependencyMixin) {
       return;
@@ -163,7 +176,8 @@ mixin ScopeDependencyMixin implements ScopeDependency, ScopeObservable {
       .._onStepStarted = onStepStarted
       .._onDisposalStepStarted = onDisposalStepStarted
       .._onDisposalStepEnded = onDisposalStepEnded
-      .._onDisposalStepFailed = onDisposalStepFailed;
+      .._onDisposalStepFailed = onDisposalStepFailed
+      .._pathOf = pathOf;
   }
 
   /// The initialization step itself, run and accounted for by [init].
@@ -532,13 +546,6 @@ mixin ScopeDependencyMixin implements ScopeDependency, ScopeObservable {
       ),
     );
 
-    if (error is ParallelWaitError<void, List<AsyncError?>>) {
-      for (final error in error.errors.nonNulls) {
-        _handlePostCancelError(error.error, error.stackTrace, defaultState);
-      }
-      return;
-    }
-
     // Add the error to the state.
     _addErrorToState(error, stackTrace, defaultState);
 
@@ -550,21 +557,36 @@ mixin ScopeDependencyMixin implements ScopeDependency, ScopeObservable {
     // failure inside it. A cancellation is not one of those: it is a decision
     // somebody made, and the kernel keeps them out of the zone for that
     // reason.
+    //
+    // Unreachable as things stand, and kept for the same reason the guards
+    // beside it are: the only caller sits in an `on Object catch` with an
+    // `on Cancelled { rethrow; }` one line above it, so a cancellation never
+    // gets this far. The rule is written where the report is made rather than
+    // left to hold by the shape of a `catch` two floors up.
     if (error is Cancelled) {
       return;
     }
+
+    // Named the way the other senders of this hook name theirs. A report made
+    // at the node has only the node's own name to hand -- `db`, where the tree
+    // says `checkout/payments/db` -- and the dartdoc of `_handleError` calls
+    // that out as the reason failures are collected on their way up. This
+    // failure has no way up: the cancellation took it. So the path comes down
+    // instead, and the shape a consumer parses is the same one every other
+    // channel gives them.
+    final named = ScopeDependencyException(_fullName, error, stackTrace);
 
     notifyObserver(
       (observer) => observer.onError(
         this,
         ScopePhase.initializationCancellation,
-        error,
+        named,
         stackTrace,
       ),
     );
     FlutterError.reportError(
       FlutterErrorDetails(
-        exception: error,
+        exception: named,
         stack: stackTrace,
         library: 'scopo',
       ),

@@ -94,6 +94,9 @@ abstract base class ScopeAutoDependencies<T extends ScopeAutoDependencies<T, C>,
           stackTrace,
         ),
       ),
+      // The root of a container is where a path stops growing: whatever it is
+      // handed is already spelled the way the whole tree spells it.
+      pathOf: (path) => path,
     );
 
     return tree;
@@ -490,6 +493,19 @@ abstract base class ScopeAutoDependencies<T extends ScopeAutoDependencies<T, C>,
             stackTrace,
           ),
         );
+      }
+
+      // Unless it is a cancellation, which stops at the observer as it does
+      // on every other road out of this package: "a cancellation is a decision
+      // somebody made, not a failure, and none of them reaches the zone". It
+      // arrives wrapped in a [ScopeDependencyException] when the walk was the
+      // package's own, which is why this road went on missing it while
+      // `ctx.onDispose` learned the rule -- a consumer who moved the same
+      // teardown from one hook to the other got the red line and the failing
+      // widget test back.
+      final carried = error is ScopeDependencyException ? error.error : error;
+      if (carried is Cancelled) {
+        return;
       }
 
       // Reported through FlutterError too, not only the observer: this

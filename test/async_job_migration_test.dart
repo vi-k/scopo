@@ -530,6 +530,51 @@ void main() {
     );
     expect(tester.takeException(), same(failure));
   });
+  // The same rule, the other road. A `Cancelled` from `ctx.onDispose` stops at
+  // the observer; one from `dep.dispose` used to go on to `FlutterError` --
+  // wrapped in a `ScopeDependencyException`, which is why nobody noticed it
+  // was still a cancellation. A consumer who moved the same teardown from one
+  // hook to the other got back the red line and the failing widget test.
+  testWidgets(
+      'a Cancelled from a dependency disposer is heard but not reported',
+      (tester) async {
+    final observer = _Errors();
+    ScopeConfig.observer = observer;
+    final dependencies = _CancellingDisposer();
+
+    await tester.pumpWidget(
+      _wrap(
+        AsyncScope(
+          initScope: (context, ctx) async {
+            await dependencies.init(null, ctx);
+          },
+          // The container is the caller's here, so its teardown is the
+          // caller's to start -- and it is the container's own report that
+          // this test is about.
+          disposeScope: dependencies.dispose,
+          progressBuilder: (context, progress) => const Text('loading'),
+          errorBuilder: (context, error, stackTrace, progress) =>
+              const Text('failed'),
+          builder: (context) => const Text('ready'),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+    expect(find.text('ready'), findsOneWidget);
+
+    await tester.pumpWidget(_wrap(const SizedBox.shrink()));
+    await settle(tester, until: () => dependencies.disposed);
+    await tester.pumpAndSettle();
+
+    expect(dependencies.disposed, isTrue);
+    expect(
+      tester.takeException(),
+      isNull,
+      reason: 'a cancellation is a decision somebody made, and the kernel '
+          'keeps those out of the zone -- this road has to keep them out too',
+    );
+  });
+
   testWidgets('a dependency that fails after the cancellation is reported',
       (tester) async {
     final observer = _Errors();
@@ -563,11 +608,25 @@ void main() {
 
     expect(
       observer.errors,
-      [failure],
+      hasLength(1),
       reason: 'the state of the tree keeps it, but the tree is going away: '
-          'the crash reporting of an application has to hear it too',
+          'the crash reporting of an application has to hear it too -- once',
     );
-    expect(tester.takeException(), same(failure));
+    final reported = observer.errors.single;
+    expect(reported, isA<ScopeDependencyException>());
+    expect(
+      (reported as ScopeDependencyException).error,
+      same(failure),
+      reason: 'and what it carries is the failure itself, not a copy',
+    );
+    expect(
+      reported.name,
+      'outer/resource',
+      reason: 'named the way every other channel of this package names a '
+          'dependency: by the path the tree spells, not by the leaf its own '
+          'name',
+    );
+    expect(tester.takeException(), same(reported));
   });
   testWidgets('both arms of a group that fail at once are reported',
       (tester) async {
@@ -601,6 +660,12 @@ void main() {
         contains('alpha failed'),
         contains('beta failed'),
       ]),
+    );
+    expect(
+      observer.errors,
+      hasLength(2),
+      reason: 'two arms, two lines: `containsAll` above says both arrived and '
+          'nothing about a third saying one of them twice',
     );
 
     for (var i = 0; i < 4; i++) {
@@ -703,6 +768,48 @@ void main() {
     await tester.pumpWidget(_wrap(const SizedBox.shrink()));
     await tester.pumpAndSettle();
   });
+
+  // The same message, one level down, where the key came from the arm's own
+  // name -- and an arm of `concurrent('', [...])` has none. An empty key is
+  // not the absence of one: the kernel prints `Job()` for it, which is what
+  // the key was added to stop.
+  testWidgets('a kernel error about an unnamed arm still says which arm',
+      (tester) async {
+    final dependencies = _AnonymousArms();
+
+    await tester.pumpWidget(
+      _wrap(
+        AsyncScope(
+          initScope: (context, ctx) async {
+            await dependencies.init(null, ctx);
+          },
+          disposeScope: () {},
+          progressBuilder: (context, progress) => const Text('loading'),
+          errorBuilder: (context, error, stackTrace, progress) =>
+              const Text('failed'),
+          builder: (context) => const Text('ready'),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+    expect(dependencies.kept, isNotNull);
+
+    await tester.pumpWidget(_wrap(const SizedBox.shrink()));
+    await tester.pumpAndSettle();
+
+    expect(
+      () => dependencies.kept!.onDispose(() {}),
+      throwsA(
+        isA<StateError>().having(
+          (error) => error.message,
+          'message',
+          contains('[1]'),
+        ),
+      ),
+      reason: 'the arm has no name of its own, so the message says where it '
+          'stood -- anything but `Job()`',
+    );
+  });
 }
 
 Widget _wrap(Widget child) => Directionality(
@@ -757,12 +864,17 @@ final class _LateFailingDependencies
 
   _LateFailingDependencies(this.gate, this.failure);
 
+  // Nested, so that the name in a report has somewhere to be wrong: the leaf
+  // asked for its own name says `resource`, and the tree says
+  // `outer/resource`.
   @override
-  ScopeDependency buildDependencies(void context) => dep('resource', (_) async {
-        started = true;
-        await gate.future;
-        throw failure;
-      });
+  ScopeDependency buildDependencies(void context) => sequential('outer', [
+        dep('resource', (_) async {
+          started = true;
+          await gate.future;
+          throw failure;
+        }),
+      ]);
 }
 
 /// A group whose two arms fail in the same turn of the microtask queue.
@@ -797,4 +909,70 @@ final class _TwoGatedArms extends ScopeAutoDependencies<_TwoGatedArms, void> {
             throw StateError('$name failed');
           }),
       ]);
+}
+
+/// A dependency whose disposer gives up with a `Cancelled` of its own.
+final class _CancellingDisposer
+    extends ScopeAutoDependencies<_CancellingDisposer, void> {
+  bool disposed = false;
+
+  @override
+  ScopeDependency buildDependencies(void context) => dep('resource', (dep) {
+        dep.dispose = () {
+          disposed = true;
+          throw const Cancelled('nothing left to close');
+        };
+      });
+}
+
+/// A group whose arms have no names, holding a dependency that keeps its
+/// context -- the ordinary way a consumer meets an error of the kernel's.
+final class _AnonymousArms extends ScopeAutoDependencies<_AnonymousArms, void> {
+  ScopeInitContext? kept;
+
+  @override
+  ScopeDependency buildDependencies(void context) => concurrent('', [
+        dep('named', (_) {}),
+        _ContextKeeper((ctx) => kept = ctx),
+      ]);
+}
+
+/// A dependency of somebody else's making that hangs on to its context.
+final class _ContextKeeper implements ScopeDependency {
+  final void Function(ScopeInitContext ctx) _keep;
+
+  _ContextKeeper(this._keep);
+
+  @override
+  final String name = '';
+
+  @override
+  final int count = 1;
+
+  @override
+  ScopeDependencyState get state => _state;
+  ScopeDependencyState _state = const ScopeDependencyInitial();
+
+  @override
+  bool get disposalRequired => false;
+
+  @override
+  Future<void> init(ScopeInitContext ctx, void Function(String path) onStep) {
+    _keep(ctx);
+    _state = const ScopeDependencyInitialized();
+    return Future<void>.value();
+  }
+
+  @override
+  void onUnmount() {}
+
+  @override
+  Future<void> dispose(void Function(String path) onStep) =>
+      Future<void>.value();
+
+  @override
+  String get wrappedName => '""';
+
+  @override
+  String stateToString() => '$state';
 }

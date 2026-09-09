@@ -91,6 +91,13 @@
   everybody but found a foreign child throwing out of its own `dispose()`,
   which the interface never required to let go first. Neither is a tree that
   holds nothing, and a container will not build over one.
+* **New:** a `Cancelled` out of `dep.dispose` stops at the observer too. The
+  rule below reached `ctx.onDispose` and not this road, where the cancellation
+  travels wrapped in a `ScopeDependencyException` and so did not look like one
+  by the time the container reported it. A consumer who moved the same teardown
+  from one hook to the other got back exactly what the rule removes: a red line
+  in the console for a decision, and a widget test failing on an exception
+  nobody meant to throw.
 * **New:** a `Cancelled` with no outcome to carry it stops at the observer.
   A disposer or an `onCancel` callback that throws one, or an abandoned wait
   that ends in one, reaches `ScopeObserver.onError` and goes no further --
@@ -137,7 +144,11 @@
   the observer's own hook, and the guard then named the observer as the thing
   that had failed. The coordinator keeps a copy of its label, as the scopes do.
 * **New:** a dependency that fails after the cancellation has reached it is
-  reported. It used to be kept in the state of the tree and nowhere else,
+  reported, and named the way every other channel names one: the report
+  carries a `ScopeDependencyException` whose `name` is the path the tree
+  spells -- `checkout/payments/db`, not the leaf's own `db`. A failure that
+  travels up the walk is named on the way; this one has no way up, so the path
+  comes down to it instead. It used to be kept in the state of the tree and nowhere else,
   while the tree was on its way out: an application with ordinary crash
   reporting heard that a scope had closed and nothing about the failure inside
   it. The second arm of a `concurrent` group is heard now too, by whichever of
@@ -151,7 +162,10 @@
   is something to release, and the teardown stage that releases it stands
   under that flag.
 * **New:** errors the kernel raises about a job name the scope or the
-  dependency they belong to. A job with no key prints as `Job()`, and those
+  dependency they belong to, and an arm with no name of its own says where it
+  stood. `concurrent('', [...])` names none of its arms, and a job whose key is
+  the empty string prints as `Job()` -- the very thing a key was given here to
+  stop; such an arm is now `[1]`, under the path of the group holding it. A job with no key prints as `Job()`, and those
   messages reach a consumer -- a context kept in a closure and asked something
   after the scope is over is the ordinary way to meet one.
 * **Breaking:** `AsyncDataScope.initData` is a `Future<T>` too, and the value

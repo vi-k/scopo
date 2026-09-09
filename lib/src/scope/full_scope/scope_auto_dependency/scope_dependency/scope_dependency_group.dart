@@ -39,6 +39,10 @@ abstract base class ScopeDependencyGroup with ScopeDependencyMixin {
         onDisposalStepEnded: (path) => _onDisposalStepEnded?.call(_path(path)),
         onDisposalStepFailed: (path, error, stackTrace) =>
             _onDisposalStepFailed?.call(_path(path), error, stackTrace),
+        pathOf: (path) {
+          final here = _path(path);
+          return _pathOf?.call(here) ?? here;
+        },
       );
     }
   }
@@ -162,6 +166,21 @@ abstract base class ScopeDependencyGroup with ScopeDependencyMixin {
         library: 'scopo',
       ),
     );
+  }
+
+  /// The name a kernel error should print for one arm of this group.
+  ///
+  /// The path the whole tree spells, and a position where the tree spells
+  /// nothing: `concurrent('', [...])` names none of its arms, and a job whose
+  /// key is the empty string prints as `Job()` -- which is the thing a key was
+  /// given here to stop. A position is not a name, but it tells two arms
+  /// apart, and that is what the reader of such a message needs.
+  String _keyFor(ScopeDependency dependency) {
+    final local = dependency.name.isEmpty
+        ? '[${_dependencies.indexOf(dependency)}]'
+        : dependency.name;
+    final here = _path(local);
+    return _pathOf?.call(here) ?? here;
   }
 
   /// Reads what a child that threw leaves behind, without asking it again.
@@ -339,7 +358,7 @@ final class _ScopeDependencyConcurrent extends ScopeDependencyGroup {
           (ctx) => dependency.init(ctx, (path) => onStep(_path(path))),
           // So that an error the kernel raises about this arm names the
           // dependency it belongs to rather than printing as `Job()`.
-          key: dependency.name,
+          key: _keyFor(dependency),
         );
         ctx.run(job);
         jobs.add(job);
