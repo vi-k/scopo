@@ -52,6 +52,23 @@
   package, and `scopo` selectively re-exports its kernel names; consumers
   need no second dependency or import to catch `Cancelled` or read a job's
   outcome.
+* **New:** a body that gives up on itself is on the error branch, not on the
+  loading one. `throw Cancelled('why')` is what the kernel offers a body that
+  decides to stop, and the outcome it makes is a cancellation nobody asked
+  for -- so nobody was waiting to hear it either, and the scope used to stay
+  on `buildOnWaiting` for good with no error, no observer event and nothing in
+  the console. An initialization that ended without becoming ready is a failed
+  one whichever way it ended, so the `Cancelled` reaches `buildOnError`,
+  `ScopeObserver.onError` and `FlutterError` like any other failure of a body.
+  A cancellation the teardown asked for is unchanged: it is still silent,
+  because somebody is waiting for it.
+* **New:** a body failure that a later cancellation covered is still reported.
+  A body throws, its cleanup is still unwinding, and the tree goes away in
+  that window: the outcome becomes the cancellation and the failure has
+  nobody left to carry it. The kernel's own late report is for an outcome
+  nobody looked at, and a scope looks at every one of them, so the scope makes
+  the report itself -- `ScopeObserver.onError` with
+  `ScopePhase.initializationCancellation`, and `FlutterError`.
 * **Breaking:** `AsyncDataScope.initData` is a `Future<T>` too, and the value
   is what it returns. `AsyncDataScopeInitState`, `AsyncDataScopeProgress` and
   `AsyncDataScopeReady` are gone with the form that needed them.

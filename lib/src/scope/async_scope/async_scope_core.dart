@@ -146,7 +146,8 @@ abstract base class AsyncScopeElementBase<W extends AsyncScopeCore<W, E>,
 
   /// Settles only after the job has finished its children and cleanup.
   Future<void> _settleInit(ScopeInitJob<void> job) async {
-    switch (await job.done) {
+    final outcome = await job.done;
+    switch (outcome) {
       case Done():
         try {
           final acceptValue = _acceptInitValue;
@@ -159,11 +160,52 @@ abstract base class AsyncScopeElementBase<W extends AsyncScopeCore<W, E>,
           // error state and observer, just like a failure of the body.
           _settleFailure(error, stackTrace);
         }
+      case Cancelled(reason: CancelReason.handler):
+        // The body gave up on itself -- `throw Cancelled('why')`, which the
+        // kernel offers and this package re-exports the name for. Nobody
+        // asked for this cancellation, so nobody is waiting to hear it
+        // either: staying quiet here is what used to leave the loading branch
+        // on screen for good, with the only trace a diagnostic line nobody
+        // had turned on. An initialization that ended without becoming ready
+        // is a failed one, whichever way it ended.
+        _settleFailure(outcome, outcome.stackTrace ?? StackTrace.current);
       case Cancelled():
-        break;
+        // The teardown asked for this one, and it is waiting on
+        // `_initCompleter` rather than on the model, which the element is
+        // leaving behind anyway. What the teardown cannot do is speak for a
+        // failure that happened before it: the adapter left that report to
+        // the outcome, and the outcome became this cancellation.
+        _reportCoveredBodyFailure(job);
       case Failed(:final error, :final stackTrace):
         _settleFailure(error, stackTrace);
     }
+  }
+
+  /// Reports a body failure that a later cancellation took the outcome from.
+  ///
+  /// The kernel has a late report of its own, and it is deliberately for an
+  /// outcome nobody looked at -- while this element looks at every one of
+  /// them, from before the job is even started. So the report is the scope's
+  /// to make.
+  void _reportCoveredBodyFailure(ScopeInitJob<void> job) {
+    final error = job._bodyError;
+    if (!job._bodyErrorCovered || error == null || error is Cancelled) {
+      return;
+    }
+
+    final stackTrace = job._bodyStackTrace ?? StackTrace.current;
+    notifyObserver(
+      (observer) => observer.onError(
+        this,
+        ScopePhase.initializationCancellation,
+        error,
+        stackTrace,
+      ),
+    );
+    FlutterError.reportError(
+      FlutterErrorDetails(
+          exception: error, stack: stackTrace, library: 'scopo'),
+    );
   }
 
   // A value stays with the job until Done. A cancellation during cleanup must

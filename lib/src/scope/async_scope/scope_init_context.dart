@@ -42,6 +42,14 @@ final class ScopeInitJob<T> extends JobBase<T> implements DeferredJob<T> {
   // The scope settles a body failure through its model. Other errors from the
   // same running job have no outcome of their own and must still be reported.
   Object? _bodyError;
+  StackTrace? _bodyStackTrace;
+
+  // Whether the report of [_bodyError] was left to the outcome. A cancellation
+  // arriving while the cleanup still runs takes the outcome over, and then the
+  // failure has nobody left to carry it: the kernel's own late report is for
+  // an outcome nobody looked at, and the scope always looks. The element reads
+  // this on the cancelled branch and reports what would otherwise be lost.
+  bool _bodyErrorCovered = false;
 
   /// Creates an initialization that waits for [start] or [JobContext.run].
   ///
@@ -68,8 +76,9 @@ final class ScopeInitJob<T> extends JobBase<T> implements DeferredJob<T> {
   Future<T> execute(JobContextBase ctx) async {
     try {
       return await _body(ctx as ScopeInitContext);
-    } on Object catch (error) {
+    } on Object catch (error, stackTrace) {
       _bodyError = error;
+      _bodyStackTrace = stackTrace;
       rethrow;
     }
   }
@@ -98,6 +107,7 @@ final class _ScopeInitObserver extends JobObserver {
     if (job is ScopeInitJob<Object?> &&
         identical(job._bodyError, error) &&
         !job.isCancelled) {
+      job._bodyErrorCovered = true;
       return;
     }
 

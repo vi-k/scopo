@@ -224,6 +224,94 @@ void main() {
       expect(ready, isEmpty);
     });
   }
+  testWidgets('a body that cancels itself does not stay on the loading branch',
+      (tester) async {
+    final observer = _Errors();
+    ScopeConfig.observer = observer;
+    Object? shownError;
+    await tester.pumpWidget(
+      _wrap(
+        AsyncScope(
+          // The kernel offers this to a body that decides to give up on its
+          // own, and `scopo` re-exports the name it throws. What the scope
+          // does with the outcome is the scope's own business, and doing
+          // nothing leaves the loading branch on screen for good.
+          initScope: (context, ctx) async =>
+              throw const Cancelled('no session'),
+          disposeScope: () {},
+          progressBuilder: (context, progress) => const Text('loading'),
+          errorBuilder: (context, error, stackTrace, progress) {
+            shownError = error;
+            return const Text('failed');
+          },
+          builder: (context) => const Text('ready'),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('loading'), findsNothing);
+    expect(
+      shownError,
+      isA<Cancelled>()
+          .having((e) => e.reason, 'reason', CancelReason.handler)
+          .having((e) => e.description, 'description', 'no session'),
+    );
+    expect(observer.phases, [ScopePhase.initialization]);
+    expect(tester.takeException(), isNull);
+
+    await tester.pumpWidget(_wrap(const SizedBox.shrink()));
+    await tester.pumpAndSettle();
+  });
+
+  testWidgets(
+      'a body failure covered by a later cancellation is still reported',
+      (tester) async {
+    final observer = _Errors();
+    ScopeConfig.observer = observer;
+    final cleanup = Completer<void>();
+    final failure = StateError('body failed');
+    var cleanupStarted = false;
+
+    await tester.pumpWidget(
+      _wrap(
+        AsyncScope(
+          initScope: (context, ctx) async {
+            ctx.onDispose(() async {
+              cleanupStarted = true;
+              await cleanup.future;
+            });
+            throw failure;
+          },
+          disposeScope: () {},
+          progressBuilder: (context, progress) => const Text('loading'),
+          errorBuilder: (context, error, stackTrace, progress) =>
+              const Text('failed'),
+          builder: (context) => const Text('ready'),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    // Nothing yet, and that is the arrangement: the failure is carried by the
+    // outcome, not by the observer hook the kernel calls on the way.
+    expect(cleanupStarted, isTrue);
+    expect(observer.errors, isEmpty);
+
+    // The tree goes away while the cleanup is still parked, so the outcome
+    // that arrives is a cancellation and the failure is covered by it.
+    await tester.pumpWidget(_wrap(const SizedBox.shrink()));
+    cleanup.complete();
+    await tester.pumpAndSettle();
+
+    expect(observer.errors, [failure]);
+    expect(observer.phases, [ScopePhase.initializationCancellation]);
+    expect(
+      tester.takeException(),
+      same(failure),
+      reason: 'the crash reporter of an application hears it too',
+    );
+  });
 }
 
 Widget _wrap(Widget child) => Directionality(
