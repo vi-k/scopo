@@ -62,13 +62,16 @@
   `ScopeObserver.onError` and `FlutterError` like any other failure of a body.
   A cancellation the teardown asked for is unchanged: it is still silent,
   because somebody is waiting for it.
-* **New:** a body failure that a later cancellation covered is still reported.
-  A body throws, its cleanup is still unwinding, and the tree goes away in
-  that window: the outcome becomes the cancellation and the failure has
-  nobody left to carry it. The kernel's own late report is for an outcome
-  nobody looked at, and a scope looks at every one of them, so the scope makes
-  the report itself -- `ScopeObserver.onError` with
-  `ScopePhase.initializationCancellation`, and `FlutterError`.
+* **New:** a body failure that a later cancellation covered is still reported,
+  and reported once. A body throws, its cleanup is still unwinding, and the
+  tree goes away in that window: the outcome becomes the cancellation and the
+  failure has nobody left to carry it. The kernel's own late report is for an
+  outcome nobody looked at, and a scope looks at every one of them, so the
+  scope makes the report itself -- `ScopeObserver.onError` with
+  `ScopePhase.initializationCancellation`, and `FlutterError`. A failure that
+  came out of a child job is the exception that shows what "left to the
+  outcome" means: it was named as the child's before the body of the parent
+  ever caught it, so the outcome has nothing left to say and says nothing.
 * **New:** a teardown walk that raised what a disposer threw counts as a
   teardown. Every walk visits all of its children, lets go of what it holds
   and passes the first failure upwards only once the last child is done -- a

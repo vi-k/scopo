@@ -100,6 +100,18 @@ final class _ScopeInitContext extends JobContextBase
 final class _ScopeInitObserver extends JobObserver {
   final ScopeObservable _scope;
 
+  // What this initialization has already said out loud, by identity.
+  //
+  // A child job inherits the observer of the job that ran it, so one failure
+  // can pass here twice: once as the child's, where nothing defers it and it
+  // is named at once, and once as the parent's, where the body caught it from
+  // `child.value` and the report is left to the outcome. The two passes look
+  // alike from inside this method, and the flag they set is read as "nobody
+  // has spoken about this yet" -- which was true only of the first.
+  //
+  // Identity, not equality: two failures that compare equal are still two.
+  final _announced = Set<Object>.identity();
+
   _ScopeInitObserver(this._scope);
 
   @override
@@ -107,7 +119,11 @@ final class _ScopeInitObserver extends JobObserver {
     if (job is ScopeInitJob<Object?> &&
         identical(job._bodyError, error) &&
         !job.isCancelled) {
-      job._bodyErrorCovered = true;
+      // Left to the outcome -- and covered only while the outcome is still the
+      // one thing that can speak for it. An error that was already named on
+      // its way up from a child has an owner, and a second report of it is
+      // what the wave of 2026-09-07 existed to remove.
+      job._bodyErrorCovered = !_announced.contains(error);
       return;
     }
 
@@ -123,6 +139,7 @@ final class _ScopeInitObserver extends JobObserver {
       _ when job.isCancelled => ScopePhase.initializationCancellation,
       _ => ScopePhase.initialization,
     };
+    _announced.add(error);
     notifyObserver(
       (observer) => observer.onError(_scope, phase, error, stackTrace),
     );

@@ -312,6 +312,91 @@ void main() {
       reason: 'the crash reporter of an application hears it too',
     );
   });
+
+  // The same cover, one job further down. A failure that came out of a child
+  // job has already been announced by the time it reaches the body of the
+  // parent, and the flag that says "the report of this one was left to the
+  // outcome" then meant something it does not: that nobody had spoken yet.
+  testWidgets(
+      'a child job failure covered by a cancellation is reported once, not twice',
+      (tester) async {
+    final observer = _Errors();
+    ScopeConfig.observer = observer;
+    // Held only while the work runs and given back before every `expect`:
+    // a `TestFailure` raised while the handler is ours goes into this list
+    // instead of to the runner, and the suite then hangs rather than saying
+    // what broke. See the fix of L2 in
+    // `docs/records/2026-09-09[5]-post-wave-review.md`.
+    final reported = <Object>[];
+    final previous = FlutterError.onError;
+    void collect() =>
+        FlutterError.onError = (details) => reported.add(details.exception);
+    void giveBack() => FlutterError.onError = previous;
+    addTearDown(giveBack);
+
+    final cleanup = Completer<void>();
+    final failure = StateError('child failed');
+    var cleanupStarted = false;
+
+    collect();
+
+    await tester.pumpWidget(
+      _wrap(
+        AsyncScope(
+          initScope: (context, ctx) async {
+            ctx.onDispose(() async {
+              cleanupStarted = true;
+              await cleanup.future;
+            });
+            final child = Job.deferred<void>((_) async => throw failure);
+            ctx.run(child);
+            await child.value;
+          },
+          disposeScope: () {},
+          progressBuilder: (context, progress) => const Text('loading'),
+          errorBuilder: (context, error, stackTrace, progress) =>
+              const Text('failed'),
+          builder: (context) => const Text('ready'),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+    giveBack();
+
+    // The child is not a `ScopeInitJob`, so the adapter has nothing to leave
+    // the report to and makes it at once. One, and it belongs.
+    expect(cleanupStarted, isTrue);
+    expect(observer.errors.where((e) => identical(e, failure)), hasLength(1));
+    expect(reported.where((e) => identical(e, failure)), hasLength(1));
+
+    // Now the cover: the tree goes while the cleanup is parked, so the outcome
+    // of the parent becomes a cancellation. The failure it carried has been
+    // spoken about already, and saying it again is what the wave of
+    // 2026-09-07 existed to stop.
+    collect();
+    await tester.pumpWidget(_wrap(const SizedBox.shrink()));
+    cleanup.complete();
+    await tester.pumpAndSettle();
+    giveBack();
+
+    expect(
+      observer.errors.where((e) => identical(e, failure)),
+      hasLength(1),
+      reason: 'one cause, one line in the observer',
+    );
+    expect(
+      reported.where((e) => identical(e, failure)),
+      hasLength(1),
+      reason: 'and one in the crash reporter of an application',
+    );
+    expect(
+      observer.phases,
+      [ScopePhase.initialization],
+      reason: 'the phase of the report that was actually made, and no second '
+          'one calling the same failure a cancellation',
+    );
+  });
+
   testWidgets('a Cancelled from a disposer is heard but not reported',
       (tester) async {
     final observer = _Errors();
