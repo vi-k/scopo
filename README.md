@@ -384,12 +384,14 @@ parts:
 Implement `ScopeDependencies` and initialize it with an ordinary `async`
 function. The context it is given is what lets the scope report progress and
 cancel a half-finished initialization when the widget is removed from the
-tree: the body is thrown into at its next touch of `ctx` — `ctx.progress`
+tree: the body is thrown into at its next checkpoint — `ctx.progress`
 between two steps is usually that touch — and unwinds through its own `catch`
-and `finally`. What builds a dependency is called directly rather than wrapped
-in `ctx.wait`: that one ends the waiting rather than the work, so a value
-opened into it never reaches the body, and what nobody receives, nobody
-closes.
+and `finally`. For an acquisition that can be left in flight, use
+`ctx.wait(Api.connect, discard: (api) => api.close())`: cancellation ends the
+waiting, and `discard` closes a value the body never receives. Use `ctx.join`
+for a call that must finish; a short initialization that asks the context
+nothing can still use a bare call. The `AsyncScope` topic has the cleanup and
+handover rule.
 
 ```dart
 final class AppDependencies implements ScopeDependencies {
@@ -415,6 +417,12 @@ final class AppDependencies implements ScopeDependencies {
   Future<void> dispose() async {}
 }
 ```
+
+`ScopeInitJob<T>` drives the same initialization outside a scope — in a test,
+or before there are any widgets: `final job = ScopeInitJob(body)..start();
+await job.value;`. `await job.cancel()` waits for the body, child jobs and
+cleanup; leave its future unawaited when only the request is needed. Catch
+`Cancelled`, re-exported by `scopo`, without adding a separate dependency.
 
 ### 2. State
 

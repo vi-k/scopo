@@ -6,6 +6,7 @@ import 'package:scopo/scopo.dart';
 import 'package:scopo/src/environment/scope_config.dart' show notifyObserver;
 
 import 'utils/observer.dart';
+import 'utils/run_scope_init.dart';
 import 'utils/settle.dart';
 
 void main() {
@@ -1037,7 +1038,7 @@ void main() {
       () async {
     final dependencies = _TestDependencies();
 
-    await dependencies.init(null, ScopeInitHandle().context);
+    await runScopeInit((ctx) => dependencies.init(null, ctx));
     await dependencies.dispose();
 
     expect(observer.events, [

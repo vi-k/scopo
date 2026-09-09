@@ -145,9 +145,11 @@ final class AppDependencies implements ScopeDependencies {
   /// Dependency initialization is a plain `Future`. The context reports the
   /// progress and carries the cancellation: the scope gives up when the widget
   /// leaves the tree before the initialization is complete, and the body is
-  /// thrown into at its next touch of `ctx`. What it builds is called
-  /// directly — `ctx.wait` would end the waiting rather than the work, and a
-  /// value that never reaches the body is one nobody can release.
+  /// thrown into at its next checkpoint. This short initialization can call
+  /// directly: nothing after the acquisition asks the context anything. For
+  /// an acquisition that can be left in flight, use `ctx.wait` with
+  /// `discard:`; for a call that must finish before reporting cancellation,
+  /// use `ctx.join`.
   static Future<AppDependencies> init(
     BuildContext context,
     ScopeInitContext ctx,

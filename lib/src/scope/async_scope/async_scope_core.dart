@@ -144,52 +144,31 @@ abstract base class AsyncScopeElementBase<W extends AsyncScopeCore<W, E>,
     _model.update(AsyncScopeProgress(progress));
   }
 
-  /// Runs the body and settles the scope on what it did.
-  Future<void> _runInitBody(ScopeInitHandle handle) async {
-    try {
-      await runInitBody(handle.context);
-
-      // A body that came back for a scope which had already given up settles
-      // nothing: the teardown is running, and what the body produced has been
-      // released by `runInitBody` above.
-      if (!handle.isCancelled) {
-        _settleReady();
-      }
-      // ignore: avoid_catching_errors
-    } on ScopeInitCancelled {
-      // The ordinary end of a cancelled initialization: the teardown asked
-      // for it and is waiting for exactly this.
-      // ignore: avoid_catching_errors
-    } on Object catch (error, stackTrace) {
-      // Raised while the body was unwinding from a cancellation. The scope is
-      // on its way out and its model is about to go with it, so there is
-      // nobody to show this to -- it is reported instead, which is what the
-      // teardown did with the same failure when it arrived through
-      // `cancel()`. Abandoning the teardown over it would leave the scope
-      // registered with its parent and its `scopeKey` unreleased.
-      if (handle.isCancelled) {
-        notifyObserver(
-          (observer) => observer.onError(
-            this,
-            ScopePhase.initializationCancellation,
-            error,
-            stackTrace,
-          ),
-        );
-        FlutterError.reportError(
-          FlutterErrorDetails(
-            exception: error,
-            stack: stackTrace,
-            library: 'scopo',
-          ),
-        );
-
-        return;
-      }
-
-      _settleFailure(error, stackTrace);
+  /// Settles only after the job has finished its children and cleanup.
+  Future<void> _settleInit(ScopeInitJob<void> job) async {
+    switch (await job.done) {
+      case Done():
+        try {
+          final acceptValue = _acceptInitValue;
+          _acceptInitValue = null;
+          acceptValue?.call();
+          _settleReady();
+        } on Object catch (error, stackTrace) {
+          // The job is done, but accepting its value and applying readiness
+          // are still initialization. Their failures belong to the scope's
+          // error state and observer, just like a failure of the body.
+          _settleFailure(error, stackTrace);
+        }
+      case Cancelled():
+        break;
+      case Failed(:final error, :final stackTrace):
+        _settleFailure(error, stackTrace);
     }
   }
+
+  // A value stays with the job until Done. A cancellation during cleanup must
+  // not leave the element holding a value the job has already released.
+  void Function()? _acceptInitValue;
 
   /// Applies the ready state, in its own frame.
   void _settleReady() {
@@ -249,7 +228,7 @@ abstract base class AsyncScopeElementBase<W extends AsyncScopeCore<W, E>,
     }
   }
 
-  /// Settles a failure the body raised.
+  /// Settles a failure of the body, value acceptance or readiness.
   void _settleFailure(Object error, StackTrace stackTrace) {
     notifyObserver(
       (observer) => observer.onError(
@@ -283,20 +262,18 @@ abstract base class AsyncScopeElementBase<W extends AsyncScopeCore<W, E>,
     }
   }
 
-  /// Runs the body of the initialization and settles what it produced.
+  /// Runs the initialization and registers what to release if it is discarded.
   ///
-  /// The families that produce a value override this: they await their own
-  /// hook, catch the value on its way past, and give it back when it turns
-  /// out to have arrived for a scope that had already given up. What is
-  /// common to all of them is here — a body of this family produces nothing,
-  /// so the only thing it can have taken is whatever [disposeScope] releases.
+  /// Value-producing families register their own release after the value is
+  /// built. This family holds no value, so its release is [disposeScope].
   @protected
   Future<void> runInitBody(ScopeInitContext ctx) async {
     await initScopeAsync(ctx);
-
-    if (ctx.isCancelled && canReleaseAfterCancellation) {
-      await disposeScope();
-    }
+    ctx.onDiscard(() async {
+      if (canReleaseAfterCancellation) {
+        await disposeScope();
+      }
+    });
   }
 
   /// The initialization; ready at once by default.
@@ -381,13 +358,8 @@ abstract base class AsyncScopeElementBase<W extends AsyncScopeCore<W, E>,
   String get debugLabel => _debugLabel ?? super.debugLabel;
   String? _debugLabel;
 
-  /// The handle over the initialization, while there is one.
-  ///
-  /// What the teardown cancels, in place of the subscription it used to.
-  ScopeInitHandle? _initHandle;
-
-  /// The run of the body, while it runs. What a cancellation waits for.
-  Future<void>? _initRunning;
+  /// The job the teardown cancels and waits for.
+  ScopeInitJob<void>? _initJob;
 
   /// Disposal may begin before the end of asynchronous initialization.
   /// Therefore, we use [_initCompleter] for synchronization.
@@ -910,12 +882,13 @@ abstract base class AsyncScopeElementBase<W extends AsyncScopeCore<W, E>,
       }
 
       notifyObserver((observer) => observer.onInit(this));
-      // Run, not subscribed to. The body is an ordinary `Future`, its
-      // progress arrives through the context, and the two things a stream
-      // gave for free -- serialised events and `cancelOnError` -- are not
-      // needed for something that reports synchronously and ends once.
-      final handle = _initHandle = ScopeInitHandle(onProgress: _onInitStep);
-      _initRunning = _runInitBody(handle);
+      final job = _initJob = ScopeInitJob<void>(
+        runInitBody,
+        onProgress: _onInitStep,
+        observer: _ScopeInitObserver(this),
+      );
+      unawaited(_settleInit(job));
+      job.start();
     } on Object catch (error, stackTrace) {
       // `_initSucceeded` stays false: nothing was initialized, so nothing is
       // disposed of either.
@@ -1278,29 +1251,27 @@ abstract base class AsyncScopeElementBase<W extends AsyncScopeCore<W, E>,
     }
 
     // Cancel the initialization if it has not finished yet.
-    if (_initHandle case final handle?) {
-      // A body unwinds through its own `finally`s, and a failure raised there
-      // -- or by anything else the cancellation drives -- comes back through
-      // the future below. Letting it out would abandon the disposal right
-      // here, before any of the releasing below has run: the scope would
-      // never unregister from its parent, which then waits out its whole
-      // `waitForChildrenTimeout` on a scope that is already gone, and never
-      // release its `scopeKey`, so every later scope on that key would queue
-      // behind an entry nobody completes. The failure is reported and the
-      // disposal goes on -- the same trade the rest of this file makes for
-      // the failures it cannot hand to a caller.
+    if (_initJob case final job?) {
+      // The kernel reports failures while unwinding and still completes the
+      // cancellation. An expiry hook may throw too, so this whole step stays
+      // guarded: letting an error out would abandon the teardown before it
+      // unregisters the scope from its parent and releases its `scopeKey`.
+      // The parent would then wait out its child timeout on a scope already
+      // gone, and the next scope on the same key would queue behind an entry
+      // nobody can complete. Reporting the failure and continuing lets the
+      // teardown finish those releases, as it does for other failures it
+      // cannot hand to a caller.
       //
-      // Waiting forever leads to exactly the same place, and needs no failure
-      // to get there: a body parked on somebody else's future is not
-      // interrupted by anything, and one that asks the context nothing is
-      // never told. The wait is therefore bounded: when the limit expires the
-      // expiry is reported, the initialization is left where it stands, and
-      // the disposal goes on to give back what the scope was holding. What
-      // the body itself holds stays held -- no scope can complete somebody
-      // else's future for it.
+      // The limit remains ours for the same reason. Cancellation cannot wake
+      // a body parked on somebody else's future: a bare await that never
+      // returns keeps the job running without asking its context anything.
+      // An unbounded wait would strand the parent registration and the key
+      // without any error at all. Unless the caller chose no limit, an expiry
+      // therefore reports the wait and lets the teardown give back what the
+      // scope holds. It cannot finish that foreign future or make the body
+      // release what it still holds.
       try {
-        handle.cancel();
-        final cancelled = _initRunning ?? Future<void>.value();
+        final cancelled = job.cancel();
         final limit = resolveCancellationTimeout(
           initCancellationTimeout,
           ScopeConfig.defaultInitCancellationTimeout,

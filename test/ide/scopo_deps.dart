@@ -46,41 +46,32 @@ final class AppDependencies implements ScopeDependencies {
     BuildContext context,
     ScopeInitContext ctx,
   ) async {
-    // What has been taken so far, in the order it was taken. Until the
-    // container is assembled these belong to this function, and it is this
-    // function that has to give them back if it does not get that far.
-    //
-    // Which is why the steps are called directly rather than through
-    // `ctx.wait`: that one ends the waiting rather than the work, and a
-    // value that never reaches this body is one nobody can release.
-    final acquired = <Future<void> Function()>[];
+    // Until the container is handed over, the job owns the cleanup.
+    // `discard` also closes a value that arrives after `wait` was cancelled,
+    // and releases received values in reverse order if a later step fails.
+    ctx.progress('opening the database');
+    final database = await ctx.wait(
+      Database.open,
+      discard: (value) => value.close(),
+    );
 
-    try {
-      ctx.progress('opening the database');
-      final database = await Database.open();
-      acquired.add(database.close);
+    ctx.progress('connecting');
+    final session = await ctx.wait(
+      Session.connect,
+      discard: (value) => value.close(),
+    );
 
-      ctx.progress('connecting');
-      final session = await Session.connect();
-      acquired.add(session.close);
-
-      return AppDependencies(
-        database: database,
-        session: session,
-      );
-    } on Object {
-      // Both endings that leave the container half-built arrive here as a
-      // throw: a step of its own that fell over, and the cancellation,
-      // which the next `ctx.progress` raises once the scope has given up.
-      // A run that handed the container over leaves by `return` and never
-      // comes here, so releasing twice is not a thing that can happen.
-      //
-      // Reverse order of construction, and only what was actually taken.
-      for (final release in acquired.reversed) {
-        await release();
-      }
-      rethrow;
-    }
+    final dependencies = AppDependencies(
+      database: database,
+      session: session,
+    );
+    // The scope releases the container, including a late return. Remove the
+    // job's registrations here so cancellation cannot release it twice.
+    // No await or checkpoint between this handover and the return.
+    ctx
+      ..disown(session)
+      ..disown(database);
+    return dependencies;
   }
 
   /// Drops what must stop reaching the dependencies at once. Runs once,

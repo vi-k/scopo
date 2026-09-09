@@ -9,8 +9,8 @@ abstract interface class AsyncDataScopeContext<W extends ScopeInheritedWidget,
   /// and [hasData] is the question on its own.
   ///
   /// "Until there is one" is a little earlier than [isInitialized]: the value
-  /// is caught as it goes past, while the state of the scope is applied at the
-  /// end of the frame — or after the whole of `pauseAfterInitialization`,
+  /// is accepted after the initialization job succeeds, while the state is
+  /// applied at the end of the frame — or after `pauseAfterInitialization`,
   /// which is deliberately longer. In that window the scope still builds its
   /// initializing branch and this getter already answers.
   T get data;
@@ -21,11 +21,11 @@ abstract interface class AsyncDataScopeContext<W extends ScopeInheritedWidget,
   /// tells them apart.
   T? get dataOrNull;
 
-  /// Whether the initialization has produced its value.
+  /// Whether the initialization job succeeded and handed its value over.
   ///
   /// The question [dataOrNull] cannot answer for a nullable [T], and the one
   /// [data] answers by throwing. Not the same as [isInitialized]: this is true
-  /// from the moment the value arrives, the other from the moment the scope
+  /// from the moment the job succeeds, the other from the moment the scope
   /// shows its ready branch.
   bool get hasData;
 }

@@ -133,8 +133,9 @@ abstract base class Scope<W extends Scope<W, D, S>, D extends ScopeDependencies,
     super.child, // Not used by default. You can use it at your own discretion.
   });
 
-  /// Initializes the scope's dependencies and streams the initialization
-  /// state.
+  /// Initializes the scope's dependencies and returns the container.
+  ///
+  /// Reports progress through [ScopeInitContext.progress].
   Future<D> initDependencies(BuildContext context, ScopeInitContext ctx);
 
   /// Builds a widget to display while waiting for [scopeKey] and

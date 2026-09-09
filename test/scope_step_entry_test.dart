@@ -5,6 +5,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:scopo/scopo.dart';
 
 import 'utils/observer.dart';
+import 'utils/run_scope_init.dart';
 
 void main() {
   late RecordingObserver observer;
@@ -23,7 +24,7 @@ void main() {
         () async {
       final dependencies = _Sequential();
 
-      await dependencies.init(null, ScopeInitHandle().context);
+      await runScopeInit((ctx) => dependencies.init(null, ctx));
 
       expect(observer.events, [
         'init _Sequential',
@@ -41,7 +42,7 @@ void main() {
     test('arrives before the initializer awaits anything', () async {
       final parked = Completer<void>();
       final dependencies = _Parked(parked);
-      final done = dependencies.init(null, ScopeInitHandle().context);
+      final done = runScopeInit((ctx) => dependencies.init(null, ctx));
 
       await pumpEventQueue();
 
@@ -63,7 +64,7 @@ void main() {
       final first = Completer<void>();
       final second = Completer<void>();
       final dependencies = _Concurrent(first, second);
-      final done = dependencies.init(null, ScopeInitHandle().context);
+      final done = runScopeInit((ctx) => dependencies.init(null, ctx));
 
       await pumpEventQueue();
 
@@ -90,7 +91,7 @@ void main() {
     test('carries the path the completed step carries', () async {
       final dependencies = _Nested();
 
-      await dependencies.init(null, ScopeInitHandle().context);
+      await runScopeInit((ctx) => dependencies.init(null, ctx));
 
       expect(observer.events, [
         'init _Nested',
@@ -106,7 +107,7 @@ void main() {
       final dependencies = _Failing();
 
       await expectLater(
-        dependencies.init(null, ScopeInitHandle().context),
+        runScopeInit((ctx) => dependencies.init(null, ctx)),
         throwsA(isA<ScopeDependencyException>()),
       );
 
@@ -131,7 +132,7 @@ void main() {
     test('is skipped for a dependency of the caller own making', () async {
       final dependencies = _Foreign();
 
-      await dependencies.init(null, ScopeInitHandle().context);
+      await runScopeInit((ctx) => dependencies.init(null, ctx));
 
       expect(observer.events, [
         'init _Foreign',
@@ -145,7 +146,7 @@ void main() {
     test('pairs with the release, in reverse declaration order', () async {
       final dependencies = _Disposing();
 
-      await dependencies.init(null, ScopeInitHandle().context);
+      await runScopeInit((ctx) => dependencies.init(null, ctx));
       await dependencies.dispose();
 
       expect(observer.events, [
@@ -173,7 +174,7 @@ void main() {
         () async {
       final dependencies = _UnmountOnly();
 
-      await dependencies.init(null, ScopeInitHandle().context);
+      await runScopeInit((ctx) => dependencies.init(null, ctx));
       dependencies.onUnmount();
       await dependencies.dispose();
 
@@ -191,7 +192,7 @@ void main() {
         () async {
       final dependencies = _Disposing();
 
-      await dependencies.init(null, ScopeInitHandle().context);
+      await runScopeInit((ctx) => dependencies.init(null, ctx));
       observer.events.clear();
       await dependencies.dispose();
 
@@ -213,7 +214,7 @@ void main() {
         'the walk running', () async {
       final dependencies = _FailingDisposer();
 
-      await dependencies.init(null, ScopeInitHandle().context);
+      await runScopeInit((ctx) => dependencies.init(null, ctx));
       observer.events.clear();
       await dependencies.dispose();
 
@@ -245,12 +246,12 @@ void main() {
     test('a second tree reports as fully as the first', () async {
       final dependencies = _Disposing();
 
-      await dependencies.init(null, ScopeInitHandle().context);
+      await runScopeInit((ctx) => dependencies.init(null, ctx));
       await dependencies.dispose();
       final first = List.of(observer.events);
 
       observer.events.clear();
-      await dependencies.init(null, ScopeInitHandle().context);
+      await runScopeInit((ctx) => dependencies.init(null, ctx));
       await dependencies.dispose();
 
       expect(
@@ -269,7 +270,7 @@ void main() {
         () async {
       final dependencies = _Foreign();
 
-      await dependencies.init(null, ScopeInitHandle().context);
+      await runScopeInit((ctx) => dependencies.init(null, ctx));
       observer.events.clear();
       await dependencies.dispose();
 
@@ -297,7 +298,7 @@ void main() {
         () async {
       final dependencies = _TwoDisposers();
 
-      await dependencies.init(null, ScopeInitHandle().context);
+      await runScopeInit((ctx) => dependencies.init(null, ctx));
       observer.events.clear();
 
       final byHand = <String>[];
@@ -320,7 +321,7 @@ void main() {
       final parked = Completer<void>();
       final dependencies = _ParkedDisposer(parked);
 
-      await dependencies.init(null, ScopeInitHandle().context);
+      await runScopeInit((ctx) => dependencies.init(null, ctx));
       observer.events.clear();
 
       final byHand = <String>[];
@@ -347,7 +348,7 @@ void main() {
     test('is announced for a foreign child by the group above it', () async {
       final dependencies = _ForeignChild();
 
-      await dependencies.init(null, ScopeInitHandle().context);
+      await runScopeInit((ctx) => dependencies.init(null, ctx));
       observer.events.clear();
       await dependencies.dispose();
 
@@ -368,7 +369,7 @@ void main() {
     test('holds for a package root with no group above it', () async {
       final dependencies = _RootLeaf();
 
-      await dependencies.init(null, ScopeInitHandle().context);
+      await runScopeInit((ctx) => dependencies.init(null, ctx));
       observer.events.clear();
       await dependencies.dispose();
 
@@ -383,7 +384,7 @@ void main() {
     test('holds for every arm of a concurrent group', () async {
       final dependencies = _ConcurrentDisposers();
 
-      await dependencies.init(null, ScopeInitHandle().context);
+      await runScopeInit((ctx) => dependencies.init(null, ctx));
       observer.events.clear();
       await dependencies.dispose();
 
@@ -410,7 +411,7 @@ void main() {
     test('is announced for a foreign child of a concurrent group', () async {
       final dependencies = _ForeignInConcurrent();
 
-      await dependencies.init(null, ScopeInitHandle().context);
+      await runScopeInit((ctx) => dependencies.init(null, ctx));
       observer.events.clear();
       await dependencies.dispose();
 
@@ -445,7 +446,7 @@ void main() {
         'returning its stream', () async {
       final dependencies = _SyncFailingForeignInConcurrent();
 
-      await dependencies.init(null, ScopeInitHandle().context);
+      await runScopeInit((ctx) => dependencies.init(null, ctx));
       observer.events.clear();
 
       final reported = <Object>[];
@@ -486,8 +487,7 @@ void main() {
         () async {
       final dependencies = _SyncFailingInitInConcurrent();
 
-      final failure = await dependencies
-          .init(null, ScopeInitHandle().context)
+      final failure = await runScopeInit((ctx) => dependencies.init(null, ctx))
           .then<Object?>((_) => null)
           .onError<Object>((error, _) => error);
 
@@ -506,7 +506,7 @@ void main() {
     test('says nothing on a second dispose after the walk is over', () async {
       final dependencies = _TwoDisposers();
 
-      await dependencies.init(null, ScopeInitHandle().context);
+      await runScopeInit((ctx) => dependencies.init(null, ctx));
       await dependencies.dispose();
       observer.events.clear();
       await dependencies.dispose();
@@ -526,7 +526,7 @@ void main() {
     test('carries the failure of a walk driven by hand', () async {
       final dependencies = _FailingDisposer();
 
-      await dependencies.init(null, ScopeInitHandle().context);
+      await runScopeInit((ctx) => dependencies.init(null, ctx));
       observer.events.clear();
 
       await dependencies.root.dispose((_) {}).onError((_, __) {});
@@ -550,7 +550,7 @@ void main() {
         () async {
       final dependencies = _FailingForeignChild();
 
-      await dependencies.init(null, ScopeInitHandle().context);
+      await runScopeInit((ctx) => dependencies.init(null, ctx));
       observer.events.clear();
 
       final reported = <Object>[];
@@ -592,7 +592,7 @@ void main() {
         () async {
       final dependencies = _FailingForeignRoot();
 
-      await dependencies.init(null, ScopeInitHandle().context);
+      await runScopeInit((ctx) => dependencies.init(null, ctx));
       observer.events.clear();
 
       final reported = <Object>[];
@@ -640,7 +640,7 @@ void main() {
 
         Object? failure;
         try {
-          await group.init(ScopeInitHandle().context, (_) {});
+          await runScopeInit((ctx) => group.init(ctx, (_) {}));
         } on Object catch (error) {
           failure = error;
         }
@@ -677,7 +677,7 @@ void main() {
 
         Object? failure;
         try {
-          await group.init(ScopeInitHandle().context, (_) {});
+          await runScopeInit((ctx) => group.init(ctx, (_) {}));
         } on Object catch (error) {
           failure = error;
         }
@@ -702,7 +702,7 @@ void main() {
         () async {
       final dependencies = _SyncFailingForeignRoot();
 
-      await dependencies.init(null, ScopeInitHandle().context);
+      await runScopeInit((ctx) => dependencies.init(null, ctx));
       observer.events.clear();
 
       final reported = <Object>[];

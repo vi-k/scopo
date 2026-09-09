@@ -13,9 +13,9 @@
 * **Breaking:** a cancelled initialization is thrown into. Cancelling a
   generator raised nothing — the body resumed, ran to its next `yield` and
   stopped there, so a `catch` around the step never ran and only a `finally`
-  could give back what had been taken. Now every member of `ScopeInitContext`
-  throws `ScopeInitCancelled` once the scope has given up, so a body that asks
-  the context anything unwinds through its own `catch` — and between two steps
+  could give back what had been taken. Now a checkpoint on `ScopeInitContext`
+  throws `Cancelled` once the scope has given up, so a body that checks
+  the context unwinds through its own `catch` — and between two steps
   the asking is usually `ctx.progress`. A body that touches the context
   nowhere is told nothing, because Dart cannot interrupt somebody else's wait;
   what it produces is then released rather than lost, which is the next entry.
@@ -26,13 +26,32 @@
   It now goes to `disposeScope`. The one path where it cannot is a teardown
   that has already finished — an `initCancellationTimeout` it gave up on —
   because the scope no longer has a widget to read the hook from.
-* **New:** `ScopeInitContext.wait` is for a call that owns nothing and whose
-  result nobody needs any more — a read, a warm-up, a pause. What an
-  initialization acquires is called directly instead: `wait` ends the waiting
-  rather than the work, so a connection or a database opened into it comes
-  back to a wait that is already over, never reaches the body, and is
-  therefore released by nobody. Called directly it reaches the body, and from
-  there the body's own `catch` or the entry above settles it.
+* **Breaking:** initialization now runs on the `async_job` kernel.
+  `ScopeInitCancelled` and `ScopeInitHandle` are gone: catch `Cancelled`, and
+  drive an initialization outside a scope with `ScopeInitJob<T>` —
+  `final job = ScopeInitJob(body)..start(); await job.value;`. Its `cancel()`
+  now waits for the body, child jobs and cleanup to finish; a caller that only
+  needs the request leaves the returned future unawaited.
+  `ScopeInitContext` inherits `JobContext`, bringing `join`, `uncancellable`,
+  `unattended`, `onDispose`, `onDiscard`, `disown`, `run` and `log` with it.
+  `ScopeInitContext.isCancelled` is gone too: read `ctx.job.isCancelled`.
+  `wait` gains `dispose:` and `discard:`, and that changes the acquisition
+  rule: write `ctx.wait(Api.connect, discard: (api) => api.close())` for a
+  call that can be left in flight. A value the body never receives is cleaned
+  up unconditionally; one it receives goes on the cleanup stack — `dispose:`
+  on every outcome, `discard:` on failure or cancellation. `ctx.join(x)`
+  replaces `await x(); ctx.check();` for a call that must finish; a short
+  initialization that asks the context nothing can still call directly.
+  Remove the job's cleanup at the handover to the scope with `disown`, or
+  the unregister function from `onDispose` / `onDiscard`, so a late return
+  is not released twice. Errors with no outcome of their own — a late failure
+  of an abandoned action, a disposer, an `onCancel` callback or `unattended`
+  work — now reach `ScopeObserver.onError` instead of disappearing. Starting
+  a child under an already cancelled parent throws that cancellation rather
+  than returning a cancelled child. `async_job` is now a dependency of the
+  package, and `scopo` selectively re-exports its kernel names; consumers
+  need no second dependency or import to catch `Cancelled` or read a job's
+  outcome.
 * **Breaking:** `AsyncDataScope.initData` is a `Future<T>` too, and the value
   is what it returns. `AsyncDataScopeInitState`, `AsyncDataScopeProgress` and
   `AsyncDataScopeReady` are gone with the form that needed them.
@@ -57,11 +76,6 @@
 * **Breaking:** `ScopeInitCallback` loses its progress type argument and takes
   the context: `ScopeInitCallback<D>` is
   `Future<D> Function(BuildContext, ScopeInitContext)`.
-* **New:** `ScopeInitHandle` drives an initialization from outside a scope — a
-  dependency tree walked by hand, a container built before any widget exists, a
-  test. It hands out the `ScopeInitContext` and has the `cancel()` a scope does
-  for itself. Without it the documented ability to drive a container yourself
-  would have gone with the stream.
 * A container that is cancelled mid-walk now waits for the walk to unwind
   before releasing what it built. A cancelled generator did that on its own —
   ending it *was* stopping the walk — and a body has to do it deliberately;

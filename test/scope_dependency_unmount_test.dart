@@ -5,6 +5,8 @@ import 'dart:async';
 import 'package:scopo/scopo.dart';
 import 'package:test/test.dart';
 
+import 'utils/run_scope_init.dart';
+
 /// The promise this file is about, written the same way in four dartdocs and
 /// in `doc/full_scope.md`:
 ///
@@ -47,7 +49,7 @@ final class _Deps extends ScopeAutoDependencies<_Deps, void> {
 
 Future<void> _init(_Deps deps) async {
   try {
-    await deps.init(null, ScopeInitHandle().context);
+    await runScopeInit((ctx) => deps.init(null, ctx));
   } on Object {
     // The failure is the fixture; what happens to the teardown is the test.
   }
@@ -184,5 +186,5 @@ final class _UnmountOnly extends ScopeAutoDependencies<_UnmountOnly, void> {
 }
 
 Future<void> _init2(_UnmountOnly deps) async {
-  await deps.init(null, ScopeInitHandle().context);
+  await runScopeInit((ctx) => deps.init(null, ctx));
 }

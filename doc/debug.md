@@ -149,8 +149,7 @@ under its own label, beside the scope that owns it: `onInit`, then
 `onDisposed`.
 
 A single dependency sends nothing but `onTrace`: the two points where it
-handles an error of its own, and the steps of the guarded stream its `init()`
-and `dispose()` run through. The four step events above are its steps but the
+handles an error of its own. The four step events above are its steps but the
 container's events — they arrive under the container's label, which is the
 label an observer that filters by target is already holding.
 
@@ -189,13 +188,14 @@ Two things the pairs promise, and one they do not:
 - **a dependency of your own making announces no entry.** One that implements
   `ScopeDependency` rather than being built by `dep`, `sequential` or
   `concurrent` has nowhere to take the mark from. Both of its exits still
-  arrive: `onProgress` travels the stream of `init()`, which is the part of
-  the contract such a dependency does implement, and its release is announced
-  for it — by the group above it as the path comes through, or, for such a
-  dependency standing as the whole tree, by the container's own listener. That
+  arrive: `onProgress` travels the `onStep` callback of `init()`, which is the
+  part of the contract such a dependency does implement, and its release is
+  announced for it — by the group above it as the path comes through, or,
+  for such a
+  dependency standing as the whole tree, by the container's own callback. That
   last case is the one place the guarantee below stops: a tree whose root is
   yours and whose disposal someone else drives is not announced at all, because
-  the container is not the one reading the stream and has nothing else to read.
+  the container receives no callback from that walk.
 
 An entry has three ends, and only two of them are events: the exit, an
 `onError` carrying `ScopePhase.disposal`, and silence. The failure arrives
@@ -206,10 +206,9 @@ running, or never came back.
 The disposal pair holds **whoever drives the walk.** Disposing of the tree by
 hand is a supported thing to do, and a container can also join a walk already
 running rather than start a second one; in both cases the container is not the
-one reading the stream. `onDisposalProgress` is sent when the disposer has
-returned, not when the path reaches a listener, so the pair survives all three.
-It also survives a walk that was cancelled while a disposer was parked: the
-release that did finish is still announced.
+one receiving the paths. `onDisposalProgress` is sent when the disposer has
+returned, not when the path reaches a callback, so the pair survives all three.
+The disposal walk cannot be cancelled; every release is awaited.
 
 Unlike `onProgress`, an entry is **not** passed on to the scope that owns the
 container — see the note at the end of the section below.
@@ -220,7 +219,8 @@ container — see the note at the end of the section below.
 each already typed on its own terms:
 
 - from a scope, the value its initialization reported as progress: whatever
-  the application yielded — a `String` on the splash screen, in most of them;
+  the application passed to `ctx.progress` — a `String` on the splash screen,
+  in most of them;
 - from a dependency container that is initializing, a
   `ScopeAutoDependenciesProgress`, which carries the `path` of the dependency
   just built along with `name`, `number`, `total` and `value`. A `Scope` whose
@@ -236,9 +236,9 @@ the type of a value. It has `onDisposalProgress` of its own now. See "Coming
 from 0.12.x" below.
 
 **The entry marks arrive once, not twice.** `onProgress` reaches the scope as
-well as the container because it travels the container's initialization
-stream, and the scope passes on what that stream yields. `onStepStarted` and
-`onDisposalStepStarted` travel a channel of their own — that is what lets them
+well as the container because the container forwards it to `ctx.progress`.
+`onStepStarted` and `onDisposalStepStarted` travel a channel of their own —
+that is what lets them
 be sent from inside a step rather than after it — so they arrive under the
 container's label only. An observer that wants them beside a scope reads
 `target`: the container reports next to the scope that owns it, under a label
@@ -332,9 +332,8 @@ your error handling.
 Everything below the lifecycle: preparing for initialization and for disposal,
 the `scopeKey` queue (waiting for access, obtaining it, giving it up, leaving),
 waiting for child scopes, waiting for an initialization to finish, the two
-points inside a dependency where an error is handled, and the seven steps of
-the guarded stream that every dependency's `init()` and `dispose()` runs
-through.
+points inside a dependency where an error is handled, and messages the
+initialization sends through `ctx.log`.
 
 A scope produces a dozen of these where it produces one of everything else,
 which is why `ScopePrintObserver` leaves them off. They are what to turn on

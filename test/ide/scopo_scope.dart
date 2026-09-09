@@ -79,7 +79,7 @@ final class App extends Scope<App, AppDependencies, AppState> {
 
   /// The progress the container reports: the dependency that has just
   /// finished, and how far along the tree is. `covariant` narrows the
-  /// `Object?` of the base to what this scope's stream actually carries —
+  /// `Object?` of the base to what this scope's context actually reports —
   /// without it the value arrives with nothing on it to read.
   @override
   Widget buildOnProgress(

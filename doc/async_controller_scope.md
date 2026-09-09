@@ -167,7 +167,7 @@ scope, or should expose a stream.
 
 **It reports no progress.** `init()` is a `Future<void>`, so there is nothing
 between "initializing" and "ready" to show. An initialization that has stages
-worth naming belongs in `AsyncDataScope`, whose stream reports them.
+worth naming belongs in `AsyncDataScope`, whose context reports them.
 
 **It does nothing with a failed initialization** beyond what every family
 does: the error reaches `buildOnError`, which is required precisely so that

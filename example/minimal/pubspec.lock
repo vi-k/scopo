@@ -9,6 +9,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "2.11.0"
+  async_job:
+    dependency: transitive
+    description:
+      name: async_job
+      sha256: f9553cd0440e83fc4c1322e68686063cbb5df5a294939e393589a0bde6b872c7
+      url: "https://pub.dev"
+    source: hosted
+    version: "0.1.0"
   boolean_selector:
     dependency: transitive
     description:

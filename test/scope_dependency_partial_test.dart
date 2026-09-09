@@ -6,6 +6,8 @@ import 'package:flutter/foundation.dart';
 import 'package:scopo/scopo.dart';
 import 'package:test/test.dart';
 
+import 'utils/run_scope_init.dart';
+
 /// A container whose single dependency takes something and then goes wrong.
 ///
 /// This is the shape the contract is about: an initializer that has already
@@ -27,7 +29,7 @@ final class _Deps extends ScopeAutoDependencies<_Deps, void> {
 
 Future<void> _init(_Deps deps) async {
   try {
-    await deps.init(null, ScopeInitHandle().context);
+    await runScopeInit((ctx) => deps.init(null, ctx));
   } on Object {
     // The failure is the point of the fixture; the disposal is what is tested.
   }
@@ -142,7 +144,7 @@ void _sequentialDisposalGroup() {
       final released = <String>[];
       final deps = _Three(released, failOnDispose: {'b'});
 
-      await deps.init(null, ScopeInitHandle().context);
+      await runScopeInit((ctx) => deps.init(null, ctx));
       await deps.dispose();
 
       expect(
@@ -156,7 +158,7 @@ void _sequentialDisposalGroup() {
     test('is still reported', () async {
       final deps = _Three(<String>[], failOnDispose: {'b'});
 
-      await deps.init(null, ScopeInitHandle().context);
+      await runScopeInit((ctx) => deps.init(null, ctx));
       await deps.dispose();
 
       expect(
@@ -212,7 +214,7 @@ void _concurrentDisposalGroup() {
       final released = <String>[];
       final deps = _Nested(released, failOnDispose: {'x'});
 
-      await deps.init(null, ScopeInitHandle().context);
+      await runScopeInit((ctx) => deps.init(null, ctx));
       await deps.dispose();
 
       expect(
@@ -234,7 +236,7 @@ void _concurrentDisposalGroup() {
     test('is still reported', () async {
       final deps = _Nested(<String>[], failOnDispose: {'x'});
 
-      await deps.init(null, ScopeInitHandle().context);
+      await runScopeInit((ctx) => deps.init(null, ctx));
       await deps.dispose();
 
       expect(
@@ -270,7 +272,7 @@ void _diagnosticsGroup() {
       Object? error;
       StackTrace? stackTrace;
       try {
-        await deps.init(null, ScopeInitHandle().context);
+        await runScopeInit((ctx) => deps.init(null, ctx));
       } on Object catch (e, s) {
         error = e;
         stackTrace = s;
@@ -293,7 +295,7 @@ void _diagnosticsGroup() {
       addTearDown(() => FlutterError.onError = previous);
 
       final deps = _FailingDispose();
-      await deps.init(null, ScopeInitHandle().context);
+      await runScopeInit((ctx) => deps.init(null, ctx));
       await deps.dispose();
 
       expect(
@@ -318,7 +320,7 @@ void _diagnosticsGroup() {
       final dependency = _CountingDependency();
       final tree = ScopeDependency.concurrent('', [dependency]);
 
-      await tree.init(ScopeInitHandle().context, (_) {});
+      await runScopeInit((ctx) => tree.init(ctx, (_) {}));
       expect(dependency.initCalls, 1);
 
       await tree.dispose((_) {});
@@ -352,7 +354,7 @@ void _diagnosticsGroup() {
         }),
       ]);
 
-      await tree.init(ScopeInitHandle().context, (_) {});
+      await runScopeInit((ctx) => tree.init(ctx, (_) {}));
 
       final first = tree.dispose((_) {});
       await pumpEventQueue();
@@ -397,7 +399,7 @@ void _diagnosticsGroup() {
         }),
       ]);
 
-      await tree.init(ScopeInitHandle().context, (_) {});
+      await runScopeInit((ctx) => tree.init(ctx, (_) {}));
 
       final first = tree.dispose((_) {});
       await pumpEventQueue();

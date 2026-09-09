@@ -5,6 +5,8 @@ import 'dart:async';
 import 'package:scopo/scopo.dart';
 import 'package:test/test.dart';
 
+import 'utils/run_scope_init.dart';
+
 /// Logs its three hooks, the same shape `async_controller_scope_test.dart`
 /// uses to watch `ScopeController` on its own.
 final class _TestController extends ScopeController {
@@ -35,7 +37,7 @@ final class _Deps extends ScopeAutoDependencies<_Deps, void> {
 }
 
 Future<void> _init(_Deps deps) async {
-  await deps.init(null, ScopeInitHandle().context);
+  await runScopeInit((ctx) => deps.init(null, ctx));
 }
 
 /// Its `init` logs and then throws, the way a real controller's would if
@@ -139,7 +141,7 @@ void main() {
       final deps = _FailingDeps(calls);
 
       await expectLater(
-        deps.init(null, ScopeInitHandle().context),
+        runScopeInit((ctx) => deps.init(null, ctx)),
         throwsException,
       );
 
@@ -159,14 +161,14 @@ void main() {
         final gate = Completer<void>();
         final deps = _SlowDeps(calls, gate);
 
-        final handle = ScopeInitHandle();
+        final handle = ScopeInitJob((ctx) => deps.init(null, ctx))..start();
         // The caller drives the tree itself, so the cancellation it asks for
         // comes back to it as a throw. Caught here because it is the answer,
         // not a failure.
         final walk = () async {
           try {
-            await deps.init(null, handle.context);
-          } on ScopeInitCancelled {
+            await handle.value;
+          } on Cancelled {
             calls.add('cancelled');
           }
         }();
@@ -183,7 +185,7 @@ void main() {
         // once, but the initializer it is parked inside is not interrupted --
         // Dart cannot interrupt somebody else's `await` -- so the walk ends
         // only once `init` does.
-        handle.cancel();
+        unawaited(handle.cancel());
         gate.complete();
         await walk;
 

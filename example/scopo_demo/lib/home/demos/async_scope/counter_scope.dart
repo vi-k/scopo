@@ -114,9 +114,9 @@ final class CounterScopeElement
   @override
   Future<void> initScopeAsync(ScopeInitContext ctx) async {
     console.log(_debugSource, '$_debugName: initialize');
-    // Directly rather than through `ctx.wait`: what this call sets up is what
-    // `disposeScope` below gives back, and a wait walked away from would leave
-    // the model starting up with nobody to stop it.
+    // This short body asks the context nothing. The bare call runs to its end,
+    // and `disposeScope` gives back what it set up even after cancellation,
+    // while the scope's teardown is still waiting.
     await _model.init();
     // Before the return rather than after it, because after it there is
     // nothing: a generator had a statement that ran once the scope had taken

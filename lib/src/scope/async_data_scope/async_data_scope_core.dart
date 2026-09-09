@@ -92,7 +92,7 @@ abstract base class AsyncDataScopeElementBase<
   /// produce, and reading it as "nothing yet" made [data] hand out a value the
   /// scope had never been given.
   ///
-  /// It is set the moment the value goes past, which is a little before the
+  /// It is set only when the job ends with [Done], a little before the
   /// model says [AsyncScopeReady] — the model update waits for the end of the
   /// frame, or for the whole of `pauseAfterInitialization`. The teardown reads
   /// [data] in exactly that window, so this is the moment that matters and not
@@ -117,27 +117,29 @@ abstract base class AsyncDataScopeElementBase<
   Future<void> runInitBody(ScopeInitContext ctx) async {
     final data = await initDataAsync(ctx);
 
-    // The value the body produced after the scope had given up. It never
-    // reaches [data], so the release takes it directly rather than through
-    // [disposeScope], which reads the field.
-    if (ctx.isCancelled) {
+    // `ctx.onDiscard` routes a value the scope never accepted through the
+    // kernel's cleanup stack to `releaseLateData`. Once accepted, the value is
+    // held by the field, so the field is filled only in the `Done` branch,
+    // when the outcome is known. Storing it in the body would let cancellation
+    // during cleanup release a value the field already holds.
+    ctx.onDiscard(() async {
+      _acceptInitValue = null;
       await releaseLateData(data);
+    });
 
-      return;
-    }
-
-    // Refused here rather than one layer up. This runs before the engine is
-    // told anything, so a second initialization is caught while the field
-    // still holds the value the scope has actually been using -- up there it
-    // arrived to find it already replaced: the model stayed as it was, the
-    // dependents heard nothing, `data` handed out the newcomer, and the value
-    // the scope had been given was left with nobody to release it.
+    // Refuse a second initialization before it can replace the held value.
+    // A guard in the layer above would run after the field had been written:
+    // the model would stay as it was and the dependents would hear nothing,
+    // but `data` would return the newcomer. The value the scope had actually
+    // been using would be lost to the teardown, with nobody left to release it.
     if (_hasData) {
       throw StateError('$W already initialized');
     }
 
-    _data = data;
-    _hasData = true;
+    _acceptInitValue = () {
+      _data = data;
+      _hasData = true;
+    };
   }
 
   /// Releases the value the initialization produced; awaited.

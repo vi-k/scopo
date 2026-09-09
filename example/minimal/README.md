@@ -43,10 +43,10 @@ when the app is closed — disposing of itself in order.
 ## What to try
 
 - Pass `trace: true` to the `ScopePrintObserver` in `main()` to see the
-  machinery under the lifecycle — the `scopeKey` queue, the guarded streams —
-  and not only the milestones.
-- Make `AppDependencies.init` throw after the first `yield` to land on the
-  error branch.
+  machinery under the lifecycle — the `scopeKey` queue, the initialization and
+  teardown — and not only the milestones.
+- Make `AppDependencies.init` throw after the first `ctx.progress` to land on
+  the error branch.
 - Set `ScopeConfig.pauseAfterInitializationEnabled = false` to see how fast the
   ready branch really arrives.
 

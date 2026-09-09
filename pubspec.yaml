@@ -16,6 +16,7 @@ environment:
   flutter: ">=3.27.0"
 
 dependencies:
+  async_job: ^0.1.0
   flutter:
     sdk: flutter
 

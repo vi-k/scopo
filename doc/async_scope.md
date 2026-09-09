@@ -88,11 +88,11 @@ returns is actually painted instead of being replaced within the same frame.
 `pauseAfterInitialization` holds the ready branch back further still, which is
 what to reach for when the steps are too fast to read.
 
-**Progress after ready is a mistake, and is refused.** The scope is initialized
-once; a progress call made after the body has returned — by a helper it left
-running, say — is reported through `FlutterError.reportError` and does not
-change what is on screen. An initialization that goes on producing values after
-the scope is usable wants a `Listenable` under the scope, not this context.
+**Progress after ready has nowhere to go.** The scope is initialized once;
+a progress call made after it is ready — by a helper the body left running,
+say — is ignored and does not change what is on screen. An initialization
+that goes on producing values after the scope is usable wants a `Listenable`
+under the scope, not this context.
 
 **No progress at all is fine.** An `initScope` that reports nothing never
 leaves `AsyncScopeWaiting`, so the scope shows `buildOnWaiting` — a spinner,
@@ -161,13 +161,16 @@ scope had reached when it failed.
 
 One failure is handled differently, and deserves to be known.
 
-**A failure after the scope is already ready** does not switch the screen to
-`buildOnError`. It is reported through `FlutterError.reportError` and the scope
-stays ready. That is deliberate: the widgets on screen are the ready ones,
-whatever `initScope` acquired still has to be released by `disposeScope`, and
+**An error with no outcome of its own** — a late failure of an action abandoned
+by `wait`, a disposer, an `onCancel` callback or work started by `unattended` —
+reaches `ScopeObserver.onError` and `FlutterError.reportError`. It does not
+switch the screen to `buildOnError`, and a ready scope stays ready. That is
+deliberate: the widgets on screen are the ready ones, whatever `initScope`
+acquired still has to be released by `disposeScope`, and
 swapping the subtree for an error screen behind the user's back would strand
 both. A body that goes on working after it has returned — a helper it left
 running — is unusual, but it is exactly the case where the difference matters.
+Bare asynchronous work outside the context still reports to its own zone.
 
 ## Disposal, in order
 
@@ -182,9 +185,11 @@ awaited:
    for one.
 3. **The initialization is cancelled**, and the wait for that is bounded by
    `initCancellationTimeout` (`ScopeConfig.defaultInitCancellationTimeout` by
-   default). The body is told at once — the next member of `ctx` it touches
-   throws `ScopeInitCancelled` — and a failure raised while it unwinds is
-   reported rather than thrown on: abandoning the disposal at that point would
+   default). Cancellation waits for the body, its child jobs and cleanup.
+   The body learns of it through `ctx.progress`, `check` or the waiting
+   family, which throws `Cancelled` according to the call's rules below —
+   and a failure raised while it unwinds is reported rather than thrown on:
+   abandoning the disposal at that point would
    leave the scope registered with its parent and its `scopeKey` unreleased.
    A cancellation that never finishes at all would leave it there just as
    surely, and needs no failure to do it: a body parked on somebody else's
@@ -192,7 +197,8 @@ awaited:
    anything is never told. When the limit expires the initialization is left
    where it stands, the expiry is reported, and the teardown goes on. What the
    body holds stays held — and if it finishes later, what it produced is handed
-   to `disposeScope`, unless the teardown has by then run to its end.
+   to `disposeScope`, unless the teardown has by then run to its end. Cleanup
+   registered with the job does not need that hook and still runs.
 4. **The initialization is awaited** if it could not be cancelled.
 5. **The child scopes are awaited**, bounded by `waitForChildrenTimeout`
    (`ScopeConfig.defaultWaitForChildrenTimeout` by default). An expiry is
@@ -265,9 +271,10 @@ the older form of this package needed the opposite of each.
 
 An initialization ends early in two ways: a step of it fails, or the scope goes
 away before it was ever ready, removed from the tree or `close()`d. Both arrive
-in the body as a throw — the second one as `ScopeInitCancelled`, raised by the
-next member of `ctx` the body touches, which between two steps is usually
-`ctx.progress` — so one `catch` covers both.
+in the body as a throw — the second one as `Cancelled`, raised by a checkpoint
+such as `ctx.progress` between two steps — so one `catch` covers both.
+`Cancelled` comes from `async_job` and is re-exported by `scopo`; catching it
+needs no separate dependency or import.
 
 A body that touches the context nowhere is the exception that proves it:
 nothing is thrown at it, because Dart cannot interrupt somebody else's wait,
@@ -308,61 +315,95 @@ well as the resource: a `close()` that never completes leaves the scope showing
 its loading branch until `initCancellationTimeout` expires, with nothing on
 screen and nothing in the console. The scope's own waits are all bounded for
 this reason, and so is the one the dependency container of the `Scope` family
-makes on your behalf — a guard you write yourself is the one place left where a
-hang is unbounded.
+makes on your behalf. A guard you write yourself, or cleanup registered with
+the job, must be able to finish too; the job puts no timeout around a disposer.
 
 ### What goes through the context, and what does not
 
-Dart cannot interrupt somebody else's `await`, so the only way a body hears
-about a cancellation is by asking, and every member of `ctx` is an asking.
-`ctx.wait` is the narrow one: it ends the waiting rather than the work, so the
-action runs on and the value it was going to produce comes back to a wait that
-is already over.
+`ScopeInitContext` adds `progress` to `JobContext`. Dart cannot interrupt
+somebody else's `await`, so the body hears about cancellation through
+checkpoints: `progress`, `check`, `wait`, `join`, `uncancellable`, `onCancel`
+and `run`. Registering cleanup and starting `unattended` work still work after
+cancellation while the job is alive; `ctx.job.isCancelled` answers without
+throwing.
 
-That makes it right for a call that owns nothing and whose result nobody needs
-any more — a read, a warm-up, a pause:
-
-```dart
-await ctx.wait(cache.warmUp);   // let go of the moment the scope gives up
-```
-
-and wrong for an acquisition:
+**`wait` with `discard:` is the form to reach for when an acquisition can be
+left in flight.** It ends the waiting rather than the work. The action runs on,
+but the value has someone to close it even if it never reaches the body:
 
 ```dart
-// Wrong: the wait is over before the connection arrives, so the body never
-// receives it, and what nobody receives, nobody closes.
-final opened = await ctx.wait(Api.connect);
-
-// Right: the value reaches the body whatever the scope has decided, and from
-// there the `catch` above or the return below is what settles its fate.
-final opened = await Api.connect();
+final opened = await ctx.wait(Api.connect, discard: (api) => api.close());
 ```
 
-An acquisition is called directly, and the reason that is safe is a promise of
-the scope rather than a hope: **a body that comes back for a scope which has
-already given up settles nothing, but what it produced is released rather than
-dropped** — `disposeScope` here, `disposeData` in the `AsyncDataScope` topic,
+The rule is one: **a value that never reaches the body is cleaned up
+unconditionally; a value that does goes on the cleanup stack.** An abandoned
+`wait` puts its value on the stack while the job is still unwinding it, or
+closes it on the spot if the job is already over. On that stack, `discard:`
+runs on failure or cancellation; `dispose:` runs whatever the outcome. Use
+`dispose:` for a temporary file, a lock or a subscription the body keeps to
+itself, and pass only one of the two.
+
+For a read, a warm-up or a pause there may be nothing to release:
+
+```dart
+await ctx.wait(cache.warmUp);   // let go the moment the scope gives up
+```
+
+**`join` is for a call that must not be left halfway** — a migration, a device
+write, somebody else's `init`. It accepts cancellation at once but waits for
+the call to finish before throwing `Cancelled`; an error from the call still
+arrives as that error. It replaces the old pair
+`await x(); ctx.check();`, keeping the wait and the check together:
+
+```dart
+await ctx.join(database.migrate);
+```
+
+For a `join` that returns a resource, pass `discard:` or `dispose:` too; a
+value the body will not receive is released before the cancellation is thrown.
+`ctx.check()` still belongs where there is no call to wrap, such as a loop over
+work of your own. `await ctx.uncancellable(step)` holds cancellation back for
+a step that must not be cancelled at all; it is delivered when the step ends.
+`ctx.unattended(work)` starts work nobody waits for and reports its errors to
+the observer; it neither waits for nor cancels that work.
+
+For a value the body already holds, `onDispose` and `onDiscard` register the
+same two kinds of cleanup. They return a function that unregisters it;
+`disown(value)` instead removes cleanup attached to that value by `wait` or
+`join`. The stack unwinds in reverse registration order, after the child jobs
+and before the outcome, awaiting each release:
+
+```dart
+ctx.onDispose(temporary.close);          // released on every outcome
+final unregister = ctx.onDiscard(session.close); // on failure or cancellation
+final opened = await ctx.wait(Api.connect, discard: (api) => api.close());
+
+connection = Connection(opened, session);
+// Handed to the scope: its disposeScope now owns both releases.
+ctx.disown(opened);
+unregister();
+```
+
+Remove those registrations at the handover, with no `await` or checkpoint
+between it and returning. Otherwise the job's cancellation cleanup and the
+scope's release of a late return would both close the same resource. A
+registration made by `onDispose` or `onDiscard` has no value attached, so
+`disown` cannot remove it; use the returned function, as above.
+
+**A bare call is still right for a short initialization that asks the context
+nothing.** The reason that is safe is a promise of the scope rather than a
+hope: **a body that comes back for a scope which has already given up settles
+nothing, but what it produced is released rather than dropped** —
+`disposeScope` here, `disposeData` in the `AsyncDataScope` topic,
 the container's own teardown in the `Scope` one. The one path where it cannot
 is a teardown that has already finished, an `initCancellationTimeout` it gave
 up on: by then the scope has no widget left to read the hook from.
 
-The middle case is a call that owns nothing but must not be left in flight —
-a migration, somebody else's `init`, a write already on the wire. Call it
-directly too, and say afterwards that the rest is not worth doing:
-
-```dart
-await database.migrate();
-ctx.check();
-```
-
-`ctx.check()` is what a `ctx.progress` between two steps does anyway, which is
-why bodies that report their steps rarely need it written out.
-
-An initialization with several steps like that turns into a pile of nested
-`try`s, and that is what the dependency container of the `Scope` family exists
-for — see the `Scope` topic. `AsyncControllerScope` closes the same hole from
-the other side: its controller is disposed of on **every** path, including the
-one where `init()` threw.
+For several dependencies with an order of their own, the dependency container
+of the `Scope` family keeps the tree and its teardown — see the `Scope` topic.
+`AsyncControllerScope` closes the same hole from the other side: its
+controller is disposed of on **every** path, including the one where `init()`
+threw.
 
 ## Parents and children
 

@@ -152,19 +152,18 @@ mixin ScopeDependencyMixin implements ScopeDependency, ScopeObservable {
   ///
   /// Runs [_runInit], handles the errors and sets the matching state.
   ///
-  /// Initialization succeeds not when there are no errors, but only when the
-  /// generator IS NOT CANCELLED. That is, the initiator may leave the stream
-  /// running after an error, and the initialization then formally ends in
-  /// [ScopeDependencyInitialized]; or it may end the stream without any error
-  /// at all, and the initialization then ends in [ScopeDependencyCancelled].
+  /// A normal return from [_runInit] marks the dependency
+  /// [ScopeDependencyInitialized]. A [Cancelled] thrown by the walk is
+  /// rethrown, and a dependency still in its initial state is marked
+  /// [ScopeDependencyCancelled]. Cancellation is cooperative: this method
+  /// does not interrupt a bare `await` inside [_runInit].
   ///
-  /// [_runInit] may report several errors, because a group of dependencies rather
-  /// than a single one can hide behind it. Errors that were already handled,
-  /// that is the errors of the child dependencies, are ignored. An error of
-  /// this dependency leads to [ScopeDependencyFailed] and is wrapped into a
-  /// [ScopeDependencyException] to be passed on in that form. Only the first
-  /// such error is kept in the state, on the assumption that one dependency
-  /// has no reason to report several.
+  /// Another error is recorded as [ScopeDependencyFailed] and passed on in a
+  /// [ScopeDependencyException]. An exception from a child is recorded too;
+  /// its path is prefixed with this dependency's name, if nonempty, before
+  /// it is rethrown.
+  /// If the job is already cancelled, the error is recorded in the cancelled
+  /// state instead, and [Cancelled] is thrown so the cancellation goes on.
   @override
   Future<void> init(
     ScopeInitContext ctx,
@@ -203,7 +202,7 @@ mixin ScopeDependencyMixin implements ScopeDependency, ScopeObservable {
       try {
         await _runInit(ctx, onStep);
         // ignore: avoid_catching_errors
-      } on ScopeInitCancelled {
+      } on Cancelled {
         // The walk was told to stop, which is not a failure and is not this
         // node's to record: the `finally` below writes
         // [ScopeDependencyCancelled] for exactly this, and the caller that
@@ -211,7 +210,7 @@ mixin ScopeDependencyMixin implements ScopeDependency, ScopeObservable {
         rethrow;
         // ignore: avoid_catching_errors
       } on Object catch (error, stackTrace) {
-        if (ctx.isCancelled) {
+        if (ctx.job.isCancelled) {
           // Raised while the walk was already unwinding. It has nowhere to go
           // -- the caller is waiting for the cancellation, not for this -- so
           // it is recorded and reported here, and the cancellation goes on.
@@ -219,7 +218,7 @@ mixin ScopeDependencyMixin implements ScopeDependency, ScopeObservable {
           // post-cancel error, and the only one that channel ever carried.
           _handleInitializationPostCancelError(error, stackTrace);
 
-          throw const ScopeInitCancelled();
+          throw const Cancelled();
         }
 
         // Records the failure on this node and passes it upwards wrapped in a

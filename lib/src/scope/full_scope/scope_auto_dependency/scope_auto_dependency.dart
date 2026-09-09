@@ -230,7 +230,7 @@ abstract base class ScopeAutoDependencies<T extends ScopeAutoDependencies<T, C>,
           ctx.progress(progress);
         });
         // ignore: avoid_catching_errors
-      } on ScopeInitCancelled {
+      } on Cancelled {
         rethrow;
         // ignore: avoid_catching_errors
       } on Object catch (error, stackTrace) {
@@ -311,16 +311,16 @@ abstract base class ScopeAutoDependencies<T extends ScopeAutoDependencies<T, C>,
   /// whole of the run and leaves it only at the end.
   bool _initializing = false;
 
-  /// Awaits [dispose] with a limit, and gives up rather than holding the
-  /// generator open for ever.
+  /// Awaits [dispose] with a limit, and gives up rather than holding [init]
+  /// open for ever.
   ///
-  /// This runs while the failure of the initialization is on its way out of
-  /// the generator, and nothing downstream sees that failure until the
-  /// generator finishes. So a disposer that never completes does not merely
-  /// fail to release what it holds: it holds the failure itself, and the scope
-  /// above goes on showing its loading branch for good — nothing on screen and
-  /// nothing in the console. The neighbouring family bounds the same wait for
-  /// the same reason, and says so in
+  /// This runs in the `finally` of [init], before its future completes with
+  /// the failure or cancellation. Nothing awaiting that future sees the
+  /// outcome until this wait ends. So a disposer that never completes does
+  /// not merely fail to release what it holds: it holds the failure itself,
+  /// and the scope above goes on showing its loading branch for good — nothing
+  /// on screen and nothing in the console. The neighbouring family bounds the
+  /// same wait for the same reason, and says so in
   /// `AsyncControllerScopeElementBase._releaseController`.
   ///
   /// The limit is [ScopeConfig.defaultDisposeScopeTimeout] rather than the

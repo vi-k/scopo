@@ -55,7 +55,7 @@ final class CounterModel with ChangeNotifier {
       console.log(debugSource, '$debugName: initialized');
 
       return model;
-    } on ScopeInitCancelled {
+    } on Cancelled {
       // The cancellation arrives as a throw, so it can be told from a failure
       // by its type -- and the model was never built, so there is nothing to
       // dispose of, only something to say.
@@ -77,7 +77,7 @@ final class CounterModel with ChangeNotifier {
   }
 }
 
-/// An `AsyncDataScopeBase` that turns the initialization stream into a
+/// An `AsyncDataScopeBase` whose initialization returns a
 /// ready `CounterModel` and owns its later disposal.
 final class CounterScope
     extends AsyncDataScopeBase<CounterScope, CounterModel> {

@@ -50,7 +50,7 @@ The progress side is typed loosely on purpose: `ctx.progress` takes
 an `Object?`, and the builders receive it as `Object?`. The value being built is
 what the type parameter is for; the progress is a caption.
 
-### A value that never arrives is a value nobody releases
+### A value that never arrives still needs a release
 
 Returning is the handover, and until it happens the value belongs to
 the initialization alone. The scope has never seen it, so it cannot release it:
@@ -94,23 +94,39 @@ disposeData: (database) => database.close(),
 
 One `catch` covers both ways this initialization ends early: a failing step,
 and a cancellation — the scope removed from the tree, or `close()`d, before it
-was ready. The second arrives as `ScopeInitCancelled`, thrown by the next
-member of `ctx` the body touches, and here that member is the `ctx.progress`
-above the migration.
+was ready. The second arrives as `Cancelled`, re-exported by `scopo`, thrown
+by a checkpoint — here the `ctx.progress` above the migration.
 
-Note what the acquisition is **not** wrapped in. `ctx.wait` ends the waiting
-rather than the work, so a database opened into one is a database the body
-never receives — and this whole section is about a value the body never
-received. Call it directly; the paragraph below says what becomes of it when
-the cancellation lands after the body has already built it. The `AsyncScope`
-topic has the rule in full.
+The context can own that guard too. **Use `wait` with `discard:` for an
+acquisition that can be left in flight**: cancellation ends the waiting, the
+action runs on, and `discard` closes a database the body never receives.
+`join` keeps waiting for a migration that must finish before the database can
+close:
+
+```dart
+initData: (context, ctx) async {
+  final database = await ctx.wait(Database.open, discard: (db) => db.close());
+  ctx.progress('migrating');
+  await ctx.join(database.migrate);
+
+  ctx.disown(database); // disposeData takes over the release on return
+  return database;
+},
+disposeData: (database) => database.close(),
+```
+
+`disown` stands beside the return, with no wait or checkpoint between them:
+the scope releases a late return too, so leaving the job's registration in
+place would close it twice. The `AsyncScope` topic has the rule in full,
+including `dispose:` for a resource that must be released even on success.
 
 A value the body produces after the cancellation is handed to `disposeData`
-rather than lost, so a body that never asks `ctx` anything does not leak — it
-merely runs to its end for a scope that is already gone. That promise is what
-makes a bare call the right way to acquire: the value has to reach the body
-before anyone can decide anything about it, and `disposeData` is the decision
-the scope makes when the body hands it over too late.
+rather than lost, while the scope's teardown is still waiting. That keeps a
+bare call right for a short initialization that never asks `ctx` anything:
+it merely runs to its end for a scope that is already gone. Once an expired
+`initCancellationTimeout` has let the teardown finish, the scope no longer has
+the widget to read `disposeData` from. Cleanup registered with the job does
+not depend on that hook.
 
 Two ways to avoid writing the guard at all: build the value in one step that
 cannot fail halfway, or use the dependency container of the `Scope` family,
@@ -166,8 +182,9 @@ ambiguity reaches `onUnmount`, which is handed a `T?` and cannot tell the two
 apart on its own.
 
 "Before the value arrives" is a shade earlier than `isInitialized`. The value
-is caught as it goes past; the state of the scope is applied at the end of the
-frame, or after the whole of `pauseAfterInitialization`, which is deliberately
+is stored once the job has finished its children and cleanup successfully;
+the state of the scope is applied at the end of the frame, or after the whole
+of `pauseAfterInitialization`, which is deliberately
 longer. In that window the scope is still building `progressBuilder` while `data`
 already answers — and that is the window the teardown of a scope that left
 early runs in, which is why `disposeData` can be promised the value at all.

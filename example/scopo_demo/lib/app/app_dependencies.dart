@@ -10,7 +10,7 @@ import 'app.dart';
 
 /// Dependencies for [App] scope.
 ///
-/// They are initialized asynchronously in the [init] stream.
+/// They are initialized asynchronously by [init].
 final class AppDependencies implements ScopeDependencies {
   final SharedPreferences _sharedPreferences;
   final FakeAnalytics analytics;
@@ -39,12 +39,10 @@ final class AppDependencies implements ScopeDependencies {
     // needed to tell them apart from a successful run — that one leaves by
     // `return`.
     //
-    // The steps themselves are called directly rather than through
-    // `ctx.wait`: each of them is something this body will have to give back,
-    // and `ctx.wait` ends the waiting rather than the work — a client whose
-    // `init` is walked away from is a client the `catch` below would be
-    // closing while it is still starting up. The pause is the one place
-    // `ctx.wait` belongs: nobody needs it once the screen is gone.
+    // `join` keeps each `init` in flight until it finishes, then throws any
+    // cancellation: the `catch` below must not close a client that is still
+    // starting up. It replaces a bare call followed by `ctx.check()`.
+    // The pause uses `wait`: nobody needs it once the screen is gone.
     try {
       ctx.progress('init storage');
       final sharedPreferences = await SharedPreferences.getInstance();
@@ -54,15 +52,15 @@ final class AppDependencies implements ScopeDependencies {
 
       ctx.progress('init analytics');
       analytics = FakeAnalytics();
-      await analytics.init();
+      await ctx.join(analytics.init);
 
       ctx.progress('init http client');
       httpClient = FakeAppHttpClient();
-      await httpClient.init();
+      await ctx.join(httpClient.init);
 
       ctx.progress('init awesome service');
       service = FakeService();
-      await service.init();
+      await ctx.join(service.init);
 
       return AppDependencies(
         sharedPreferences: sharedPreferences,

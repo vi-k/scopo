@@ -2,6 +2,20 @@
 /// dependency injection, asynchronous initialization and disposal.
 library;
 
+// These are the kernel names used to drive an initialization and read its
+// outcome. Listing them keeps future kernel helpers out of scopo's API.
+export 'package:async_job/async_job.dart'
+    show
+        CancelReason,
+        Cancelled,
+        DeferredJob,
+        Done,
+        Failed,
+        Job,
+        JobContext,
+        JobObserver,
+        Outcome;
+
 // Listed rather than hidden. `hide` names what stays in, so the next internal
 // helper added beside `notifyObserver` and the two resolvers would join the
 // public API without anybody deciding that -- and a name is public from the

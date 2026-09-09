@@ -103,9 +103,9 @@ abstract base class AsyncScopeBase<W extends AsyncScopeBase<W>>
   /// so; there is no other way, and no way to say it without finishing.
   ///
   /// Cancellation is cooperative: the body learns that the scope has given up
-  /// the next time it touches [ctx]. After a bare `await`, call
-  /// [ScopeInitContext.check]; to wait for something and give up on
-  /// cancellation at once, wrap it in [ScopeInitContext.wait].
+  /// the next time it waits, starts work or checks through [ctx]. After a bare
+  /// `await`, call [JobContext.check]; to wait for something and give up on
+  /// cancellation at once, wrap it in [JobContext.wait].
   Future<void> initScope(BuildContext context, ScopeInitContext ctx);
 
   /// Called synchronously when the scope leaves the tree.

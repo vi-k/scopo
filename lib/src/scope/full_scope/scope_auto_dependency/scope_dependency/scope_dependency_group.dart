@@ -270,39 +270,42 @@ final class _ScopeDependencyConcurrent extends ScopeDependencyGroup {
     ScopeInitContext ctx,
     void Function(String path) onStep,
   ) async {
-    final arms = _dependencies.where((dep) => dep.initializationRequired);
+    final jobs = <ScopeInitJob<void>>[];
+    final values = <Future<void>>[];
+    AsyncError? failure;
 
-    // The arms get a context of their own, and that is the whole of what the
-    // merge used to do about a failure: the first arm to fall over gave up on
-    // its siblings, because the guarded stream cancelled its source. Here the
-    // first failure cancels this handle, the siblings are told at their next
-    // step, and the initialization the group belongs to is untouched -- it is
-    // waiting for this group to say what became of it.
-    //
-    // Everything the merge did *besides* that is gone rather than rewritten.
-    // It existed because an arm was somebody's `Stream`: it could throw while
-    // being built, throw from `listen`, or throw from the lazy chain that
-    // produced it, and none of those went where an ordinary failure goes. An
-    // arm is now an ordinary call, and an ordinary call that throws is caught
-    // by an ordinary `catch`.
-    final arm = ScopeInitHandle.childOf(ctx);
+    // Each arm owns its cancellation. Cancelling a job that held all the arms
+    // would also replace the group's failure with a Cancelled outcome.
     try {
-      await Future.wait([
-        for (final dependency in arms)
-          Future<void>.sync(
-            () => dependency.init(
-              arm.context,
-              (path) => onStep(_path(path)),
-            ),
-          ).onError<Object>((error, stackTrace) {
-            arm.cancel();
-            Error.throwWithStackTrace(error, stackTrace);
+      for (final dependency
+          in _dependencies.where((dep) => dep.initializationRequired)) {
+        final job = ScopeInitJob<void>(
+          (ctx) => dependency.init(ctx, (path) => onStep(_path(path))),
+        );
+        ctx.run(job);
+        jobs.add(job);
+        values.add(
+          job.value.onError<Object>((error, stackTrace) {
+            failure ??= AsyncError(error, stackTrace);
+            for (final sibling in jobs) {
+              if (!identical(sibling, job)) {
+                unawaited(sibling.cancel());
+              }
+            }
           }),
-      ]);
+        );
+      }
+      await Future.wait(values);
+      if (failure case final first?) {
+        Error.throwWithStackTrace(first.error, first.stackTrace);
+      }
     } finally {
-      // Takes the handle off `ctx` whichever way the group ended, so a scope
-      // that outlives this group does not carry its callback around.
-      arm.cancel();
+      // The lazy filter can throw after some arms have started. Those arms
+      // must finish before the container begins releasing their dependencies.
+      for (final job in jobs) {
+        unawaited(job.cancel());
+      }
+      await Future.wait(jobs.map((job) => job.done));
     }
   }
 

@@ -175,21 +175,22 @@ abstract base class ScopeElementBase<
   Future<void> runInitBody(ScopeInitContext ctx) async {
     final dependencies = await initDependencies(ctx);
 
-    // The container the body built after the scope had given up: it never
-    // reaches the field, so this is the only pass that can let go of it.
-    if (ctx.isCancelled) {
+    // A container that never reaches the scope is handed to
+    // `releaseLateDependencies` by `ctx.onDiscard` on the kernel's cleanup
+    // stack. The field becomes its owner only in the `Done` branch, once the
+    // outcome is known: writing it in the body would let cancellation during
+    // cleanup dispose a container the field already holds.
+    ctx.onDiscard(() async {
+      _acceptInitValue = null;
       await releaseLateDependencies(dependencies);
+    });
 
-      return;
-    }
-
-    // Refused here rather than one layer up, which is where the neighbouring
-    // `AsyncDataScope` refuses the same thing and says so in the same words.
+    // See [AsyncDataScopeElementBase.runInitBody] for why this guard is here.
     if (_dependencies != null) {
       throw StateError('$W already initialized');
     }
 
-    _dependencies = dependencies;
+    _acceptInitValue = () => _dependencies = dependencies;
   }
 
   /// Lets go of a container the body built after the scope had given up.

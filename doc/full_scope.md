@@ -28,11 +28,13 @@ It is given a `ScopeInitContext` beside the `BuildContext`, and that is what
 carries the two things a bare `Future` has no room for: `ctx.progress(x)`
 reports a step any number of times, and the cancellation reaches the body
 through `ctx` — if the widget leaves the tree while the container is still
-being built, the body is thrown into at its next touch of the context, which
+being built, the body is thrown into at its next checkpoint, which
 between two steps is usually `ctx.progress` itself, and a half-built container
-is never handed to a state. What builds a dependency is called directly rather
-than through `ctx.wait`: a container the body never receives is one nobody can
-release. The rule is in the `AsyncScope` topic.
+is never handed to a state. For an acquisition that can be left in flight,
+use `ctx.wait` with `discard:`: a value the body never receives is still
+released. For a call that must finish, use `ctx.join`; a short initialization
+that asks the context nothing can still use a bare call. The rule is in the
+`AsyncScope` topic.
 
 What the scope shows, and what it calls, in order:
 
@@ -84,6 +86,21 @@ a wrapper of any kind.
 The four function types the scope is built from are named as well, for anyone
 passing them around: `ScopeInitCallback`, `ScopeWaitingBuilder`,
 `ScopeProgressBuilder` and `ScopeErrorBuilder`.
+
+Outside a scope, `ScopeInitJob<T>` supplies that same context: a dependency
+tree walked by hand, a container built before any widget exists, a test.
+Start it explicitly, then await the value:
+
+```dart
+final job = ScopeInitJob((ctx) => AppDependencies.init(ctx))..start();
+final dependencies = await job.value;
+```
+
+`await job.cancel()` requests cancellation and waits for the body, its child
+jobs and cleanup. If the caller need not wait, it calls `job.cancel()` without
+awaiting the returned future. `job.value` throws `Cancelled` on cancellation;
+`scopo` re-exports that name from `async_job`, so no second dependency is
+needed.
 
 ## ScopeAutoDependencies
 
@@ -261,9 +278,10 @@ walk stops is worth knowing:
 - **A sequential group** stops at the first failure; the children before it are
   released in reverse order.
 - **A concurrent group** cancels the arms still running when one of them fails.
-  A cancelled arm is resumed only as far as its next suspension point, so it may
-  stop mid-way — and this is the second reason to register early: whatever it
-  had already registered is still released, whatever it had not is not.
+  A cancelled arm learns of it at a context checkpoint; a bare `await` runs
+  on, and the group waits for the arms to finish. This is the second reason to
+  register early: whatever an arm had already registered is still released,
+  whatever it had not is not.
 - **The disposal itself does not stop at a failure.** Each release is guarded on
   its own, the walk finishes, and the first failure is passed on afterwards.
   Every failure is recorded on the dependency it belongs to and readable through
@@ -275,10 +293,10 @@ yours to do.
 ### A hand-written container cleans up after itself
 
 `ScopeAutoDependencies` is what runs the teardown of a failed initialization.
-A container written by hand has no such thing behind it: the scope stores the
-container when the body returns it, and a body that failed before
-that never handed one over. Nothing the scope holds points at it, and its
-`dispose()` is never called.
+A container written by hand declares its own cleanup: the scope stores the
+container only after the initialization job succeeds, and a body that failed
+before that never handed one over. Nothing the scope holds points at it,
+and its `dispose()` is never called.
 
 So an `init` written by hand takes the same shape as the one in the `AsyncScope`
 topic — what a step took is given back unless the container was handed over:
@@ -302,10 +320,11 @@ static Future<AppDependencies> init(ScopeInitContext ctx) async {
 }
 ```
 
-`finally`, and not `catch`: a cancellation is the other way this ends early —
-the scope removed from the tree before it was ready — and it raises nothing, so
-a `catch` is never reached. The `AsyncScope` topic has the whole of it. This is
-also the shape the container writes for you: what a dependency registered with
+`catch` covers a cancellation too: the scope removed from the tree before it
+was ready is reported as `Cancelled` at a checkpoint such as `ctx.progress`.
+The context's `wait(discard:)` can keep the same guard without a handwritten
+`catch`; the `AsyncScope` topic has the whole of it. This is also the shape
+the container writes for you: what a dependency registered with
 `dep.dispose` is released whether the walk failed or was cancelled.
 
 ## Inspecting the tree
