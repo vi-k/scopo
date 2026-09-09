@@ -258,25 +258,26 @@ final class _ScopeElement<W extends Scope<W, D, S>, D extends ScopeDependencies,
   Duration? get scopeKeyTimeout => widget.scopeKeyTimeout;
 
   @override
-  void onScopeKeyTimeout() => widget.onScopeKeyTimeout?.call();
+  ({
+    void Function()? scopeKey,
+    void Function()? initCancellation,
+    void Function()? disposeScope,
+    void Function()? waitForChildren,
+  }) get timeoutCallbacks => (
+        scopeKey: widget.onScopeKeyTimeout,
+        initCancellation: widget.onInitCancellationTimeout,
+        disposeScope: widget.onDisposeScopeTimeout,
+        waitForChildren: widget.onWaitForChildrenTimeout,
+      );
 
   @override
   Duration? get initCancellationTimeout => widget.initCancellationTimeout;
 
   @override
-  void onInitCancellationTimeout() => widget.onInitCancellationTimeout?.call();
-
-  @override
   Duration? get disposeScopeTimeout => widget.disposeScopeTimeout;
 
   @override
-  void onDisposeScopeTimeout() => widget.onDisposeScopeTimeout?.call();
-
-  @override
   Duration? get waitForChildrenTimeout => widget.waitForChildrenTimeout;
-
-  @override
-  void onWaitForChildrenTimeout() => widget.onWaitForChildrenTimeout?.call();
 
   @override
   Duration? get pauseAfterInitialization => widget.pauseAfterInitialization;

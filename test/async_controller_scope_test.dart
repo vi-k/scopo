@@ -341,12 +341,21 @@ void main() {
       ScopeConfig.observer = observer;
       addTearDown(ScopeConfig.reset);
 
+      // Taken here rather than through `takeException`: two expiries are
+      // reported on this path and both belong, and the tester answers a
+      // summary string once there is more than one.
+      final reported = <Object>[];
+      final previous = FlutterError.onError;
+      FlutterError.onError = (details) => reported.add(details.exception);
+      addTearDown(() => FlutterError.onError = previous);
+
       final initGate = Completer<void>();
       final disposeGate = Completer<void>();
       addTearDown(() {
         if (!initGate.isCompleted) initGate.complete();
         if (!disposeGate.isCompleted) disposeGate.complete();
       });
+      var told = 0;
 
       await tester.pumpWidget(
         Directionality(
@@ -354,6 +363,9 @@ void main() {
           child: AsyncControllerScope<_HangingController>(
             createController: (context) =>
                 _HangingController(initGate, disposeGate),
+            // The callback of the consumer, read from a widget the element
+            // has given back by the time the limit expires.
+            onDisposeScopeTimeout: () => told++,
             progressBuilder: (context) => const Text('loading'),
             errorBuilder: (context, error, stackTrace) => const Text('error'),
             builder: (context, controller) => const Text('ready'),
@@ -380,11 +392,27 @@ void main() {
             'was still a widget to take it from',
       );
 
+      expect(
+        told,
+        1,
+        reason: 'the callback of the consumer is called on every expiry, '
+            'which is what `timeoutReportsEnabled` promises about the four '
+            'of them',
+      );
+      expect(
+        reported.whereType<TimeoutException>(),
+        hasLength(2),
+        reason: 'the cancellation and the release, and both belong here',
+      );
+      expect(
+        reported.whereType<TypeError>(),
+        isEmpty,
+        reason: 'the callback is reached without going to a widget that is '
+            'gone',
+      );
+
       disposeGate.complete();
       await settle(tester, until: () => false, rounds: 5);
-      // The user's `onDisposeScopeTimeout` still reads the widget it was
-      // configured on, and that read is the open half of this finding: it
-      // raises here, and the raise is reported as a failed disposal.
       tester.takeException();
     });
 

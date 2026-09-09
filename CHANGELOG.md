@@ -101,6 +101,10 @@
   was reported as a failed disposal, so the expiry itself was never announced.
   The label taken while there was still a widget to take it from is used
   instead.
+  The callback the widget was given for such an expiry is reached too: the
+  four of them are taken at the start of the teardown, beside the label, so
+  the promise that they are always called holds on the one path where the
+  widget is gone by the time a limit runs out.
 * **New:** an expiry on an `AsyncScopeCoordinator` that has left the tree
   reaches the observer. The observer reads the label of its target at the
   expiry, not at the start, and a wait for children outlives the tree in the

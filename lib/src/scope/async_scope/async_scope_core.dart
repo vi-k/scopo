@@ -106,26 +106,64 @@ abstract base class AsyncScopeElementBase<W extends AsyncScopeCore<W, E>,
   Duration? get scopeKeyTimeout => null;
 
   /// Called when the wait for the `scopeKey` expires.
-  void onScopeKeyTimeout() {}
+  void onScopeKeyTimeout() => _timeoutCallbacks.scopeKey?.call();
 
   /// How long to wait for [initScopeAsync] to be cancelled; `null` takes the
   /// default.
   Duration? get initCancellationTimeout => null;
 
   /// Called when the wait for the cancellation of [initScopeAsync] expires.
-  void onInitCancellationTimeout() {}
+  void onInitCancellationTimeout() =>
+      _timeoutCallbacks.initCancellation?.call();
 
   /// How long to wait for [disposeScope]; `null` takes the default.
   Duration? get disposeScopeTimeout => null;
 
   /// Called when the wait for [disposeScope] expires.
-  void onDisposeScopeTimeout() {}
+  void onDisposeScopeTimeout() => _timeoutCallbacks.disposeScope?.call();
 
   /// How long to wait for the child scopes; `null` takes the default.
   Duration? get waitForChildrenTimeout => null;
 
   /// Called when the wait for the child scopes expires.
-  void onWaitForChildrenTimeout() {}
+  void onWaitForChildrenTimeout() => _timeoutCallbacks.waitForChildren?.call();
+
+  /// The four callbacks of the widget, answered in one go.
+  ///
+  /// A family answers this rather than overriding the four hooks above, and
+  /// the reason is when a hook is called rather than what it does. The
+  /// release of a controller an initialization never handed over expires
+  /// *after* the teardown has given the widget back, so a hook that went to
+  /// the widget for its callback raised there -- and the raise was reported
+  /// as a failed disposal, which is not what had failed. Read here while
+  /// there is still a widget to read them from, beside [debugLabel] and for
+  /// the same reason.
+  @protected
+  ({
+    void Function()? scopeKey,
+    void Function()? initCancellation,
+    void Function()? disposeScope,
+    void Function()? waitForChildren,
+  }) get timeoutCallbacks => const (
+        scopeKey: null,
+        initCancellation: null,
+        disposeScope: null,
+        waitForChildren: null,
+      );
+
+  ({
+    void Function()? scopeKey,
+    void Function()? initCancellation,
+    void Function()? disposeScope,
+    void Function()? waitForChildren,
+  }) get _timeoutCallbacks => _lateTimeoutCallbacks ?? timeoutCallbacks;
+
+  ({
+    void Function()? scopeKey,
+    void Function()? initCancellation,
+    void Function()? disposeScope,
+    void Function()? waitForChildren,
+  })? _lateTimeoutCallbacks;
 
   /// Reports one step of the initialization.
   ///
@@ -567,6 +605,9 @@ abstract base class AsyncScopeElementBase<W extends AsyncScopeCore<W, E>,
     // Taken here, beside the widget it is taken from: this is the last moment
     // at which there is certainly one. See [debugLabel].
     _debugLabel = super.debugLabel;
+    // Beside the label, and for the same reason: a wait that outlives this
+    // teardown still has to be able to tell the caller it expired.
+    _lateTimeoutCallbacks = timeoutCallbacks;
 
     final startsTheTeardown = _startsTheTeardown;
 
