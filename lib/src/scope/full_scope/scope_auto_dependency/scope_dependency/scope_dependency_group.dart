@@ -128,6 +128,42 @@ abstract base class ScopeDependencyGroup with ScopeDependencyMixin {
     return order;
   }
 
+  /// Announces a failure the group has no room left to carry upwards.
+  ///
+  /// A `concurrent` group passes on the first failure of its arms and cancels
+  /// the ones beside it. An arm that had already failed by then carries a
+  /// failure of its own, and there is one slot: the second used to be dropped
+  /// where it was caught, so an application with ordinary crash reporting
+  /// heard about one dependency of two that had gone down. The state of the
+  /// tree kept it, and the state of the tree is not where a crash reporter
+  /// looks.
+  ///
+  /// A [Cancelled] is not one of these. It is the arm answering the
+  /// cancellation the group has just sent it, and whatever real failure stood
+  /// behind that answer went out through
+  /// [_handleInitializationPostCancelError] on its own way.
+  void _announceCoveredBySibling(Object error, StackTrace stackTrace) {
+    if (error is Cancelled) {
+      return;
+    }
+
+    notifyObserver(
+      (observer) => observer.onError(
+        this,
+        ScopePhase.initialization,
+        error,
+        stackTrace,
+      ),
+    );
+    FlutterError.reportError(
+      FlutterErrorDetails(
+        exception: error,
+        stack: stackTrace,
+        library: 'scopo',
+      ),
+    );
+  }
+
   /// Reads what a child that threw leaves behind, without asking it again.
   ///
   /// A child of this package has been through its own walk by now and says so
@@ -309,7 +345,12 @@ final class _ScopeDependencyConcurrent extends ScopeDependencyGroup {
         jobs.add(job);
         values.add(
           job.value.onError<Object>((error, stackTrace) {
-            failure ??= AsyncError(error, stackTrace);
+            if (failure == null) {
+              failure = AsyncError(error, stackTrace);
+            } else {
+              // The slot is taken, and this one still happened.
+              _announceCoveredBySibling(error, stackTrace);
+            }
             for (final sibling in jobs) {
               if (!identical(sibling, job)) {
                 unawaited(sibling.cancel());

@@ -554,6 +554,65 @@ void main() {
     await tester.pumpWidget(_wrap(const SizedBox.shrink()));
     await tester.pumpAndSettle();
   });
+  // The shape beside the one above, and the one the fix of L4 did not reach.
+  // There both arms resumed from their own zero delay, so the second was
+  // already marked cancelled when it threw and went out through the
+  // post-cancel channel. Here they resume from one `Completer`, in the same
+  // microtask band, and the second throws before any mark reaches it: the
+  // group keeps the first failure and used to drop the second on the floor.
+  testWidgets('both arms that fail before the mark are reported too',
+      (tester) async {
+    final observer = _Errors();
+    ScopeConfig.observer = observer;
+    final dependencies = _TwoGatedArms();
+
+    await tester.pumpWidget(
+      _wrap(
+        AsyncScope(
+          initScope: (context, ctx) async {
+            await dependencies.init(null, ctx);
+          },
+          disposeScope: () {},
+          progressBuilder: (context, progress) => const Text('loading'),
+          errorBuilder: (context, error, stackTrace, progress) =>
+              const Text('failed'),
+          builder: (context) => const Text('ready'),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+    expect(dependencies.started, ['left', 'right']);
+
+    dependencies.gate.complete();
+    await tester.pumpAndSettle();
+
+    expect(
+      dependencies.threw,
+      ['left', 'right'],
+      reason: 'both arms really did fail, and neither was cancelled first',
+    );
+    expect(
+      observer.errors.map((error) => '$error').toList(),
+      containsAll(<Matcher>[
+        contains('left failed'),
+        contains('right failed'),
+      ]),
+      reason: 'an application with ordinary crash reporting has two '
+          'dependencies down, and used to hear about one',
+    );
+    expect(
+      observer.errors,
+      hasLength(2),
+      reason: 'two failures, two lines -- and not a third',
+    );
+
+    for (var i = 0; i < 4; i++) {
+      if (tester.takeException() == null) break;
+    }
+    await tester.pumpWidget(_wrap(const SizedBox.shrink()));
+    await tester.pumpAndSettle();
+  });
+
   testWidgets('an error the kernel raises about the job names the scope',
       (tester) async {
     late ScopeInitContext kept;
@@ -664,5 +723,23 @@ final class _TwoFailingArms
           await Future<void>.delayed(Duration.zero);
           throw StateError('beta failed');
         }),
+      ]);
+}
+
+/// Two arms that resume from one gate, so both throw before either is marked.
+final class _TwoGatedArms extends ScopeAutoDependencies<_TwoGatedArms, void> {
+  final gate = Completer<void>();
+  final started = <String>[];
+  final threw = <String>[];
+
+  @override
+  ScopeDependency buildDependencies(void context) => concurrent('', [
+        for (final name in const ['left', 'right'])
+          dep(name, (_) async {
+            started.add(name);
+            await gate.future;
+            threw.add(name);
+            throw StateError('$name failed');
+          }),
       ]);
 }

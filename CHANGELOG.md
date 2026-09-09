@@ -136,8 +136,12 @@
   reported. It used to be kept in the state of the tree and nowhere else,
   while the tree was on its way out: an application with ordinary crash
   reporting heard that a scope had closed and nothing about the failure inside
-  it. This covers the second arm of a `concurrent` group as well -- two arms
-  can fail in the same turn, and only the first was ever heard.
+  it. The second arm of a `concurrent` group is heard now too, by whichever of
+  the two routes it takes: the group passes on the first failure and cancels
+  the arms beside it, so an arm that fails *after* the mark reaches it goes out
+  the way above, and one that fails before -- both resuming from the same
+  `Completer`, say -- is announced where it used to be dropped. One slot for
+  the failure that travels upwards, and no silence for the rest.
 * **New:** a value the body built is released even when applying readiness
   fails. It became the scope's one statement before the flag that says there
   is something to release, and the teardown stage that releases it stands
