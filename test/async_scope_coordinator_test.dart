@@ -1294,6 +1294,66 @@ void main() {
     );
   });
 
+  // A wait for children outlives the tree in the very cases it exists for,
+  // and the observer reads the label of its target at the expiry rather than
+  // at the start. Asking an unmounted coordinator raised a `_TypeError`
+  // inside the observer's own hook; the guard then named the observer as the
+  // thing that had failed, and the expiry reached nobody at all.
+  testWidgets(
+      'an expiry on a coordinator that left the tree still reaches '
+      'the observer', (tester) async {
+    ScopeConfig.defaultWaitForChildrenTimeout =
+        const Duration(milliseconds: 40);
+    final observer = RecordingObserver();
+    ScopeConfig.observer = observer;
+
+    final hold = Completer<void>();
+    addTearDown(() {
+      if (!hold.isCompleted) hold.complete();
+    });
+    late BuildContext inside;
+
+    await tester.pumpWidget(
+      Directionality(
+        textDirection: TextDirection.ltr,
+        child: AsyncScopeCoordinator(
+          child: Builder(
+            builder: (context) {
+              inside = context;
+
+              return AsyncScope(
+                initScope: (context, ctx) async {},
+                disposeScope: () => hold.future,
+                progressBuilder: (context, progress) => const Text('loading'),
+                errorBuilder: (context, e, s, p) => const Text('error'),
+                builder: (context) => const Text('ready'),
+              );
+            },
+          ),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    // Started while the coordinator is still mounted, given up on long after
+    // it is not.
+    final wait = AsyncScopeCoordinator.waitForChildren(inside);
+    await tester.pumpWidget(const SizedBox.shrink());
+    await settle(tester, until: () => false);
+    await wait;
+
+    expect(
+      observer.timeouts.map((error) => '${error.message}'),
+      contains(contains("couldn't wait for the children to complete")),
+      reason: 'the coordinator names itself from the label it took while '
+          'there was still a widget to take it from',
+    );
+    expect(tester.takeException(), isA<TimeoutException>());
+
+    hold.complete();
+    await settle(tester, until: () => false, rounds: 5);
+  });
+
   testWidgets('an expired wait for children is reported', (tester) async {
     ScopeConfig.defaultWaitForChildrenTimeout =
         const Duration(milliseconds: 50);

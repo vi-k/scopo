@@ -143,15 +143,13 @@ final class ScopeDependencyDisposalFailed extends ScopeDependencyAnyFailed {
       );
 }
 
-/// The state of a dependency whose teardown was stopped before it finished.
+/// The state of a dependency whose teardown ran and let go of what it held.
 ///
-/// Nothing in the package produces it: a scope disposes of its dependencies to
-/// the end. It belongs to whoever drives a teardown themselves —
-/// `ScopeDependency.dispose()` is a stream, and a caller who cancels the
-/// subscription before it is done leaves what it had not reached still
-/// initialized, and the dependency it stopped on in this state.
+/// A group carries it once the walk has been through every child of it. A
+/// teardown that raised what a disposer threw ends in
+/// [ScopeDependencyDisposalFailed] instead — the walk reached its end there
+/// too, and the state is what says the difference.
 ///
-
 /// {@category Scope}
 final class ScopeDependencyDisposed extends ScopeDependencyAnySuccess {
   /// Creates the state of a disposed dependency.

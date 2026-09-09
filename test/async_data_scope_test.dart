@@ -255,6 +255,49 @@ void main() {
       expect(seen, [false, true]);
     });
   });
+
+  // The value reaches the element one statement before the flag that says
+  // there is something to release, and the teardown stage that releases it
+  // stands under that flag. A throw in between left the element holding a
+  // value nobody would ever let go of -- and in debug there is such a throw,
+  // the assert against a pause that is not a pause.
+  testWidgets('a value survives a readiness that failed on its way in',
+      (tester) async {
+    final released = <String>[];
+
+    await tester.pumpWidget(
+      Directionality(
+        textDirection: TextDirection.ltr,
+        child: AsyncDataScope<String>(
+          pauseAfterInitialization: ScopeTimeout.none,
+          initData: (context, ctx) async => 'the database',
+          disposeData: released.add,
+          progressBuilder: (context, progress) => const Text('loading'),
+          errorBuilder: (context, error, stackTrace, progress) =>
+              const Text('failed'),
+          builder: (context, data) => Text('ready: $data'),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(
+      find.text('failed'),
+      findsOneWidget,
+      reason: 'the assert is the point of the parameter being wrong',
+    );
+
+    await tester.pumpWidget(const SizedBox.shrink());
+    await tester.pumpAndSettle();
+    tester.takeException();
+
+    expect(
+      released,
+      ['the database'],
+      reason: "what the body built was already the scope's by then, so the "
+          'teardown is the one that has to let go of it',
+    );
+  });
 }
 
 final class _Database {

@@ -94,6 +94,33 @@
   whole expiry with it -- the wait then never ended, and the throw left a
   place where neither the package nor the application could catch it. What
   went wrong with the name is now part of the message instead.
+* **New:** an expiry that outlives the teardown still names itself. The
+  release of a controller the initialization never handed over is the one wait
+  of this package that ends after the element has given its widget back, and
+  the message was built by asking that widget: the `_TypeError` that came out
+  was reported as a failed disposal, so the expiry itself was never announced.
+  The label taken while there was still a widget to take it from is used
+  instead.
+* **New:** an expiry on an `AsyncScopeCoordinator` that has left the tree
+  reaches the observer. The observer reads the label of its target at the
+  expiry, not at the start, and a wait for children outlives the tree in the
+  very cases it exists for -- so asking an unmounted coordinator raised inside
+  the observer's own hook, and the guard then named the observer as the thing
+  that had failed. The coordinator keeps a copy of its label, as the scopes do.
+* **New:** a dependency that fails after the cancellation has reached it is
+  reported. It used to be kept in the state of the tree and nowhere else,
+  while the tree was on its way out: an application with ordinary crash
+  reporting heard that a scope had closed and nothing about the failure inside
+  it. This covers the second arm of a `concurrent` group as well -- two arms
+  can fail in the same turn, and only the first was ever heard.
+* **New:** a value the body built is released even when applying readiness
+  fails. It became the scope's one statement before the flag that says there
+  is something to release, and the teardown stage that releases it stands
+  under that flag.
+* **New:** errors the kernel raises about a job name the scope or the
+  dependency they belong to. A job with no key prints as `Job()`, and those
+  messages reach a consumer -- a context kept in a closure and asked something
+  after the scope is over is the ordinary way to meet one.
 * **Breaking:** `AsyncDataScope.initData` is a `Future<T>` too, and the value
   is what it returns. `AsyncDataScopeInitState`, `AsyncDataScopeProgress` and
   `AsyncDataScopeReady` are gone with the form that needed them.

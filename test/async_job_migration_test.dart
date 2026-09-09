@@ -390,6 +390,120 @@ void main() {
     );
     expect(tester.takeException(), same(failure));
   });
+  testWidgets('a dependency that fails after the cancellation is reported',
+      (tester) async {
+    final observer = _Errors();
+    ScopeConfig.observer = observer;
+    final failure = StateError('the dependency failed after the mark');
+    final gate = Completer<void>();
+    final dependencies = _LateFailingDependencies(gate, failure);
+
+    await tester.pumpWidget(
+      _wrap(
+        AsyncScope(
+          initScope: (context, ctx) async {
+            await dependencies.init(null, ctx);
+          },
+          disposeScope: () {},
+          progressBuilder: (context, progress) => const Text('loading'),
+          errorBuilder: (context, error, stackTrace, progress) =>
+              const Text('failed'),
+          builder: (context) => const Text('ready'),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+    expect(dependencies.started, isTrue);
+
+    // The scope goes away while the dependency is still waiting, and what
+    // that wait ends with is a failure of its own -- not the cancellation.
+    await tester.pumpWidget(_wrap(const SizedBox.shrink()));
+    gate.complete();
+    await tester.pumpAndSettle();
+
+    expect(
+      observer.errors,
+      [failure],
+      reason: 'the state of the tree keeps it, but the tree is going away: '
+          'the crash reporting of an application has to hear it too',
+    );
+    expect(tester.takeException(), same(failure));
+  });
+  testWidgets('both arms of a group that fail at once are reported',
+      (tester) async {
+    final observer = _Errors();
+    ScopeConfig.observer = observer;
+    final dependencies = _TwoFailingArms();
+
+    await tester.pumpWidget(
+      _wrap(
+        AsyncScope(
+          initScope: (context, ctx) async {
+            await dependencies.init(null, ctx);
+          },
+          disposeScope: () {},
+          progressBuilder: (context, progress) => const Text('loading'),
+          errorBuilder: (context, error, stackTrace, progress) =>
+              const Text('failed'),
+          builder: (context) => const Text('ready'),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    // The group carries the first failure upwards and cancels the arm beside
+    // it -- and that arm was already failing on its own. Its failure used to
+    // live in the state of the tree and nowhere else, so an application saw
+    // one of two dependencies that had gone down.
+    expect(
+      observer.errors.map((error) => '$error').toList(),
+      containsAll(<Matcher>[
+        contains('alpha failed'),
+        contains('beta failed'),
+      ]),
+    );
+
+    for (var i = 0; i < 4; i++) {
+      if (tester.takeException() == null) break;
+    }
+    await tester.pumpWidget(_wrap(const SizedBox.shrink()));
+    await tester.pumpAndSettle();
+  });
+  testWidgets('an error the kernel raises about the job names the scope',
+      (tester) async {
+    late ScopeInitContext kept;
+
+    await tester.pumpWidget(
+      _wrap(
+        AsyncScope(
+          // Keeping the context is what a consumer does by accident, and
+          // asking it something afterwards is how they meet the kernel's own
+          // errors. `Job()` named nothing at all in them.
+          initScope: (context, ctx) async => kept = ctx,
+          disposeScope: () {},
+          progressBuilder: (context, progress) => const Text('loading'),
+          errorBuilder: (context, error, stackTrace, progress) =>
+              const Text('failed'),
+          builder: (context) => const Text('ready'),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(
+      () => kept.onDispose(() {}),
+      throwsA(
+        isA<StateError>().having(
+          (error) => error.message,
+          'message',
+          contains('AsyncScope'),
+        ),
+      ),
+    );
+
+    await tester.pumpWidget(_wrap(const SizedBox.shrink()));
+    await tester.pumpAndSettle();
+  });
 }
 
 Widget _wrap(Widget child) => Directionality(
@@ -434,4 +548,36 @@ final class _Errors extends ScopeObserver {
     errors.add(error);
     phases.add(phase);
   }
+}
+
+final class _LateFailingDependencies
+    extends ScopeAutoDependencies<_LateFailingDependencies, void> {
+  final Completer<void> gate;
+  final StateError failure;
+  bool started = false;
+
+  _LateFailingDependencies(this.gate, this.failure);
+
+  @override
+  ScopeDependency buildDependencies(void context) => dep('resource', (_) async {
+        started = true;
+        await gate.future;
+        throw failure;
+      });
+}
+
+/// A group whose two arms fail in the same turn of the microtask queue.
+final class _TwoFailingArms
+    extends ScopeAutoDependencies<_TwoFailingArms, void> {
+  @override
+  ScopeDependency buildDependencies(void context) => concurrent('', [
+        dep('alpha', (_) async {
+          await Future<void>.delayed(Duration.zero);
+          throw StateError('alpha failed');
+        }),
+        dep('beta', (_) async {
+          await Future<void>.delayed(Duration.zero);
+          throw StateError('beta failed');
+        }),
+      ]);
 }

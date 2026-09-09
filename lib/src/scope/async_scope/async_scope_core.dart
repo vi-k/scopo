@@ -225,6 +225,16 @@ abstract base class AsyncScopeElementBase<W extends AsyncScopeCore<W, E>,
       return;
     }
 
+    // Raised here rather than at the end, and the distance between the two
+    // points is the whole reason: by the time this method runs, the value the
+    // body built is already the element's -- `_settleInit` hands it over one
+    // statement earlier -- while the teardown stage that releases it stands
+    // under this flag. A throw in between therefore left the element holding
+    // a value nobody would ever let go of, and in debug there is such a
+    // throw: the assert below. The guard above still refuses a second
+    // settlement, which is what the flag was put at the end for.
+    _initSucceeded = true;
+
     // Before the pause below rather than inside it, so a suite that turns
     // every pause off does not also turn off the one thing that says this
     // value is wrong.
@@ -266,7 +276,6 @@ abstract base class AsyncScopeElementBase<W extends AsyncScopeCore<W, E>,
         });
     }
 
-    _initSucceeded = true;
     notifyObserver((observer) => observer.onReady(this));
     if (!_initCompleter.isCompleted) {
       _initCompleter.complete();
@@ -931,6 +940,13 @@ abstract base class AsyncScopeElementBase<W extends AsyncScopeCore<W, E>,
         runInitBody,
         onProgress: _onInitStep,
         observer: _ScopeInitObserver(this),
+        // Every error the kernel raises about a job prints the job, and a job
+        // with no key prints as `Job()`. Those messages reach a consumer --
+        // a `ctx` kept in a closure and asked something after the scope is
+        // over is the ordinary way to meet one -- and `Job()` names neither
+        // the scope nor anything else. Taken now, while the widget is there
+        // to take it from; the kernel only prints it.
+        key: debugLabel,
       );
       unawaited(_settleInit(job));
       job.start();
@@ -1261,7 +1277,16 @@ abstract base class AsyncScopeElementBase<W extends AsyncScopeCore<W, E>,
     );
 
     final error = TimeoutException(
-      '${widget.toStringShort(showHashCode: true)} '
+      // [debugLabel], not the widget: this line runs when the limit has just
+      // expired, and one of these waits outlives the teardown that gave the
+      // widget back -- the release of a controller the initialization never
+      // handed over. Asking the widget there raised a `_TypeError` inside the
+      // report, and the report of *that* named the disposal as the thing
+      // which had failed, so the expiry this method exists to announce was
+      // never announced at all: no message, no `notifyTimeout`, and none of
+      // the four callbacks. The cache behind [debugLabel] was made for
+      // exactly this and was the one thing here not using it.
+      '$debugLabel '
       "couldn't wait for $what",
       limit,
     );

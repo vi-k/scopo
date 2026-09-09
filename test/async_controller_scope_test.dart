@@ -327,6 +327,67 @@ void main() {
       await settle(tester, until: () => controller.calls.contains('dispose'));
     });
 
+    // The release of a controller the initialization never handed over is the
+    // one wait of this package that outlives the teardown which gave the
+    // widget back. Its expiry used to be built by asking that widget, and the
+    // `_TypeError` that came out was reported as a failed disposal -- so the
+    // expiry itself was never announced: no message, no `onTimeout`.
+    testWidgets('an expiry that outlives the teardown still names itself',
+        (tester) async {
+      ScopeConfig.defaultInitCancellationTimeout =
+          const Duration(milliseconds: 20);
+      ScopeConfig.defaultDisposeScopeTimeout = const Duration(milliseconds: 90);
+      final observer = _TimeoutRecorder();
+      ScopeConfig.observer = observer;
+      addTearDown(ScopeConfig.reset);
+
+      final initGate = Completer<void>();
+      final disposeGate = Completer<void>();
+      addTearDown(() {
+        if (!initGate.isCompleted) initGate.complete();
+        if (!disposeGate.isCompleted) disposeGate.complete();
+      });
+
+      await tester.pumpWidget(
+        Directionality(
+          textDirection: TextDirection.ltr,
+          child: AsyncControllerScope<_HangingController>(
+            createController: (context) =>
+                _HangingController(initGate, disposeGate),
+            progressBuilder: (context) => const Text('loading'),
+            errorBuilder: (context, error, stackTrace) => const Text('error'),
+            builder: (context, controller) => const Text('ready'),
+          ),
+        ),
+      );
+      await tester.pump();
+
+      // Off the tree while the body is parked in `init()`: the cancellation
+      // arrives, and there is nothing to interrupt somebody else's wait with.
+      await tester.pumpWidget(const SizedBox.shrink());
+      await tester.pump();
+
+      // Now `init()` returns. The controller was built for a scope that has
+      // given up, so it goes to the release -- which hangs in turn, and by
+      // the time its limit expires the teardown has taken the widget back.
+      initGate.complete();
+      await settle(tester, until: () => false, rounds: 30);
+
+      expect(
+        observer.timeouts,
+        contains(contains("couldn't wait for its controller to be released")),
+        reason: 'the expiry names itself from the label taken while there '
+            'was still a widget to take it from',
+      );
+
+      disposeGate.complete();
+      await settle(tester, until: () => false, rounds: 5);
+      // The user's `onDisposeScopeTimeout` still reads the widget it was
+      // configured on, and that read is the open half of this finding: it
+      // raises here, and the raise is reported as a failed disposal.
+      tester.takeException();
+    });
+
     testWidgets('the context answers about the controller by that name',
         (tester) async {
       late _TestController controller;
@@ -553,6 +614,39 @@ final class _TestScope
 }
 
 /// Records what the scope called, in order.
+final class _HangingController extends ScopeController {
+  final Completer<void> initGate;
+  final Completer<void> disposeGate;
+  final calls = <String>[];
+
+  _HangingController(this.initGate, this.disposeGate);
+
+  @override
+  Future<void> init() async {
+    calls.add('init');
+    await initGate.future;
+  }
+
+  @override
+  Future<void> dispose() async {
+    calls.add('dispose');
+    await disposeGate.future;
+  }
+}
+
+final class _TimeoutRecorder extends ScopeObserver {
+  final timeouts = <String>[];
+
+  @override
+  void onTimeout(
+    ScopeObservable target,
+    String what,
+    TimeoutException error,
+    StackTrace stackTrace,
+  ) =>
+      timeouts.add('${error.message}');
+}
+
 final class _TestController extends ScopeController {
   final calls = <String>[];
 

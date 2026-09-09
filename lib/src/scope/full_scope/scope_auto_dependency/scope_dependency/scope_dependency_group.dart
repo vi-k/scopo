@@ -196,11 +196,11 @@ abstract base class ScopeDependencyGroup with ScopeDependencyMixin {
             .where((e) => e.error is! ScopeDependencyException)
             .toList();
 
-        // One name, in practice: the stream the children run in is guarded, and
-        // a guarded stream closes on the first error, so a group keeps one
-        // failed child however many fall over at once. The join stays because a
-        // diagnostic must not be the thing that throws -- `single` would, on an
-        // empty list or on a second name that should not be there.
+        // Usually one name, and no longer always: with the arms running as
+        // child jobs two of them can fail in the same turn, and each keeps
+        // its own failure. The join stays because a diagnostic must not be
+        // the thing that throws -- `single` would, on an empty list or on a
+        // second name that should not be there.
         return '${state.toString(showCount: false, showErrors: false)}'
             ': ${failedChildren.join(', ')}'
             '${errors.isEmpty //
@@ -281,6 +281,9 @@ final class _ScopeDependencyConcurrent extends ScopeDependencyGroup {
           in _dependencies.where((dep) => dep.initializationRequired)) {
         final job = ScopeInitJob<void>(
           (ctx) => dependency.init(ctx, (path) => onStep(_path(path))),
+          // So that an error the kernel raises about this arm names the
+          // dependency it belongs to rather than printing as `Job()`.
+          key: dependency.name,
         );
         ctx.run(job);
         jobs.add(job);

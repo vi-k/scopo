@@ -334,19 +334,15 @@ mixin ScopeDependencyMixin implements ScopeDependency, ScopeObservable {
     // Whether the walk got to its end, however it got there.
     //
     // The state cannot answer this, and used to be asked: anything other than
-    // [ScopeDependencyInitialized] was read as "the walk finished". That holds
-    // for a walk that finished -- the line after the `yield*` has just put
-    // [ScopeDependencyDisposed] there -- and it is wrong for every cancelled
-    // walk that started from somewhere else. A tree in
-    // [ScopeDependencyFailed] or [ScopeDependencyCancelled] is one a caller
-    // leads by hand after an initialization went wrong, and
-    // [ScopeDependencyDisposalCancelled] is the second cancellation of the
-    // second `dispose()` this class promises to allow. Stopped halfway, each
-    // of those said it was done: [ScopeDependencyGroup.disposalRequired] then
-    // answered `false`, the children the walk never reached went on holding
-    // what they took, and `_prepareDependencies` built a new tree over the
-    // top of them without a word. Only the first of the four -- the one that
-    // started from `Initialized` -- was ever accounted for.
+    // [ScopeDependencyInitialized] was read as "the walk finished". That
+    // holds for a walk that finished, and it is wrong for a tree a caller
+    // leads by hand after an initialization went wrong -- one in
+    // [ScopeDependencyFailed] or [ScopeDependencyCancelled]. Stopped halfway,
+    // each of those said it was done: [ScopeDependencyGroup.disposalRequired]
+    // then answered `false`, the children the walk never reached went on
+    // holding what they took, and `_prepareDependencies` built a new tree
+    // over the top of them without a word. Only the one that started from
+    // `Initialized` was ever accounted for.
     var walkEnded = false;
 
     try {
@@ -413,12 +409,9 @@ mixin ScopeDependencyMixin implements ScopeDependency, ScopeObservable {
 
   /// What the walk running right now has failed with, for the joiners.
   ///
-  /// Recorded where the failure actually passes rather than caught around the
-  /// walk: `yield*` hands a delegated stream's error to the listener and goes
-  /// on with the next statement, so a `catch` around it never runs and the
-  /// generator finishes as though nothing had gone wrong. A `catch` is what
-  /// stood here, and it made this class promise the joiners a failure it then
-  /// never gave them.
+  /// Recorded where the failure actually passes rather than left to whoever
+  /// awaits the walk: the joiners of a walk already running are handed the
+  /// failure it carried out, and they are not the ones the walk returns to.
   AsyncError? _disposalFailure;
 
   void _addErrorToState(
@@ -512,6 +505,34 @@ mixin ScopeDependencyMixin implements ScopeDependency, ScopeObservable {
 
     // Add the error to the state.
     _addErrorToState(error, stackTrace, defaultState);
+
+    // And say it out loud. The state of the tree is the only place this used
+    // to be kept, and the tree is on its way out: the dependency failed for a
+    // reason of its own -- a socket, a database, a parse -- and what left the
+    // node upwards was the cancellation, so an application with ordinary
+    // crash reporting heard about a scope that closed and nothing about the
+    // failure inside it. A cancellation is not one of those: it is a decision
+    // somebody made, and the kernel keeps them out of the zone for that
+    // reason.
+    if (error is Cancelled) {
+      return;
+    }
+
+    notifyObserver(
+      (observer) => observer.onError(
+        this,
+        ScopePhase.initializationCancellation,
+        error,
+        stackTrace,
+      ),
+    );
+    FlutterError.reportError(
+      FlutterErrorDetails(
+        exception: error,
+        stack: stackTrace,
+        library: 'scopo',
+      ),
+    );
   }
 
   void _handleInitializationPostCancelError(

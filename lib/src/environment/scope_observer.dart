@@ -195,8 +195,8 @@ base class ScopeObserver {
   /// A step of the machinery below the lifecycle.
   ///
   /// Off by default in `ScopePrintObserver`: this is where the coordination
-  /// of `scopeKey`s and the guarded streams report themselves, and a scope
-  /// produces a dozen such lines where it produces one of the rest.
+  /// of `scopeKey`s and the walks of a dependency tree report themselves, and
+  /// a scope produces a dozen such lines where it produces one of the rest.
   void onTrace(ScopeObservable target, String message) {}
 }
 

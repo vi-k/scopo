@@ -70,8 +70,10 @@ mixin AsyncScopeParent on Diagnosticable implements ScopeObservable {
   ///
   /// [onTimeout] defaults to reporting the [TimeoutException] through
   /// [FlutterError.reportError], the same default
-  /// [AsyncScopeCoordinator.waitForChildren] applies, so a dropped child is
-  /// never silent; pass a callback to handle it instead. It is handed the
+  /// [AsyncScopeCoordinator.waitForChildren] applies — unless
+  /// [ScopeConfig.timeoutReportsEnabled] is off, which silences that half for
+  /// the whole application; the observer hears a dropped child either way.
+  /// Pass a callback to handle it instead. It is handed the
   /// error that report would have carried — [reportName] in front of the
   /// message, so it reads on its own — and the observer is handed the same
   /// one.

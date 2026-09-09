@@ -68,8 +68,10 @@ final class AsyncScopeCoordinator extends ScopeWidgetCore<AsyncScopeCoordinator,
   /// remove it everywhere.
   ///
   /// [onTimeout] defaults to reporting the [TimeoutException] through
-  /// [FlutterError.reportError], so an expiry is never silent; pass a callback
-  /// to handle it instead.
+  /// [FlutterError.reportError] — unless
+  /// [ScopeConfig.timeoutReportsEnabled] is off, which is the one switch that
+  /// silences that half for the whole application. The observer hears the
+  /// expiry either way. Pass a callback to handle it instead.
   static Future<void> waitForChildren(
     BuildContext context, {
     Duration? timeout,
@@ -100,6 +102,26 @@ final class _AsyncScopeCoordinatorElement extends ScopeWidgetElementBase<
   /// The same name [AsyncScopeCoordinator.waitForChildren] builds for itself.
   @override
   String get reportName => widget.toStringShort(showHashCode: true);
+
+  /// The label taken while there was still a widget to take it from.
+  ///
+  /// A wait for children outlives the tree in the very cases it exists for,
+  /// and this element is the second one that can be asked its name after it
+  /// has left -- `AsyncScopeElementBase.debugLabel` keeps a copy for exactly
+  /// that and says why. The observer reads the label at the expiry, not at
+  /// the start: asking an unmounted element raised a `_TypeError` inside the
+  /// observer's own hook, the guard then named the observer as the thing that
+  /// had failed, and the expiry itself reached nobody.
+  @override
+  String get debugLabel => _debugLabel ?? super.debugLabel;
+  String? _debugLabel;
+
+  @override
+  void unmount() {
+    // Before `super`, which is where the framework lets go of the widget.
+    _debugLabel = super.debugLabel;
+    super.unmount();
+  }
 
   @override
   Widget buildChild() => widget.child;
