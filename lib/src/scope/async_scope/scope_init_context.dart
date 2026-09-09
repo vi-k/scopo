@@ -42,14 +42,11 @@ final class ScopeInitJob<T> extends JobBase<T> implements DeferredJob<T> {
   // The scope settles a body failure through its model. Other errors from the
   // same running job have no outcome of their own and must still be reported.
   Object? _bodyError;
-  StackTrace? _bodyStackTrace;
 
-  // Whether the report of [_bodyError] was left to the outcome. A cancellation
-  // arriving while the cleanup still runs takes the outcome over, and then the
-  // failure has nobody left to carry it: the kernel's own late report is for
-  // an outcome nobody looked at, and the scope always looks. The element reads
-  // this on the cancelled branch and reports what would otherwise be lost.
-  bool _bodyErrorCovered = false;
+  // Finishing without observing, so a `Failed` nobody looked at still reaches
+  // the zone by the kernel's own road. The observer waits on this to find out
+  // whether the outcome ended up carrying the failure it stood aside for.
+  Future<void> get _finished => whenDone;
 
   /// Creates an initialization that waits for [start] or [JobContext.run].
   ///
@@ -76,9 +73,8 @@ final class ScopeInitJob<T> extends JobBase<T> implements DeferredJob<T> {
   Future<T> execute(JobContextBase ctx) async {
     try {
       return await _body(ctx as ScopeInitContext);
-    } on Object catch (error, stackTrace) {
+    } on Object catch (error) {
       _bodyError = error;
-      _bodyStackTrace = stackTrace;
       rethrow;
     }
   }
@@ -119,11 +115,29 @@ final class _ScopeInitObserver extends JobObserver {
     if (job is ScopeInitJob<Object?> &&
         identical(job._bodyError, error) &&
         !job.isCancelled) {
-      // Left to the outcome -- and covered only while the outcome is still the
-      // one thing that can speak for it. An error that was already named on
-      // its way up from a child has an owner, and a second report of it is
-      // what the wave of 2026-09-07 existed to remove.
-      job._bodyErrorCovered = !_announced.contains(error);
+      // The outcome of this job is about to carry the failure, so nothing is
+      // said here -- unless the error was already named on its way up from a
+      // child, in which case it has an owner and a second report of it is what
+      // the wave of 2026-09-07 existed to remove.
+      if (_announced.contains(error)) {
+        return;
+      }
+
+      // Standing aside is a promise that somebody else will speak, and the
+      // outcome keeps it only while it stays a `Failed`. A cancellation
+      // arriving while the cleanup unwinds takes the outcome over, and then
+      // the failure has nobody: the kernel's own late report is for an outcome
+      // nobody looked at, and a scope looks at every one of them. This used to
+      // be the element's net, which meant it was spread under the one job the
+      // element owns -- a child of that job fell straight through.
+      unawaited(
+        job._finished.then((_) {
+          if (job.outcome is Failed || _announced.contains(error)) {
+            return;
+          }
+          _report(error, stackTrace, ScopePhase.initializationCancellation);
+        }),
+      );
       return;
     }
 
@@ -139,6 +153,11 @@ final class _ScopeInitObserver extends JobObserver {
       _ when job.isCancelled => ScopePhase.initializationCancellation,
       _ => ScopePhase.initialization,
     };
+    _report(error, stackTrace, phase);
+  }
+
+  /// Says it once, to both places, and remembers having said it.
+  void _report(Object error, StackTrace stackTrace, ScopePhase phase) {
     _announced.add(error);
     notifyObserver(
       (observer) => observer.onError(_scope, phase, error, stackTrace),

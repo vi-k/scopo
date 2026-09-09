@@ -68,10 +68,13 @@
   failure has nobody left to carry it. The kernel's own late report is for an
   outcome nobody looked at, and a scope looks at every one of them, so the
   scope makes the report itself -- `ScopeObserver.onError` with
-  `ScopePhase.initializationCancellation`, and `FlutterError`. A failure that
-  came out of a child job is the exception that shows what "left to the
-  outcome" means: it was named as the child's before the body of the parent
-  ever caught it, so the outcome has nothing left to say and says nothing.
+  `ScopePhase.initializationCancellation`, and `FlutterError`. It makes it for
+  every job of the initialization and not only for the outermost one: a
+  `ScopeInitJob` you started with `ctx.run` is covered by the same
+  cancellation, and its failure used to go nowhere at all. A failure that came
+  out of a child job is the exception that shows what "left to the outcome"
+  means: it was named as the child's before the body of the parent ever caught
+  it, so the outcome has nothing left to say and says nothing.
 * **New:** a teardown walk that raised what a disposer threw counts as a
   teardown. Every walk visits all of its children, lets go of what it holds
   and passes the first failure upwards only once the last child is done -- a

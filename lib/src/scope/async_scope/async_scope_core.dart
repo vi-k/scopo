@@ -210,43 +210,15 @@ abstract base class AsyncScopeElementBase<W extends AsyncScopeCore<W, E>,
       case Cancelled():
         // The teardown asked for this one, and it is waiting on
         // `_initCompleter` rather than on the model, which the element is
-        // leaving behind anyway. What the teardown cannot do is speak for a
-        // failure that happened before it: the adapter left that report to
-        // the outcome, and the outcome became this cancellation.
-        _reportCoveredBodyFailure(job);
+        // leaving behind anyway. A failure that happened before the
+        // cancellation and lost its outcome to it is not this method's to
+        // report: the adapter stood aside for that outcome and waits on the
+        // job itself to see whether it kept the promise -- for this job and
+        // for every child of it, which is the half an element cannot reach.
+        break;
       case Failed(:final error, :final stackTrace):
         _settleFailure(error, stackTrace);
     }
-  }
-
-  /// Reports a body failure that a later cancellation took the outcome from.
-  ///
-  /// The kernel has a late report of its own, and it is deliberately for an
-  /// outcome nobody looked at -- while this element looks at every one of
-  /// them, from before the job is even started. So the report is the scope's
-  /// to make.
-  void _reportCoveredBodyFailure(ScopeInitJob<void> job) {
-    final error = job._bodyError;
-    if (!job._bodyErrorCovered || error == null || error is Cancelled) {
-      return;
-    }
-
-    final stackTrace = job._bodyStackTrace ?? StackTrace.current;
-    notifyObserver(
-      (observer) => observer.onError(
-        this,
-        ScopePhase.initializationCancellation,
-        error,
-        stackTrace,
-      ),
-    );
-    FlutterError.reportError(
-      FlutterErrorDetails(
-        exception: error,
-        stack: stackTrace,
-        library: 'scopo',
-      ),
-    );
   }
 
   // A value stays with the job until Done. A cancellation during cleanup must

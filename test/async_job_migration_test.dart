@@ -397,6 +397,61 @@ void main() {
     );
   });
 
+  // The same cover, on a job the element does not own. The safety net was the
+  // element's, and an element has one job: a child that failed and was then
+  // covered by the cancellation had its failure suppressed by the adapter and
+  // read by nobody.
+  testWidgets('a covered child ScopeInitJob failure is still reported',
+      (tester) async {
+    final observer = _Errors();
+    ScopeConfig.observer = observer;
+    final cleanup = Completer<void>();
+    final failure = StateError('child body failed');
+    var cleanupStarted = false;
+
+    await tester.pumpWidget(
+      _wrap(
+        AsyncScope(
+          initScope: (context, ctx) async {
+            final child = ScopeInitJob<void>((inner) async {
+              inner.onDispose(() async {
+                cleanupStarted = true;
+                await cleanup.future;
+              });
+              throw failure;
+            });
+            ctx.run(child);
+            await child.value;
+          },
+          disposeScope: () {},
+          progressBuilder: (context, progress) => const Text('loading'),
+          errorBuilder: (context, error, stackTrace, progress) =>
+              const Text('failed'),
+          builder: (context) => const Text('ready'),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+    expect(cleanupStarted, isTrue);
+    expect(observer.errors, isEmpty);
+
+    // The tree goes while the child's cleanup is parked, so the child ends
+    // Cancelled and the failure it was carrying has nobody left.
+    await tester.pumpWidget(_wrap(const SizedBox.shrink()));
+    cleanup.complete();
+    await tester.pumpAndSettle();
+
+    expect(
+      observer.errors.where((error) => identical(error, failure)),
+      hasLength(1),
+      reason: 'the reason a screen never became ready is not something to '
+          'lose because the job that had it was one level down',
+    );
+    for (var i = 0; i < 4; i++) {
+      if (tester.takeException() == null) break;
+    }
+  });
+
   testWidgets('a Cancelled from a disposer is heard but not reported',
       (tester) async {
     final observer = _Errors();
