@@ -97,6 +97,17 @@
   whole expiry with it -- the wait then never ended, and the throw left a
   place where neither the package nor the application could catch it. What
   went wrong with the name is now part of the message instead.
+* **New:** a `tag` that cannot name itself no longer takes the teardown with
+  it. Every label this package prints interpolates the `tag`, an object of the
+  application's, and two elements read their label at the top of the teardown
+  -- to keep it for a wait that outlives the widget. Both read it *before* the
+  teardown they are about to run, and unguarded: a `toString` that threw left
+  a scope without giving back its `scopeKey`, without telling its parent the
+  child was gone and without calling `disposeScope`, while the report named the
+  disposal as the thing that had failed. On a coordinator it was worse, because
+  the framework unmounts a batch of elements with no boundary around any one of
+  them, and everything shallower in that batch stayed mounted for good. The
+  label is a diagnostic; what stands behind it is not.
 * **New:** an expiry that outlives the teardown still names itself. The
   release of a controller the initialization never handed over is the one wait
   of this package that ends after the element has given its widget back, and

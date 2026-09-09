@@ -166,6 +166,15 @@ void unmount() {
 Скоуп от этого класса отказов закрыт: его `dispose()` зовут из
 `_disposeReportingFailure()` под `try/catch`. У координатора такой ограды нет.
 
+**Вердикт: исправлено.** Чтение метки обёрнуто в `try/catch`, отказ уходит в
+`_reportFailure`, `super.unmount()` вызывается всегда. Тест
+`a tag that cannot name itself does not strand what unmounts behind a
+coordinator` (`test/cleanup_after_user_error_test.dart`) ставит скоуп **выше**
+координатора — так он попадает в ту же партию позади него — и проверяет, что
+`disposeScope()` внешнего скоупа выполнен. Нагруженность проверена откатом:
+без ограды тест краснеет. Правка ушла вместе с M3, одним коммитом: это одна
+механика в двух элементах.
+
 ### M3 — пролог `dispose()` скоупа зовёт код потребителя без ограды
 
 `async_scope_core.dart`, `AsyncScopeElementBase.dispose`. Три строки до
@@ -189,6 +198,16 @@ void unmount() {
 и есть способ работы. Та же волна обернула `describeExpiry()` в `try/catch`
 ровно за этот класс отказа; пролог `dispose()` — участок разбора, где правило
 не применено.
+
+**Вердикт: исправлено, и находка недооценила возраст.** Обе строки обёрнуты
+одним `try/catch`; отказ уходит наблюдателю с фазой `preparationForDisposal` и
+в `_reportFailure`, а `_performAsyncDispose()` стартует всегда. Уточнение к
+находке: `_debugLabel = super.debugLabel` стоит в `dispose()` **с 0.13.0**
+(проверено `git show v0.13.0:`), то есть это не только расширение экспозиции
+волной, но и дефект выпущенной версии — в `CHANGELOG.md` он записан как
+таковой. Тест `a tag that cannot name itself does not stop a scope from
+disposing of itself`, вход — чистый публичный API, без наследования.
+Нагруженность проверена откатом: без ограды `disposeScope()` не выполняется.
 
 ### M4 — громкий отказ повторного `init()` превратился в молчаливую утечку
 

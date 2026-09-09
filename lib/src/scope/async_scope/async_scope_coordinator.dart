@@ -118,8 +118,25 @@ final class _AsyncScopeCoordinatorElement extends ScopeWidgetElementBase<
 
   @override
   void unmount() {
-    // Before `super`, which is where the framework lets go of the widget.
-    _debugLabel = super.debugLabel;
+    // Before `super`, which is where the framework lets go of the widget --
+    // and inside a guard, because `super.debugLabel` interpolates the `tag`,
+    // an object of the application's. The caller here is
+    // `BuildOwner._inactiveElements._unmountAll()`, which walks the whole
+    // batch with no boundary around any one element: a raise on this line
+    // therefore left every element behind this one -- everything shallower in
+    // the tree, scopes included -- mounted for good, with no teardown at all.
+    // A label that cannot be built is a diagnostic that failed, and this
+    // method has a promise to keep behind it.
+    try {
+      _debugLabel = super.debugLabel;
+      // ignore: avoid_catching_errors
+    } on Object catch (error, stackTrace) {
+      _reportFailure(
+        error,
+        stackTrace,
+        'while reading the label of a scope coordinator',
+      );
+    }
     super.unmount();
   }
 

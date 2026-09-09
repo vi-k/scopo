@@ -1062,6 +1062,131 @@ void main() {
       );
     });
   });
+
+  // A `tag` is an object of the application's, and every label this package
+  // prints interpolates it. Two elements read their label at the top of the
+  // teardown, to keep it for a wait that outlives the widget -- and both read
+  // it before the teardown they are about to run.
+  group('a tag that cannot name itself', () {
+    testWidgets('does not stop a scope from disposing of itself',
+        (tester) async {
+      final tag = _ThrowingTag();
+      var disposed = false;
+      final reported = <Object>[];
+      final previousOnError = FlutterError.onError;
+      FlutterError.onError = (details) => reported.add(details.exception);
+      addTearDown(() => FlutterError.onError = previousOnError);
+
+      await tester.pumpWidget(
+        _wrap(
+          AsyncScope(
+            tag: tag,
+            initScope: (context, ctx) async {},
+            disposeScope: () => disposed = true,
+            progressBuilder: (context, progress) => const Text('loading'),
+            errorBuilder: (context, error, stackTrace, progress) =>
+                const Text('failed'),
+            builder: (context) => const Text('ready'),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // Only on the way out: mounting must not be what fails, or the test
+      // would be about something else entirely.
+      tag.throwing = true;
+      await tester.pumpWidget(_wrap(const SizedBox.shrink()));
+      await settle(tester, until: () => disposed);
+
+      FlutterError.onError = previousOnError;
+
+      expect(
+        disposed,
+        isTrue,
+        reason: 'the label is a diagnostic, and a diagnostic that failed is '
+            'no reason to walk away from the teardown behind it: the '
+            'scopeKey, the registration with the parent and disposeScope all '
+            'stand after that line',
+      );
+      expect(
+        reported.whereType<StateError>(),
+        hasLength(1),
+        reason: 'and the failure is still said out loud, once',
+      );
+    });
+
+    testWidgets('does not strand what unmounts behind a coordinator',
+        (tester) async {
+      final tag = _ThrowingTag();
+      var disposed = false;
+      final reported = <Object>[];
+      final previousOnError = FlutterError.onError;
+      FlutterError.onError = (details) => reported.add(details.exception);
+      addTearDown(() => FlutterError.onError = previousOnError);
+
+      // The scope is *above* the coordinator, so the framework unmounts the
+      // coordinator first -- deepest first -- and everything shallower is
+      // behind it in the same batch. `_unmountAll` has no boundary around one
+      // element, so a raise there takes the rest of the batch with it.
+      await tester.pumpWidget(
+        Directionality(
+          textDirection: TextDirection.ltr,
+          child: AsyncScope(
+            initScope: (context, ctx) async {},
+            disposeScope: () => disposed = true,
+            progressBuilder: (context, progress) => const Text('loading'),
+            errorBuilder: (context, error, stackTrace, progress) =>
+                const Text('failed'),
+            builder: (context) => AsyncScopeCoordinator(
+              tag: tag,
+              child: const Text('ready'),
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      tag.throwing = true;
+      await tester.pumpWidget(
+        const Directionality(
+          textDirection: TextDirection.ltr,
+          child: SizedBox.shrink(),
+        ),
+      );
+      await settle(tester, until: () => disposed);
+
+      FlutterError.onError = previousOnError;
+
+      expect(
+        disposed,
+        isTrue,
+        reason: 'the scope above the coordinator is in the same batch, and '
+            'the batch is walked without a net',
+      );
+      expect(
+        reported.whereType<StateError>(),
+        hasLength(1),
+        reason: 'and the failure is still said out loud, once',
+      );
+    });
+  });
+}
+
+/// An object of the application's that stops being able to name itself.
+///
+/// It answers while the scope is up, so that mounting is never what fails, and
+/// throws from the moment the teardown starts — which is where every label of
+/// this package is taken.
+final class _ThrowingTag {
+  bool throwing = false;
+
+  @override
+  String toString() {
+    if (throwing) {
+      throw StateError('a tag that cannot name itself');
+    }
+    return 'tag';
+  }
 }
 
 Widget _wrap(Widget child) => Directionality(

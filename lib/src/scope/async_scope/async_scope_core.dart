@@ -602,12 +602,36 @@ abstract base class AsyncScopeElementBase<W extends AsyncScopeCore<W, E>,
   @override
   void dispose() {
     _widget = widget;
-    // Taken here, beside the widget it is taken from: this is the last moment
-    // at which there is certainly one. See [debugLabel].
-    _debugLabel = super.debugLabel;
-    // Beside the label, and for the same reason: a wait that outlives this
-    // teardown still has to be able to tell the caller it expired.
-    _lateTimeoutCallbacks = timeoutCallbacks;
+    // Both of these reach the application: `super.debugLabel` interpolates the
+    // `tag`, and `timeoutCallbacks` is the point a family of somebody else's
+    // answers with. They are taken here because this is the last moment at
+    // which there is certainly a widget to take them from -- and they are
+    // taken inside a guard because everything they are taken *for* stands
+    // behind this line. A raise here used to leave through `unmount` before
+    // `_performAsyncDispose()` was ever called: the `scopeKey` never went back
+    // to the coordinator, the parent went on waiting for a child that was
+    // gone, `disposeScope()` never ran, and the report said "while disposing
+    // of the scope" about a disposal that had not started. Both are
+    // diagnostics; the teardown behind them is not.
+    try {
+      _debugLabel = super.debugLabel;
+      _lateTimeoutCallbacks = timeoutCallbacks;
+      // ignore: avoid_catching_errors
+    } on Object catch (error, stackTrace) {
+      notifyObserver(
+        (observer) => observer.onError(
+          this,
+          ScopePhase.preparationForDisposal,
+          error,
+          stackTrace,
+        ),
+      );
+      _reportFailure(
+        error,
+        stackTrace,
+        'while reading the label and the timeout callbacks of a scope',
+      );
+    }
 
     final startsTheTeardown = _startsTheTeardown;
 
