@@ -354,6 +354,17 @@ mixin ScopeDependencyMixin implements ScopeDependency, ScopeObservable {
         await _runDispose(onStep);
         // ignore: avoid_catching_errors
       } on Object catch (error, stackTrace) {
+        // The walk is over on this path too, and that is a property of every
+        // `_runDispose` here rather than a hope: a group visits all of its
+        // children, keeps each failure on the child it belongs to and raises
+        // the first one only once the last child is done; a leaf takes its
+        // hook off before calling it and clears the handle in a `finally`.
+        // Reading the raise as "the walk stopped halfway" left the flag below
+        // unset, and the container -- which asks it whether a teardown ran to
+        // its end -- then refused every later `init()`, advising a `dispose()`
+        // the caller had already awaited. The tree holds nothing at this
+        // point, and `disposalRequired` says so itself.
+        walkEnded = true;
         // Records the failure on this node and passes it upwards, the way the
         // initialization above does.
         _handleDisposalError(error, stackTrace);
@@ -382,8 +393,10 @@ mixin ScopeDependencyMixin implements ScopeDependency, ScopeObservable {
         inFlight.complete();
       }
 
-      // A walk that ended is a tree that is disposed of. A walk that did not
-      // is one that threw, and the state it left says so already.
+      // A walk that ended is a tree that is disposed of, whether it ended
+      // quietly or raised what a disposer threw. A walk that did not end is
+      // one that never started -- refused at the door above -- and the state
+      // it left says so already.
       if (walkEnded) {
         _isDisposalDone = true;
       }

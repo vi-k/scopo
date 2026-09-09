@@ -292,6 +292,45 @@ void main() {
 
       expect(queues.length, 2);
     });
+
+    // The text of an expiry is built inside the callback of a root-zone
+    // timer, and part of it is the caller's: `[$key]` asks the application's
+    // key to name itself. A key that cannot leaves that callback through a
+    // throw, and a throw there is not caught by anything the package or the
+    // application owns -- while the completer that ends the wait is the next
+    // line after the one that raised.
+    test('a key that cannot name itself still lets the wait expire', () async {
+      final queues = KeyedAccessQueues();
+      const key = _NamelessKey();
+      final holder = AccessEntry('holder');
+      final waiter = AccessEntry('waiter');
+      TimeoutException? reported;
+
+      await queues.enter(key, holder);
+      final wait = queues.enter(
+        key,
+        waiter,
+        timeout: _limit,
+        onTimeout: (error, _) => reported = error,
+      );
+
+      await wait.timeout(_limit * 20);
+
+      expect(
+        reported,
+        isNotNull,
+        reason: 'the expiry is the news here, and it survives a name that '
+            'cannot be written',
+      );
+      expect(
+        '${reported!.message}',
+        contains('this key cannot name itself'),
+        reason: 'and what went wrong with the name is said in its place, '
+            'rather than raised where nobody can catch it',
+      );
+      expect(reported!.duration, _limit);
+      expect(waiter.isWaiting, isFalse);
+    });
   });
 
   group('ChildRegistry', () {
@@ -553,4 +592,13 @@ void main() {
       );
     });
   });
+}
+
+/// A key whose `toString()` throws, the way one reading a released resource
+/// would.
+final class _NamelessKey {
+  const _NamelessKey();
+
+  @override
+  String toString() => throw StateError('this key cannot name itself');
 }

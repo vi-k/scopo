@@ -311,8 +311,22 @@ Future<void> _boundedByRootZone(
   final expired = Completer<void>();
   final timer = Zone.root.createTimer(limit, () {
     if (!expired.isCompleted) {
-      expiry = describeExpiry();
-      expired.complete();
+      try {
+        expiry = describeExpiry();
+        // ignore: avoid_catching_errors
+      } on Object catch (error) {
+        // Part of what the text names belongs to the caller -- the key of a
+        // scope names itself in it -- and a `toString` that throws used to
+        // take the whole expiry with it. Not merely the message: the line
+        // that ends the wait is the next one, so the wait went on for good,
+        // and the throw left a root-zone callback, where neither this
+        // package nor the application has anything to catch it with. The
+        // expiry is the news here; the name is the detail.
+        expiry = 'a wait expired, and the report of it could not be built: '
+            '$error';
+      } finally {
+        expired.complete();
+      }
     }
   });
 

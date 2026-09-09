@@ -2,6 +2,7 @@
 
 import 'dart:async';
 
+import 'package:flutter/foundation.dart';
 import 'package:scopo/scopo.dart';
 import 'package:test/test.dart';
 
@@ -1780,6 +1781,55 @@ void main() {
       });
     });
 
+    // A walk that raised is still a walk that ended. Every `_runDispose`
+    // here visits all of its children, lets go of what it holds and only
+    // then passes the first failure upwards -- the leaf takes its hook off
+    // before calling it and clears the handle in a `finally`. The container
+    // was reading the raise as "the walk stopped halfway" and refused every
+    // later `init()`, advising the caller to dispose of a tree they had
+    // already awaited the disposal of.
+    test('a disposal that raised still counts as one, and a later init runs',
+        () {
+      myFakeAsync((async) {
+        final reported = <Object>[];
+        final previous = FlutterError.onError;
+        FlutterError.onError = (details) => reported.add(details.exception);
+
+        try {
+          final dependencies = TestFailingDisposeDependencies();
+          handleInitFor(dependencies, async);
+          final firstRoot = dependencies.root;
+
+          expectDisposed(async, dependencies.dispose());
+
+          expect(
+            dependencies.disposed,
+            ['depB', 'depA'],
+            reason: 'the failing disposer is no reason to walk away from the '
+                'dependency below it, which is still holding something',
+          );
+          expect(reported, hasLength(1));
+          expect(
+            dependencies.root.disposalRequired,
+            isFalse,
+            reason: 'the tree says itself that it holds nothing any more',
+          );
+
+          handleInitFor(dependencies, async);
+
+          expect(
+            identical(dependencies.root, firstRoot),
+            isFalse,
+            reason: 'the tree the failed disposal left behind is replaced, '
+                'not reused',
+          );
+          expect(dependencies.root.isInitialized, isTrue);
+        } finally {
+          FlutterError.onError = previous;
+        }
+      });
+    });
+
     test('a second init() on a live tree fails with a clear error', () {
       myFakeAsync((async) {
         final dependencies = TestAutoDisposeDependencies();
@@ -2865,4 +2915,27 @@ final class WrongTypeArgumentDependencies
 
     return dep('held', (dep) {});
   }
+}
+
+/// Two dependencies whose second one cannot let go.
+///
+/// The disposer releases what it holds and *then* throws, which is the shape
+/// that matters here: nothing is left behind, and the walk has no reason to
+/// treat the raise as an unfinished one.
+final class TestFailingDisposeDependencies
+    extends ScopeAutoDependencies<TestFailingDisposeDependencies, void> {
+  final disposed = <String>[];
+
+  @override
+  ScopeDependency buildDependencies(_) => sequential('', [
+        dep('depA', (dep) {
+          dep.dispose = () => disposed.add(dep.name);
+        }),
+        dep('depB', (dep) {
+          dep.dispose = () {
+            disposed.add(dep.name);
+            throw Exception('depB cannot let go');
+          };
+        }),
+      ]);
 }

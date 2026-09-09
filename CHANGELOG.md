@@ -69,6 +69,31 @@
   nobody looked at, and a scope looks at every one of them, so the scope makes
   the report itself -- `ScopeObserver.onError` with
   `ScopePhase.initializationCancellation`, and `FlutterError`.
+* **New:** a teardown walk that raised what a disposer threw counts as a
+  teardown. Every walk visits all of its children, lets go of what it holds
+  and passes the first failure upwards only once the last child is done -- a
+  leaf takes its hook off before calling it -- so a raise says what happened,
+  not that the walk stopped. It was read as the latter, and a container whose
+  disposer had thrown then refused every later `init()`, advising a
+  `dispose()` the caller had already awaited. Only `ScopeAutoDependencies`
+  reused by hand could reach it: a `Scope` builds its container afresh.
+* **New:** a `Cancelled` with no outcome to carry it stops at the observer.
+  A disposer or an `onCancel` callback that throws one, or an abandoned wait
+  that ends in one, reaches `ScopeObserver.onError` and goes no further --
+  which is what the kernel promises about cancellations, and what `scopo` was
+  breaking by passing them to `FlutterError` as well: a red line in the
+  console for a decision somebody made, and a failing widget test for a
+  consumer who had no exception to take.
+* **New:** a failure of work nobody waits for is reported as
+  `ScopePhase.abandonedWait` rather than as an initialization failure. The
+  job is already finished by then -- the initialization is over, and pointing
+  at it named the wrong half of the scope's life.
+* **New:** an expiry survives a `scopeKey` that cannot name itself. The text
+  of a report is built inside the callback of a root-zone timer, and `[$key]`
+  asks the key to write itself into it; a `toString` that threw took the
+  whole expiry with it -- the wait then never ended, and the throw left a
+  place where neither the package nor the application could catch it. What
+  went wrong with the name is now part of the message instead.
 * **Breaking:** `AsyncDataScope.initData` is a `Future<T>` too, and the value
   is what it returns. `AsyncDataScopeInitState`, `AsyncDataScopeProgress` and
   `AsyncDataScopeReady` are gone with the form that needed them.

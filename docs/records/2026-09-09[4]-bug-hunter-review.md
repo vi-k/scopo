@@ -179,6 +179,8 @@ Expected: <Instance of 'Done<_Dependencies>'>
   Actual: Failed:<Failed(Bad state: _Dependencies has already been initialized (disposal failed: second) and has not been disposed of. Dispose of it before initializing it again: a second `init()` builds the tree afresh and runs every initializer over the same container, whose fields the first run has already assigned — and where that run is still holding something, nothing would ever release it.)>
 ```
 
+**Вердикт: исправлено.** Та же находка, что `M1` в `2026-09-09[3]-bug-hunter-review.md`, — её нашли двое независимо; разбор правки, тест и проверка нагруженности там же. Коротко: `walkEnded` теперь ставится и на ветке отказа, потому что все реализации `_runDispose` доходят до конца и лишь затем поднимают собранное.
+
 **Последствие для потребителя:** повторно используемый контейнер после завершённого разбора не запускается, хотя потребитель уже дождался его `dispose()`. Восстановление требует дополнительного вызова, выполняющего лишь учёт состояния. Обычный `Scope`, создающий новый контейнер для каждого экземпляра, этот сценарий не затрагивает. Уверенность высокая; в проверенном сценарии отказ детерминированный, частоту повторного использования контейнеров в приложениях не оценивал.
 
 Полный фактически запущенный `test/probe_disposal_rerun_test.dart`:

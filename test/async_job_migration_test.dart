@@ -312,6 +312,84 @@ void main() {
       reason: 'the crash reporter of an application hears it too',
     );
   });
+  testWidgets('a Cancelled from a disposer is heard but not reported',
+      (tester) async {
+    final observer = _Errors();
+    ScopeConfig.observer = observer;
+
+    await tester.pumpWidget(
+      _wrap(
+        AsyncScope(
+          initScope: (context, ctx) async {
+            ctx.onDispose(() => throw const Cancelled('from a disposer'));
+          },
+          disposeScope: () {},
+          progressBuilder: (context, progress) => const Text('loading'),
+          errorBuilder: (context, error, stackTrace, progress) =>
+              const Text('failed'),
+          builder: (context) => const Text('ready'),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+    await tester.pumpWidget(_wrap(const SizedBox.shrink()));
+    await tester.pumpAndSettle();
+
+    // The kernel says it twice and without exceptions: a cancellation is a
+    // decision somebody made, not a failure, and none of them reaches the
+    // zone. An observer is the one place it is heard.
+    expect(observer.errors, hasLength(1));
+    expect(observer.errors.single, isA<Cancelled>());
+    expect(
+      tester.takeException(),
+      isNull,
+      reason: 'a consumer widget test must not fail on a cancellation the '
+          'kernel promised to keep out of the zone',
+    );
+  });
+
+  testWidgets(
+      'a failure of work nobody waits for is not called an '
+      'initialization', (tester) async {
+    final observer = _Errors();
+    ScopeConfig.observer = observer;
+    final failure = StateError('the abandoned action failed');
+    final release = Completer<void>();
+
+    await tester.pumpWidget(
+      _wrap(
+        AsyncScope(
+          initScope: (context, ctx) async {
+            // Handed over rather than awaited: the body returns, the scope
+            // becomes ready, and the failure lands long after.
+            ctx.unattended(() async {
+              await release.future;
+              throw failure;
+            });
+          },
+          disposeScope: () {},
+          progressBuilder: (context, progress) => const Text('loading'),
+          errorBuilder: (context, error, stackTrace, progress) =>
+              const Text('failed'),
+          builder: (context) => const Text('ready'),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+    expect(find.text('ready'), findsOneWidget);
+
+    release.complete();
+    await tester.pumpAndSettle();
+
+    expect(observer.errors, [failure]);
+    expect(
+      observer.phases,
+      [ScopePhase.abandonedWait],
+      reason: 'the initialization is long over; calling this one an '
+          'initialization failure points at the wrong half of the life',
+    );
+    expect(tester.takeException(), same(failure));
+  });
 }
 
 Widget _wrap(Widget child) => Directionality(

@@ -111,12 +111,31 @@ final class _ScopeInitObserver extends JobObserver {
       return;
     }
 
-    final phase = job.isCancelled
-        ? ScopePhase.initializationCancellation
-        : ScopePhase.initialization;
+    // The kernel hands this hook four kinds of error with no outcome to
+    // carry them, and names none of them. What it does say is when: a job
+    // that has already finished cannot be failing its initialization any
+    // more, so what arrives then is work whose end nobody was left to hear
+    // -- an action abandoned by `wait`, or something handed over with
+    // `unattended`. Calling that an initialization failure points the reader
+    // at the wrong half of the scope's life.
+    final phase = switch (job) {
+      _ when job.isFinished => ScopePhase.abandonedWait,
+      _ when job.isCancelled => ScopePhase.initializationCancellation,
+      _ => ScopePhase.initialization,
+    };
     notifyObserver(
       (observer) => observer.onError(_scope, phase, error, stackTrace),
     );
+
+    // A cancellation stops with the observer, which is where the kernel
+    // stops it too: "a cancellation is a decision somebody made, not a
+    // failure, and none of them reaches the zone". Passing it on would put a
+    // red line in the console for a decision, and fail the widget test of a
+    // consumer who had no exception to take.
+    if (error is Cancelled) {
+      return;
+    }
+
     FlutterError.reportError(
       FlutterErrorDetails(
         exception: error,
