@@ -204,7 +204,10 @@ abstract base class AsyncScopeElementBase<W extends AsyncScopeCore<W, E>,
     );
     FlutterError.reportError(
       FlutterErrorDetails(
-          exception: error, stack: stackTrace, library: 'scopo'),
+        exception: error,
+        stack: stackTrace,
+        library: 'scopo',
+      ),
     );
   }
 
