@@ -80,6 +80,13 @@
   disposer had thrown then refused every later `init()`, advising a
   `dispose()` the caller had already awaited. Only `ScopeAutoDependencies`
   reused by hand could reach it: a `Scope` builds its container afresh.
+  The loud refusal stays where it belongs, and it belongs in two places a
+  `ScopeDependency` of your own can reach: a walk that fell over before it
+  visited anybody -- `disposalRequired` is asked of every child before the
+  first is disposed of, and that is your code -- and a walk that went through
+  everybody but found a foreign child throwing out of its own `dispose()`,
+  which the interface never required to let go first. Neither is a tree that
+  holds nothing, and a container will not build over one.
 * **New:** a `Cancelled` with no outcome to carry it stops at the observer.
   A disposer or an `onCancel` callback that throws one, or an abandoned wait
   that ends in one, reaches `ScopeObserver.onError` and goes no further --

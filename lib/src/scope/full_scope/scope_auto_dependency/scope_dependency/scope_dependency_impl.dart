@@ -117,6 +117,10 @@ final class _ScopeDependencyImpl with ScopeDependencyMixin {
     } finally {
       _helper?._dep = null;
       _helper = null;
+      // A leaf has one thing to visit and has just visited it. The hook came
+      // off before the call, so whatever the disposer made of it, nothing is
+      // left here to run.
+      _walkReachedEveryChild = true;
     }
   }
 

@@ -1830,6 +1830,82 @@ void main() {
       });
     });
 
+    // Two ways a raise can reach the same `catch`, and only one of them means
+    // the walk went through everybody. The verdict of M1 rested on a property
+    // of the three `_runDispose` implementations here -- true of their loops,
+    // and not of what stands before them, nor of what a dependency of
+    // somebody else's making does with a failure it throws.
+    test('a walk that fell over before it reached anybody is not a teardown',
+        () {
+      myFakeAsync((async) {
+        final reported = <Object>[];
+        final previous = FlutterError.onError;
+        FlutterError.onError = (details) => reported.add(details.exception);
+
+        try {
+          final dependencies = TestForeignPrologueDependencies();
+          handleInitFor(dependencies, async);
+
+          // The container answers the caller and hands the failure to
+          // `FlutterError`, as it does for every disposal that raised.
+          expectDisposed(async, dependencies.dispose());
+          expect(reported, isNotEmpty);
+
+          expect(
+            dependencies.released,
+            isEmpty,
+            reason: 'the order is asked for before the first child is '
+                'visited, so a raise there touches nobody',
+          );
+          final progress = handleInitFor(dependencies, async);
+          expect(
+            progress.single,
+            contains('has not been disposed of'),
+            reason: 'and the next init() is refused out loud, rather than '
+                'building a second tree over the first',
+          );
+        } finally {
+          FlutterError.onError = previous;
+        }
+      });
+    });
+
+    // The other half. Here the walk did reach everybody, so it is a teardown
+    // -- but one of the children is not this package's, and the interface it
+    // implements never promised to let go before it throws. Its own
+    // `disposalRequired` goes on saying `true`, which is the answer the walk
+    // takes rather than asking that code a second time.
+    test('a foreign child that threw is a tree that may still be holding', () {
+      myFakeAsync((async) {
+        final reported = <Object>[];
+        final previous = FlutterError.onError;
+        FlutterError.onError = (details) => reported.add(details.exception);
+
+        try {
+          final dependencies = TestForeignDisposeDependencies();
+          handleInitFor(dependencies, async);
+
+          expectDisposed(async, dependencies.dispose());
+          expect(reported, isNotEmpty);
+
+          expect(
+            dependencies.released,
+            ['ours'],
+            reason: 'the walk went through everybody all the same',
+          );
+          final progress = handleInitFor(dependencies, async);
+          expect(
+            progress.single,
+            contains('has not been disposed of'),
+            reason: 'so the container refuses to build over it -- the loud '
+                'refusal M1 removed belongs here, and only here',
+          );
+        } finally {
+          FlutterError.onError = previous;
+        }
+      });
+    });
+
     test('a second init() on a live tree fails with a clear error', () {
       myFakeAsync((async) {
         final dependencies = TestAutoDisposeDependencies();
@@ -2938,4 +3014,87 @@ final class TestFailingDisposeDependencies
           };
         }),
       ]);
+}
+
+/// A tree whose foreign child cannot even be asked whether it needs disposing.
+///
+/// `late final` assigned by an initialization that never ran is the ordinary
+/// way to get here, and the container knows the shape well enough to explain
+/// it elsewhere.
+final class TestForeignPrologueDependencies
+    extends ScopeAutoDependencies<TestForeignPrologueDependencies, void> {
+  final released = <String>[];
+
+  @override
+  ScopeDependency buildDependencies(_) => sequential('', [
+        dep('ours', (dep) {
+          dep.dispose = () => released.add(dep.name);
+        }),
+        _ForeignDependency(name: 'foreign', throwFromRequired: true),
+      ]);
+}
+
+/// A tree whose foreign child throws out of its own `dispose()`.
+final class TestForeignDisposeDependencies
+    extends ScopeAutoDependencies<TestForeignDisposeDependencies, void> {
+  final released = <String>[];
+
+  @override
+  ScopeDependency buildDependencies(_) => sequential('', [
+        dep('ours', (dep) {
+          dep.dispose = () => released.add(dep.name);
+        }),
+        _ForeignDependency(name: 'foreign'),
+      ]);
+}
+
+/// A dependency of somebody else's making: the interface, and nothing beyond.
+///
+/// It keeps saying it holds something after its `dispose()` has thrown, which
+/// the interface allows and this package's own leaves never do.
+final class _ForeignDependency implements ScopeDependency {
+  @override
+  final String name;
+
+  final bool throwFromRequired;
+
+  _ForeignDependency({required this.name, this.throwFromRequired = false});
+
+  @override
+  final int count = 1;
+
+  @override
+  ScopeDependencyState get state => _state;
+  ScopeDependencyState _state = const ScopeDependencyInitial();
+
+  @override
+  bool get disposalRequired {
+    if (throwFromRequired && _state is ScopeDependencyInitialized) {
+      throw StateError('$name cannot say whether it needs disposing');
+    }
+    return _state is ScopeDependencyInitialized;
+  }
+
+  @override
+  Future<void> init(ScopeInitContext ctx, void Function(String path) onStep) {
+    _state = const ScopeDependencyInitialized();
+    onStep(name);
+    return Future<void>.value();
+  }
+
+  @override
+  void onUnmount() {}
+
+  @override
+  Future<void> dispose(void Function(String path) onStep) {
+    // Neither the state nor the resource is given up: this is the half the
+    // interface leaves to the implementation, and the half a broken one skips.
+    throw StateError('$name cannot let go');
+  }
+
+  @override
+  String get wrappedName => '"$name"';
+
+  @override
+  String stateToString() => '$state';
 }

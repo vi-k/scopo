@@ -128,6 +128,20 @@ abstract base class ScopeDependencyGroup with ScopeDependencyMixin {
     return order;
   }
 
+  /// Reads what a child that threw leaves behind, without asking it again.
+  ///
+  /// A child of this package has been through its own walk by now and says so
+  /// in [ScopeDependencyMixin._isDisposalDone]; a leaf takes its hook off
+  /// before calling it, so one that threw has let go all the same. A
+  /// dependency of somebody else's making has made no such promise, and
+  /// asking its [ScopeDependency.disposalRequired] a second time would be the
+  /// same arbitrary code that just threw.
+  void _noteWhatMayStillHold(ScopeDependency dependency) {
+    if (dependency is! ScopeDependencyMixin || !dependency._isDisposalDone) {
+      _mayStillHold = true;
+    }
+  }
+
   String _path(String name) => this.name.isEmpty ? name : '${this.name}/$name';
 
   /// Announces the exit of [dependency]'s step for a child that cannot
@@ -252,8 +266,14 @@ final class _ScopeDependencySequential extends ScopeDependencyGroup {
         // first one is passed upwards once the walk is over.
         _announceFailureFor(dependency, error, stackTrace);
         errors.add(AsyncError(error, stackTrace));
+        _noteWhatMayStillHold(dependency);
       }
     }
+
+    // Before the raise, which is the whole point: what follows reads this to
+    // tell a walk that fell over on its way in from one that went through
+    // everybody and carried a failure out.
+    _walkReachedEveryChild = true;
 
     if (errors.firstOrNull case final first?) {
       Error.throwWithStackTrace(first.error, first.stackTrace);
@@ -335,8 +355,11 @@ final class _ScopeDependencyConcurrent extends ScopeDependencyGroup {
         ).onError<Object>((error, stackTrace) {
           _announceFailureFor(dependency, error, stackTrace);
           errors.add(AsyncError(error, stackTrace));
+          _noteWhatMayStillHold(dependency);
         }),
     ]);
+
+    _walkReachedEveryChild = true;
 
     if (errors.firstOrNull case final first?) {
       Error.throwWithStackTrace(first.error, first.stackTrace);
