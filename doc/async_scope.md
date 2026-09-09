@@ -280,10 +280,12 @@ There is a third way, and it is the body's own: `throw Cancelled('why')` gives
 up on an initialization that has decided to stop -- no session, nothing to
 show, a precondition that did not hold. The scope treats it as a failure,
 because that is what it is from the screen's side: an initialization that
-never became ready. The `Cancelled` reaches `buildOnError`,
-`ScopeObserver.onError` and `FlutterError` the way a failing step would. Only
-a cancellation the teardown asked for is silent, and it can afford to be:
-somebody is waiting for it.
+never became ready. The `Cancelled` reaches `buildOnError` and
+`ScopeObserver.onError` the way a failing step would -- and, like a failing
+step, it does not go to `FlutterError`: the error is on the screen, and a red
+line in the console for something a builder is already showing says nothing
+new. Only a cancellation the teardown asked for is silent, and it can afford
+to be: somebody is waiting for it.
 
 A body that touches the context nowhere is the exception that proves it:
 nothing is thrown at it, because Dart cannot interrupt somebody else's wait,

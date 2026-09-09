@@ -58,10 +58,11 @@
   for -- so nobody was waiting to hear it either, and the scope used to stay
   on `buildOnWaiting` for good with no error, no observer event and nothing in
   the console. An initialization that ended without becoming ready is a failed
-  one whichever way it ended, so the `Cancelled` reaches `buildOnError`,
-  `ScopeObserver.onError` and `FlutterError` like any other failure of a body.
-  A cancellation the teardown asked for is unchanged: it is still silent,
-  because somebody is waiting for it.
+  one whichever way it ended, so the `Cancelled` reaches `buildOnError` and
+  `ScopeObserver.onError` like any other failure of a body -- and, like any
+  other, it stays out of `FlutterError`: what a builder is already showing
+  needs no red line beside it. A cancellation the teardown asked for is
+  unchanged: it is still silent, because somebody is waiting for it.
 * **New:** a body failure that a later cancellation covered is still reported,
   and reported once. A body throws, its cleanup is still unwinding, and the
   tree goes away in that window: the outcome becomes the cancellation and the
