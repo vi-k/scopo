@@ -299,6 +299,16 @@ still names itself`: `FlutterError.onError` подменяется, а восс�
 прогон будет стоить десять минут вслепую. Лечится восстановлением
 `FlutterError.onError` до первого `expect`, а не в `addTearDown`.
 
+**Вердикт: исправлено.** Обработчик отдаётся назад строкой перед первым
+`expect`, а не в `addTearDown`; `addTearDown` оставлен как страховка на путь,
+где тест не дойдёт до этой строки. Проверено обеими мутациями, которые эта
+находка и породила: снятие `$debugLabel` из текста истечения даёт
+`Expected: contains ... "couldn't wait for its controller to be released"` за
+**2,7 секунды**, снятие кеша колбеков — `Expected: <1> Actual: <0>` за **2,8**.
+Было десять минут молчания в обоих случаях. Заодно ожил `tester.takeException()`
+последней строкой: раньше он вызывался при ещё подменённом обработчике и не мог
+получить ничего.
+
 ### L3 — отчёт нового канала идёт от узла, без пути и без `ScopeDependencyException`
 
 `scope_dependency_mixin.dart`, `_handlePostCancelError`:

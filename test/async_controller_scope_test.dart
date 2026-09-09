@@ -385,6 +385,16 @@ void main() {
       initGate.complete();
       await settle(tester, until: () => false, rounds: 30);
 
+      // Given back before the first `expect`, and not in the `addTearDown`
+      // above. Everything this test collects has been collected by now, and
+      // what comes next can fail: a `TestFailure` raised while the handler is
+      // still ours goes into `reported` instead of to the runner, whose own
+      // assert then fires on an empty `_pendingExceptionDetails` and hangs the
+      // whole suite -- ten minutes against the seven seconds a green run
+      // takes. A test whose failure hides itself is worse than no test, and
+      // this one guards two halves of one fix.
+      FlutterError.onError = previous;
+
       expect(
         observer.timeouts,
         contains(contains("couldn't wait for its controller to be released")),
