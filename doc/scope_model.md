@@ -28,12 +28,12 @@ ScopeModel<Cart>(
 ```
 
 `builder` deliberately receives only a context. That context belongs to the
-scope's element, so the model is already available through `ScopeModel.of`
-and `ScopeModel.select`, with the same lookup and subscription rules that
+scope's element, so the model is already available through `ScopeModel.of` and
+`ScopeModel.select`, with the same lookup and subscription rules that
 descendants use. `dispose` runs at the other end of the lifecycle, outside a
 build; the element already owns the exact model it created, so it hands that
-instance to the callback directly instead of asking teardown code to look it
-up through the tree.
+instance to the callback directly instead of asking teardown code to look it up
+through the tree.
 
 `create` runs once, after the element is mounted and before its first subtree
 build. If it throws, that is the end of the scope: `create` is not attempted
@@ -167,9 +167,10 @@ gone — so an assertion refuses it. Give the widget a different `Widget.key`
 instead, and the framework builds a new element for the new mode.
 
 The disposal here is synchronous. When releasing the object needs an `await`,
-this family is the wrong one: `LiteScope` gives a state with `disposeStateAsync`,
-and `Scope` gives a dependency container whose `dispose` is awaited — and both
-make a parent wait for their child scopes before tearing themselves down.
+this family is the wrong one: `LiteScope` gives a state with
+`disposeStateAsync`, and `Scope` gives a dependency container whose `dispose`
+is awaited — and both make a parent wait for their child scopes before tearing
+themselves down.
 
 ## In the debugger
 

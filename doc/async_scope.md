@@ -53,9 +53,10 @@ globally — see the `debug` topic.
 
 ## Progress
 
-Progress is whatever the initialization says it is. `AsyncScopeProgress` carries
-an `Object?`, the builders receive an `Object?`, and the package never looks
-inside it. A `String` is the common case; anything with a `toString` will do.
+Progress is whatever the initialization says it is. `AsyncScopeProgress`
+carries an `Object?`, the builders receive an `Object?`, and the package never
+looks inside it. A `String` is the common case; anything with a `toString` will
+do.
 
 ```dart
 AsyncScope(
@@ -77,10 +78,10 @@ AsyncScope(
 Four things are worth knowing about the `progress` argument.
 
 **It is `null` before the first event.** The scope is `AsyncScopeWaiting` from
-the moment it is mounted until `initScope` reports, and if `buildOnWaiting` returns
-`null` the waiting branch is `buildOnProgress(context, null)`. Write the
-builder so that `null` means "nothing reported yet" — that is also what it means
-in `buildOnError` when the failure came before any progress did.
+the moment it is mounted until `initScope` reports, and if `buildOnWaiting`
+returns `null` the waiting branch is `buildOnProgress(context, null)`. Write
+the builder so that `null` means "nothing reported yet" — that is also what it
+means in `buildOnError` when the failure came before any progress did.
 
 **The last value gets a frame of its own.** `AsyncScopeReady` is applied in a
 post-frame callback, so a progress value reported immediately before the body
@@ -88,11 +89,11 @@ returns is actually painted instead of being replaced within the same frame.
 `pauseAfterInitialization` holds the ready branch back further still, which is
 what to reach for when the steps are too fast to read.
 
-**Progress after ready has nowhere to go.** The scope is initialized once;
-a progress call made after it is ready — by a helper the body left running,
-say — is ignored and does not change what is on screen. An initialization
-that goes on producing values after the scope is usable wants a `Listenable`
-under the scope, not this context.
+**Progress after ready has nowhere to go.** The scope is initialized once; a
+progress call made after it is ready — by a helper the body left running, say —
+is ignored and does not change what is on screen. An initialization that goes
+on producing values after the scope is usable wants a `Listenable` under the
+scope, not this context.
 
 **No progress at all is fine.** An `initScope` that reports nothing never
 leaves `AsyncScopeWaiting`, so the scope shows `buildOnWaiting` — a spinner,
@@ -101,8 +102,8 @@ usually — and then the ready branch.
 ### Counting steps
 
 For an initialization that knows how many steps it has, `ProgressIterator`
-counts them and `Progress` is the value it produces: `number`, `total`,
-`value` as a fraction between 0 and 1, and a `toString` of `2/3`.
+counts them and `Progress` is the value it produces: `number`, `total`, `value`
+as a fraction between 0 and 1, and a `toString` of `2/3`.
 
 ```dart
 initScope: (context, ctx) async {
@@ -124,8 +125,8 @@ progressBuilder: (context, progress) => switch (progress) {
 ```
 
 The fraction is always between 0 and 1 — an empty task reads as complete rather
-than as `NaN` — so it can go straight into a progress indicator. See the `utils`
-topic.
+than as `NaN` — so it can go straight into a progress indicator. See the
+`utils` topic.
 
 ### Where the type comes back
 
@@ -166,11 +167,11 @@ by `wait`, a disposer, an `onCancel` callback or work started by `unattended` �
 reaches `ScopeObserver.onError` and `FlutterError.reportError`. It does not
 switch the screen to `buildOnError`, and a ready scope stays ready. That is
 deliberate: the widgets on screen are the ready ones, whatever `initScope`
-acquired still has to be released by `disposeScope`, and
-swapping the subtree for an error screen behind the user's back would strand
-both. A body that goes on working after it has returned — a helper it left
-running — is unusual, but it is exactly the case where the difference matters.
-Bare asynchronous work outside the context still reports to its own zone.
+acquired still has to be released by `disposeScope`, and swapping the subtree
+for an error screen behind the user's back would strand both. A body that goes
+on working after it has returned — a helper it left running — is unusual, but
+it is exactly the case where the difference matters. Bare asynchronous work
+outside the context still reports to its own zone.
 
 ## Disposal, in order
 
@@ -185,20 +186,19 @@ awaited:
    for one.
 3. **The initialization is cancelled**, and the wait for that is bounded by
    `initCancellationTimeout` (`ScopeConfig.defaultInitCancellationTimeout` by
-   default). Cancellation waits for the body, its child jobs and cleanup.
-   The body learns of it through `ctx.progress`, `check` or the waiting
-   family, which throws `Cancelled` according to the call's rules below —
-   and a failure raised while it unwinds is reported rather than thrown on:
-   abandoning the disposal at that point would
-   leave the scope registered with its parent and its `scopeKey` unreleased.
-   A cancellation that never finishes at all would leave it there just as
-   surely, and needs no failure to do it: a body parked on somebody else's
-   future is not interrupted by anything, and one that never asks `ctx`
-   anything is never told. When the limit expires the initialization is left
-   where it stands, the expiry is reported, and the teardown goes on. What the
-   body holds stays held — and if it finishes later, what it produced is handed
-   to `disposeScope`, unless the teardown has by then run to its end. Cleanup
-   registered with the job does not need that hook and still runs.
+   default). Cancellation waits for the body, its child jobs and cleanup. The
+   body learns of it through `ctx.progress`, `check` or the waiting family,
+   which throws `Cancelled` according to the call's rules below — and a failure
+   raised while it unwinds is reported rather than thrown on: abandoning the
+   disposal at that point would leave the scope registered with its parent and
+   its `scopeKey` unreleased. A cancellation that never finishes at all would
+   leave it there just as surely, and needs no failure to do it: a body parked
+   on somebody else's future is not interrupted by anything, and one that never
+   asks `ctx` anything is never told. When the limit expires the initialization
+   is left where it stands, the expiry is reported, and the teardown goes on.
+   What the body holds stays held — and if it finishes later, what it produced
+   is handed to `disposeScope`, unless the teardown has by then run to its end.
+   Cleanup registered with the job does not need that hook and still runs.
 4. **The initialization is awaited** if it could not be cancelled.
 5. **The child scopes are awaited**, bounded by `waitForChildrenTimeout`
    (`ScopeConfig.defaultWaitForChildrenTimeout` by default). An expiry is
@@ -227,10 +227,10 @@ overlaps with the one it replaces.
 
 ### An initialization that fails owns its own mess
 
-Step 6 is the one to read twice: **`disposeScope` runs only when the initialization
-succeeded.** A scope that failed halfway never reaches it, and there is no
-second hook that does — `onUnmount` runs, but it is handed nothing to work
-with.
+Step 6 is the one to read twice: **`disposeScope` runs only when the
+initialization succeeded.** A scope that failed halfway never reaches it, and
+there is no second hook that does — `onUnmount` runs, but it is handed nothing
+to work with.
 
 That is not an oversight, and it is not a gap waiting to be closed: **a scope
 that failed needs a partial teardown, and only the code that did the building
@@ -279,13 +279,13 @@ needs no separate dependency or import.
 There is a third way, and it is the body's own: `throw Cancelled('why')` gives
 up on an initialization that has decided to stop -- no session, nothing to
 show, a precondition that did not hold. The scope treats it as a failure,
-because that is what it is from the screen's side: an initialization that
-never became ready. The `Cancelled` reaches `buildOnError` and
+because that is what it is from the screen's side: an initialization that never
+became ready. The `Cancelled` reaches `buildOnError` and
 `ScopeObserver.onError` the way a failing step would -- and, like a failing
 step, it does not go to `FlutterError`: the error is on the screen, and a red
 line in the console for something a builder is already showing says nothing
-new. Only a cancellation the teardown asked for is silent, and it can afford
-to be: somebody is waiting for it.
+new. Only a cancellation the teardown asked for is silent, and it can afford to
+be: somebody is waiting for it.
 
 A body that touches the context nowhere is the exception that proves it:
 nothing is thrown at it, because Dart cannot interrupt somebody else's wait,
@@ -363,8 +363,8 @@ await ctx.wait(cache.warmUp);   // let go the moment the scope gives up
 **`join` is for a call that must not be left halfway** — a migration, a device
 write, somebody else's `init`. It accepts cancellation at once but waits for
 the call to finish before throwing `Cancelled`; an error from the call still
-arrives as that error. It replaces the old pair
-`await x(); ctx.check();`, keeping the wait and the check together:
+arrives as that error. It replaces the old pair `await x(); ctx.check();`,
+keeping the wait and the check together:
 
 ```dart
 await ctx.join(database.migrate);
@@ -373,8 +373,8 @@ await ctx.join(database.migrate);
 For a `join` that returns a resource, pass `discard:` or `dispose:` too; a
 value the body will not receive is released before the cancellation is thrown.
 `ctx.check()` still belongs where there is no call to wrap, such as a loop over
-work of your own. `await ctx.uncancellable(step)` holds cancellation back for
-a step that must not be cancelled at all; it is delivered when the step ends.
+work of your own. `await ctx.uncancellable(step)` holds cancellation back for a
+step that must not be cancelled at all; it is delivered when the step ends.
 `ctx.unattended(work)` starts work nobody waits for and reports its errors to
 the observer; it neither waits for nor cancels that work.
 
@@ -405,22 +405,21 @@ registration made by `onDispose` or `onDiscard` has no value attached, so
 nothing.** The reason that is safe is a promise of the scope rather than a
 hope: **a body that comes back for a scope which has already given up settles
 nothing, but what it produced is released rather than dropped** —
-`disposeScope` here, `disposeData` in the `AsyncDataScope` topic,
-the container's own teardown in the `Scope` one. The one path where it cannot
-is a teardown that has already finished, an `initCancellationTimeout` it gave
-up on: by then the scope has no widget left to read the hook from.
+`disposeScope` here, `disposeData` in the `AsyncDataScope` topic, the
+container's own teardown in the `Scope` one. The one path where it cannot is a
+teardown that has already finished, an `initCancellationTimeout` it gave up on:
+by then the scope has no widget left to read the hook from.
 
 For several dependencies with an order of their own, the dependency container
 of the `Scope` family keeps the tree and its teardown — see the `Scope` topic.
-`AsyncControllerScope` closes the same hole from the other side: its
-controller is disposed of on **every** path, including the one where `init()`
-threw.
+`AsyncControllerScope` closes the same hole from the other side: its controller
+is disposed of on **every** path, including the one where `init()` threw.
 
 ## Parents and children
 
 Every asynchronous scope registers with the nearest `AsyncScopeParent` above
-it — a parent scope if there is one, an `AsyncScopeCoordinator` otherwise —
-and that is what step 5 above waits for. The mixin exposes what it knows:
+it — a parent scope if there is one, an `AsyncScopeCoordinator` otherwise — and
+that is what step 5 above waits for. The mixin exposes what it knows:
 
 ```dart
 hasChildren;    // bool
@@ -431,9 +430,9 @@ await waitForChildren(timeout: …, onTimeout: …);
 Written without a receiver on purpose: **the mixin sits on the element**, and
 the elements of the five built-in families are private. So those three are for
 a scope of your own — a family built on `AsyncScopeCore`, reading them on
-`this` — and not for a subtree looking upwards. `AsyncScope.of(context, listen:
-false)` and its siblings hand back an `AsyncScopeContext`, which carries the
-state of the scope and none of this.
+`this` — and not for a subtree looking upwards.
+`AsyncScope.of(context, listen: false)` and its siblings hand back an
+`AsyncScopeContext`, which carries the state of the scope and none of this.
 
 From a subtree, the wait to ask for is the coordinator's:
 
@@ -451,8 +450,8 @@ A child that registers while the wait is running is not awaited by it, and is
 still registered once it is over. On expiry the children that never finished
 are dropped, `onTimeout` is called — by default a `FlutterError.reportError`
 naming the scope, and a callback of your own is handed that same named error —
-and the future completes normally either way. Nothing here
-deadlocks; it degrades into a delay and a report.
+and the future completes normally either way. Nothing here deadlocks; it
+degrades into a delay and a report.
 
 A scope with neither a parent scope nor a coordinator above it registers
 nowhere, and nothing waits for it. That is worth knowing before removing a

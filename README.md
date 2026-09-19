@@ -22,23 +22,24 @@ database, a socket, a player, a signed-in session. What scopo adds:
 - **initialization is an ordinary `async` function** that reports its steps and
   returns its value, so a scope has a loading branch, a progress value and an
   error branch without a state machine of your own;
-- **an unfinished initialization is cancelled**, and whatever it already took is
-  given back; the widget leaving the tree is enough to start that;
+- **an unfinished initialization is cancelled**, and whatever it already took
+  is given back; the widget leaving the tree is enough to start that;
 - **disposal is ordered** — a scope waits for its child scopes before releasing
-  its own dependencies, so nothing is released while something below still holds
-  it;
+  its own dependencies, so nothing is released while something below still
+  holds it;
 - **`scopeKey` serialises two scopes over one resource**: a re-created scope
   waits for the previous holder of the same key to finish letting go;
 - **`close()` keeps the last frame on screen** while an asynchronous teardown
   runs, instead of tearing the subtree away mid-flight;
-- **every step is observable** through a typed observer — the failures included.
+- **every step is observable** through a typed observer — the failures
+  included.
 
-Riverpod covers part of this: `FutureProvider` and `AsyncValue` give the loading
-and error branches, and `ref.onDispose` releases what a provider took. What it
-does not give is *waiting* — `onDispose` is a synchronous callback, so "release
-the database only once every scope that used it has finished letting go" has
-nowhere to go. Disposal there follows the provider graph and its listeners; here
-it follows the widget tree.
+Riverpod covers part of this: `FutureProvider` and `AsyncValue` give the
+loading and error branches, and `ref.onDispose` releases what a provider took.
+What it does not give is *waiting* — `onDispose` is a synchronous callback, so
+"release the database only once every scope that used it has finished letting
+go" has nowhere to go. Disposal there follows the provider graph and its
+listeners; here it follows the widget tree.
 
 **When not to take scopo.** If your dependencies are built synchronously and
 released by a single `dispose()`, everything above costs you something and buys
@@ -55,8 +56,8 @@ you nothing: `provider` is smaller, better known, and enough.
   before disposing of its own dependencies (`waitForChildrenTimeout`), and
   `scopeKey` makes a re-created scope wait for the previous scope with the same
   key.
-- **Selective rebuilds**: `select` and `selectParam` subscribe a descendant to a
-  single value; `notifyDependents` rebuilds only those descendants, never the
+- **Selective rebuilds**: `select` and `selectParam` subscribe a descendant to
+  a single value; `notifyDependents` rebuilds only those descendants, never the
   scope's own subtree. `setState` is the other half and is untouched: it
   rebuilds the state's own subtree and reaches no subscriber.
 - **Graceful closing**: `close()` freezes the subtree as a screenshot and shows
@@ -78,8 +79,8 @@ import 'package:scopo/scopo.dart';
 
 ## The families
 
-Eight of them, and the right one is the smallest that fits. They are listed here
-from the smallest up — the same order the topics are in — and the largest,
+Eight of them, and the right one is the smallest that fits. They are listed
+here from the smallest up — the same order the topics are in — and the largest,
 `Scope`, gets a section of its own below.
 
 | what you own | take |
@@ -119,7 +120,8 @@ final class ApiConfig extends ScopeWidgetBase<ApiConfig> {
 }
 ```
 
-**In depth:** the topic [ScopeWidget](https://pub.dev/documentation/scopo/latest/topics/ScopeWidget-topic.html).
+**In depth:** the topic
+[ScopeWidget](https://pub.dev/documentation/scopo/latest/topics/ScopeWidget-topic.html).
 
 ### ScopeModel
 
@@ -159,7 +161,8 @@ class UserView extends StatelessWidget {
 }
 ```
 
-**In depth:** the topic [ScopeModel](https://pub.dev/documentation/scopo/latest/topics/ScopeModel-topic.html).
+**In depth:** the topic
+[ScopeModel](https://pub.dev/documentation/scopo/latest/topics/ScopeModel-topic.html).
 
 ### ScopeNotifier
 
@@ -199,7 +202,8 @@ class CounterText extends StatelessWidget {
 }
 ```
 
-**In depth:** the topic [ScopeNotifier](https://pub.dev/documentation/scopo/latest/topics/ScopeNotifier-topic.html).
+**In depth:** the topic
+[ScopeNotifier](https://pub.dev/documentation/scopo/latest/topics/ScopeNotifier-topic.html).
 
 ### AsyncScope
 
@@ -226,7 +230,8 @@ class ConnectionGate extends StatelessWidget {
 }
 ```
 
-**In depth:** the topic [AsyncScope](https://pub.dev/documentation/scopo/latest/topics/AsyncScope-topic.html).
+**In depth:** the topic
+[AsyncScope](https://pub.dev/documentation/scopo/latest/topics/AsyncScope-topic.html).
 
 ### AsyncDataScope
 
@@ -253,7 +258,8 @@ class DatabaseGate extends StatelessWidget {
 }
 ```
 
-**In depth:** the topic [AsyncDataScope](https://pub.dev/documentation/scopo/latest/topics/AsyncDataScope-topic.html).
+**In depth:** the topic
+[AsyncDataScope](https://pub.dev/documentation/scopo/latest/topics/AsyncDataScope-topic.html).
 
 ### AsyncControllerScope
 
@@ -316,20 +322,21 @@ final class PlayerController extends ScopeController {
 instead of a subclass.
 
 The same `PlayerController` also fits inside a dependency tree unchanged —
-`controllerDep('player', () => player = PlayerController(api: apiClient))`
-next to `dep` in a `ScopeAutoDependencies` — see the topic
+`controllerDep('player', () => player = PlayerController(api: apiClient))` next
+to `dep` in a `ScopeAutoDependencies` — see the topic
 [Scope](https://pub.dev/documentation/scopo/latest/topics/Scope-topic.html) —
 when what a screen needs is one branch of a larger tree rather than a scope of
 its own.
 
-**In depth:** the topic [AsyncControllerScope](https://pub.dev/documentation/scopo/latest/topics/AsyncControllerScope-topic.html).
+**In depth:** the topic
+[AsyncControllerScope](https://pub.dev/documentation/scopo/latest/topics/AsyncControllerScope-topic.html).
 
 ### LiteScope
 
 `Scope` without the dependency container: the state is created without an async
 dependency phase, and still gets the full scope lifecycle — `initStateAsync`,
-`disposeStateAsync`, `notifyDependents`, `close`, `scopeKey`, and waiting for child
-scopes. A good fit for per-screen state that owns disposable objects.
+`disposeStateAsync`, `notifyDependents`, `close`, `scopeKey`, and waiting for
+child scopes. A good fit for per-screen state that owns disposable objects.
 
 ```dart
 final class ScreenScope extends LiteScope<ScreenScope, ScreenScopeState> {
@@ -361,11 +368,12 @@ final class ScreenScopeState
 }
 ```
 
-Every family, this one and the full `Scope` below, is demonstrated side by
-side with a live log of each lifecycle call in the
+Every family, this one and the full `Scope` below, is demonstrated side by side
+with a live log of each lifecycle call in the
 [scopo_demo](https://github.com/vi-k/scopo/tree/main/example/scopo_demo) app.
 
-**In depth:** the topic [LiteScope](https://pub.dev/documentation/scopo/latest/topics/LiteScope-topic.html).
+**In depth:** the topic
+[LiteScope](https://pub.dev/documentation/scopo/latest/topics/LiteScope-topic.html).
 
 ## Scope: the full family
 
@@ -383,10 +391,10 @@ parts:
 
 Implement `ScopeDependencies` and initialize it with an ordinary `async`
 function. The context it is given is what lets the scope report progress and
-cancel a half-finished initialization when the widget is removed from the
-tree: the body is thrown into at its next checkpoint — `ctx.progress`
-between two steps is usually that touch — and unwinds through its own `catch`
-and `finally`. For an acquisition that can be left in flight, use
+cancel a half-finished initialization when the widget is removed from the tree:
+the body is thrown into at its next checkpoint — `ctx.progress` between two
+steps is usually that touch — and unwinds through its own `catch` and
+`finally`. For an acquisition that can be left in flight, use
 `ctx.wait(Api.connect, discard: (api) => api.close())`: cancellation ends the
 waiting, and `discard` closes a value the body never receives. Use `ctx.join`
 for a call that must finish; a short initialization that asks the context
@@ -419,10 +427,11 @@ final class AppDependencies implements ScopeDependencies {
 ```
 
 `ScopeInitJob<T>` drives the same initialization outside a scope — in a test,
-or before there are any widgets: `final job = ScopeInitJob(body)..start();
-await job.value;`. `await job.cancel()` waits for the body, child jobs and
-cleanup; leave its future unawaited when only the request is needed. Catch
-`Cancelled`, re-exported by `scopo`, without adding a separate dependency.
+or before there are any widgets:
+`final job = ScopeInitJob(body)..start(); await job.value;`.
+`await job.cancel()` waits for the body, child jobs and cleanup; leave its
+future unawaited when only the request is needed. Catch `Cancelled`,
+re-exported by `scopo`, without adding a separate dependency.
 
 ### 2. State
 
@@ -563,7 +572,8 @@ class HomeScreen extends StatelessWidget {
 }
 ```
 
-**In depth:** the topic [Scope](https://pub.dev/documentation/scopo/latest/topics/Scope-topic.html).
+**In depth:** the topic
+[Scope](https://pub.dev/documentation/scopo/latest/topics/Scope-topic.html).
 
 ## Accessors: the type arguments, once
 
@@ -654,26 +664,26 @@ how templates and accessors relate.
 ## scopeKey
 
 `scopeKey` serializes scopes that must not overlap: a new scope with the same
-key waits until the previous one has finished disposing of its dependencies.
-It requires an `AsyncScopeCoordinator` above the scopes that use it — the most
+key waits until the previous one has finished disposing of its dependencies. It
+requires an `AsyncScopeCoordinator` above the scopes that use it — the most
 universal place is above `MaterialApp`:
 
 ```dart
 AsyncScopeCoordinator(child: MaterialApp(home: HomeScreen()))
 ```
 
-Each coordinator scopes `scopeKey` to its own subtree: two scopes with the
-same key under different coordinators never wait for one another, and it is
-always the nearest coordinator above a scope that serves it. The queues belong
-to the coordinator's element, so serialization holds only for as long as that
-element does: replacing the coordinator itself — a different `ValueKey`, a
-different position in the tree — throws its queues away along with it, which
-is why it belongs above everything that can be replaced.
+Each coordinator scopes `scopeKey` to its own subtree: two scopes with the same
+key under different coordinators never wait for one another, and it is always
+the nearest coordinator above a scope that serves it. The queues belong to the
+coordinator's element, so serialization holds only for as long as that element
+does: replacing the coordinator itself — a different `ValueKey`, a different
+position in the tree — throws its queues away along with it, which is why it
+belongs above everything that can be replaced.
 
 A coordinator is also the wait root for the scopes in its subtree that have no
 scope above them, so `AsyncScopeCoordinator.waitForChildren(context)` is the
-way to await those top-level scopes — for example before tearing down a test
-or finishing a splash screen:
+way to await those top-level scopes — for example before tearing down a test or
+finishing a splash screen:
 
 ```dart
 await AsyncScopeCoordinator.waitForChildren(context);
@@ -699,8 +709,8 @@ A dependency container reports each of its steps twice: `onStepStarted` with
 the path of the step, from inside it and before it awaits anything, and then
 `onProgress` once that step is done. The pair is what makes a hung start
 readable — the last path announced with nothing behind it is the step that
-never came back — and `onDisposalStepStarted`/`onDisposalProgress` are the
-same pair for the teardown. The `debug` topic has the whole of it.
+never came back — and `onDisposalStepStarted`/`onDisposalProgress` are the same
+pair for the teardown. The `debug` topic has the whole of it.
 
 ```dart
 void main() {
@@ -722,8 +732,8 @@ void main() {
 expired wait through `FlutterError.reportError`. Every bounded wait is
 announced twice by default — once to the observer, once as a Flutter error —
 which is one arrival too many for an application that already logs expiries
-from its own observer and does not want each of them raised again as a crash
-to look into. Only the report goes: the wait still gives up on time, the scope
+from its own observer and does not want each of them raised again as a crash to
+look into. Only the report goes: the wait still gives up on time, the scope
 still goes on, and the observer still hears the expiry with the very
 `TimeoutException` the report would have carried.
 
@@ -753,22 +763,23 @@ tearDown(() {
 
 Three things worth knowing before the first test:
 
-- **`ScopeConfig.reset()` does not clear the observer.** One left behind goes on
-  recording into the next test's list, so clear it explicitly, as above.
-- **Tag the scopes you assert on.** An untagged scope labels itself with a short
-  hash that differs on every run.
-- **The teardown is asynchronous, and `pumpAndSettle` does not wait it out.** It
-  moves the fake clock; a disposal that awaits real work — or one of the four
-  timeouts, which are measured on real time on purpose — is still running when
-  the test ends. Wait for the event you care about instead of assuming the
+- **`ScopeConfig.reset()` does not clear the observer.** One left behind goes
+  on recording into the next test's list, so clear it explicitly, as above.
+- **Tag the scopes you assert on.** An untagged scope labels itself with a
+  short hash that differs on every run.
+- **The teardown is asynchronous, and `pumpAndSettle` does not wait it out.**
+  It moves the fake clock; a disposal that awaits real work — or one of the
+  four timeouts, which are measured on real time on purpose — is still running
+  when the test ends. Wait for the event you care about instead of assuming the
   frame settled it.
 
-**In depth:** the topic [debug](https://pub.dev/documentation/scopo/latest/topics/debug-topic.html).
+**In depth:** the topic
+[debug](https://pub.dev/documentation/scopo/latest/topics/debug-topic.html).
 
 ## Nested navigation
 
-Every route in a Flutter app is normally built by the one `Navigator` at the top
-of it, and that `Navigator` sits **above** every scope in the tree — so
+Every route in a Flutter app is normally built by the one `Navigator` at the
+top of it, and that `Navigator` sits **above** every scope in the tree — so
 `Navigator.push`, `showDialog` and `showModalBottomSheet` all build the new
 route beside the screen that opened it, not under it. Nothing the screen put
 above its own content is among that route's ancestors, a scope included: a
@@ -777,11 +788,12 @@ dialog opened from inside one, or a screen pushed from one, cannot read it.
 [navigation_node](https://pub.dev/packages/navigation_node) is a nested
 `Navigator` put **under** the scope instead. `Navigator.push` and
 `showModalBottomSheet` already default to the nearest navigator, so pushing or
-opening a sheet through the node needs nothing extra. **`showDialog` defaults to
-the root navigator, not the nearest one** — pass `useRootNavigator: false` and
-it reaches the node too. Either way the route is now built inside the scope's
-subtree rather than beside it, and a dialog, a bottom sheet or a pushed screen
-opened from under the node reads the same scope the screen that opened it does.
+opening a sheet through the node needs nothing extra. **`showDialog` defaults
+to the root navigator, not the nearest one** — pass `useRootNavigator: false`
+and it reaches the node too. Either way the route is now built inside the
+scope's subtree rather than beside it, and a dialog, a bottom sheet or a pushed
+screen opened from under the node reads the same scope the screen that opened
+it does.
 
 It shipped inside scopo up to 0.10.0; it depends on nothing but Flutter, which
 is why it left. Add the package, change one import, and the pair works exactly

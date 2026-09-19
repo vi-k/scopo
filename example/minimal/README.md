@@ -32,13 +32,14 @@ order:
 
 The three branches are each built with their own `MaterialApp`, which is what
 `wrapState` being ready-only means in practice — `_app({required child})` in
-the file exists exactly for that. `pauseAfterInitialization` is set to 500 ms so
-that the splash screen can be seen at all on a fast machine.
+the file exists exactly for that. `pauseAfterInitialization` is set to 500 ms
+so that the splash screen can be seen at all on a fast machine.
 
-`main()` also assigns the observer — `ScopeConfig.observer = const
-ScopePrintObserver()` — which prints a line per lifecycle event. Run it and the
-console shows the scope initializing, reporting progress, becoming ready, and —
-when the app is closed — disposing of itself in order.
+`main()` also assigns the observer —
+`ScopeConfig.observer = const ScopePrintObserver()` — which prints a line per
+lifecycle event. Run it and the console shows the scope initializing, reporting
+progress, becoming ready, and — when the app is closed — disposing of itself in
+order.
 
 ## What to try
 

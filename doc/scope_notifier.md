@@ -75,8 +75,8 @@ ScopeNotifier.value(value: currentPlayer, builder: ...)
 
 When the widget is rebuilt with another `value`, the element moves its listener
 from the old model to the new one. "Another" means another object, not another
-value: two models that compare `==` are still two listener lists, so the move is
-decided by identity. Descendants then see the new model through the same
+value: two models that compare `==` are still two listener lists, so the move
+is decided by identity. Descendants then see the new model through the same
 accessors, and their selectors compare against the values they captured from
 the old one — so a switch to a model with different values rebuilds exactly the
 widgets those values differ for.
@@ -95,8 +95,8 @@ releases whatever the old one owned.
 
 Six types in this family exist for scopes whose state is a single immutable
 value that changes over time — a trio, and the same trio with a failed state
-beside the value. `AsyncScope` is built on the first three; the second three are
-offered for a family of your own:
+beside the value. `AsyncScope` is built on the first three; the second three
+are offered for a family of your own:
 
 | type | what it is |
 | --- | --- |
@@ -124,22 +124,23 @@ The default `shouldNotify` returns `true` — every `update` notifies. That is
 the safe default for a mutable object being re-assigned; override it when the
 state is a value type and repeated equal updates are common.
 
-`asUnmodifiable()` wraps a notifier into a `ScopeStateModelView`, which forwards
-`state`, `addListener` and `removeListener` and nothing else. Hand that to the
-subtree when the state must be readable but not settable from below.
+`asUnmodifiable()` wraps a notifier into a `ScopeStateModelView`, which
+forwards `state`, `addListener` and `removeListener` and nothing else. Hand
+that to the subtree when the state must be readable but not settable from
+below.
 
-The error-carrying pair is the interesting one, and nothing in the package
-uses it. `setError` stores the error with its stack trace, `hasError` reports
-it — and reading `state` afterwards **rethrows** that error with its original
-stack trace instead of returning a value, so a builder that reads `state`
-fails loudly on a scope that has failed rather than rendering a stale value.
+The error-carrying pair is the interesting one, and nothing in the package uses
+it. `setError` stores the error with its stack trace, `hasError` reports it —
+and reading `state` afterwards **rethrows** that error with its original stack
+trace instead of returning a value, so a builder that reads `state` fails
+loudly on a scope that has failed rather than rendering a stale value.
 
 A failure is not terminal, though: `update` puts it down as it stores the new
 state. A state handed over is a state that can be read, so recovering is what
 an update after `setError` means, and there is nothing else it could mean. The
-listeners hear about it even when the value is the one from before the failure
-— `shouldNotify` weighs one value against another, and this change is between
-a state that throws and one that does not.
+listeners hear about it even when the value is the one from before the
+failure — `shouldNotify` weighs one value against another, and this change is
+between a state that throws and one that does not.
 
 ```dart
 model

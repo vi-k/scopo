@@ -1,13 +1,13 @@
 # Editor templates
 
-Eleven templates for the boilerplate a scope needs: the class skeletons of every
-family, the dependency container, and the accessor line.
+Eleven templates for the boilerplate a scope needs: the class skeletons of
+every family, the dependency container, and the accessor line.
 
 The skeletons write out the accessors as **statics of the scope**, so a
 descendant reads `App.select(context, …)`. That is what a template is for — the
 cost of those wrappers was typing them, and a template has already paid it. The
-`ScopeAccess` objects are the other answer to the same cost, for code written by
-hand; `scopo-access` inserts one for a scope that prefers them.
+`ScopeAccess` objects are the other answer to the same cost, for code written
+by hand; `scopo-access` inserts one for a scope that prefers them.
 
 Two files, one set. They are maintained side by side by hand, and a test
 (`test/ide_snippets_test.dart`) fails if one of them gains a template the other
@@ -43,8 +43,8 @@ cp "$(find ~/.pub-cache/hosted/pub.dev -maxdepth 1 -name 'scopo-*' | sort -V | t
 ```
 
 The file name has to match the group: the XML declares `scopo`, so the file is
-`scopo.xml`. Restart the IDE, and the templates appear under
-**Settings → Editor → Live Templates** in a group named `scopo`.
+`scopo.xml`. Restart the IDE, and the templates appear under **Settings →
+Editor → Live Templates** in a group named `scopo`.
 
 ## The templates
 
@@ -67,19 +67,18 @@ The file name has to match the group: the XML declares `scopo`, so the file is
 Every skeleton these templates insert is compiled: each is expanded with its
 default names into its own file under `test/ide/`, which `flutter analyze`
 covers like any other file of the package. One file each, because several
-skeletons declare a class of the same default name — right in an editor,
-a conflict in one library. A template that stops being valid
-Dart fails the gate.
+skeletons declare a class of the same default name — right in an editor, a
+conflict in one library. A template that stops being valid Dart fails the gate.
 
-**The live templates are checked in part.** The suite holds them to the same set
-as the snippets, to the two rules of XML a hand-edited file breaks, to the
-IntelliJ way of escaping a literal dollar, to the list a tab stop offers, and to
-the context each one belongs in — but what an editor makes of the file is
+**The live templates are checked in part.** The suite holds them to the same
+set as the snippets, to the two rules of XML a hand-edited file breaks, to the
+IntelliJ way of escaping a literal dollar, to the list a tab stop offers, and
+to the context each one belongs in — but what an editor makes of the file is
 something only an import shows. Android Studio took it in August 2026; if a
 version refuses one, that is a bug worth reporting.
 
-A file an editor refuses is not a file with one broken template in it: the whole
-group simply does not appear, and nothing says why.
+A file an editor refuses is not a file with one broken template in it: the
+whole group simply does not appear, and nothing says why.
 
 Three contexts are in play, and only two of them belong to the Dart plugin.
 `DART` is its generic one, offering a template everywhere in a Dart file;
@@ -96,5 +95,5 @@ skeleton — that would turn up inside method bodies — and exactly right for a
 member.
 
 The skeletons are also inserted as written rather than reformatted by the IDE
-(`toReformat="false"`): they are already shaped by `dart format`, which the gate
-checks, and the IDE's own Dart formatter is not that one.
+(`toReformat="false"`): they are already shaped by `dart format`, which the
+gate checks, and the IDE's own Dart formatter is not that one.

@@ -1,11 +1,11 @@
 # ScopeWidget
 
 Two things live under this name. `ScopeWidgetBase` is the simplest scope of the
-package, usable as it is: a widget that hands its own parameters to its subtree.
-`ScopeWidgetCore` and `ScopeWidgetElementBase` are the pair every other family
-extends — the place where subscriptions are kept, where `notifyDependents`
-decides not to rebuild the subtree, and where a scope hooks into the element
-lifecycle.
+package, usable as it is: a widget that hands its own parameters to its
+subtree. `ScopeWidgetCore` and `ScopeWidgetElementBase` are the pair every
+other family extends — the place where subscriptions are kept, where
+`notifyDependents` decides not to rebuild the subtree, and where a scope hooks
+into the element lifecycle.
 
 Read the first section to use the family. Read the rest when writing a scope of
 your own, or when a scope rebuilt more — or less — than expected.
@@ -42,8 +42,8 @@ final class ApiConfig extends ScopeWidgetBase<ApiConfig> {
 
 `build` is what the scope shows — the same role `buildChild()` plays for the
 other families. Returning the `child` the constructor took is the usual shape,
-which is why `child` is declared `required` here: the base class allows it to be
-omitted, and a scope that shows nothing is rarely what anyone wants.
+which is why `child` is declared `required` here: the base class allows it to
+be omitted, and a scope that shows nothing is rarely what anyone wants.
 
 Three accessors come from the base class, and all of them return the widget:
 
@@ -58,22 +58,22 @@ lines: the call site stops repeating type arguments, and the scope decides what
 its subtree is allowed to read.
 
 Where the values come from is the parent's business. When the parent rebuilds
-`ApiConfig` with a different `apiKey`, the dependents that selected `apiKey` are
-rebuilt and the ones that selected `baseUrl` are not — the filtering is
+`ApiConfig` with a different `apiKey`, the dependents that selected `apiKey`
+are rebuilt and the ones that selected `baseUrl` are not — the filtering is
 described in the `base` topic.
 
 The `context` handed to `build` is the scope's own element, so a lookup from it
 finds this very scope: `ApiConfig.apiKeyOf(context)` inside `build` subscribes
-the scope to itself. That is supported, not refused. `InheritedElement` does not
-let an element depend on itself, so the scope keeps such subscriptions of its
-own and honours them — filtered by their selector, like anybody else's. What it
-costs is the notify-only rebuild: when the dependent woken by a change is the
-scope, its whole subtree is rebuilt, where the same notification aimed at a leaf
-would have left that subtree standing.
+the scope to itself. That is supported, not refused. `InheritedElement` does
+not let an element depend on itself, so the scope keeps such subscriptions of
+its own and honours them — filtered by their selector, like anybody else's.
+What it costs is the notify-only rebuild: when the dependent woken by a change
+is the scope, its whole subtree is rebuilt, where the same notification aimed
+at a leaf would have left that subtree standing.
 
 In `ScopeWidgetBase` there is nothing to gain from it. What this family
-publishes are the scope's own parameters, and inside `build` they are already in
-hand — `apiKey` is a field, and `build` is a method of the same object. A
+publishes are the scope's own parameters, and inside `build` they are already
+in hand — `apiKey` is a field, and `build` is a method of the same object. A
 subscription would pay a subtree rebuild for a value that was never out of
 reach; read the field.
 
@@ -120,10 +120,9 @@ are therefore ready for the first subtree build.
 It runs once. A hook that throws is not attempted again — running it twice
 would take a second copy of whatever the first attempt already held — and the
 scope shows an error instead of its subtree from then on. `dispose()` runs for
-that element too, so the half-finished attempt still gives back what it took:
-a disposer has to check what it actually owns rather than assume the whole
-hook ran, the way `ScopeNotifier` remembers whether it got as far as
-subscribing.
+that element too, so the half-finished attempt still gives back what it took: a
+disposer has to check what it actually owns rather than assume the whole hook
+ran, the way `ScopeNotifier` remembers whether it got as far as subscribing.
 
 That is the whole contract: a widget that knows how to create its element, and
 an element that knows what to build. `ScopeWidgetBase` is exactly this, with
@@ -158,24 +157,24 @@ void init() {
 }
 ```
 
-That is `ScopeNotifier` in full — every `notifyListeners()` of the model becomes
-a notification, and only the widgets whose selected value actually changed are
-rebuilt. The state of a `Scope` or a `LiteScope` calls the same method by hand
-after mutating itself.
+That is `ScopeNotifier` in full — every `notifyListeners()` of the model
+becomes a notification, and only the widgets whose selected value actually
+changed are rebuilt. The state of a `Scope` or a `LiteScope` calls the same
+method by hand after mutating itself.
 
 The mechanism is worth knowing because it explains the constraints. A dependent
-is notified through `didChangeDependencies`, and that can only run while a frame
-is being built. So the element marks itself dirty, and on the resulting rebuild
-it notifies its clients and skips updating its child — the subtree keeps its
-elements, its states and its scroll positions untouched.
+is notified through `didChangeDependencies`, and that can only run while a
+frame is being built. So the element marks itself dirty, and on the resulting
+rebuild it notifies its clients and skips updating its child — the subtree
+keeps its elements, its states and its scroll positions untouched.
 
 ## When the subtree is rebuilt anyway
 
 Three cases override the notify-only path, and each is deliberate.
 
 **The parent updated the scope widget.** A new widget can mean new parameters
-and a different `buildChild()`, so the subtree is rebuilt even if a
-notify-only rebuild was already pending.
+and a different `buildChild()`, so the subtree is rebuilt even if a notify-only
+rebuild was already pending.
 
 **The scope declared `autoSelfDependence`.** An element that rebuilds its own
 subtree as its state advances cannot use the shortcut, because its `buildChild`
@@ -188,8 +187,8 @@ stop rebuilding the subtree.
 **A self-dependency fired.** An element may subscribe to its own scope;
 `InheritedElement` refuses to record that (an assert in `notifyClients`), so
 those subscriptions are kept in a separate list and notified before the others.
-When one of them changes, the subtree is rebuilt — the element that selected the
-value is the element that builds the subtree.
+When one of them changes, the subtree is rebuilt — the element that selected
+the value is the element that builds the subtree.
 
 ## Names in the output
 

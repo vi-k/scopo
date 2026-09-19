@@ -18,8 +18,7 @@ One scope is three types:
 
 The lighter families (`ScopeWidgetBase`, `ScopeModel`, `ScopeNotifier`,
 `AsyncScope`, `AsyncDataScope`, `AsyncControllerScope`, `LiteScope`) drop one
-part or another. `Scope` is
-the full set.
+part or another. `Scope` is the full set.
 
 ## The initialization branch
 
@@ -28,13 +27,13 @@ It is given a `ScopeInitContext` beside the `BuildContext`, and that is what
 carries the two things a bare `Future` has no room for: `ctx.progress(x)`
 reports a step any number of times, and the cancellation reaches the body
 through `ctx` — if the widget leaves the tree while the container is still
-being built, the body is thrown into at its next checkpoint, which
-between two steps is usually `ctx.progress` itself, and a half-built container
-is never handed to a state. For an acquisition that can be left in flight,
-use `ctx.wait` with `discard:`: a value the body never receives is still
-released. For a call that must finish, use `ctx.join`; a short initialization
-that asks the context nothing can still use a bare call. The rule is in the
-`AsyncScope` topic.
+being built, the body is thrown into at its next checkpoint, which between two
+steps is usually `ctx.progress` itself, and a half-built container is never
+handed to a state. For an acquisition that can be left in flight, use
+`ctx.wait` with `discard:`: a value the body never receives is still released.
+For a call that must finish, use `ctx.join`; a short initialization that asks
+the context nothing can still use a bare call. The rule is in the `AsyncScope`
+topic.
 
 What the scope shows, and what it calls, in order:
 
@@ -50,9 +49,9 @@ What the scope shows, and what it calls, in order:
 `MaterialApp`, typically) is built inside each builder instead.
 
 `pauseAfterInitialization` holds the ready branch back for a fixed duration
-after the container arrives, so that a loading indicator is not replaced within the same
-frame it appeared in. `ScopeConfig.pauseAfterInitializationEnabled` turns all of
-those pauses off at once — see the `debug` topic.
+after the container arrives, so that a loading indicator is not replaced within
+the same frame it appeared in. `ScopeConfig.pauseAfterInitializationEnabled`
+turns all of those pauses off at once — see the `debug` topic.
 
 A container that only needs one `await` can be written by hand:
 
@@ -88,8 +87,8 @@ passing them around: `ScopeInitCallback`, `ScopeWaitingBuilder`,
 `ScopeProgressBuilder` and `ScopeErrorBuilder`.
 
 Outside a scope, `ScopeInitJob<T>` supplies that same context: a dependency
-tree walked by hand, a container built before any widget exists, a test.
-Start it explicitly, then await the value:
+tree walked by hand, a container built before any widget exists, a test. Start
+it explicitly, then await the value:
 
 ```dart
 final job = ScopeInitJob((ctx) => AppDependencies.init(ctx))..start();
@@ -106,9 +105,9 @@ needed.
 
 Writing the body by hand stops scaling as soon as the dependencies have an
 order, some of them can be built in parallel, and each has its own teardown.
-`ScopeAutoDependencies` is the ready-made implementation: describe the tree once
-in `buildDependencies`, and its `init` walks the tree, reports progress per
-dependency, and disposes of whatever was already built if something fails.
+`ScopeAutoDependencies` is the ready-made implementation: describe the tree
+once in `buildDependencies`, and its `init` walks the tree, reports progress
+per dependency, and disposes of whatever was already built if something fails.
 
 ```dart
 final class HomeDependencies
@@ -141,8 +140,8 @@ final class HomeDependencies
 
 **`late final` makes the container single-use, and that is usually what you
 want.** A container is an object, and `init()` can be called on it a second
-time — after its `dispose()` has run to its end, and only then. That second
-run builds the tree afresh and runs every initializer again, over the same
+time — after its `dispose()` has run to its end, and only then. That second run
+builds the tree afresh and runs every initializer again, over the same
 container, and a `late final` field the first run assigned refuses the second
 assignment. Declare the fields `late` rather than `late final` for a container
 you mean to initialize more than once; a `Scope` builds a container per scope
@@ -158,16 +157,16 @@ anything: holding nothing is not the same as having been given back.
 
 Four builders describe the tree, and all of them return a `ScopeDependency`:
 
-- `dep(name, init)` — a single dependency. The `ScopeDependencyHandle` handed to `init` is
-  where the reverse operations are registered: `dep.unmount` runs synchronously
-  before anything is released, `dep.dispose` is awaited during the disposal.
-  Setting neither is fine — a dependency that owns nothing needs no teardown.
-  The name must not be empty.
+- `dep(name, init)` — a single dependency. The `ScopeDependencyHandle` handed
+  to `init` is where the reverse operations are registered: `dep.unmount` runs
+  synchronously before anything is released, `dep.dispose` is awaited during
+  the disposal. Setting neither is fine — a dependency that owns nothing needs
+  no teardown. The name must not be empty.
 - `controllerDep(name, create)` — a single dependency backed by a
   `ScopeController`: `create` builds it, and its `performUnmount` /
-  `performDispose` are wired to the handle before `performInit` is awaited,
-  so the usual `dep` teardown promises hold for it too. The same controller
-  class that owns an `AsyncControllerScope` fits here unchanged — see
+  `performDispose` are wired to the handle before `performInit` is awaited, so
+  the usual `dep` teardown promises hold for it too. The same controller class
+  that owns an `AsyncControllerScope` fits here unchanged — see
   [AsyncControllerScope](https://pub.dev/documentation/scopo/latest/topics/AsyncControllerScope-topic.html).
 - `sequential(name, [...])` — a `ScopeDependencyGroup` whose children are
   initialized one after another, and torn down in reverse order — both
@@ -179,16 +178,17 @@ Four builders describe the tree, and all of them return a `ScopeDependency`:
 Groups nest freely and a group name may be empty (see the paths below).
 
 The **first** type parameter of `ScopeAutoDependencies` is the class being
-declared — `HomeDependencies extends ScopeAutoDependencies<HomeDependencies,
-…>`. It is what the container hands the scope once the tree is up, so it is what
+declared —
+`HomeDependencies extends ScopeAutoDependencies<HomeDependencies, …>`. It is
+what the container hands the scope once the tree is up, so it is what
 `Scope.of` returns to the subtree. Naming another container there is the one
 mistake this parameter invites, and it is refused before anything is built: the
-type of the container that finishes cannot be the type of a container that never
-started.
+type of the container that finishes cannot be the type of a container that
+never started.
 
 The **second** is what `buildDependencies` receives: `void` for the container
-above, which needs nothing from the outside; declare `BuildContext` instead when
-a dependency has to read something from the tree.
+above, which needs nothing from the outside; declare `BuildContext` instead
+when a dependency has to read something from the tree.
 
 Wiring the container into the scope is one call:
 
@@ -204,12 +204,12 @@ Future<HomeDependencies> initDependencies(
 With a `BuildContext` container, forward the `context` of `initDependencies`
 instead of `null`.
 
-Every step the container reports carries a `ScopeAutoDependenciesProgress`: `path` —
-the path of the dependency that has just been initialized — `name`, the last
-segment of that path, which is the name the dependency was declared with, plus
-the step counter of a `ProgressIterator` (`number`, `total`, and `value` as a
-fraction between 0 and 1). That object is what `buildOnProgress` receives,
-so a progress bar with a caption needs nothing else:
+Every step the container reports carries a `ScopeAutoDependenciesProgress`:
+`path` — the path of the dependency that has just been initialized — `name`,
+the last segment of that path, which is the name the dependency was declared
+with, plus the step counter of a `ProgressIterator` (`number`, `total`, and
+`value` as a fraction between 0 and 1). That object is what `buildOnProgress`
+receives, so a progress bar with a caption needs nothing else:
 
 ```dart
 @override
@@ -272,34 +272,35 @@ that the walk reached it.
 ### What a failure costs, and what it does not
 
 A failed dependency stops its own group, and the teardown above releases
-everything already built — provided each leaf registered what it took. Where the
-walk stops is worth knowing:
+everything already built — provided each leaf registered what it took. Where
+the walk stops is worth knowing:
 
 - **A sequential group** stops at the first failure; the children before it are
   released in reverse order.
 - **A concurrent group** cancels the arms still running when one of them fails.
-  A cancelled arm learns of it at a context checkpoint; a bare `await` runs
-  on, and the group waits for the arms to finish. This is the second reason to
+  A cancelled arm learns of it at a context checkpoint; a bare `await` runs on,
+  and the group waits for the arms to finish. This is the second reason to
   register early: whatever an arm had already registered is still released,
   whatever it had not is not.
-- **The disposal itself does not stop at a failure.** Each release is guarded on
-  its own, the walk finishes, and the first failure is passed on afterwards.
-  Every failure is recorded on the dependency it belongs to and readable through
-  `flattenDependenciesWithErrors()`.
+- **The disposal itself does not stop at a failure.** Each release is guarded
+  on its own, the walk finishes, and the first failure is passed on afterwards.
+  Every failure is recorded on the dependency it belongs to and readable
+  through `flattenDependenciesWithErrors()`.
 
 And with `autoDisposeOnError` set to `false`, releasing the half-built tree is
 yours to do.
 
 ### A hand-written container cleans up after itself
 
-`ScopeAutoDependencies` is what runs the teardown of a failed initialization.
-A container written by hand declares its own cleanup: the scope stores the
+`ScopeAutoDependencies` is what runs the teardown of a failed initialization. A
+container written by hand declares its own cleanup: the scope stores the
 container only after the initialization job succeeds, and a body that failed
-before that never handed one over. Nothing the scope holds points at it,
-and its `dispose()` is never called.
+before that never handed one over. Nothing the scope holds points at it, and
+its `dispose()` is never called.
 
-So an `init` written by hand takes the same shape as the one in the `AsyncScope`
-topic — what a step took is given back unless the container was handed over:
+So an `init` written by hand takes the same shape as the one in the
+`AsyncScope` topic — what a step took is given back unless the container was
+handed over:
 
 ```dart
 static Future<AppDependencies> init(ScopeInitContext ctx) async {
@@ -323,9 +324,9 @@ static Future<AppDependencies> init(ScopeInitContext ctx) async {
 `catch` covers a cancellation too: the scope removed from the tree before it
 was ready is reported as `Cancelled` at a checkpoint such as `ctx.progress`.
 The context's `wait(discard:)` can keep the same guard without a handwritten
-`catch`; the `AsyncScope` topic has the whole of it. This is also the shape
-the container writes for you: what a dependency registered with
-`dep.dispose` is released whether the walk failed or was cancelled.
+`catch`; the `AsyncScope` topic has the whole of it. This is also the shape the
+container writes for you: what a dependency registered with `dep.dispose` is
+released whether the walk failed or was cancelled.
 
 ## Inspecting the tree
 
@@ -337,9 +338,9 @@ real error rather than a propagated `ScopeDependencyException`. Each dependency
 also carries a `ScopeDependencyState` — `ScopeDependencyInitial`,
 `ScopeDependencyInitialized`, `ScopeDependencyFailed`,
 `ScopeDependencyCancelled`, `ScopeDependencyDisposed`,
-`ScopeDependencyNoDisposalRequired`, `ScopeDependencyDisposalFailed` — and
-the `isInitialized`, `isFailed`,
-`isCancelled` and `isDisposed` shorthands of `ScopeDependencyExtension`.
+`ScopeDependencyNoDisposalRequired`, `ScopeDependencyDisposalFailed` — and the
+`isInitialized`, `isFailed`, `isCancelled` and `isDisposed` shorthands of
+`ScopeDependencyExtension`.
 
 `ScopeDependencyNoDisposalRequired` is the state of a dependency that set no
 `dep.dispose` and so had nothing to give back: the teardown passes it by, and
@@ -355,10 +356,10 @@ it took is the shape this package exists to close, not one to offer.
 
 A dependency is identified by its path from the root of the tree: the names of
 the enclosing groups and its own name, joined with `/`. The format is
-canonical — there is **no leading slash**, and an anonymous group (a group whose
-name is the empty string) contributes no segment and no separator at all. So the
-root group of a tree is usually anonymous, and the paths of its children read as
-if it were not there.
+canonical — there is **no leading slash**, and an anonymous group (a group
+whose name is the empty string) contributes no segment and no separator at all.
+So the root group of a tree is usually anonymous, and the paths of its children
+read as if it were not there.
 
 For the tree
 
@@ -375,15 +376,17 @@ sequential('', [
 ```
 
 the paths are `dep1`, `concurrent1/dep2` and `concurrent1/sequential1/dep3`.
-The same strings appear in three places: in `ScopeAutoDependenciesProgress.path`,
-in what the container reports to `ScopeConfig.observer` while it initializes and
-while it disposes, and in `ScopeDependencyException.name`.
+The same strings appear in three places: in
+`ScopeAutoDependenciesProgress.path`, in what the container reports to
+`ScopeConfig.observer` while it initializes and while it disposes, and in
+`ScopeDependencyException.name`.
 
 `ScopeDependencyInfo.path` is the one that is not the whole path but the prefix
 of it. The walk it comes from visits the groups as well as the leaves, so each
-entry carries the path of the groups *around* it — ending with `/`, and empty at
-the root — while its own name sits beside it in `dependency.name`. The canonical
-path of an entry is therefore `'${info.path}${info.dependency.name}'`.
+entry carries the path of the groups *around* it — ending with `/`, and empty
+at the root — while its own name sits beside it in `dependency.name`. The
+canonical path of an entry is therefore
+`'${info.path}${info.dependency.name}'`.
 
 ## Errors
 
@@ -401,25 +404,26 @@ An empty `name` means the anonymous root dependency itself failed.
 
 The group that saw the failure stops requiring initialization and switches to
 `ScopeDependencyFailed`, keeping the failure it saw — one of them, even when a
-`concurrent` group had several children fail at once: the first failure
-cancels the arms beside it, so the group keeps the one that ended it. Every dependency keeps its own errors, and
-`flattenDependenciesWithErrors()` walks the tree for them. The `stateToString()`
-of a group summarizes what it holds: the failed child by name, and any error that
-is not itself a `ScopeDependencyException` listed as unresolved.
+`concurrent` group had several children fail at once: the first failure cancels
+the arms beside it, so the group keeps the one that ended it. Every dependency
+keeps its own errors, and `flattenDependenciesWithErrors()` walks the tree for
+them. The `stateToString()` of a group summarizes what it holds: the failed
+child by name, and any error that is not itself a `ScopeDependencyException`
+listed as unresolved.
 
 ## Disposal, unmount and close
 
-The teardown of a scope happens in a fixed order, and every asynchronous step of
-it is awaited:
+The teardown of a scope happens in a fixed order, and every asynchronous step
+of it is awaited:
 
 1. `onUnmount` — synchronous, always first, and before any asynchronous step
    begins. It runs exactly once, whichever way the scope goes: removed from the
    widget tree, or closed with `close()` while it stays on screen. The scope
    runs `ScopeState.onUnmount` and then forwards to
-   `ScopeDependencies.onUnmount`, which `ScopeAutoDependencies` forwards further
-   to every `dep.unmount`, in reverse declaration order. This is the place for
-   whatever has to happen immediately and cannot wait for the asynchronous
-   teardown — unsubscribing, for instance.
+   `ScopeDependencies.onUnmount`, which `ScopeAutoDependencies` forwards
+   further to every `dep.unmount`, in reverse declaration order. This is the
+   place for whatever has to happen immediately and cannot wait for the
+   asynchronous teardown — unsubscribing, for instance.
 
    Flutter's own `State.dispose` is not part of this order and cannot be: the
    framework calls it before the whole teardown when the tree takes the scope
@@ -434,10 +438,10 @@ it is awaited:
    dependency a child is still using. The wait is bounded by
    `waitForChildrenTimeout` (`ScopeConfig.defaultWaitForChildrenTimeout` by
    default).
-4. `ScopeState.disposeStateAsync` — the state's own asynchronous teardown, bounded
-   by `disposeScopeTimeout` (`ScopeConfig.defaultDisposeScopeTimeout` by
-   default), so that a teardown which never completes cannot hold the release
-   of the `scopeKey` in step 6.
+4. `ScopeState.disposeStateAsync` — the state's own asynchronous teardown,
+   bounded by `disposeScopeTimeout` (`ScopeConfig.defaultDisposeScopeTimeout`
+   by default), so that a teardown which never completes cannot hold the
+   release of the `scopeKey` in step 6.
 5. `ScopeDependencies.dispose` — for a `ScopeAutoDependencies`, this walks the
    tree in reverse: the children of a `sequential` group in reverse declaration
    order, the children of a `concurrent` group in parallel, and only those that
@@ -446,8 +450,8 @@ it is awaited:
    state which never finished cost the container its whole disposal. A teardown
    where both steps hang therefore reports two expiries — two steps were given
    up on.
-6. The `scopeKey`, if any, is released, and the next scope waiting for it is let
-   through.
+6. The `scopeKey`, if any, is released, and the next scope waiting for it is
+   let through.
 
 Every step is guarded on its own, and so are the two halves of steps 1 and 4–5:
 a failure in one is never a reason to skip what comes behind it. Only one
@@ -477,12 +481,12 @@ A `Scope` initializes **twice**, and the six steps above name hooks from both
 halves without saying which is which. Read in that order:
 
 1. **The container.** `initDependencies` builds the dependency tree. Only when
-   it returns the container does the scope build its ready branch — and only then
-   is there a state at all.
+   it returns the container does the scope build its ready branch — and only
+   then is there a state at all.
 2. **The state.** `createState()`, then `initState()` — where `dependencies`
    are already in place, which is the whole point of the family — then
-   `initStateAsync()`, the state's own asynchronous half. `onInitialized()` runs
-   right after that succeeds, and `isInitialized` reports it.
+   `initStateAsync()`, the state's own asynchronous half. `onInitialized()`
+   runs right after that succeeds, and `isInitialized` reports it.
 
 The teardown mirrors that pair, and so does what happens when either half
 fails:
@@ -497,38 +501,38 @@ fails:
 
 On the ordinary path the four run interleaved, state before dependencies in
 each half: `ScopeState.onUnmount`, then `dep.unmount`, then
-`ScopeState.disposeStateAsync`, then `dep.dispose`. Both halves walk a group the
-same way, in reverse of the declaration order: a later dependency is built on
-top of an earlier one, so it stops reaching the world before that one lets go
-of anything.
+`ScopeState.disposeStateAsync`, then `dep.dispose`. Both halves walk a group
+the same way, in reverse of the declaration order: a later dependency is built
+on top of an earlier one, so it stops reaching the world before that one lets
+go of anything.
 
 **When `initDependencies` failed, the state is the part that never existed.**
 `createState()` runs when the ready branch is built, and a scope that failed
 never builds it — so there is nothing for `ScopeState.onUnmount` and
-`ScopeState.disposeStateAsync` to run on. Do not put the release of something taken
-during `initDependencies` in either of them: on the path where it matters most
-they are not there to run.
+`ScopeState.disposeStateAsync` to run on. Do not put the release of something
+taken during `initDependencies` in either of them: on the path where it matters
+most they are not there to run.
 
 **When the state's `initStateAsync` failed, the state exists and both halves of
 its teardown run**, in the same order as on the ordinary path. `onUnmount()`
-runs — it is the synchronous half, and a state that got as far as
-`initState()` may already hold a subscription. So does `disposeStateAsync()`: a
-failed initialization is not one that never happened, and an initializer that
-opened a connection and threw on the next line has opened it. Nothing else is
-holding it, either — the scope never becomes ready, so its owner is never
-handed the state. **A disposer therefore has to expect a partially initialized
-state:** a field the `await` never reached is still unset when it runs. That is
-the rule `ScopeController.dispose` has always stated for the controller family,
-and the state layer keeps it too.
+runs — it is the synchronous half, and a state that got as far as `initState()`
+may already hold a subscription. So does `disposeStateAsync()`: a failed
+initialization is not one that never happened, and an initializer that opened a
+connection and threw on the next line has opened it. Nothing else is holding
+it, either — the scope never becomes ready, so its owner is never handed the
+state. **A disposer therefore has to expect a partially initialized state:** a
+field the `await` never reached is still unset when it runs. That is the rule
+`ScopeController.dispose` has always stated for the controller family, and the
+state layer keeps it too.
 
 **The dependencies are given back on every path**, and on the failing one not
-by the element. The element is handed the container only together with
-the container, so when `initDependencies` failed it never has one to reach for.
-The container tears itself down from inside its own initialization instead,
-which is what `ScopeAutoDependencies.autoDisposeOnError` is: `dep.unmount` for
-every dependency, then `dep.dispose` for everything that registered one, in
-reverse. The promise `dep.unmount` carries — exactly once, always before
-`dep.dispose` — holds on that route as it does on the other.
+by the element. The element is handed the container only together with the
+container, so when `initDependencies` failed it never has one to reach for. The
+container tears itself down from inside its own initialization instead, which
+is what `ScopeAutoDependencies.autoDisposeOnError` is: `dep.unmount` for every
+dependency, then `dep.dispose` for everything that registered one, in reverse.
+The promise `dep.unmount` carries — exactly once, always before `dep.dispose` —
+holds on that route as it does on the other.
 
 Turning `autoDisposeOnError` off keeps the half-built tree for inspection and
 leaves the disposal to you. The unmounting still happens: a container held for

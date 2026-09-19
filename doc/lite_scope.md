@@ -56,13 +56,13 @@ constructor parameters are readable from the state; `isInitialized`; and
 
 `State.widget` is not among them, and it never will be: a scope state has no
 widget of its own — `params` is the scope widget, and that is the whole answer.
-Reading `widget` throws an `UnsupportedError` saying so, which is what a `State`
-mixin written for ordinary widgets runs into.
+Reading `widget` throws an `UnsupportedError` saying so, which is what a
+`State` mixin written for ordinary widgets runs into.
 
 The ordinary `initState` of a `State` still works and still runs synchronously,
-and `initStateAsync` is where an `await` belongs. `disposeStateAsync` is what makes a
-parent scope — and `close()` — wait for the release to finish rather than fire
-and forget it.
+and `initStateAsync` is where an `await` belongs. `disposeStateAsync` is what
+makes a parent scope — and `close()` — wait for the release to finish rather
+than fire and forget it.
 
 **`dispose` is the one to be careful with.** It belongs to Flutter, not to the
 scope, and it is not part of the teardown order below: when the scope is
@@ -83,19 +83,19 @@ void onUnmount() {
 Future<void> disposeStateAsync() => _connection.close();   // may take its time
 ```
 
-`onUnmount()` runs exactly once and always before `disposeStateAsync()`, whichever
-way the scope goes. The `BuildContext` is gone by the time it runs on a removed
-scope, so it may only touch what the state holds in its own fields.
+`onUnmount()` runs exactly once and always before `disposeStateAsync()`,
+whichever way the scope goes. The `BuildContext` is gone by the time it runs on
+a removed scope, so it may only touch what the state holds in its own fields.
 
-**Both halves run after an `initStateAsync()` that threw**, in the same order as
-after one that succeeded — so a disposer has to expect a partially initialized
-state: a field the `await` never reached is still unset when it runs. A failed
-initialization is not one that never happened. An initializer that opened a
-connection and threw on the next line has opened it, and nothing else is holding
-it: the scope never becomes ready, so its owner is never handed the state
-either, and this hook is the only release there is. Release therefore belongs
-here rather than in front of every `throw` — what it must not do is assume the
-initializer got to the end.
+**Both halves run after an `initStateAsync()` that threw**, in the same order
+as after one that succeeded — so a disposer has to expect a partially
+initialized state: a field the `await` never reached is still unset when it
+runs. A failed initialization is not one that never happened. An initializer
+that opened a connection and threw on the next line has opened it, and nothing
+else is holding it: the scope never becomes ready, so its owner is never handed
+the state either, and this hook is the only release there is. Release therefore
+belongs here rather than in front of every `throw` — what it must not do is
+assume the initializer got to the end.
 
 ## Two initializations
 
@@ -104,20 +104,20 @@ There are two phases, and they are not the same thing.
 `LiteScope.initScope()` on the **widget** is a pre-initialization: an ordinary
 `async` function taking a `ScopeInitContext`, exactly as in the `AsyncScope`
 topic, running *before* the state is created. Its default body is empty — ready
-at once — which is why most scopes never override it. Override it when something has to be ready
-before `createState`, and then `buildOnProgress` and `buildOnError` have to
-be overridden too — their default implementations throw
+at once — which is why most scopes never override it. Override it when
+something has to be ready before `createState`, and then `buildOnProgress` and
+`buildOnError` have to be overridden too — their default implementations throw
 `UnimplementedError`, on the reasoning that a progress branch nobody wrote is a
 mistake rather than a blank screen.
 
-`LiteScopeState.initStateAsync()` on the **state** is the usual one, and it runs
-after the state exists — which is why **nothing waits for it**. The state is
-created by the ready branch, so by the time this can start, the ready branch has
-already built: the first `build` of the state runs before `initStateAsync` has
-finished, and so do the ones any change asks for in the meantime.
+`LiteScopeState.initStateAsync()` on the **state** is the usual one, and it
+runs after the state exists — which is why **nothing waits for it**. The state
+is created by the ready branch, so by the time this can start, the ready branch
+has already built: the first `build` of the state runs before `initStateAsync`
+has finished, and so do the ones any change asks for in the meantime.
 
-That makes `isInitialized` part of writing the state rather than a detail:
-a `late` field assigned after an `await` and read straight from `build` throws a
+That makes `isInitialized` part of writing the state rather than a detail: a
+`late` field assigned after an `await` and read straight from `build` throws a
 `LateInitializationError` on that first build. Either hold the branch back
 yourself —
 
@@ -151,8 +151,8 @@ the family is certain to reach.** A `Scope` always initializes a container, so
 it always has a progress branch and may skip the waiting one; a `LiteScope`
 initializes nothing of its own, so what it always has is the wait. Moving a
 screen from `Scope` to `LiteScope` therefore trades one required builder for
-another: `buildOnProgress` and `buildOnError` become optional — keep them
-only if you override `initScope()` — and `buildOnWaiting` becomes required.
+another: `buildOnProgress` and `buildOnError` become optional — keep them only
+if you override `initScope()` — and `buildOnWaiting` becomes required.
 
 `wrapState` wraps the ready branch alone, so a widget every branch needs is
 built inside each builder instead.
@@ -186,9 +186,9 @@ rebuilds what this state's `build` returns and reaches no subscriber. A field
 both sides read wants both calls; a field only one side reads wants only its
 own.
 
-`paramsOf` and `selectParam` do the same for the scope widget's own
-parameters. Re-exposing all of this as named statics on the scope, as `of`
-above, is the usual practice.
+`paramsOf` and `selectParam` do the same for the scope widget's own parameters.
+Re-exposing all of this as named statics on the scope, as `of` above, is the
+usual practice.
 
 ## close()
 
@@ -206,13 +206,14 @@ The screenshot is best-effort in a precise sense: it is installed only when the
 scope is actually ready and still mounted, because in any other state nothing
 would ever release the barrier and the future would hang. A subtree that is
 never painted — inside an `Offstage`, or in the unselected branch of an
-`IndexedStack` — cannot be captured either; after `ScreenshotReplacer.maxRetries`
-frames `close()` proceeds, and the ready subtree is taken away all the same,
-with nothing in the picture's place. It has to be: the whole point of waiting
-for the screenshot is to let go of what the subtree holds, and a scope left
-standing there keeps its own child scopes mounted and registered — this one
-would then wait out its `waitForChildrenTimeout` for a child nobody had taken
-away, and release what that child is still reading.
+`IndexedStack` — cannot be captured either; after
+`ScreenshotReplacer.maxRetries` frames `close()` proceeds, and the ready
+subtree is taken away all the same, with nothing in the picture's place. It has
+to be: the whole point of waiting for the screenshot is to let go of what the
+subtree holds, and a scope left standing there keeps its own child scopes
+mounted and registered — this one would then wait out its
+`waitForChildrenTimeout` for a child nobody had taken away, and release what
+that child is still reading.
 
 A closing build that fails does not hold the teardown up either. The barrier is
 released by the `ScreenshotReplacer` that build mounts, so a `wrapState` or a
@@ -232,16 +233,16 @@ disposal already running rather than installing a second barrier.
 
 The order is the one from the `AsyncScope` topic, with the state's own steps in
 it: `onUnmount()` of the state runs first, the pre-initialization is cancelled,
-the child scopes are awaited (`waitForChildrenTimeout`), `disposeStateAsync()` of
-the state runs, and the `scopeKey` is released last so that the next scope with
-that key starts only when this one is finished.
+the child scopes are awaited (`waitForChildrenTimeout`), `disposeStateAsync()`
+of the state runs, and the `scopeKey` is released last so that the next scope
+with that key starts only when this one is finished.
 
 Flutter's own `dispose()` of the state sits outside that sequence, on either
 side of it depending on how the scope went: before all of it when the tree took
 the scope down, after all of it when the scope closed itself. That is the whole
 point of `close()` — release first, leave later — and it is why the teardown
-the scope guarantees is the `onUnmount()`/`disposeStateAsync()` pair rather than
-`dispose()`.
+the scope guarantees is the `onUnmount()`/`disposeStateAsync()` pair rather
+than `dispose()`.
 
 A `LiteScope` is an `AsyncScopeParent` like every asynchronous scope: the
 scopes below it register with it, and it waits for them before disposing of

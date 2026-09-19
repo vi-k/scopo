@@ -2,9 +2,10 @@
 
 Every scope family of this package — `ScopeWidgetBase`, `ScopeModel`,
 `ScopeNotifier`, `AsyncScope`, `AsyncDataScope`, `AsyncControllerScope`,
-`LiteScope` and `Scope` — stands on the same three types. Together they say what a scope is to the widget
-tree: an `InheritedWidget` that can be found from below, an element that owns
-whatever the scope holds, and one lookup protocol shared by all of them.
+`LiteScope` and `Scope` — stands on the same three types. Together they say
+what a scope is to the widget tree: an `InheritedWidget` that can be found from
+below, an element that owns whatever the scope holds, and one lookup protocol
+shared by all of them.
 
 | type | what it is |
 | --- | --- |
@@ -106,10 +107,10 @@ final apiKey = ScopeWidgetBase.select<ApiConfig, String>(
 ```
 
 The search itself is `getElementForInheritedWidgetOfExactType<W>()`: ancestors
-only, and the **exact** type — a scope declared as `class CartScope extends
-ShopScope` is not found by asking for `ShopScope`. Looking a scope up never
-rebuilds anything by itself; what a caller subscribes to is decided by the
-argument below.
+only, and the **exact** type — a scope declared as
+`class CartScope extends ShopScope` is not found by asking for `ShopScope`.
+Looking a scope up never rebuilds anything by itself; what a caller subscribes
+to is decided by the argument below.
 
 ## listen, and what it costs
 
@@ -173,11 +174,10 @@ one build and the next is taken from the frame — Flutter offers no hook for
 "this dependent is about to build". A registration made outside a build
 therefore belongs to whichever build shares its frame, and is dropped by the
 first build that does not: `didChangeDependencies` runs in the same frame as
-the build after it, so a `select` there looks like it works and then
-disappears on the first rebuild that comes from the parent rather than from a
-change. To react to a change rather than to show it, keep the subscription in
-`build` and look the scope up with `listen: false` from
-`didChangeDependencies`.
+the build after it, so a `select` there looks like it works and then disappears
+on the first rebuild that comes from the parent rather than from a change. To
+react to a change rather than to show it, keep the subscription in `build` and
+look the scope up with `listen: false` from `didChangeDependencies`.
 
 **The builder of a `LayoutBuilder` counts as a build**, and so do those of
 `OrientationBuilder` and `SliverLayoutBuilder`: they run from `performLayout`,
@@ -227,9 +227,10 @@ scope of a different family.
 ## Accessors and editor templates
 
 Every family finds its scope through statics that take the family's type
-arguments — `Scope.select<App, AppDependencies, AppState, V>(context, selector)`
-and its four neighbours. Written out as wrappers on the scope, that is the
-triple repeated five times per scope.
+arguments —
+`Scope.select<App, AppDependencies, AppState, V>(context, selector)` and its
+four neighbours. Written out as wrappers on the scope, that is the triple
+repeated five times per scope.
 
 Each family also ships an accessor object that takes those arguments once:
 
@@ -250,11 +251,12 @@ A template answers the same cost the other way round. Its skeletons write the
 accessors out as statics of the scope — `App.select(context, …)` at every call
 site, with nothing to type, because the template typed them. The two are not
 rivals: one is for code written by hand, the other for code written by a key
-stroke. They ship with the package: `ide/scopo.code-snippets` for VS Code (and Cursor, Windsurf, Antigravity)
-and `ide/scopo-live-templates.xml` for IntelliJ and Android Studio, both in the
-package directory alongside `lib/`. Eleven templates — one per family, two for a dependency container (automatic
-and hand-written), one for the accessor line. Each writes out every class the
-shape needs, in one paste, for you to split across files as you like:
+stroke. They ship with the package: `ide/scopo.code-snippets` for VS Code (and
+Cursor, Windsurf, Antigravity) and `ide/scopo-live-templates.xml` for IntelliJ
+and Android Studio, both in the package directory alongside `lib/`. Eleven
+templates — one per family, two for a dependency container (automatic and
+hand-written), one for the accessor line. Each writes out every class the shape
+needs, in one paste, for you to split across files as you like:
 
 ```json
 "scopo: The accessor object": {
@@ -289,11 +291,11 @@ cp "$(find ~/.pub-cache/hosted/pub.dev -maxdepth 1 -name 'scopo-*' | sort -V | t
 The group then appears under **Settings → Editor → Live Templates**.
 
 The rest is in
-[`ide/README.md`](https://github.com/vi-k/scopo/blob/main/ide/README.md):
-the table of all eleven and what is checked about them. The skeletons they
-insert are compiled by the package's own gate, and the suite holds each live
-template to the context it belongs in; what an editor makes of the file is
-still something only an import shows, and Android Studio took it.
+[`ide/README.md`](https://github.com/vi-k/scopo/blob/main/ide/README.md): the
+table of all eleven and what is checked about them. The skeletons they insert
+are compiled by the package's own gate, and the suite holds each live template
+to the context it belongs in; what an editor makes of the file is still
+something only an import shows, and Android Studio took it.
 
 ## Where to go next
 

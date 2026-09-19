@@ -3,22 +3,22 @@
 > Перевод `example/README.md` (blob `2eb3eeb99264275dc46e69f8cfa68ae5cab2c142`).
 > Правится в том же коммите, что и оригинал; проверка — `sh docs/ru/check.sh`.
 
-Полный обзор scopo — в
-[scopo_demo](https://github.com/vi-k/scopo/tree/main/example/scopo_demo): десять
-интерактивных демонстраций, охватывающих все семейства скоупов, вложенные
-скоупы, `scopeKey`, отложенное закрытие и узлы навигации.
+Полный обзор scopo —
+в [scopo_demo](https://github.com/vi-k/scopo/tree/main/example/scopo_demo):
+десять интерактивных демонстраций, охватывающих все семейства скоупов,
+вложенные скоупы, `scopeKey`, отложенное закрытие и узлы навигации.
 
 Отдельно про `NavigationNode` — вложенные навигаторы, диалоги, принадлежащие
-экрану, `onPop`, `isRoot` и системный «назад», который можно нажать на
-десктопе, — в пакете
+экрану, `onPop`, `isRoot` и системный «назад», который можно нажать
+на десктопе, — в пакете
 [navigation_node](https://pub.dev/packages/navigation_node). Он ехал внутри
 scopo до 0.10.0 включительно, а теперь живёт сам по себе: шесть уроков примера
 и журнал, показывающий, что ответило на каждое нажатие.
 
 Минимальный пример ниже показывает простое приложение-счётчик, в котором
 `SharedPreferences` инициализируется асинхронно, до показа интерфейса.
-Состояния загрузки и ошибки обрабатываются аккуратно. Полный исходный код на
-GitHub: [minimal](https://github.com/vi-k/scopo/tree/main/example/minimal).
+Состояния загрузки и ошибки обрабатываются аккуратно. Полный исходный код
+на GitHub: [minimal](https://github.com/vi-k/scopo/tree/main/example/minimal).
 
 ```dart
 import 'package:flutter/material.dart';

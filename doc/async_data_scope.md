@@ -40,20 +40,20 @@ and from that moment on:
 
 - **`builder`** receives it as its second argument — the ready branch never has
   to check for `null`;
-- **`disposeData`** receives it too, and runs only if the initialization succeeded,
-  so the argument always exists;
-- **`onUnmount`** receives `T?` instead: it fires the moment the scope leaves the
-  tree, which may be long before there is a value, or after a failure;
+- **`disposeData`** receives it too, and runs only if the initialization
+  succeeded, so the argument always exists;
+- **`onUnmount`** receives `T?` instead: it fires the moment the scope leaves
+  the tree, which may be long before there is a value, or after a failure;
 - **descendants** read it from the context (below).
 
-The progress side is typed loosely on purpose: `ctx.progress` takes
-an `Object?`, and the builders receive it as `Object?`. The value being built is
+The progress side is typed loosely on purpose: `ctx.progress` takes an
+`Object?`, and the builders receive it as `Object?`. The value being built is
 what the type parameter is for; the progress is a caption.
 
 ### A value that never arrives still needs a release
 
-Returning is the handover, and until it happens the value belongs to
-the initialization alone. The scope has never seen it, so it cannot release it:
+Returning is the handover, and until it happens the value belongs to the
+initialization alone. The scope has never seen it, so it cannot release it:
 after a failure `disposeData` is not called at all, and `onUnmount` is handed
 `null`.
 
@@ -94,14 +94,13 @@ disposeData: (database) => database.close(),
 
 One `catch` covers both ways this initialization ends early: a failing step,
 and a cancellation — the scope removed from the tree, or `close()`d, before it
-was ready. The second arrives as `Cancelled`, re-exported by `scopo`, thrown
-by a checkpoint — here the `ctx.progress` above the migration.
+was ready. The second arrives as `Cancelled`, re-exported by `scopo`, thrown by
+a checkpoint — here the `ctx.progress` above the migration.
 
 The context can own that guard too. **Use `wait` with `discard:` for an
 acquisition that can be left in flight**: cancellation ends the waiting, the
-action runs on, and `discard` closes a database the body never receives.
-`join` keeps waiting for a migration that must finish before the database can
-close:
+action runs on, and `discard` closes a database the body never receives. `join`
+keeps waiting for a migration that must finish before the database can close:
 
 ```dart
 initData: (context, ctx) async {
@@ -115,18 +114,18 @@ initData: (context, ctx) async {
 disposeData: (database) => database.close(),
 ```
 
-`disown` stands beside the return, with no wait or checkpoint between them:
-the scope releases a late return too, so leaving the job's registration in
-place would close it twice. The `AsyncScope` topic has the rule in full,
-including `dispose:` for a resource that must be released even on success.
+`disown` stands beside the return, with no wait or checkpoint between them: the
+scope releases a late return too, so leaving the job's registration in place
+would close it twice. The `AsyncScope` topic has the rule in full, including
+`dispose:` for a resource that must be released even on success.
 
 A value the body produces after the cancellation is handed to `disposeData`
 rather than lost, while the scope's teardown is still waiting. That keeps a
-bare call right for a short initialization that never asks `ctx` anything:
-it merely runs to its end for a scope that is already gone. Once an expired
+bare call right for a short initialization that never asks `ctx` anything: it
+merely runs to its end for a scope that is already gone. Once an expired
 `initCancellationTimeout` has let the teardown finish, the scope no longer has
-the widget to read `disposeData` from. Cleanup registered with the job does
-not depend on that hook.
+the widget to read `disposeData` from. Cleanup registered with the job does not
+depend on that hook.
 
 Two ways to avoid writing the guard at all: build the value in one step that
 cannot fail halfway, or use the dependency container of the `Scope` family,
@@ -143,15 +142,15 @@ either family; it follows from what the two objects are.
 
 A model lives as long as the scope and changes while it does, so what matters
 about it is *when* somebody reads it: a widget that reads it through `select`
-is subscribed to the part it read and is rebuilt when that part changes. Handing
-the model to the builder would give it an unsubscribed reference and encourage
-reading the whole object where a selector would do.
+is subscribed to the part it read and is rebuilt when that part changes.
+Handing the model to the builder would give it an unsubscribed reference and
+encourage reading the whole object where a selector would do.
 
-A value here is produced once, by `initData`, and never replaced. There is nothing
-to subscribe to and nothing to miss, and there is exactly one branch in which
-it exists at all — the ready one, which is what `builder` builds. Passing it is
-what makes that branch free of `data!` and `isInitialized`, and it is the same
-reason `dispose(data)` and `unmount(T? data)` receive it.
+A value here is produced once, by `initData`, and never replaced. There is
+nothing to subscribe to and nothing to miss, and there is exactly one branch in
+which it exists at all — the ready one, which is what `builder` builds. Passing
+it is what makes that branch free of `data!` and `isInitialized`, and it is the
+same reason `dispose(data)` and `unmount(T? data)` receive it.
 
 ## Reading it from the subtree
 
@@ -159,8 +158,8 @@ reason `dispose(data)` and `unmount(T? data)` receive it.
 final database = AsyncDataScope.of<Database>(context, listen: false).data;
 ```
 
-`of`, `maybeOf` and `select` return an `AsyncDataScopeContext`, which adds three
-members to everything `AsyncScopeContext` has:
+`of`, `maybeOf` and `select` return an `AsyncDataScopeContext`, which adds
+three members to everything `AsyncScopeContext` has:
 
 | member | before the value arrives | after |
 | --- | --- | --- |
@@ -170,24 +169,24 @@ members to everything `AsyncScopeContext` has:
 
 A widget under `builder` is by definition below a ready scope and can use
 `data`. A widget that may also be built while the scope is still initializing —
-one in `progressBuilder`, or one reached from elsewhere in the tree — should use
-`dataOrNull`, or check `hasData` first.
+one in `progressBuilder`, or one reached from elsewhere in the tree — should
+use `dataOrNull`, or check `hasData` first.
 
 For a nullable `T` — `AsyncDataScope<Session?>` — `dataOrNull` cannot answer
 the question at all: it is `null` on both sides of the moment the value
 arrives, since `null` is a value the initialization may legitimately produce.
 `hasData` is the difference, and `data` is the other way of asking: it throws
-while there is nothing and returns the `null` once there is. The same
-ambiguity reaches `onUnmount`, which is handed a `T?` and cannot tell the two
-apart on its own.
+while there is nothing and returns the `null` once there is. The same ambiguity
+reaches `onUnmount`, which is handed a `T?` and cannot tell the two apart on
+its own.
 
 "Before the value arrives" is a shade earlier than `isInitialized`. The value
-is stored once the job has finished its children and cleanup successfully;
-the state of the scope is applied at the end of the frame, or after the whole
-of `pauseAfterInitialization`, which is deliberately
-longer. In that window the scope is still building `progressBuilder` while `data`
-already answers — and that is the window the teardown of a scope that left
-early runs in, which is why `disposeData` can be promised the value at all.
+is stored once the job has finished its children and cleanup successfully; the
+state of the scope is applied at the end of the frame, or after the whole of
+`pauseAfterInitialization`, which is deliberately longer. In that window the
+scope is still building `progressBuilder` while `data` already answers — and
+that is the window the teardown of a scope that left early runs in, which is
+why `disposeData` can be promised the value at all.
 
 `select` is the cheap way in when only a part of the value matters:
 
@@ -211,8 +210,8 @@ not when something inside the value changes. A `Database` that gains rows
 notifies nobody.
 
 That is the same trade `ScopeModel` makes, and the ways out are the same: make
-the value a `Listenable` and put a `ScopeNotifier` under this scope, or expose a
-stream from it and let the widgets that care listen.
+the value a `Listenable` and put a `ScopeNotifier` under this scope, or expose
+a stream from it and let the widgets that care listen.
 
 ## In the debugger
 

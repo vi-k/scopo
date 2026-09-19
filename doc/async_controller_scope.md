@@ -169,10 +169,10 @@ scope, or should expose a stream.
 between "initializing" and "ready" to show. An initialization that has stages
 worth naming belongs in `AsyncDataScope`, whose context reports them.
 
-**It does nothing with a failed initialization** beyond what every family
-does: the error reaches `buildOnError`, which is required precisely so that
-the decision is made rather than defaulted. Route it onward from there, or
-assign a `ScopeObserver` — the `debug` topic has both.
+**It does nothing with a failed initialization** beyond what every family does:
+the error reaches `buildOnError`, which is required precisely so that the
+decision is made rather than defaulted. Route it onward from there, or assign a
+`ScopeObserver` — the `debug` topic has both.
 
 ## Where next
 

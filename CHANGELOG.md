@@ -8,57 +8,56 @@
   and with it the two things it cost: a `yield` works in the body and nowhere
   else, so reporting a step from a helper meant making that helper a `Stream`
   too — a call on the context can be made from anywhere; and a stream that
-  ended without `AsyncScopeReady` was a run-time failure the compiler could
-  not see, where a body that has to return cannot forget to.
+  ended without `AsyncScopeReady` was a run-time failure the compiler could not
+  see, where a body that has to return cannot forget to.
 * **Breaking:** a cancelled initialization is thrown into. Cancelling a
   generator raised nothing — the body resumed, ran to its next `yield` and
   stopped there, so a `catch` around the step never ran and only a `finally`
   could give back what had been taken. Now a checkpoint on `ScopeInitContext`
-  throws `Cancelled` once the scope has given up, so a body that checks
-  the context unwinds through its own `catch` — and between two steps
-  the asking is usually `ctx.progress`. A body that touches the context
-  nowhere is told nothing, because Dart cannot interrupt somebody else's wait;
-  what it produces is then released rather than lost, which is the next entry.
-* **New:** what a cancelled initialization produced too late is released
-  rather than lost. A body that never asks the context anything runs to its
-  end for a scope that is already gone; inside a generator whatever it took
-  stayed with nobody, because the body was parked and nothing would resume it.
-  It now goes to `disposeScope`. The one path where it cannot is a teardown
-  that has already finished — an `initCancellationTimeout` it gave up on —
-  because the scope no longer has a widget to read the hook from.
+  throws `Cancelled` once the scope has given up, so a body that checks the
+  context unwinds through its own `catch` — and between two steps the asking is
+  usually `ctx.progress`. A body that touches the context nowhere is told
+  nothing, because Dart cannot interrupt somebody else's wait; what it produces
+  is then released rather than lost, which is the next entry.
+* **New:** what a cancelled initialization produced too late is released rather
+  than lost. A body that never asks the context anything runs to its end for a
+  scope that is already gone; inside a generator whatever it took stayed with
+  nobody, because the body was parked and nothing would resume it. It now goes
+  to `disposeScope`. The one path where it cannot is a teardown that has
+  already finished — an `initCancellationTimeout` it gave up on — because the
+  scope no longer has a widget to read the hook from.
 * **Breaking:** initialization now runs on the `async_job` kernel.
   `ScopeInitCancelled` and `ScopeInitHandle` are gone: catch `Cancelled`, and
   drive an initialization outside a scope with `ScopeInitJob<T>` —
   `final job = ScopeInitJob(body)..start(); await job.value;`. Its `cancel()`
   now waits for the body, child jobs and cleanup to finish; a caller that only
-  needs the request leaves the returned future unawaited.
-  `ScopeInitContext` inherits `JobContext`, bringing `join`, `uncancellable`,
-  `unattended`, `onDispose`, `onDiscard`, `disown`, `run` and `log` with it.
+  needs the request leaves the returned future unawaited. `ScopeInitContext`
+  inherits `JobContext`, bringing `join`, `uncancellable`, `unattended`,
+  `onDispose`, `onDiscard`, `disown`, `run` and `log` with it.
   `ScopeInitContext.isCancelled` is gone too: read `ctx.job.isCancelled`.
   `wait` gains `dispose:` and `discard:`, and that changes the acquisition
-  rule: write `ctx.wait(Api.connect, discard: (api) => api.close())` for a
-  call that can be left in flight. A value the body never receives is cleaned
-  up unconditionally; one it receives goes on the cleanup stack — `dispose:`
-  on every outcome, `discard:` on failure or cancellation. `ctx.join(x)`
-  replaces `await x(); ctx.check();` for a call that must finish; a short
-  initialization that asks the context nothing can still call directly.
-  Remove the job's cleanup at the handover to the scope with `disown`, or
-  the unregister function from `onDispose` / `onDiscard`, so a late return
-  is not released twice. Errors with no outcome of their own — a late failure
-  of an abandoned action, a disposer, an `onCancel` callback or `unattended`
-  work — now reach `ScopeObserver.onError` instead of disappearing. Starting
-  a child under an already cancelled parent throws that cancellation rather
-  than returning a cancelled child. `async_job` is now a dependency of the
-  package, and `scopo` selectively re-exports its kernel names; consumers
-  need no second dependency or import to catch `Cancelled` or read a job's
-  outcome.
+  rule: write `ctx.wait(Api.connect, discard: (api) => api.close())` for a call
+  that can be left in flight. A value the body never receives is cleaned up
+  unconditionally; one it receives goes on the cleanup stack — `dispose:` on
+  every outcome, `discard:` on failure or cancellation. `ctx.join(x)` replaces
+  `await x(); ctx.check();` for a call that must finish; a short initialization
+  that asks the context nothing can still call directly. Remove the job's
+  cleanup at the handover to the scope with `disown`, or the unregister
+  function from `onDispose` / `onDiscard`, so a late return is not released
+  twice. Errors with no outcome of their own — a late failure of an abandoned
+  action, a disposer, an `onCancel` callback or `unattended` work — now reach
+  `ScopeObserver.onError` instead of disappearing. Starting a child under an
+  already cancelled parent throws that cancellation rather than returning a
+  cancelled child. `async_job` is now a dependency of the package, and `scopo`
+  selectively re-exports its kernel names; consumers need no second dependency
+  or import to catch `Cancelled` or read a job's outcome.
 * **New:** a body that gives up on itself is on the error branch, not on the
   loading one. `throw Cancelled('why')` is what the kernel offers a body that
-  decides to stop, and the outcome it makes is a cancellation nobody asked
-  for -- so nobody was waiting to hear it either, and the scope used to stay
-  on `buildOnWaiting` for good with no error, no observer event and nothing in
-  the console. An initialization that ended without becoming ready is a failed
-  one whichever way it ended, so the `Cancelled` reaches `buildOnError` and
+  decides to stop, and the outcome it makes is a cancellation nobody asked for
+  -- so nobody was waiting to hear it either, and the scope used to stay on
+  `buildOnWaiting` for good with no error, no observer event and nothing in the
+  console. An initialization that ended without becoming ready is a failed one
+  whichever way it ended, so the `Cancelled` reaches `buildOnError` and
   `ScopeObserver.onError` like any other failure of a body -- and, like any
   other, it stays out of `FlutterError`: what a builder is already showing
   needs no red line beside it. A cancellation the teardown asked for is
@@ -77,20 +76,20 @@
   means: it was named as the child's before the body of the parent ever caught
   it, so the outcome has nothing left to say and says nothing.
 * **New:** a teardown walk that raised what a disposer threw counts as a
-  teardown. Every walk visits all of its children, lets go of what it holds
-  and passes the first failure upwards only once the last child is done -- a
-  leaf takes its hook off before calling it -- so a raise says what happened,
-  not that the walk stopped. It was read as the latter, and a container whose
-  disposer had thrown then refused every later `init()`, advising a
-  `dispose()` the caller had already awaited. Only `ScopeAutoDependencies`
-  reused by hand could reach it: a `Scope` builds its container afresh.
-  The loud refusal stays where it belongs, and it belongs in two places a
-  `ScopeDependency` of your own can reach: a walk that fell over before it
-  visited anybody -- `disposalRequired` is asked of every child before the
-  first is disposed of, and that is your code -- and a walk that went through
-  everybody but found a foreign child throwing out of its own `dispose()`,
-  which the interface never required to let go first. Neither is a tree that
-  holds nothing, and a container will not build over one.
+  teardown. Every walk visits all of its children, lets go of what it holds and
+  passes the first failure upwards only once the last child is done -- a leaf
+  takes its hook off before calling it -- so a raise says what happened, not
+  that the walk stopped. It was read as the latter, and a container whose
+  disposer had thrown then refused every later `init()`, advising a `dispose()`
+  the caller had already awaited. Only `ScopeAutoDependencies` reused by hand
+  could reach it: a `Scope` builds its container afresh. The loud refusal stays
+  where it belongs, and it belongs in two places a `ScopeDependency` of your
+  own can reach: a walk that fell over before it visited anybody --
+  `disposalRequired` is asked of every child before the first is disposed of,
+  and that is your code -- and a walk that went through everybody but found a
+  foreign child throwing out of its own `dispose()`, which the interface never
+  required to let go first. Neither is a tree that holds nothing, and a
+  container will not build over one.
 * **New:** a `Cancelled` out of `dep.dispose` stops at the observer too. The
   rule below reached `ctx.onDispose` and not this road, where the cancellation
   travels wrapped in a `ScopeDependencyException` and so did not look like one
@@ -98,45 +97,44 @@
   from one hook to the other got back exactly what the rule removes: a red line
   in the console for a decision, and a widget test failing on an exception
   nobody meant to throw.
-* **New:** a `Cancelled` with no outcome to carry it stops at the observer.
-  A disposer or an `onCancel` callback that throws one, or an abandoned wait
-  that ends in one, reaches `ScopeObserver.onError` and goes no further --
-  which is what the kernel promises about cancellations, and what `scopo` was
-  breaking by passing them to `FlutterError` as well: a red line in the
-  console for a decision somebody made, and a failing widget test for a
-  consumer who had no exception to take.
+* **New:** a `Cancelled` with no outcome to carry it stops at the observer. A
+  disposer or an `onCancel` callback that throws one, or an abandoned wait that
+  ends in one, reaches `ScopeObserver.onError` and goes no further -- which is
+  what the kernel promises about cancellations, and what `scopo` was breaking
+  by passing them to `FlutterError` as well: a red line in the console for a
+  decision somebody made, and a failing widget test for a consumer who had no
+  exception to take.
 * **New:** a failure of work nobody waits for is reported as
-  `ScopePhase.abandonedWait` rather than as an initialization failure. The
-  job is already finished by then -- the initialization is over, and pointing
-  at it named the wrong half of the scope's life.
-* **New:** an expiry survives a `scopeKey` that cannot name itself. The text
-  of a report is built inside the callback of a root-zone timer, and `[$key]`
-  asks the key to write itself into it; a `toString` that threw took the
-  whole expiry with it -- the wait then never ended, and the throw left a
-  place where neither the package nor the application could catch it. What
-  went wrong with the name is now part of the message instead.
+  `ScopePhase.abandonedWait` rather than as an initialization failure. The job
+  is already finished by then -- the initialization is over, and pointing at it
+  named the wrong half of the scope's life.
+* **New:** an expiry survives a `scopeKey` that cannot name itself. The text of
+  a report is built inside the callback of a root-zone timer, and `[$key]` asks
+  the key to write itself into it; a `toString` that threw took the whole
+  expiry with it -- the wait then never ended, and the throw left a place where
+  neither the package nor the application could catch it. What went wrong with
+  the name is now part of the message instead.
 * **New:** a `tag` that cannot name itself no longer takes the teardown with
   it. Every label this package prints interpolates the `tag`, an object of the
   application's, and two elements read their label at the top of the teardown
   -- to keep it for a wait that outlives the widget. Both read it *before* the
-  teardown they are about to run, and unguarded: a `toString` that threw left
-  a scope without giving back its `scopeKey`, without telling its parent the
+  teardown they are about to run, and unguarded: a `toString` that threw left a
+  scope without giving back its `scopeKey`, without telling its parent the
   child was gone and without calling `disposeScope`, while the report named the
   disposal as the thing that had failed. On a coordinator it was worse, because
   the framework unmounts a batch of elements with no boundary around any one of
   them, and everything shallower in that batch stayed mounted for good. The
   label is a diagnostic; what stands behind it is not.
-* **New:** an expiry that outlives the teardown still names itself. The
-  release of a controller the initialization never handed over is the one wait
-  of this package that ends after the element has given its widget back, and
-  the message was built by asking that widget: the `_TypeError` that came out
-  was reported as a failed disposal, so the expiry itself was never announced.
-  The label taken while there was still a widget to take it from is used
-  instead.
-  The callback the widget was given for such an expiry is reached too: the
-  four of them are taken at the start of the teardown, beside the label, so
-  the promise that they are always called holds on the one path where the
-  widget is gone by the time a limit runs out.
+* **New:** an expiry that outlives the teardown still names itself. The release
+  of a controller the initialization never handed over is the one wait of this
+  package that ends after the element has given its widget back, and the
+  message was built by asking that widget: the `_TypeError` that came out was
+  reported as a failed disposal, so the expiry itself was never announced. The
+  label taken while there was still a widget to take it from is used instead.
+  The callback the widget was given for such an expiry is reached too: the four
+  of them are taken at the start of the teardown, beside the label, so the
+  promise that they are always called holds on the one path where the widget is
+  gone by the time a limit runs out.
 * **New:** an expiry on an `AsyncScopeCoordinator` that has left the tree
   reaches the observer. The observer reads the label of its target at the
   expiry, not at the start, and a wait for children outlives the tree in the
@@ -144,11 +142,11 @@
   the observer's own hook, and the guard then named the observer as the thing
   that had failed. The coordinator keeps a copy of its label, as the scopes do.
 * **New:** a dependency that fails after the cancellation has reached it is
-  reported, and named the way every other channel names one: the report
-  carries a `ScopeDependencyException` whose `name` is the path the tree
-  spells -- `checkout/payments/db`, not the leaf's own `db`. A failure that
-  travels up the walk is named on the way; this one has no way up, so the path
-  comes down to it instead. It used to be kept in the state of the tree and nowhere else,
+  reported, and named the way every other channel names one: the report carries
+  a `ScopeDependencyException` whose `name` is the path the tree spells --
+  `checkout/payments/db`, not the leaf's own `db`. A failure that travels up
+  the walk is named on the way; this one has no way up, so the path comes down
+  to it instead. It used to be kept in the state of the tree and nowhere else,
   while the tree was on its way out: an application with ordinary crash
   reporting heard that a scope had closed and nothing about the failure inside
   it. The second arm of a `concurrent` group is heard now too, by whichever of
@@ -158,30 +156,31 @@
   `Completer`, say -- is announced where it used to be dropped. One slot for
   the failure that travels upwards, and no silence for the rest.
 * **New:** a value the body built is released even when applying readiness
-  fails. It became the scope's one statement before the flag that says there
-  is something to release, and the teardown stage that releases it stands
-  under that flag.
+  fails. It became the scope's one statement before the flag that says there is
+  something to release, and the teardown stage that releases it stands under
+  that flag.
 * **New:** errors the kernel raises about a job name the scope or the
   dependency they belong to, and an arm with no name of its own says where it
   stood. `concurrent('', [...])` names none of its arms, and a job whose key is
   the empty string prints as `Job()` -- the very thing a key was given here to
-  stop; such an arm is now `[1]`, under the path of the group holding it. A job with no key prints as `Job()`, and those
-  messages reach a consumer -- a context kept in a closure and asked something
-  after the scope is over is the ordinary way to meet one.
+  stop; such an arm is now `[1]`, under the path of the group holding it. A job
+  with no key prints as `Job()`, and those messages reach a consumer -- a
+  context kept in a closure and asked something after the scope is over is the
+  ordinary way to meet one.
 * **Breaking:** `AsyncDataScope.initData` is a `Future<T>` too, and the value
   is what it returns. `AsyncDataScopeInitState`, `AsyncDataScopeProgress` and
   `AsyncDataScopeReady` are gone with the form that needed them.
 * **Breaking:** `AsyncControllerScope` releases its controller on the failure
-  path and on the cancellation, rather than from a `finally` that asked
-  whether the scope had taken it over. That question had a right answer only
-  because of where it was asked: the statement after a `yield` runs once the
-  engine has accepted the event, and a `return` inverts that order — the same
-  `finally` would now tear down a controller that is running behind the ready
-  branch. The family's promise is unchanged: created, initialized and released
-  on every path, including the one where `init` wakes up after the teardown.
-* **Breaking:** `LiteScope.initScope` — the pre-initialization a lite scope
-  can override — takes a `ScopeInitContext` and returns instead of yielding.
-  Its default is now an empty body rather than a stream that is ready at once,
+  path and on the cancellation, rather than from a `finally` that asked whether
+  the scope had taken it over. That question had a right answer only because of
+  where it was asked: the statement after a `yield` runs once the engine has
+  accepted the event, and a `return` inverts that order — the same `finally`
+  would now tear down a controller that is running behind the ready branch. The
+  family's promise is unchanged: created, initialized and released on every
+  path, including the one where `init` wakes up after the teardown.
+* **Breaking:** `LiteScope.initScope` — the pre-initialization a lite scope can
+  override — takes a `ScopeInitContext` and returns instead of yielding. Its
+  default is now an empty body rather than a stream that is ready at once,
   which is the same thing said in the new form.
 * **Breaking:** `Scope.initDependencies` returns the container, and
   `ScopeAutoDependencies.init` with it. `ScopeInitState`, `ScopeProgress` and
@@ -262,30 +261,30 @@
 
 ## 0.13.0
 
-* **Breaking:** `ScopeState.disposeStateAsync` and `LiteScopeState.disposeStateAsync`
-  now run after an `initStateAsync` that threw, in the same order as after one
-  that succeeded. They used to be skipped, on the reasoning that a hook written
-  about a finished thing does not run on one that never finished — but a failed
-  initialization is not one that never happened. An initializer that opens a
-  connection and throws on the next line has opened it, and nothing else is
-  holding it: the scope never becomes ready, so its owner is never handed the
-  state either, and this hook was the only release there was. **A disposer
-  therefore has to expect a partially initialized state** — a field the `await`
-  never reached is still unset when it runs. This is the rule
-  `ScopeController.dispose` has always stated for the controller family. The
-  `Scope` topic's table and its "what a failure of each leaves behind" section
-  say the new answer; `disposeScope`, at the scope layer rather than the state
-  one, is unchanged and still skipped, and deliberately so: what a scope whose
-  `initScope` failed needs is a *partial* teardown, and which part that is can
-  only be known inside the initializer that was doing the taking —
-  `disposeScope` does the whole teardown of a finished scope and stays free of
-  that question. The rule now stands on the page of every hook it governs: the
-  three states that gather `initStateAsync` and `disposeStateAsync` into an
-  overriding block each gave them a one-line doc of their own, and a doc comment
-  on an override replaces the inherited text rather than adding to it — so the
-  contract was on `LiteScopeCoreState`, the one class of the four nobody is told
-  to extend. The `LiteScope` topic states it beside the teardown pair as well;
-  the `Scope` topic already did.
+* **Breaking:** `ScopeState.disposeStateAsync` and
+  `LiteScopeState.disposeStateAsync` now run after an `initStateAsync` that
+  threw, in the same order as after one that succeeded. They used to be
+  skipped, on the reasoning that a hook written about a finished thing does not
+  run on one that never finished — but a failed initialization is not one that
+  never happened. An initializer that opens a connection and throws on the next
+  line has opened it, and nothing else is holding it: the scope never becomes
+  ready, so its owner is never handed the state either, and this hook was the
+  only release there was. **A disposer therefore has to expect a partially
+  initialized state** — a field the `await` never reached is still unset when
+  it runs. This is the rule `ScopeController.dispose` has always stated for the
+  controller family. The `Scope` topic's table and its "what a failure of each
+  leaves behind" section say the new answer; `disposeScope`, at the scope layer
+  rather than the state one, is unchanged and still skipped, and deliberately
+  so: what a scope whose `initScope` failed needs is a *partial* teardown, and
+  which part that is can only be known inside the initializer that was doing
+  the taking — `disposeScope` does the whole teardown of a finished scope and
+  stays free of that question. The rule now stands on the page of every hook it
+  governs: the three states that gather `initStateAsync` and
+  `disposeStateAsync` into an overriding block each gave them a one-line doc of
+  their own, and a doc comment on an override replaces the inherited text
+  rather than adding to it — so the contract was on `LiteScopeCoreState`, the
+  one class of the four nobody is told to extend. The `LiteScope` topic states
+  it beside the teardown pair as well; the `Scope` topic already did.
 * **Breaking:** `ScopeAutoDependencies.dispose()` and
   `ScopeDependency.dispose()` called while an `init()` of the same tree is
   still running are now refused with a `StateError` instead of going ahead.
@@ -295,55 +294,54 @@
   disposer that dependency registered a moment later then hung on something
   every later walk skips, and the next `init()` — legal, because the tree now
   claimed its disposal had run to the end — built a new tree over one that was
-  still holding. This was the last of the four
-  concurrency diagonals left unguarded; the other three already refuse or join.
-  A scope never reaches it, cancelling its subscription to `init()` first, so
-  this is for whoever drives a container by hand — and the message says to do
-  what the scope does. The guard stands on both doors because the tree has two:
-  the container hands its tree out through `ScopeAutoDependencies.root`, and a
-  walk started there — or on any node of a tree driven by hand — met nothing at
-  all and lost the same dependency in the same way. Every node between that
-  door and the parked leaf is initializing too, a group being one for as long
-  as its children are, so the walk is refused wherever it was entered. The last
-  way in is not a door but a side street: a group whose child was initialized
-  *around* it carries no `_initializing` of its own, passes the guard, and used
-  to write that child off as holding nothing for good. It no longer does — the
-  walk still passes such a child by, because there is genuinely nothing to run
-  for it, but the disposer it registers a moment later is reached by the walk
-  that comes next. What the
-  message says about the cancellation now depends on `autoDisposeOnError`: with
-  the opt-out the cancellation unmounts and stops — keeping the half-built tree
-  is the point of turning it off — so it sends the caller back for the
-  `dispose()` afterwards instead of promising that cancelling is enough.
+  still holding. This was the last of the four concurrency diagonals left
+  unguarded; the other three already refuse or join. A scope never reaches it,
+  cancelling its subscription to `init()` first, so this is for whoever drives
+  a container by hand — and the message says to do what the scope does. The
+  guard stands on both doors because the tree has two: the container hands its
+  tree out through `ScopeAutoDependencies.root`, and a walk started there — or
+  on any node of a tree driven by hand — met nothing at all and lost the same
+  dependency in the same way. Every node between that door and the parked leaf
+  is initializing too, a group being one for as long as its children are, so
+  the walk is refused wherever it was entered. The last way in is not a door
+  but a side street: a group whose child was initialized *around* it carries no
+  `_initializing` of its own, passes the guard, and used to write that child
+  off as holding nothing for good. It no longer does — the walk still passes
+  such a child by, because there is genuinely nothing to run for it, but the
+  disposer it registers a moment later is reached by the walk that comes next.
+  What the message says about the cancellation now depends on
+  `autoDisposeOnError`: with the opt-out the cancellation unmounts and stops —
+  keeping the half-built tree is the point of turning it off — so it sends the
+  caller back for the `dispose()` afterwards instead of promising that
+  cancelling is enough.
 * Fixed: a change to an inherited widget the scope itself depends on — which is
   every `Theme.of(context)`, `MediaQuery.of(context)` or app-specific lookup
   made by the code that builds its subtree, the context there being the scope's
   own element — was lost when it landed in the same frame as a pending
-  `notifyDependents()`. Such a change arrives as `didChangeDependencies()` and a
-  bare `markNeedsBuild()` with no new widget, so the rebuild was taken for a
+  `notifyDependents()`. Such a change arrives as `didChangeDependencies()` and
+  a bare `markNeedsBuild()` with no new widget, so the rebuild was taken for a
   notify-only one: the cached subtree was handed back and the change was gone
   for good, the framework having delivered it once. A page whose builder reads
   the theme could sit in the old one, indefinitely, while the rest of the app
   changed.
 * **Breaking:** a dependency container no longer reports its disposal through
-  `ScopeObserver.onProgress`. The release of each dependency arrives at the
-  new `onDisposalProgress(target, path)` instead, so `onProgress` now means
-  one thing — a step of an *initialization* is done — rather than two told
-  apart by the type of a value. An existing `onProgress` override keeps
-  compiling and simply stops hearing the disposal — which is the awkward part,
-  since nothing points at the change. The three names added below are the one
-  way this release can fail a build instead: a subclass that already has a
-  member of its own called `onStepStarted`, `onDisposalStepStarted` or
-  `onDisposalProgress` now declares an invalid override, Dart having no
-  overloading. The `debug` topic has a "Coming from 0.12.x" section with the
-  migration.
-* Added `ScopeObserver.onStepStarted(target, path)`: a dependency container
-  now announces each step of its initialization *before* running it, from
-  inside the step and ahead of anything it awaits. Paired with the
-  `onProgress` that follows, this makes a start that hung readable — the last
-  path announced with nothing behind it is the step that never came back —
-  including for a `concurrent` group, where the number of the last completed
-  step says nothing about which of the steps in flight is stuck.
+  `ScopeObserver.onProgress`. The release of each dependency arrives at the new
+  `onDisposalProgress(target, path)` instead, so `onProgress` now means one
+  thing — a step of an *initialization* is done — rather than two told apart by
+  the type of a value. An existing `onProgress` override keeps compiling and
+  simply stops hearing the disposal — which is the awkward part, since nothing
+  points at the change. The three names added below are the one way this
+  release can fail a build instead: a subclass that already has a member of its
+  own called `onStepStarted`, `onDisposalStepStarted` or `onDisposalProgress`
+  now declares an invalid override, Dart having no overloading. The `debug`
+  topic has a "Coming from 0.12.x" section with the migration.
+* Added `ScopeObserver.onStepStarted(target, path)`: a dependency container now
+  announces each step of its initialization *before* running it, from inside
+  the step and ahead of anything it awaits. Paired with the `onProgress` that
+  follows, this makes a start that hung readable — the last path announced with
+  nothing behind it is the step that never came back — including for a
+  `concurrent` group, where the number of the last completed step says nothing
+  about which of the steps in flight is stuck.
 * Added `ScopeObserver.onDisposalStepStarted(target, path)`, the same mark for
   the teardown. Sent only for a dependency that has a release to run, so an
   entry with no `onDisposalProgress` behind it always means a release that did
@@ -374,8 +372,8 @@
   had heard the entry and then heard neither the failure nor `onDisposed`, and
   the promise that this walk never re-throws was not kept. As an arm of a
   `concurrent` group it was quieter and worse — the group asks its arms for
-  their streams from inside the merge they are collected into, where a throw
-  is told to nobody and closes nothing, so the walk stopped for good with no
+  their streams from inside the merge they are collected into, where a throw is
+  told to nobody and closes nothing, so the walk stopped for good with no
   error, no exit and no end, on the way in as on the way out. Both now answer
   as a stream that fails after its first event does; a `sequential` group
   always did. The same holds for a throw from the dependency's `state` getter:
@@ -407,18 +405,18 @@
   `dispose <path>…` and `disposed <path>`. The last of those replaces the
   `progress: <path>` line a release used to print, so anything that reads its
   output as text sees a changed format, not only added lines.
-* Fixed: a disposal walk stopped halfway went on to mark itself finished
-  unless the tree was in `ScopeDependencyInitialized`. A tree in
-  `ScopeDependencyFailed` or `ScopeDependencyCancelled` — one led by hand
-  after an initialization went wrong — and a second `dispose()` that was
-  itself cancelled therefore stopped asking to be disposed of, and everything
-  the walk had not reached was left holding what it took.
-* **Breaking:** a second `ScopeAutoDependencies.init()` on a container that
-  has been initialized and not disposed of is now refused whether or not its
-  tree is holding anything. The guard used to ask whether anything was still
-  held, and a tree whose dependencies registered no disposer answers no to
-  that from the moment it is built — so such a container could be initialized
-  again with no `dispose()` anywhere in sight, and the second run assigned its
+* Fixed: a disposal walk stopped halfway went on to mark itself finished unless
+  the tree was in `ScopeDependencyInitialized`. A tree in
+  `ScopeDependencyFailed` or `ScopeDependencyCancelled` — one led by hand after
+  an initialization went wrong — and a second `dispose()` that was itself
+  cancelled therefore stopped asking to be disposed of, and everything the walk
+  had not reached was left holding what it took.
+* **Breaking:** a second `ScopeAutoDependencies.init()` on a container that has
+  been initialized and not disposed of is now refused whether or not its tree
+  is holding anything. The guard used to ask whether anything was still held,
+  and a tree whose dependencies registered no disposer answers no to that from
+  the moment it is built — so such a container could be initialized again with
+  no `dispose()` anywhere in sight, and the second run assigned its
   `late final` fields a second time. That came out as a
   `LateInitializationError` from inside a dependency's initializer, reading as
   a mistake in the caller's code rather than as the refusal it should have
@@ -428,29 +426,29 @@
   failure that the error itself does not say. A container sets one for exactly
   one case today — the second run over a `late final` field an earlier run
   assigned. What came out of that was a bare `LateInitializationError` from
-  inside an initializer, naming the dependency and nothing else, and it read
-  as a mistake in the caller's own code rather than as the consequence of
-  running the container twice. The hint names the reason and the way out. It
-  is printed by `toString()` on a line of its own, so anything that reads that
-  text as a format sees one extra line in this one case.
+  inside an initializer, naming the dependency and nothing else, and it read as
+  a mistake in the caller's own code rather than as the consequence of running
+  the container twice. The hint names the reason and the way out. It is printed
+  by `toString()` on a line of its own, so anything that reads that text as a
+  format sees one extra line in this one case.
 * Fixed: a second `ScopeDependency.dispose()` arriving while the first was
   still running started a walk of its own, and in a `sequential` group that
   broke the reverse order the group promises. The child the running walk was
   parked in had already had its hook taken off, so the second walk read it as
   having nothing to do and moved on to the child below — the one the parked
-  disposer is built on top of. It also reported itself finished while the
-  first was still holding. A second call now joins the walk already running:
-  it yields no paths of its own, closes when that walk closes, and raises what
-  it raised. A walk stopped halfway is not a walk that finished, so a joiner
-  over one of those is not told the disposal is over: it walks the tree
-  itself, being a caller who asked for exactly that.
+  disposer is built on top of. It also reported itself finished while the first
+  was still holding. A second call now joins the walk already running: it
+  yields no paths of its own, closes when that walk closes, and raises what it
+  raised. A walk stopped halfway is not a walk that finished, so a joiner over
+  one of those is not told the disposal is over: it walks the tree itself,
+  being a caller who asked for exactly that.
 * Fixed: a tree built and then let go of without ever being initialized left
   its root saying `ScopeDependencyDisposed` while every child under it
-  correctly said `ScopeDependencyInitial`, so a `flattenDependencies()` dump
-  of it contradicted itself. Such a tree can be initialized afterwards, and
+  correctly said `ScopeDependencyInitial`, so a `flattenDependencies()` dump of
+  it contradicted itself. Such a tree can be initialized afterwards, and
   `init()` now takes back the note the disposal walk left — without that, the
-  tree came up already marked as disposed of and the next teardown walked
-  past everything the initializer had taken.
+  tree came up already marked as disposed of and the next teardown walked past
+  everything the initializer had taken.
 * Fixed: a `ScopeNotifier` whose first value refused the listener — one already
   disposed of, or any `Listenable` of your own that says no — went on moving
   the subscription to every later value, while the teardown went on asking
@@ -475,9 +473,9 @@
   only when nothing got through while the failing listener was running.
 * Fixed: `StateAsNotifier.addListener` built a fresh notifier when it was
   called from the tail of its own `State.dispose()` — `mounted` stays true for
-  the whole of that call, so the guard was open while the mixin had already
-  let its notifier go. Nothing disposes of that one and nothing ever notifies
-  it. The mixin now knows it is going.
+  the whole of that call, so the guard was open while the mixin had already let
+  its notifier go. Nothing disposes of that one and nothing ever notifies it.
+  The mixin now knows it is going.
 * Fixed: `CompositeListenableSubscription.cancel()` stopped where a member
   refused to be cancelled, leaving every member behind it still listening —
   which is the leak the composite exists to prevent. It now cancels them all,
@@ -518,11 +516,11 @@
 
 ## 0.12.0
 
-* Added `controllerDep(name, create)`, a fourth `ScopeAutoDependencies`
-  builder next to `dep`/`sequential`/`concurrent`: a single dependency backed
-  by a `ScopeController`, wired to `performInit`/`performUnmount`/
-  `performDispose`. The same controller class an `AsyncControllerScope` owns
-  now fits, unchanged, as one branch of a dependency tree.
+* Added `controllerDep(name, create)`, a fourth `ScopeAutoDependencies` builder
+  next to `dep`/`sequential`/`concurrent`: a single dependency backed by a
+  `ScopeController`, wired to `performInit`/`performUnmount`/ `performDispose`.
+  The same controller class an `AsyncControllerScope` owns now fits, unchanged,
+  as one branch of a dependency tree.
 
 ## 0.11.0
 
@@ -532,9 +530,7 @@
   same code, the same behaviour, the same six lessons of an example. Add the
   dependency and change one import:
 
-  ```dart
-  import 'package:navigation_node/navigation_node.dart';
-  ```
+  ```dart import 'package:navigation_node/navigation_node.dart'; ```
 
   Nothing in scopo used the widget, and the widget used nothing in scopo — it
   imports nothing but Flutter — so a package about scopes was carrying a nested
@@ -563,13 +559,12 @@
   Code (and Cursor, Windsurf, Antigravity) and `ide/scopo-live-templates.xml`
   for IntelliJ and Android Studio. Eleven templates — a class skeleton per
   family, two containers, and the accessor line; each writes every class its
-  shape needs in one paste. The skeletons write
-  the accessors out as statics of the scope, which is the shape to prefer when
-  something else is doing the typing; `ScopeAccess` is the shape to prefer when
-  you are. Installation is in
-  `ide/README.md`. The skeletons they insert are expanded into
-  `test/ide/`, a file each, and compiled by the gate, so a template that stops
-  being valid Dart fails the build.
+  shape needs in one paste. The skeletons write the accessors out as statics of
+  the scope, which is the shape to prefer when something else is doing the
+  typing; `ScopeAccess` is the shape to prefer when you are. Installation is in
+  `ide/README.md`. The skeletons they insert are expanded into `test/ide/`, a
+  file each, and compiled by the gate, so a template that stops being valid
+  Dart fails the build.
 
 ## 0.10.0
 
@@ -580,18 +575,18 @@
   `ScopeWidgetElementBase.init()` overrides. Synchronous initialization
   failures stay inside Flutter's build error boundary. Such a failure is
   terminal: the hook is not attempted again, so nothing it already took is
-  taken a second time, and every later build reports the same failure.
-  Cleanup is symmetrical with it — the element disposer runs for a failed
+  taken a second time, and every later build reports the same failure. Cleanup
+  is symmetrical with it — the element disposer runs for a failed
   initialization too, so whatever it took before it failed is given back, and
   family disposers now expect a partially initialized scope. `AsyncScope`
   starts its async phase only after a successful synchronous initialization,
-  and only once; a scope that never got that far registers with no parent
-  scope and its `close()` completes instead of waiting for an initialization
-  that will never begin.
+  and only once; a scope that never got that far registers with no parent scope
+  and its `close()` completes instead of waiting for an initialization that
+  will never begin.
 * Subscribing to another scope from an initialization hook — `listen: true`
-  inside `init()` or `ScopeModel.create()` — is now caught by an assertion.
-  The hook runs once, before the first build, so such a subscription could
-  never be honoured; look the scope up with `listen: false` instead.
+  inside `init()` or `ScopeModel.create()` — is now caught by an assertion. The
+  hook runs once, before the first build, so such a subscription could never be
+  honoured; look the scope up with `listen: false` instead.
 * Fix a dependency keeping what it had already taken. A dependency whose
   initializer acquired a resource and registered its disposer, and only then
   failed or was cancelled, was skipped by the disposal entirely: the criterion
@@ -606,8 +601,8 @@
   subtree was treated as one to keep rather than one to mount, and there was
   none to keep. In debug this surfaced as two framework assertions naming
   neither the scope nor the cause; in release the subtree was simply absent.
-  The flag a notification raises and the flag the current rebuild reads are
-  now separate, so a notification can no longer reach into the rebuild that is
+  The flag a notification raises and the flag the current rebuild reads are now
+  separate, so a notification can no longer reach into the rebuild that is
   running. Such a notification is also no longer lost: marking an element that
   is already building as needing a build does nothing, so the rebuild is asked
   for once the frame is over, and the dependents hear about the change a frame
@@ -633,41 +628,41 @@
   the subscriptions it took. A hook that throws there is reported rather than
   re-thrown, so it cannot replace the failure the initialization is already
   carrying. `unmount` is also exactly-once by construction now — each hook is
-  taken off as it runs — so the passes that can reach a container cannot
-  double up on it.
+  taken off as it runs — so the passes that can reach a container cannot double
+  up on it.
 * Fix one failing disposer taking the rest of a sequential group with it. The
-  walk stopped at the first dependency that could not let go, leaving everything
-  below it — already initialized, still holding resources — untouched. Each
-  release is now guarded on its own, the walk finishes, and the first failure is
-  passed upwards afterwards; every failure is recorded on the dependency it
-  belongs to, as before.
+  walk stopped at the first dependency that could not let go, leaving
+  everything below it — already initialized, still holding resources —
+  untouched. Each release is now guarded on its own, the walk finishes, and the
+  first failure is passed upwards afterwards; every failure is recorded on the
+  dependency it belongs to, as before.
 * Fix an initialization that fails synchronously leaving the scope on its
-  loading branch for good. `AsyncScopeError` was reached only from the
-  stream's own failures, so a throw raised while the stream was still being
-  built — the `AsyncScopeCoordinator` lookup of a scope that asks for a
-  `scopeKey` and has no coordinator above it, or an `initScope` that is not a
-  generator and throws — never reached the model: the scope stayed in
-  `AsyncScopeWaiting` and went on showing `buildOnProgress`, which for a
-  missing coordinator is the commonest mistake in the tree. It now shows
-  `buildOnError`, as the state table always said it would, and the failure is
-  still reported as before. The state is applied outside the frame, because
-  such a failure is raised before the first `await` and therefore inside the
-  build that started the initialization.
+  loading branch for good. `AsyncScopeError` was reached only from the stream's
+  own failures, so a throw raised while the stream was still being built — the
+  `AsyncScopeCoordinator` lookup of a scope that asks for a `scopeKey` and has
+  no coordinator above it, or an `initScope` that is not a generator and
+  throws — never reached the model: the scope stayed in `AsyncScopeWaiting` and
+  went on showing `buildOnProgress`, which for a missing coordinator is the
+  commonest mistake in the tree. It now shows `buildOnError`, as the state
+  table always said it would, and the failure is still reported as before. The
+  state is applied outside the frame, because such a failure is raised before
+  the first `await` and therefore inside the build that started the
+  initialization.
 * Subscribing to a scope from anywhere but a build — `select` or
   `of(listen: true)` in `didChangeDependencies`, say — is caught by an
   assertion. What a dependent asked for is remembered per build, and the
   boundary between builds is taken from the frame, so a registration made
   outside a build belonged to whichever build shared its frame and was dropped
-  by the first one that did not: it looked like it worked, and then stopped,
-  on the first rebuild that came from the parent rather than from a change.
-  Keep the subscription in `build`, and read with `listen: false` from
+  by the first one that did not: it looked like it worked, and then stopped, on
+  the first rebuild that came from the parent rather than from a change. Keep
+  the subscription in `build`, and read with `listen: false` from
   `didChangeDependencies` when the point is to react rather than to show.
-* `Progress.value` is a fraction between 0 and 1 whatever it was built
-  from, which is what a progress indicator is handed. A task of no steps at all
-  used to give the `NaN` of `0 / 0`, and a release build that stepped past the
-  total gave `4/3`; the first is now 1 and the second is clamped. `Progress`
-  also refuses a negative `number` or `total` by assertion, and the assertion
-  in `ProgressIterator.addSteps` says `total` where it used to say `count`. The
+* `Progress.value` is a fraction between 0 and 1 whatever it was built from,
+  which is what a progress indicator is handed. A task of no steps at all used
+  to give the `NaN` of `0 / 0`, and a release build that stepped past the total
+  gave `4/3`; the first is now 1 and the second is clamped. `Progress` also
+  refuses a negative `number` or `total` by assertion, and the assertion in
+  `ProgressIterator.addSteps` says `total` where it used to say `count`. The
   dartdoc example of `ProgressIterator` compiles again: it showed a named
   `count:` argument the constructor never had, and a `ProgressValue` type that
   does not exist.
@@ -706,58 +701,59 @@
   because the previous fix answered for the question and not for what followed
   it. A node also no longer stays stood aside when that reading falls over: it
   steps aside for the length of one read, and a raise in the middle of it used
-  to leave it aside for good, after which every later press took the whole route
-  without the node being asked at all.
+  to leave it aside for good, after which every later press took the whole
+  route without the node being asked at all.
 * `NavigationNode` hands its nested navigator the same page list across a
   rebuild that changes nothing. `NavigatorState` compares the list it is given
-  by identity, so a fresh one on every build had it diff its stack and report it
-  again — twice per rebuild, to every listener above the node — for a page that
-  had not changed. While `child` and `isRoot` are the same objects, nothing is
-  handed over anew.
+  by identity, so a fresh one on every build had it diff its stack and report
+  it again — twice per rebuild, to every listener above the node — for a page
+  that had not changed. While `child` and `isRoot` are the same objects,
+  nothing is handed over anew.
 * [breaking changes] The Flutter floor is `>=3.27.0`, down from the `>=3.29.0`
-  raised earlier in this same release. Nothing here ever needed 3.29 — the floor
-  went up because `logger_builder`, then a dependency, asked for `meta ^1.16.0`
-  while the `flutter_test` of 3.27 pins `meta` to 1.15.0. Its 0.6.1 relaxed that
-  to `^1.15.0`, which is what let the floor back down; later in this same
-  release the dependency goes away altogether, so nothing external is left to
-  push the floor up again. `fake_async` and `leak_tracker_flutter_testing` are
-  asked for a patch lower, `^1.3.1` and `^3.0.8`, the versions 3.27 pins; both
-  are dev dependencies, so nothing a consumer resolves changed except the floor
-  itself. `sdk: ^3.6.0` is untouched and now reaches something real:
-  3.27.0 carries exactly Dart 3.6.0, so the language version the formatter reads
-  is the floor's own and not one above it. Tests, formatter, dartdoc, publish dry
-  run, translations and both example suites are run on 3.27.0, and CI pins the
-  same number.
+  raised earlier in this same release. Nothing here ever needed 3.29 — the
+  floor went up because `logger_builder`, then a dependency, asked for
+  `meta ^1.16.0` while the `flutter_test` of 3.27 pins `meta` to 1.15.0. Its
+  0.6.1 relaxed that to `^1.15.0`, which is what let the floor back down; later
+  in this same release the dependency goes away altogether, so nothing external
+  is left to push the floor up again. `fake_async` and
+  `leak_tracker_flutter_testing` are asked for a patch lower, `^1.3.1` and
+  `^3.0.8`, the versions 3.27 pins; both are dev dependencies, so nothing a
+  consumer resolves changed except the floor itself. `sdk: ^3.6.0` is untouched
+  and now reaches something real: 3.27.0 carries exactly Dart 3.6.0, so the
+  language version the formatter reads is the floor's own and not one above it.
+  Tests, formatter, dartdoc, publish dry run, translations and both example
+  suites are run on 3.27.0, and CI pins the same number.
 * [breaking changes] Renames, the first of several waves. Nothing here changes
   behaviour: each is a name that said the wrong thing or said it differently
   from its neighbour. `ScopeConfig.defaultScopeKeysTimeout` is
   `defaultScopeKeyTimeout`, singular like the `scopeKey` and `scopeKeyTimeout`
   it answers for and like the three settings beside it. The three sealed bases
   of the dependency states drop a plural that described the hierarchy rather
-  than the object: `ScopeDependencySuccessStates`, `ScopeDependencyFailedStates`
-  and `ScopeDependencyCancelledStates` are `ScopeDependencyAnySuccess`,
-  `ScopeDependencyAnyFailed` and `ScopeDependencyAnyCancelled`, which is how
-  they read at a call site — `state is ScopeDependencyAnyFailed`. `DepHelper` is
-  `ScopeDependencyHandle` and has a file of its own: everything else in that
-  family spells `Dependency` out, and "Helper" said nothing about the handle it
-  is. `ScopeInitFunction` is `ScopeInitCallback`, `Callback` being the one
-  suffix this package uses for the idea, and `ScopeInitBuilder` is
-  `ScopeProgressBuilder` after the state it builds for.
-  `Progress.progress` is `Progress.value` — a fraction inside a class already
-  called `Progress` explained itself worse than the pair `number`/`total` beside
-  it — and `ScopeAutoDependenciesProgress.progress` follows it.
-  `ProgressIterator.add` is `addSteps`, the word `nextStep` and `currentStep`
-  already use.
+  than the object: `ScopeDependencySuccessStates`,
+  `ScopeDependencyFailedStates` and `ScopeDependencyCancelledStates` are
+  `ScopeDependencyAnySuccess`, `ScopeDependencyAnyFailed` and
+  `ScopeDependencyAnyCancelled`, which is how they read at a call site —
+  `state is ScopeDependencyAnyFailed`. `DepHelper` is `ScopeDependencyHandle`
+  and has a file of its own: everything else in that family spells `Dependency`
+  out, and "Helper" said nothing about the handle it is. `ScopeInitFunction` is
+  `ScopeInitCallback`, `Callback` being the one suffix this package uses for
+  the idea, and `ScopeInitBuilder` is `ScopeProgressBuilder` after the state it
+  builds for. `Progress.progress` is `Progress.value` — a fraction inside a
+  class already called `Progress` explained itself worse than the pair
+  `number`/`total` beside it — and `ScopeAutoDependenciesProgress.progress`
+  follows it. `ProgressIterator.add` is `addSteps`, the word `nextStep` and
+  `currentStep` already use.
 * [breaking changes] The branch built while a scope initializes is named after
   the state it belongs to, in both halves of the API: the parameter
   `initBuilder` is `progressBuilder` and the method `buildOnInitializing` is
   `buildOnProgress`, in every family. `init` and `initBuilder` sat in one
-  constructor and read as a pair -- the work and its builder -- while the second
-  is the screen shown *while* the first runs; the state it answers is
+  constructor and read as a pair -- the work and its builder -- while the
+  second is the screen shown *while* the first runs; the state it answers is
   `AsyncScopeProgress`, and so now is its name. `buildOnWaiting` and
   `buildOnReady` already worked that way. The entries above that named the old
-  spelling were rewritten to the new one: 0.10.0 has not shipped, so the section
-  speaks the vocabulary the release will have. Released sections are untouched.
+  spelling were rewritten to the new one: 0.10.0 has not shipped, so the
+  section speaks the vocabulary the release will have. Released sections are
+  untouched.
 * [breaking changes] The lifecycle hooks say what they initialize and what they
   release, on both levels, because one name meant two things: `initAsync` was
   the scope's own initialization on `AsyncScopeBase` and the state's own on
@@ -772,18 +768,18 @@
   follows the method: `disposeAsyncTimeout` is `disposeScopeTimeout`,
   `onDisposeAsyncTimeout` is `onDisposeScopeTimeout`, and
   `ScopeConfig.defaultDisposeAsyncTimeout` is `defaultDisposeScopeTimeout`.
-  `initCancellationTimeout` is untouched: it is named after an event rather than
-  after a method.
+  `initCancellationTimeout` is untouched: it is named after an event rather
+  than after a method.
 * [breaking changes] A parameter of `AsyncScope`, `AsyncDataScope` or
   `AsyncControllerScope` now carries the name of the method it stands in for:
   `onMount`, `initScope`/`initData`, `onUnmount`, `disposeScope`/`disposeData`,
   `createController`. The builders keep the shape they had — `waitingBuilder`,
   `progressBuilder`, `errorBuilder`, `builder` — beside `buildOnWaiting`,
   `buildOnProgress`, `buildOnError` and `buildOnReady`. **The callbacks are
-  constructor parameters only now**: a field cannot share a name with the method
-  it implements, so each is held in a private field. Nothing in this package,
-  its tests or its examples read them from outside, and the analyzer says so at
-  once for anyone who did.
+  constructor parameters only now**: a field cannot share a name with the
+  method it implements, so each is held in a private field. Nothing in this
+  package, its tests or its examples read them from outside, and the analyzer
+  says so at once for anyone who did.
 * [breaking changes] `ScopeDependency` stops offering two ways to run one step.
   The interface had `init()` beside `runInit()` and `dispose()` beside
   `runDispose()`, the second of each wrapping the first and keeping `state` in
@@ -818,14 +814,14 @@
   only what it needs; the first argument of each is a `ScopeObservable`,
   carrying the `debugLabel` its source names itself by. The field is `null` by
   default, so the package says nothing until one is assigned. The structural
-  pair `onInit`/`onDisposed` lives on `ScopeWidgetElementBase` — the ancestor of
-  every scope family — so a family that never reported anything of its own
+  pair `onInit`/`onDisposed` lives on `ScopeWidgetElementBase` — the ancestor
+  of every scope family — so a family that never reported anything of its own
   now reports through the observer the same as the rest. A hook that throws is
   reported through `FlutterError.reportError` rather than reaching the scope,
   and a nested notification — an observer producing a scope event of its own
   from inside a hook — is refused rather than left to recurse.
-* `AsyncScope`'s own lifecycle now reports through `ScopeConfig.observer` too
-  — and with it every family built on the same element: `AsyncDataScope`,
+* `AsyncScope`'s own lifecycle now reports through `ScopeConfig.observer` too —
+  and with it every family built on the same element: `AsyncDataScope`,
   `AsyncControllerScope`, `LiteScope` and `Scope`. `onProgress`, `onReady`,
   `onCancelled`, `onDispose`, `onTimeout` for an expired wait, and `onError`
   for each phase that can fail (initialization, its cancellation, preparation
@@ -852,35 +848,36 @@
   `onTrace` instead, the error folded into the message rather than kept as a
   separate field. `runStreamGuarded`, which every dependency's `init()` and
   `dispose()` run through, is internal and not exported — it has no
-  `ScopeObservable` of its own either, being a function rather than an object
-  — so it gained an optional `observable` parameter: its two callers inside
-  the package pass their own, and its seven internal steps report through
-  `onTrace` under that label.
+  `ScopeObservable` of its own either, being a function rather than an object —
+  so it gained an optional `observable` parameter: its two callers inside the
+  package pass their own, and its seven internal steps report through `onTrace`
+  under that label.
 * **Breaking:** `logger_builder` is no longer a dependency. Nine public names
-  built on it are gone: `ScopeConfig.logger`, `ScopeLogger`, `ScopeLevelLogger`,
-  `ScopeLog`, `ScopeLogPublisher`, `ScopeLogFormatter`, `ScopeLogTransformer`,
-  `ScopeLogLevel` and `ScopeLogCallback`. In their place, a ready-made
-  `ScopePrintObserver`: `ScopeConfig.observer = const ScopePrintObserver();`
-  prints one line per event — `scopo | <label> | <what happened>`, a failure's
-  error and stack trace included — the same shape `ScopeLogger.defaultFormat`
-  wrote, minus the level and the logger path. A failure line spells out its
-  phase as English instead of the bare `ScopePhase` name — `preparation for
-  disposal failed`, not `preparationForDisposal failed` — the same wording
-  `ScopeLogger.defaultFormat` used for the same six phases; the one phrase
-  that does not end in "failed", `an abandoned wait ended in a failure`, is
-  the old logger's `an abandoned wait for $what ended in a failure` with the
-  `$what` left out, since the observer has none to put there. `trace: true`
-  also prints what `onTrace` carries, off by default: that is where the
-  coordination below the lifecycle reports, and a scope produces a dozen such
-  lines where it produces one of the rest.
+  built on it are gone: `ScopeConfig.logger`, `ScopeLogger`,
+  `ScopeLevelLogger`, `ScopeLog`, `ScopeLogPublisher`, `ScopeLogFormatter`,
+  `ScopeLogTransformer`, `ScopeLogLevel` and `ScopeLogCallback`. In their
+  place, a ready-made `ScopePrintObserver`:
+  `ScopeConfig.observer = const ScopePrintObserver();` prints one line per
+  event — `scopo | <label> | <what happened>`, a failure's error and stack
+  trace included — the same shape `ScopeLogger.defaultFormat` wrote, minus the
+  level and the logger path. A failure line spells out its phase as English
+  instead of the bare `ScopePhase` name — `preparation for disposal failed`,
+  not `preparationForDisposal failed` — the same wording
+  `ScopeLogger.defaultFormat` used for the same six phases; the one phrase that
+  does not end in "failed", `an abandoned wait ended in a failure`, is the old
+  logger's `an abandoned wait for $what ended in a failure` with the `$what`
+  left out, since the observer has none to put there. `trace: true` also prints
+  what `onTrace` carries, off by default: that is where the coordination below
+  the lifecycle reports, and a scope produces a dozen such lines where it
+  produces one of the rest.
 * Fix a failure that outlives its scope reaching `ScopeConfig.observer` as a
-  failure of the observer. A bounded wait that expired is abandoned rather
-  than forgotten, and the work behind it reports through `onError` with
+  failure of the observer. A bounded wait that expired is abandoned rather than
+  forgotten, and the work behind it reports through `onError` with
   `ScopePhase.abandonedWait` if it falls over later — by which time the scope
   has given its widget back, so reading `target.debugLabel` raised a
   `TypeError` inside the hook and the guard reported *that* instead. The
-  teardown now keeps the label it had while it still had a widget, so the
-  three calls that can reach a consumer after it is over — the scope's own
+  teardown now keeps the label it had while it still had a widget, so the three
+  calls that can reach a consumer after it is over — the scope's own
   `disposeScope`, the cancellation of its initialization, and an
   `AsyncControllerScope` giving back a controller — deliver the failure they
   were written to deliver.
@@ -894,8 +891,8 @@
   in both directions, and a consumer that counts with it — a leak counter, a
   span tracker — got it wrong either way. `onCancelled` is documented as what
   it is: a scope cancelled while still queued for its `scopeKey` sends it
-  without any `onInit` before it, because it never started an initialization
-  of its own. The structural pair joins the same guarantee: a family with no
+  without any `onInit` before it, because it never started an initialization of
+  its own. The structural pair joins the same guarantee: a family with no
   initialization phase of its own — `ScopeWidget`, `ScopeModel`,
   `ScopeNotifier`, `AsyncScopeCoordinator` — used to send `onDisposed` alone,
   with no `onDispose` before it. It now sends both, and only for an element
@@ -908,8 +905,8 @@
   boundary — which puts an `ErrorWidget` in the subtree but tells the observer
   nothing. A structural family therefore reported no event at all for such a
   scope: no `onInit`, and by the rule above no teardown pair either. A family
-  with a phase of its own fared no better, since that phase is started only
-  for an `init()` that returned. The hook now sends `onError` with
+  with a phase of its own fared no better, since that phase is started only for
+  an `init()` that returned. The hook now sends `onError` with
   `ScopePhase.initialization` before it raises the failure again — the one
   point both kinds of family pass through; for a structural scope that single
   event is its whole recording.
@@ -930,12 +927,12 @@
   `default` branch; one written without it stops compiling.
 * Fix an `AsyncControllerScope` failing to give back a controller its own
   initialization never handed over, and telling `ScopeConfig.observer` nothing
-  about it. That release runs from the `finally` of the initialization, where
-  a raise would replace the failure that actually broke the scope, so its own
+  about it. That release runs from the `finally` of the initialization, where a
+  raise would replace the failure that actually broke the scope, so its own
   failure was reported through `FlutterError.reportError` alone — while the
-  expiry of the very same wait already arrived as `onTimeout` with `its
-  controller to be released`. An observer therefore heard about a release that
-  ran too long and nothing at all about one that failed. It now also sends
+  expiry of the very same wait already arrived as `onTimeout` with
+  `its controller to be released`. An observer therefore heard about a release
+  that ran too long and nothing at all about one that failed. It now also sends
   `onError` with `ScopePhase.disposal`, the phase the ordinary teardown uses
   for the same kind of failure; the `FlutterError` report is unchanged.
 * Fix a failing `onUnmount` reaching `ScopeConfig.observer` on one of the two
@@ -949,9 +946,9 @@
   event of the scope. Both paths now report it — and the element's path no
   longer raises it afterwards; see the entry about a batch of scopes below.
 * Fix the second of two simultaneous teardown failures of a `Scope` reaching
-  `ScopeConfig.observer` through neither channel. The state is torn down
-  before the dependencies and each half is guarded on its own, so both can
-  fail; only the first can leave through the throw, and the second went to
+  `ScopeConfig.observer` through neither channel. The state is torn down before
+  the dependencies and each half is guarded on its own, so both can fail; only
+  the first can leave through the throw, and the second went to
   `FlutterError.reportError` alone. It now also sends `onError` — with
   `ScopePhase.unmount` or `ScopePhase.disposal`, whichever half it came from.
   This is reachable with a dependency container written by hand against
@@ -964,9 +961,9 @@
   and no further, and the `onDispose`/`onDisposed` pair closed around it as if
   the teardown had gone through. It now sends `onError` with
   `ScopePhase.disposal` before the failure is raised at the caller as before.
-  With this, every point where a scope hands control to your code on its way
-  in or out reports through the observer; a `buildOnReady` and its siblings
-  still do not, because a build belongs to Flutter's own error boundary, which
+  With this, every point where a scope hands control to your code on its way in
+  or out reports through the observer; a `buildOnReady` and its siblings still
+  do not, because a build belongs to Flutter's own error boundary, which
   answers it with an `ErrorWidget`.
 * All six bounded waits now report an expiry through `ScopeConfig.observer`.
   Four already did; the wait for a `scopeKey` and the wait for child scopes
@@ -982,8 +979,8 @@
 * **Breaking:** the `AsyncScopeParent` mixin now implements `ScopeObservable`,
   so a parent of your own has to answer `debugLabel`. That is what lets an
   expired wait for the children reach the observer from the mixin, under the
-  same label the rest of the scope's events carry. Every element of the
-  package already answered to it.
+  same label the rest of the scope's events carry. Every element of the package
+  already answered to it.
 * Add `ScopeTimeout.none`: the one value a single scope has for "wait as long
   as it takes". Every timeout parameter is a `Duration?` and all three of its
   values were taken — absent or `null` means "take the default from
@@ -1016,65 +1013,67 @@
   `sequential('', […])` or `concurrent('', […])` — reporting through
   `ScopeConfig.observer` under an empty label instead of `[group]`.
   `ScopeDependencyMixin.debugLabel` fell back to `name`, empty by design for
-  such a group, so a line about it printed with a doubled space where the
-  label should have been; `[group]` is the same fallback `wrappedName` already
-  used for the same case, and a named group still reports under its own name,
+  such a group, so a line about it printed with a doubled space where the label
+  should have been; `[group]` is the same fallback `wrappedName` already used
+  for the same case, and a named group still reports under its own name,
   unwrapped.
-* The bookkeeping that decides which build a dependent's selectors belong to asks
-  for a frame when nothing else will bring one. The reset runs in a post-frame
-  callback, and a build is not always inside a frame — `runApp` builds the first
-  tree outside any — so with no frame to come the flag would stay raised and
-  every dependent from then on would add its selectors to a pass that never ends.
-  Asked for only when the scheduler is idle: from inside a frame it would order
-  one more, empty, after every frame that built anything.
+* The bookkeeping that decides which build a dependent's selectors belong to
+  asks for a frame when nothing else will bring one. The reset runs in a
+  post-frame callback, and a build is not always inside a frame — `runApp`
+  builds the first tree outside any — so with no frame to come the flag would
+  stay raised and every dependent from then on would add its selectors to a
+  pass that never ends. Asked for only when the scheduler is idle: from inside
+  a frame it would order one more, empty, after every frame that built
+  anything.
 * `AsyncControllerScopeCore` has `maybeOf`, `of` and `select` of its own, like
-  the two `Core` layers below it. Statics are not inherited in Dart, so a family
-  built on this layer had to reach for `AsyncDataScopeCore.maybeOf` with its own
-  type arguments — which works, and is not something to have to find out.
-* The placeholder `child` every `ScopeInheritedWidget` carries says which mistake
-  it is instead of raising a bare `UnimplementedError` from inside the framework.
-  A scope builds what it shows through `buildChild()`; that placeholder is only
-  reached when a family returns a `child` nobody passed.
+  the two `Core` layers below it. Statics are not inherited in Dart, so a
+  family built on this layer had to reach for `AsyncDataScopeCore.maybeOf` with
+  its own type arguments — which works, and is not something to have to find
+  out.
+* The placeholder `child` every `ScopeInheritedWidget` carries says which
+  mistake it is instead of raising a bare `UnimplementedError` from inside the
+  framework. A scope builds what it shows through `buildChild()`; that
+  placeholder is only reached when a family returns a `child` nobody passed.
 * Dartdoc corrections, all of them about promises rather than behaviour:
   `AsyncDataScope` and `AsyncControllerScope` now say what their twin
   `AsyncScope` says about `scopeKey`, about each expiry callback, about
   `pauseAfterInitialization` and about what the builders receive;
-  `ScopeDependency.count` no longer claims to include the group itself (it counts
-  the steps a subtree reports, and a group reports none); `AsyncScopeModel` is
-  the third type argument of `ScopeModelCore`, not of the two-parameter
-  `AsyncScopeCore`; and the `dispose` comment no longer justifies itself with
-  "a failed leaf is never disposed of at all", which stopped being true when a
-  failed leaf started giving back what it had taken.
-* An expired `AsyncScopeParent.waitForChildren` names the scope after its widget,
-  which is the name carrying `tag`, instead of after its element, which is a type
-  and a hash. The two neighbouring waits —
+  `ScopeDependency.count` no longer claims to include the group itself (it
+  counts the steps a subtree reports, and a group reports none);
+  `AsyncScopeModel` is the third type argument of `ScopeModelCore`, not of the
+  two-parameter `AsyncScopeCore`; and the `dispose` comment no longer justifies
+  itself with "a failed leaf is never disposed of at all", which stopped being
+  true when a failed leaf started giving back what it had taken.
+* An expired `AsyncScopeParent.waitForChildren` names the scope after its
+  widget, which is the name carrying `tag`, instead of after its element, which
+  is a type and a hash. The two neighbouring waits —
   `AsyncScopeCoordinator.waitForChildren` and a scope's own teardown — already
   did. A parent of your own can say what it is called by overriding the new
   `AsyncScopeParent.reportName`.
 * The log line about giving up a place in a `scopeKey` queue names the key the
-  initialization took rather than reading the `scopeKey` getter again. The getter
-  is your code, and a message resolved lazily would have run it from a teardown
-  that has already begun.
-* The diagnostic about a `scopeKey` that changed no longer describes a queue that
-  does not exist. A scope reads its key before it looks for a coordinator, and
-  that lookup is the one step which can fail with the key already read — such a
-  scope entered nothing, and the message said it was "holding [k] in the queue of
-  no AsyncScopeCoordinator".
+  initialization took rather than reading the `scopeKey` getter again. The
+  getter is your code, and a message resolved lazily would have run it from a
+  teardown that has already begun.
+* The diagnostic about a `scopeKey` that changed no longer describes a queue
+  that does not exist. A scope reads its key before it looks for a coordinator,
+  and that lookup is the one step which can fail with the key already read —
+  such a scope entered nothing, and the message said it was "holding [k] in the
+  queue of no AsyncScopeCoordinator".
 * A `ScreenshotReplacer.onCompleted` that raises is reported through
   `FlutterError.reportError` instead of being left where nobody is waiting. The
   callback is called from the capture, which runs as an unawaited future in a
   post-frame callback, so a raise there surfaced as an unhandled zone error far
-  from the widget; called from `dispose` — the last resort, when no capture ever
-  succeeded — it came out of `State.dispose` and took the unmount with it. The
-  report stays one-shot either way. `dispose` also releases the captured
-  `ui.Image` before telling the application anything, so what the state holds no
-  longer depends on what the callback does.
+  from the widget; called from `dispose` — the last resort, when no capture
+  ever succeeded — it came out of `State.dispose` and took the unmount with it.
+  The report stays one-shot either way. `dispose` also releases the captured
+  `ui.Image` before telling the application anything, so what the state holds
+  no longer depends on what the callback does.
 * **Breaking change:** `NodeNavigatorState` can no longer be constructed. The
   type stays public — it is what a `GlobalKey<NodeNavigatorState>()` is made of
   and what it resolves to — but one built by hand and installed under an
-  ordinary `Navigator` would fail on its first pop rather than at the line where
-  the mistake was made: it reads the node from the widget a `NavigationNode`
-  builds. Only that widget can make one now.
+  ordinary `Navigator` would fail on its first pop rather than at the line
+  where the mistake was made: it reads the node from the widget a
+  `NavigationNode` builds. Only that widget can make one now.
 * `NodeNavigatorState` is documented rather than hidden with `@nodoc`. It is
   the type a `GlobalKey<NodeNavigatorState>()` is made of, so
   `NavigationNode.navigatorKey` could not be written without naming it.
@@ -1096,9 +1095,9 @@
   convention, and one a test that forgot it could break for its neighbours.
   `ScopeConfig.observer` is left alone: it is an object rather than a switch,
   and it is usually the whole point of the run it was assigned for. The dartdoc
-  of `pauseAfterInitializationEnabled` described what setting it to `false` does
-  while documenting a field whose value is `true`; it now says what the field
-  is.
+  of `pauseAfterInitializationEnabled` described what setting it to `false`
+  does while documenting a field whose value is `true`; it now says what the
+  field is.
 * `AsyncDataScopeContext.hasData` says whether the initialization has produced
   its value. For a nullable `T` nothing else could: `dataOrNull` is `null` on
   both sides of the moment the value arrives, since `null` is a value the
@@ -1118,8 +1117,8 @@
   caught.
 * `AsyncScopeModel` is documented rather than hidden with `@nodoc`. It is what
   `AsyncScopeElementBase.model` returns, and the model type the family fixes on
-  the layer below — `ScopeModelCore<W, E, AsyncScopeModel>` — so a scope written
-  on the `Core` layer has to name it.
+  the layer below — `ScopeModelCore<W, E, AsyncScopeModel>` — so a scope
+  written on the `Core` layer has to name it.
 * `AsyncScopeElementBase.model` is one object instead of a fresh wrapper on
   every read. `state`, `isInitialized`, `hasError`, `error`, `stackTrace`,
   `buildChild()` and every run of every selector go through it.
@@ -1137,12 +1136,12 @@
   read when there was nothing to read.
 * `State.widget` on a scope state throws an `UnsupportedError` that says why,
   and is no longer marked `@visibleForTesting` — an annotation that read as
-  "use this from tests" where the meaning is "there is nothing here to use".
-  A scope state has no widget of its own; `params` is the scope widget.
-* Fix `LiteScope.wrapState` doing nothing. The hook is documented as the way
-  to put a widget around the ready branch alone, and `Scope` has always
-  honoured it, but the element behind `LiteScope` never called it: whatever it
-  returned was thrown away, and the ready branch was built unwrapped.
+  "use this from tests" where the meaning is "there is nothing here to use". A
+  scope state has no widget of its own; `params` is the scope widget.
+* Fix `LiteScope.wrapState` doing nothing. The hook is documented as the way to
+  put a widget around the ready branch alone, and `Scope` has always honoured
+  it, but the element behind `LiteScope` never called it: whatever it returned
+  was thrown away, and the ready branch was built unwrapped.
 * Fix a root `NavigationNode` forwarding a pop after all. `isRoot` says the
   node keeps a pop to itself, and `NodeNavigatorState.pop` honoured it, but the
   system back reaches the navigator above by another path — and there the
@@ -1151,22 +1150,24 @@
   took the last route of the application's own navigator and left a blank
   screen. The hook is still asked, since that is where an application decides
   what its own outermost back means, but a `true` no longer leaves the node.
-* Fix an ordinary `NavigationNode` on the first route emptying the application's
-  own navigator. The fix above was made for `isRoot` and stopped there, while
-  the line it left in place — a plain `pop` on the navigator above — takes the
-  last route that navigator holds without asking whether it is the last. A node
-  placed as `home` with an `onPop` that allowed the pop therefore left a blank
-  screen, and an assertion of the framework on the frame after it.
+* Fix an ordinary `NavigationNode` on the first route emptying the
+  application's own navigator. The fix above was made for `isRoot` and stopped
+  there, while the line it left in place — a plain `pop` on the navigator
+  above — takes the last route that navigator holds without asking whether it
+  is the last. A node placed as `home` with an `onPop` that allowed the pop
+  therefore left a blank screen, and an assertion of the framework on the frame
+  after it.
 * Fix that same forwarding walking past a `PopScope` the application put around
   the node: a route the application guarded, and refused a pop for, was taken
   anyway. Both defects are one line, and the node now asks the route it stands
   on what a pop there would do instead of telling it. It asks with its own
   answer stood aside for the length of the question — the node's own entry is
-  registered on that very route and has already had its say — so what is left is
-  what the node has no business answering for itself: the application's guard,
-  and whether there is a route to give up at all. Asking rather than telling is
-  also why an application still hears one press as one: a `maybePop` of the
-  node's own would report a second refusal to every `PopScope` on that route.
+  registered on that very route and has already had its say — so what is left
+  is what the node has no business answering for itself: the application's
+  guard, and whether there is a route to give up at all. Asking rather than
+  telling is also why an application still hears one press as one: a `maybePop`
+  of the node's own would report a second refusal to every `PopScope` on that
+  route.
 * Fix system back taking the whole route instead of closing a `Drawer`, a
   `showBottomSheet` or anything else a `NavigationNode`'s page opened with
   `addLocalHistoryEntry`. None of those change a navigator's stack, and nothing
@@ -1183,27 +1184,27 @@
   only whether its local history is empty. The page says
   `impliesAppBarDismissal` for itself now, and `NodeNavigatorState.maybePop`
   leaves the node when the node has nothing of its own to close, which is what
-  the arrow presses. `NodeNavigatorState.canPop()` therefore stopped
-  overriding `NavigatorState.canPop()`: with no marker of the node's own in the
-  way, the base answer is the true one, and it used to answer `false` while a
-  drawer was open.
+  the arrow presses. `NodeNavigatorState.canPop()` therefore stopped overriding
+  `NavigatorState.canPop()`: with no marker of the node's own in the way, the
+  base answer is the true one, and it used to answer `false` while a drawer was
+  open.
 * Fix a `pauseAfterInitialization` outliving the tree. The delay was a timer
   nobody held, so a scope taken off the tree mid-pause left it running: in a
-  widget test that is `A Timer is still pending even after the widget tree was
-  disposed`, which fails a test of yours for no reason of yours, and in
-  production it is an unmounted element held for the rest of the pause. The
-  scope keeps the timer now and puts it out first thing in the teardown. It is
-  still a timer of the current zone, unlike the bounded waits below — this delay
-  is one the user sees, so a widget test must be able to drive it with
-  `pump(duration)`.
+  widget test that is
+  `A Timer is still pending even after the widget tree was disposed`, which
+  fails a test of yours for no reason of yours, and in production it is an
+  unmounted element held for the rest of the pause. The scope keeps the timer
+  now and puts it out first thing in the teardown. It is still a timer of the
+  current zone, unlike the bounded waits below — this delay is one the user
+  sees, so a widget test must be able to drive it with `pump(duration)`.
 * Fix the wait for a `scopeKey` and the wait for the child scopes taking their
-  timers from the current zone. Both used `Future.timeout`, which does, and both
-  are waits on a hang that outlives frames — a scope is usually taken down
+  timers from the current zone. Both used `Future.timeout`, which does, and
+  both are waits on a hang that outlives frames — a scope is usually taken down
   between them, so the timer was still pending once the tree was gone, and that
   is what `flutter_test` ends a test on. The other two bounded waits of the
   teardown had already been moved to the root zone for this reason; these two
-  are the same kind of wait and had been missed. A consequence for tests: a wait
-  of any of the four is now waited out in real time, and `pump(duration)`
+  are the same kind of wait and had been missed. A consequence for tests: a
+  wait of any of the four is now waited out in real time, and `pump(duration)`
   reaches none of them. The `debug` topic says so.
 * Fix an initialization stream that ends without `AsyncScopeReady` leaving the
   scope on its loading branch for good, and silently. The model stayed
@@ -1211,47 +1212,47 @@
   an `info` line in a logger that is off by default — nothing on screen and
   nothing in the console, which is the hardest kind of failure to look for. The
   scope now moves to `AsyncScopeError` with a `StateError` saying what a stream
-  is expected to end with, so `buildOnError` builds and the report is loud. This
-  reaches every family: `AsyncDataScope`, `AsyncControllerScope` and the `Scope`
-  container all initialize through the same subscription.
+  is expected to end with, so `buildOnError` builds and the report is loud.
+  This reaches every family: `AsyncDataScope`, `AsyncControllerScope` and the
+  `Scope` container all initialize through the same subscription.
 * Fix the same silence coming from the other side: `ScopeAutoDependencies`
   awaited the disposal of its half-built tree with no limit, from the `finally`
-  of its own generator. Nothing downstream sees the failure of an initialization
-  until the generator finishes, so a `dep.dispose` that never completed held not
-  only the resources but the failure itself, and the scope showed its loading
-  branch for ever. The wait is now bounded by
+  of its own generator. Nothing downstream sees the failure of an
+  initialization until the generator finishes, so a `dep.dispose` that never
+  completed held not only the resources but the failure itself, and the scope
+  showed its loading branch for ever. The wait is now bounded by
   `ScopeConfig.defaultDisposeScopeTimeout`, the way every other wait in the
-  teardown is, and giving up is reported rather than passed over; a release that
-  fails after it was abandoned is reported too. The `AsyncScope` topic now says
-  what an `await` in a hand-written guard costs when it cannot finish.
-* Fix a controller left unreleased when its `init()` woke up after the
-  teardown was over. An initialization parked on a future cannot be cancelled
-  — cancelling an `async*` means resuming its body, and a body suspended for
-  good is never resumed — so the teardown gives up on it after
-  `initCancellationTimeout` and runs to the end. If that future ever
-  completes, the generator is resumed with its `finally` still holding the
-  controller to release; by then the element has given back everything it
-  held, the widget among it. Reading `disposeScopeTimeout` there went through
-  that widget and raised a `_TypeError` where a release belonged, so the
-  console got a report about a null instead of the release the family
-  promises on every path. An abandoned release now runs unbounded, which is
-  what it deserves: nobody is waiting for it and it can hold nothing up.
+  teardown is, and giving up is reported rather than passed over; a release
+  that fails after it was abandoned is reported too. The `AsyncScope` topic now
+  says what an `await` in a hand-written guard costs when it cannot finish.
+* Fix a controller left unreleased when its `init()` woke up after the teardown
+  was over. An initialization parked on a future cannot be cancelled —
+  cancelling an `async*` means resuming its body, and a body suspended for good
+  is never resumed — so the teardown gives up on it after
+  `initCancellationTimeout` and runs to the end. If that future ever completes,
+  the generator is resumed with its `finally` still holding the controller to
+  release; by then the element has given back everything it held, the widget
+  among it. Reading `disposeScopeTimeout` there went through that widget and
+  raised a `_TypeError` where a release belonged, so the console got a report
+  about a null instead of the release the family promises on every path. An
+  abandoned release now runs unbounded, which is what it deserves: nobody is
+  waiting for it and it can hold nothing up.
 * `LiteScope.buildOnWaiting` is documented as the required builder it is, and
   the two optional ones say what happens when they are left out. The dartdoc
-  read like that of an optional method — "may return `null`" — while the
-  method is abstract, which is the wrong half of the story to tell first. The
-  rule across the families is one: exactly one branch before the ready one has
-  to be written, and it is the one that family is certain to reach. A `Scope`
-  always initializes a container, so `buildOnProgress` is its required
-  one; a `LiteScope` initializes nothing of its own, so the branch it always
-  has is the wait. The `LiteScope` topic now says so, and says what moving a
-  screen from `Scope` to `LiteScope` trades for what.
+  read like that of an optional method — "may return `null`" — while the method
+  is abstract, which is the wrong half of the story to tell first. The rule
+  across the families is one: exactly one branch before the ready one has to be
+  written, and it is the one that family is certain to reach. A `Scope` always
+  initializes a container, so `buildOnProgress` is its required one; a
+  `LiteScope` initializes nothing of its own, so the branch it always has is
+  the wait. The `LiteScope` topic now says so, and says what moving a screen
+  from `Scope` to `LiteScope` trades for what.
 * A `LiteScope` that overrides `init()` and forgets `buildOnProgress` or
   `buildOnError` gets an `UnimplementedError` that names the scope and the
-  method instead of a bare one that names nothing. The error branch carries
-  the failure it was called for as well: without it that failure was replaced
-  on screen by the missing-builder error, and the reason the initialization
-  failed at all went with it.
+  method instead of a bare one that names nothing. The error branch carries the
+  failure it was called for as well: without it that failure was replaced on
+  screen by the missing-builder error, and the reason the initialization failed
+  at all went with it.
 * The `AsyncScope` topic showed `hasChildren`, `childrenCount` and
   `waitForChildren` on a `scope` a reader has no way of getting hold of: the
   mixin that carries them sits on the element, and the elements of the five
@@ -1271,8 +1272,8 @@
   handed over is a state that can be read, so the failure goes with the same
   call; the listeners hear about it even when the value is the one from before
   the failure, since `shouldNotify` weighs one value against another and this
-  change is between a
-  state that throws and one that does not. The `ScopeNotifier` topic says so.
+  change is between a state that throws and one that does not. The
+  `ScopeNotifier` topic says so.
 * The dartdoc of `of`, `maybeOf` and `select` on `Scope` and `LiteScope`
   promised one condition where there are two. Both read the state, and the
   state exists only in the ready branch — so a scope that is waiting for its
@@ -1293,9 +1294,9 @@
   caller.
 * Fix the *first* failure being lost in the two halves of a `Scope` teardown.
   `ScopeState.onUnmount` runs before `ScopeDependencies.onUnmount`, and
-  `ScopeState.disposeStateAsync` before `ScopeDependencies.dispose`; in both pairs
-  the state's failure was kept in a local while the container's was left to
-  throw over the top of it, so the first — the one that explains what the
+  `ScopeState.disposeStateAsync` before `ScopeDependencies.dispose`; in both
+  pairs the state's failure was kept in a local while the container's was left
+  to throw over the top of it, so the first — the one that explains what the
   second made of the same teardown — vanished without a trace. Both halves are
   now guarded apart: the first failure leaves through the throw, the second
   through a report. This shows only with a hand-written `ScopeDependencies`:
@@ -1313,19 +1314,19 @@
   which is the only place a limit can be removed at all. The `debug` topic says
   the same.
 * **Breaking:** the first type argument of `ScopeAutoDependencies` is now bound
-  to the container itself — `ScopeAutoDependencies<T extends
-  ScopeAutoDependencies<T, C>, C>`. It had been bound to `ScopeDependencies`
-  only, so anything at all could stand there, and what stands there is what the
-  container hands the scope when the tree is up. A container naming another
-  container — a copy-paste with the argument left behind — compiled, built its
-  whole tree, initialized it, and then failed on the cast at the very end of a
-  successful initialization: a bare `TypeError` from a line the caller never
-  wrote, with everything still running and nothing left holding a reference to
-  release it. The bound alone does not close it, since another container
-  satisfies the bound too, so the container also refuses a type argument that is
-  not itself before it builds anything, and says which two types it is looking
-  at. A container that already named itself, which is what every example and
-  every test did, is unaffected.
+  to the container itself —
+  `ScopeAutoDependencies<T extends ScopeAutoDependencies<T, C>, C>`. It had
+  been bound to `ScopeDependencies` only, so anything at all could stand there,
+  and what stands there is what the container hands the scope when the tree is
+  up. A container naming another container — a copy-paste with the argument
+  left behind — compiled, built its whole tree, initialized it, and then failed
+  on the cast at the very end of a successful initialization: a bare
+  `TypeError` from a line the caller never wrote, with everything still running
+  and nothing left holding a reference to release it. The bound alone does not
+  close it, since another container satisfies the bound too, so the container
+  also refuses a type argument that is not itself before it builds anything,
+  and says which two types it is looking at. A container that already named
+  itself, which is what every example and every test did, is unaffected.
 * **Behaviour change:** `NavigationNode.onPop` is given a context from inside
   the node. It used to get one from above the nested navigator, so
   `Navigator.of(context)` there was the application's navigator — and the
@@ -1333,8 +1334,8 @@
   `useRootNavigator: false`, was pushed outside the node, above everything the
   node exists to stay below. A scope the node stood under was unreachable from
   the dialog asking whether to leave it. The context the route the node stands
-  on is found from is unchanged, so an answer arriving after that route has been
-  closed or buried still takes nothing.
+  on is found from is unchanged, so an answer arriving after that route has
+  been closed or buried still takes nothing.
 * A notification no longer rebuilds the widgets of the subtree it is not
   rebuilding. "Skips rebuilding the whole subtree" was true of the elements and
   not of the widgets: `ComponentElement.performRebuild` calls `build()`
@@ -1354,9 +1355,9 @@
 * `of` and `select` on `LiteScope` and `Scope` say which scope they found and
   what state it is in when there is no state to answer with. The state is
   created in the ready branch, so any other state — waiting for a `scopeKey`,
-  initializing, failed, or closed in place — used to answer `Null check
-  operator used on a null value`, naming neither. `maybeOf` still answers
-  `null` there, the same as when there is no such scope at all, and the
+  initializing, failed, or closed in place — used to answer
+  `Null check operator used on a null value`, naming neither. `maybeOf` still
+  answers `null` there, the same as when there is no such scope at all, and the
   message says so.
 * The methods that carry a family's promise are sealed. `initScope` on
   `AsyncDataScopeElementBase` catches the value on its way past, and
@@ -1369,32 +1370,32 @@
 * Fix a controller whose `dispose()` fails taking the failure of its `init()`
   with it. The release runs from a `finally`, and an exception raised there
   replaces the one the `finally` was entered for — so `buildOnError` was handed
-  the secondary failure and the reason the scope actually broke disappeared.
-  It is reported now, and the original is what the scope shows. `dispose()` is
-  documented to run on the path where `init()` failed halfway, which makes
-  that the path it is most likely to fail on.
+  the secondary failure and the reason the scope actually broke disappeared. It
+  is reported now, and the original is what the scope shows. `dispose()` is
+  documented to run on the path where `init()` failed halfway, which makes that
+  the path it is most likely to fail on.
 * The same release is bounded by `disposeScopeTimeout`, which the
   `AsyncControllerScope` topic already promised for it. Nothing bounded it on
   the path where `init()` threw: a teardown that never finished never let the
-  generator finish either, so the failure never reached the model and the
-  scope showed its loading branch for ever, with no report of any kind.
+  generator finish either, so the failure never reached the model and the scope
+  showed its loading branch for ever, with no report of any kind.
 * [breaking changes] The `value` of `ScopeModel.value` and
   `ScopeNotifier.value` is a non-nullable `M`. The field behind it stays
   nullable — the owning constructor leaves it empty — and `required` therefore
-  said nothing about what a `.value` scope was handed: `null` compiled and
-  then failed on a bare null check, naming neither the scope nor the
-  parameter, and for a notifier from inside `init()`. A nullable expression
-  now needs a `!` at the call, where the decision belongs.
+  said nothing about what a `.value` scope was handed: `null` compiled and then
+  failed on a bare null check, naming neither the scope nor the parameter, and
+  for a notifier from inside `init()`. A nullable expression now needs a `!` at
+  the call, where the decision belongs.
 * `CompositeListenableSubscription.cancel()` skips a member that was already
   cancelled on its own instead of cancelling it again. Cancelling a
   subscription twice is a mistake in the caller and still says so, but a
   composite holding one is not that caller: raising there left every member
   after it in the list still listening — the very leak the composite exists to
   prevent, and in debug builds only, since release has no assert to raise.
-* A failure of a dependency reaches `buildOnError` with the stack trace of
-  what actually failed. The wrapper was raised with `StackTrace.empty`, so the
-  trace that travelled up the tree — and into whatever the application does
-  with it — pointed nowhere. The original was inside
+* A failure of a dependency reaches `buildOnError` with the stack trace of what
+  actually failed. The wrapper was raised with `StackTrace.empty`, so the trace
+  that travelled up the tree — and into whatever the application does with it —
+  pointed nowhere. The original was inside
   `ScopeDependencyException.stackTrace` all along, but nothing said so.
 * A failure of the dependency teardown is reported through
   `FlutterError.reportError`, not only logged. `ScopeAutoDependencies.dispose`
@@ -1405,16 +1406,16 @@
   belongs to instead of looking one up through `context`. The lookup answered
   the *nearest* scope of that type, which a `wrapState` putting another scope
   of the same type around the state is enough to shadow, and it answered
-  nothing at all once the state had been unmounted — where closing a scope
-  that is already gone should cost nothing.
+  nothing at all once the state had been unmounted — where closing a scope that
+  is already gone should cost nothing.
 * Fix a teardown passing on its last failure instead of its first. Its four
   stages are guarded apart so that a failure in one never skips the ones after
   it, and the first of them is what the caller was meant to hear — but two of
-  the three handlers assigned to the record instead of keeping what was
-  already there, so the last one won and the first was left in a log that is
-  off by default. Only a scope closed with `close()` could show it: on a scope
-  taken off the tree the framework has already run the synchronous half before
-  the teardown reaches it, so that stage cannot fail there at all.
+  the three handlers assigned to the record instead of keeping what was already
+  there, so the last one won and the first was left in a log that is off by
+  default. Only a scope closed with `close()` could show it: on a scope taken
+  off the tree the framework has already run the synchronous half before the
+  teardown reaches it, so that stage cannot fail there at all.
 * `AsyncScopeParent.waitForChildren` defaults its `timeout` to
   `ScopeConfig.defaultWaitForChildrenTimeout`, the same default the identically
   named helper on `AsyncScopeCoordinator` has always applied. It passed `null`
@@ -1434,13 +1435,13 @@
   inside its own build — where a second failure becomes an `ErrorWidget` for
   that one widget, instead of a second, derived error for the frame.
 * Fix one failing disposer taking the rest of a *concurrent* group with it —
-  the same defect as the sequential one above, in the class beside it. An
-  error reaching the merged stream cancelled every arm still running, and an
-  arm suspended mid-walk resumes only as far as its next `yield`: a nested
-  branch stopped wherever the cancellation found it, everything below that
-  point stayed held, and nothing came back for it, since the walk marks itself
-  done whichever way it ended. Each arm now keeps its failure to itself, the
-  merge finishes, and the first failure is passed upwards afterwards. The
+  the same defect as the sequential one above, in the class beside it. An error
+  reaching the merged stream cancelled every arm still running, and an arm
+  suspended mid-walk resumes only as far as its next `yield`: a nested branch
+  stopped wherever the cancellation found it, everything below that point
+  stayed held, and nothing came back for it, since the walk marks itself done
+  whichever way it ended. Each arm now keeps its failure to itself, the merge
+  finishes, and the first failure is passed upwards afterwards. The
   initialization of a concurrent group is unchanged: there the first error is
   meant to cancel the rest, and what the losing arms took is picked up by the
   disposal that follows.
@@ -1480,16 +1481,15 @@
   the selected type last: `select<Profile, String>` rather than
   `select<String, Profile>`. It was the only one the other way round, against
   `ScopeModel`, `ScopeNotifier`, `Scope`, `LiteScope` and its own
-  `AsyncDataScopeBase.select`. A call written for the old order stops
-  compiling rather than changing meaning.
+  `AsyncDataScopeBase.select`. A call written for the old order stops compiling
+  rather than changing meaning.
 * [breaking changes] `AsyncScope` hands the progress to the branches built
-  before the scope is ready: `progressBuilder` is now
-  `(context, progress)` and `errorBuilder` is
-  `(context, error, stackTrace, progress)`, matching `Scope`, `LiteScope` and
-  `AsyncDataScope`. It was the only family that computed the progress, kept it
-  in the model, and then left the builder to fish it back out of
-  `AsyncScope.of`. Subclasses of `AsyncScopeBase` take the same two arguments
-  in `buildOnProgress` and `buildOnError`.
+  before the scope is ready: `progressBuilder` is now `(context, progress)` and
+  `errorBuilder` is `(context, error, stackTrace, progress)`, matching `Scope`,
+  `LiteScope` and `AsyncDataScope`. It was the only family that computed the
+  progress, kept it in the model, and then left the builder to fish it back out
+  of `AsyncScope.of`. Subclasses of `AsyncScopeBase` take the same two
+  arguments in `buildOnProgress` and `buildOnError`.
 * Fix a teardown held forever by a `disposeScope` that never completes — the
   same hole one step further down, and user code on both sides of it. The
   release that follows it, and with it the `scopeKey` of a scope that had
@@ -1584,10 +1584,10 @@
   opposite of what it is asked. The same correction lands in the dartdoc of
   `Listenable.select` and `ListenableSelector.compare`, and in `doc/utils.md`.
 * Fix `AsyncDataScopeContext.data` handing out a `null` the scope never
-  produced. For a nullable `T` the getter read the value itself as the answer to
-  "is there one yet?", so before the initialization finished it returned `null`
-  instead of throwing `StateError`. Readiness is now tracked apart from the
-  value, and a legitimate `null` result still reads as `null`.
+  produced. For a nullable `T` the getter read the value itself as the answer
+  to "is there one yet?", so before the initialization finished it returned
+  `null` instead of throwing `StateError`. Readiness is now tracked apart from
+  the value, and a legitimate `null` result still reads as `null`.
 * Fix a selector staying registered after the widget stopped reading it. What a
   dependent selected was added to what it had selected in earlier builds, and
   the pile was only cleared once a change had already been found: a widget that
@@ -1674,10 +1674,10 @@
   what the composite exists to prevent: the subscription was made on the line
   before, and the throw was what kept it attached to its listenable with nobody
   holding it.
-* The suite is no longer part of the published archive. 756 KB against the
-  540 KB of `lib/`, downloaded by everyone who depends on the package and of no
-  use to any of them — the topics in `doc/` are the documentation and they
-  ship. 364 KB compressed becomes 234 KB.
+* The suite is no longer part of the published archive. 756 KB against the 540
+  KB of `lib/`, downloaded by everyone who depends on the package and of no use
+  to any of them — the topics in `doc/` are the documentation and they ship.
+  364 KB compressed becomes 234 KB.
 * The dartdoc of `ListenableSelector.selector` says what comparing it by
   identity costs: the inline closure the examples show is a new object on every
   build of the parent, so each of those rebuilds cancels the subscription and
@@ -1709,9 +1709,10 @@
   mentions them, and lists all of them: the two a `Scope` reports for the two
   steps behind `disposeScope` were missing from the table.
 * Fix `PreviousNavigatorExtension.previous` throwing for a `NavigatorState`
-  whose tree is gone. The guard was written the wrong way round — `State.context`
-  asserts on an unmounted state, so asking the *context* whether it is mounted
-  read it first and raised. It asks the state now, and answers `null`.
+  whose tree is gone. The guard was written the wrong way round —
+  `State.context` asserts on an unmounted state, so asking the *context*
+  whether it is mounted read it first and raised. It asks the state now, and
+  answers `null`.
 * Fix a root `NavigationNode` letting a `maybePop` out of itself. "A root node
   keeps a pop to itself" was honoured by `pop` and not by `maybePop`, which is
   the path the back arrow of an `AppBar` takes and the one a caller holding the
@@ -1734,13 +1735,13 @@
 * Fix a notification made from the build of a *descendant* being refused. The
   guard that defers such a notification asked whether *this* element was
   rebuilding, and a model touched from a descendant's build — a lazy load, a
-  default filled in on first read, the ordinary user code the guard exists for
-  — arrives while it is not. The bare `markNeedsBuild()` was then called on an
-  element that is not the one building, which the framework refuses outright;
-  in release the check lives in an assert and the same code worked, so this was
-  a difference between debug and release rather than a rule. Any build defers
-  it now, and a second notification arriving before the frame is over joins the
-  callback already waiting instead of adding one of its own.
+  default filled in on first read, the ordinary user code the guard exists
+  for — arrives while it is not. The bare `markNeedsBuild()` was then called on
+  an element that is not the one building, which the framework refuses
+  outright; in release the check lives in an assert and the same code worked,
+  so this was a difference between debug and release rather than a rule. Any
+  build defers it now, and a second notification arriving before the frame is
+  over joins the callback already waiting instead of adding one of its own.
 * An `aspect` the scope does not recognise subscribes the dependent to every
   change instead of to nothing. It can only come from a
   `dependOnInheritedElement` written by hand, and the assert that says so is
@@ -1753,9 +1754,9 @@
   The hook was read at the top of the walk and cleared in the `finally` — that
   is, after the `await` — so a second `dispose()` arriving while the first was
   parked on the disposer read the same hook and ran it again: a second
-  rollback, a second close, a second write. It is taken off before it is
-  called now, the way `unmount` beside it always was, so "exactly once" holds
-  by construction rather than by which caller arrives first.
+  rollback, a second close, a second write. It is taken off before it is called
+  now, the way `unmount` beside it always was, so "exactly once" holds by
+  construction rather than by which caller arrives first.
   `ScopeAutoDependencies.dispose()` likewise hands a second caller the run
   already going rather than opening a second teardown of the same tree; once it
   is over a later call runs again, since a walk that was stopped halfway leaves
@@ -1783,9 +1784,9 @@
   joined the public API without anybody deciding it — and a name is public from
   the moment it ships. Nothing a consumer could reach changes.
 * `Progress` compares by value. It arrives in `buildOnProgress` and inside
-  `AsyncScopeProgress`, both of which are compared — a selector holding one, and
-  the model of a scope — and by identity two readings of the same step answered
-  "changed", so a subtree rebuilt for a step that had not moved.
+  `AsyncScopeProgress`, both of which are compared — a selector holding one,
+  and the model of a scope — and by identity two readings of the same step
+  answered "changed", so a subtree rebuilt for a step that had not moved.
 * `NavigationNode` gains `enabled`, for the one shape where a node cannot work
   out whether the press is its own: **several nodes on one route**, of which
   one is on screen — a node per tab of an `IndexedStack`, which builds every
@@ -1814,25 +1815,26 @@
   a bottom sheet and an application's own `LocalHistoryEntry` all look like.
 * Fix `disposeScopeTimeout` expiring on a `Scope` skipping the disposal of its
   dependency container entirely. The teardown put one limit around
-  `disposeScope()`, and for a `Scope` that method is two steps — the state's own
-  asynchronous teardown and then the container's. A state that never finished
-  therefore spent the whole limit, the wait was given up on, and what it gave up
-  on was both steps: the `scopeKey` came back on time and every dependency
-  stayed held with nothing left to release it. The `Scope` topic described the
-  two as separate steps and promised that "a failure in one is never a reason to
-  skip what comes behind it" — which was true of a failure and not of a hang.
-  The two are now bounded one each. A teardown where both hang reports two
-  expiries, and the topic says so.
-* Fix `close()` over a subtree that can never be painted — inside an `Offstage`,
-  or the unselected branch of an `IndexedStack` — leaving that subtree standing.
-  `ScreenshotReplacer` gives up after `maxRetries` frames and reports that the
-  screenshot is no longer pending, which releases the barrier `close()` waits
-  on; it used to keep the child in place all the same. The scope then tore
-  itself down under a ready subtree that was still mounted: the scopes below it
-  stayed registered, this one waited out its whole `waitForChildrenTimeout` for
-  a child nobody had taken away, and released what that child was still reading.
-  Giving up now takes the child away too, which is what the report is for —
-  with no image to put there, what takes its place is nothing.
+  `disposeScope()`, and for a `Scope` that method is two steps — the state's
+  own asynchronous teardown and then the container's. A state that never
+  finished therefore spent the whole limit, the wait was given up on, and what
+  it gave up on was both steps: the `scopeKey` came back on time and every
+  dependency stayed held with nothing left to release it. The `Scope` topic
+  described the two as separate steps and promised that "a failure in one is
+  never a reason to skip what comes behind it" — which was true of a failure
+  and not of a hang. The two are now bounded one each. A teardown where both
+  hang reports two expiries, and the topic says so.
+* Fix `close()` over a subtree that can never be painted — inside an
+  `Offstage`, or the unselected branch of an `IndexedStack` — leaving that
+  subtree standing. `ScreenshotReplacer` gives up after `maxRetries` frames and
+  reports that the screenshot is no longer pending, which releases the barrier
+  `close()` waits on; it used to keep the child in place all the same. The
+  scope then tore itself down under a ready subtree that was still mounted: the
+  scopes below it stayed registered, this one waited out its whole
+  `waitForChildrenTimeout` for a child nobody had taken away, and released what
+  that child was still reading. Giving up now takes the child away too, which
+  is what the report is for — with no image to put there, what takes its place
+  is nothing.
 * The `LiteScope` topic no longer promises that the ready branch waits for
   `initStateAsync()`. It cannot: the state is created by the ready branch, so
   by the time its asynchronous initialization can begin, that branch has
@@ -1841,15 +1843,15 @@
   are corrected, the dartdoc of `initStateAsync` now says what does and does
   not wait for it, and both places name `isInitialized` and `onInitialized` as
   the two halves of the answer. No behaviour changed — the promise did.
-* `select` and `listen: true` are allowed from the builder of a `LayoutBuilder`,
-  an `OrientationBuilder` or a `SliverLayoutBuilder`. Those run from
-  `performLayout`, inside a build of their own element, and what they return is
-  that element's subtree — but a `RenderObjectElement` raises `debugDoingBuild`
-  for `performRebuild` alone, so the assertion behind the "only from a build"
-  rule refused a working and common pattern, and refused it in debug only. The
-  assertion now also accepts a layout callback. It still refuses
-  `didChangeDependencies`, except for a dependent that is itself under a layout
-  callback, which is the one case the two cannot be told apart in.
+* `select` and `listen: true` are allowed from the builder of a
+  `LayoutBuilder`, an `OrientationBuilder` or a `SliverLayoutBuilder`. Those
+  run from `performLayout`, inside a build of their own element, and what they
+  return is that element's subtree — but a `RenderObjectElement` raises
+  `debugDoingBuild` for `performRebuild` alone, so the assertion behind the
+  "only from a build" rule refused a working and common pattern, and refused it
+  in debug only. The assertion now also accepts a layout callback. It still
+  refuses `didChangeDependencies`, except for a dependent that is itself under
+  a layout callback, which is the one case the two cannot be told apart in.
 * Fix a second `ScopeReady` from a `Scope`'s own `initDependencies` replacing
   the container before anything could refuse it. The field was assigned inside
   the `map` the family wraps the initialization in, one step ahead of the
@@ -1890,16 +1892,16 @@
   it, the `scopeKey` and the registration with the parent included, while
   Flutter's own `State.dispose` had already run under the `ErrorWidget`. The
   closing build is now guarded and releases the barrier before the failure goes
-  on to the boundary above.
-  The reachable trigger was the package's own: the ready branch was wrapped in
-  a bare `Stack`, which resolves its alignment through a `Directionality`
-  *above* itself, and a scope at the root of the application builds the
-  `MaterialApp` inside its own branches — so every `Directionality` in the tree
-  is below that point and the first rebuild after `close()` threw while the
-  `Stack` was being mounted. That `Stack` now aligns with `Alignment.topLeft`,
-  which needs none; nothing is aligned by it either way. The `LiteScope` topic
-  says both, and says that the default closing overlay reads the theme above
-  the scope, which for such a root scope is `ThemeData.fallback()`.
+  on to the boundary above. The reachable trigger was the package's own: the
+  ready branch was wrapped in a bare `Stack`, which resolves its alignment
+  through a `Directionality` *above* itself, and a scope at the root of the
+  application builds the `MaterialApp` inside its own branches — so every
+  `Directionality` in the tree is below that point and the first rebuild after
+  `close()` threw while the `Stack` was being mounted. That `Stack` now aligns
+  with `Alignment.topLeft`, which needs none; nothing is aligned by it either
+  way. The `LiteScope` topic says both, and says that the default closing
+  overlay reads the theme above the scope, which for such a root scope is
+  `ThemeData.fallback()`.
 * `ScopeController.performDispose()` runs `dispose` even when `onUnmount`
   threw. The two stages were chained, so a synchronous half that failed left
   everything the controller had taken held — and `_disposeCompleter` was
@@ -1932,8 +1934,8 @@
   `>=3.27.0`.
 * `meta` is no longer a dependency: nothing under `lib/` imports it. A single
   test utility does, so it is a dev dependency now.
-* [breaking changes] An expired `waitForChildren` now drops the children it
-  was awaiting, so `hasChildren` and `childrenCount` fall to zero for them.
+* [breaking changes] An expired `waitForChildren` now drops the children it was
+  awaiting, so `hasChildren` and `childrenCount` fall to zero for them.
   Children registered while the wait was already running are kept.
 * The dartdoc of `ScopeConfig.defaultScopeKeyTimeout` and
   `defaultWaitForChildrenTimeout` was wrong: a zero duration expires
@@ -1962,9 +1964,8 @@
     its disposal — previously every such scope landed in the global
     `asyncScopeRoot`. Such code keeps compiling unchanged and behaves
     differently: if anything used to await those scopes, put an
-    `AsyncScopeCoordinator` above them (the usual place is above
-    `MaterialApp`) and await
-    `AsyncScopeCoordinator.waitForChildren(context)`.
+    `AsyncScopeCoordinator` above them (the usual place is above `MaterialApp`)
+    and await `AsyncScopeCoordinator.waitForChildren(context)`.
 * [breaking changes] Unify dependency path format: no leading `/` in
   `ScopeDependencyException.name`, `ScopeDependencyInfo.path` and progress
   paths; anonymous groups add no separator.
@@ -1996,46 +1997,46 @@
   burned its whole `waitForChildrenTimeout` on a scope that was already gone,
   and neither of them was ever disposed of. The failure is still reported the
   same way, and a scope whose initialization never happened is still not
-  disposed of. The same failure in `LiteScopeCoreState.initStateAsync()` no longer
-  keeps `close()` waiting forever either.
+  disposed of. The same failure in `LiteScopeCoreState.initStateAsync()` no
+  longer keeps `close()` waiting forever either.
 * Fix a failure raised after `initScope()` had already reached
-  `AsyncScopeReady` crashing with `Bad state: Future already completed`
-  instead of being reported: the stream's error handler completed the
-  initialization completer a second time, and that crash replaced the failure
-  it was handling, so the real error reached nobody. Such a failure is now
-  reported through `FlutterError.reportError` (library `scopo`) and the scope
-  stays ready — it is no longer flipped into `AsyncScopeError`, which would
-  have replaced the widgets already on screen with `buildOnError` while
-  `disposeScope()` still ran. The `already initialized` diagnostic now checks
-  whether the initialization succeeded instead of the applied model state, so
-  a second `AsyncScopeReady` arriving before the post-frame callback that
-  applies the first one no longer re-runs the whole ready branch.
+  `AsyncScopeReady` crashing with `Bad state: Future already completed` instead
+  of being reported: the stream's error handler completed the initialization
+  completer a second time, and that crash replaced the failure it was handling,
+  so the real error reached nobody. Such a failure is now reported through
+  `FlutterError.reportError` (library `scopo`) and the scope stays ready — it
+  is no longer flipped into `AsyncScopeError`, which would have replaced the
+  widgets already on screen with `buildOnError` while `disposeScope()` still
+  ran. The `already initialized` diagnostic now checks whether the
+  initialization succeeded instead of the applied model state, so a second
+  `AsyncScopeReady` arriving before the post-frame callback that applies the
+  first one no longer re-runs the whole ready branch.
 * Fix a `scopeKey` held forever when `onScopeKeyTimeout()` throws: an expired
   wait lets the scope into the key anyway and then calls that hook, so by the
-  time it ran the entry was already in the queue — and a failure there made
-  the scope forget the entry, so its disposal never released the key. Every
-  later scope on that key then waited for an entry nobody would ever
-  complete, with no way out. The coordinator is now resolved before the entry
-  is created, which is what the blanket handler existed for, and an attached
-  entry is never dropped.
+  time it ran the entry was already in the queue — and a failure there made the
+  scope forget the entry, so its disposal never released the key. Every later
+  scope on that key then waited for an entry nobody would ever complete, with
+  no way out. The coordinator is now resolved before the entry is created,
+  which is what the blanket handler existed for, and an attached entry is never
+  dropped.
 * Fix a scope running its whole initialization after its disposal had already
   begun: a scope with a `scopeKey` awaits the coordinator before it subscribes
   to `initScope()`, and the disposal can only cancel an initialization through
   that subscription — so a disposal starting inside that window had nothing to
   cancel, and the `mounted` guard on the far side of the await says nothing
-  about a `close()`, which keeps the element mounted on purpose. The scope
-  went on to subscribe once the key was granted and to acquire resources it
-  would never release, since a scope whose disposal has already passed the
+  about a `close()`, which keeps the element mounted on purpose. The scope went
+  on to subscribe once the key was granted and to acquire resources it would
+  never release, since a scope whose disposal has already passed the
   `disposeScope()` decision does not run it. The initialization now also stops
   when the disposal has begun; the normal path is unchanged.
-* Fix `close()` leaving an orphaned child entry behind: the post-frame
-  callback that registers a scope with its parent was guarded by `mounted`
-  alone, and `close()` keeps the element mounted on purpose. A disposal that
-  finished before that callback fired handed the parent a fresh entry
-  registered after the `finally` had unregistered the previous one, so the
-  parent — or `AsyncScopeCoordinator.waitForChildren` — burned its whole
-  timeout on a scope that was already gone. The callback is now guarded the
-  same way its two siblings are.
+* Fix `close()` leaving an orphaned child entry behind: the post-frame callback
+  that registers a scope with its parent was guarded by `mounted` alone, and
+  `close()` keeps the element mounted on purpose. A disposal that finished
+  before that callback fired handed the parent a fresh entry registered after
+  the `finally` had unregistered the previous one, so the parent — or
+  `AsyncScopeCoordinator.waitForChildren` — burned its whole timeout on a scope
+  that was already gone. The callback is now guarded the same way its two
+  siblings are.
 * Fix moving a closed scope in the tree with a `GlobalKey` crashing: the
   disposal unregistered the entry it held with its parent but left the field
   pointing at it, and `activate()` re-registered unconditionally — so the move
@@ -2049,21 +2050,21 @@
   an answer and not the absence of one — together with the
   `AsyncScopeCoordinator` above the scope, is binding until the scope has
   finished disposing of itself. A key that appears after a scope initialized
-  without one, a key
-  that is given up, a key that changes, and a scope moved with a `GlobalKey`
-  under a different coordinator all used to be silent, and the mutual
-  exclusion the key exists for quietly stopped working — an appearing key was
-  never taken at all, so a second scope simply coexisted with the holder. All
-  four are now reported in debug builds through an `assert`, each with a
-  message that says what happened and what to do instead (give the widget a
-  different `key`, so a new element reads the key afresh). Release builds are
-  unaffected, and nothing is repaired: releasing a key and taking another one
-  is asynchronous, and a rebuild is not. A scope that has finished disposing
-  of itself holds nothing, so it is exempt: an element that outlives its own
-  disposal — which is what `LiteScope.close()` leaves behind, still mounted so
-  it can show a closing screen, and still movable with a `GlobalKey` — may be
-  rebuilt and reparented freely. A key that changes while a `close()` is still
-  in flight, with the entry still in its queue, is reported as before.
+  without one, a key that is given up, a key that changes, and a scope moved
+  with a `GlobalKey` under a different coordinator all used to be silent, and
+  the mutual exclusion the key exists for quietly stopped working — an
+  appearing key was never taken at all, so a second scope simply coexisted with
+  the holder. All four are now reported in debug builds through an `assert`,
+  each with a message that says what happened and what to do instead (give the
+  widget a different `key`, so a new element reads the key afresh). Release
+  builds are unaffected, and nothing is repaired: releasing a key and taking
+  another one is asynchronous, and a rebuild is not. A scope that has finished
+  disposing of itself holds nothing, so it is exempt: an element that outlives
+  its own disposal — which is what `LiteScope.close()` leaves behind, still
+  mounted so it can show a closing screen, and still movable with a
+  `GlobalKey` — may be rebuilt and reparented freely. A key that changes while
+  a `close()` is still in flight, with the entry still in its queue, is
+  reported as before.
 * Fix an expired `waitForChildren` forgetting the children registered after it
   started: the wait dropped the whole live registry instead of only the
   snapshot it was awaiting, so a scope that registered mid-wait — one the wait
@@ -2076,15 +2077,15 @@
   `AsyncScopeCoordinator.waitForChildren` already applied. Calling the mixin
   method directly on a scope element used to drop the children and complete
   with nothing reported at all.
-* [breaking changes] A `ScopeDependency` that carries errors keeps them
-  through its disposal instead of being overwritten with
-  `ScopeDependencyDisposed`. A group is disposed of *because* something under
-  it failed — `disposalRequired` covers `ScopeDependencyFailed` — so the
-  disposal threw away the one record of what had failed, and with the default
-  `autoDisposeOnError` that happened before the caller ever saw it. A failed
-  *leaf* was never disposed of and so always kept its errors; the groups now
-  behave the same way. `disposalRequired` no longer reads the state alone, so
-  a group that stays `ScopeDependencyFailed` is not disposed of twice.
+* [breaking changes] A `ScopeDependency` that carries errors keeps them through
+  its disposal instead of being overwritten with `ScopeDependencyDisposed`. A
+  group is disposed of *because* something under it failed — `disposalRequired`
+  covers `ScopeDependencyFailed` — so the disposal threw away the one record of
+  what had failed, and with the default `autoDisposeOnError` that happened
+  before the caller ever saw it. A failed *leaf* was never disposed of and so
+  always kept its errors; the groups now behave the same way.
+  `disposalRequired` no longer reads the state alone, so a group that stays
+  `ScopeDependencyFailed` is not disposed of twice.
   * Migration: after disposing of a tree that failed, the root reports
     `isFailed == true` and `isDisposed == false`, where it used to report the
     opposite; `stateToString()` still names the children that failed.
@@ -2092,49 +2093,49 @@
   been disposed of: it rebuilds the tree instead of reusing the one the
   disposal left behind, which tripped an opaque `assert` inside the first
   dependency it reached. The tree is replaced on the next `init()` rather than
-  dropped by `dispose()`, so the outcome of the run that is over stays
-  readable through `flattenDependencies()`. A second `init()` on a tree that
-  is *still alive* now fails with a `StateError` that says so, instead of
-  silently abandoning everything the first run is holding.
+  dropped by `dispose()`, so the outcome of the run that is over stays readable
+  through `flattenDependencies()`. A second `init()` on a tree that is *still
+  alive* now fails with a `StateError` that says so, instead of silently
+  abandoning everything the first run is holding.
 * Fix `ScopeNotifier.value` not subscribing to a new listenable on update.
 * Fix `LiteScope.close()` hang outside the Ready state; fix
   `ScreenshotReplacer` completing early and leaking `ui.Image`.
 * Fix `LiteScope.close()` waiting forever on a screenshot that could never be
   taken: a `notifyDependents()` left pending asks the next rebuild to skip the
-  subtree, so the widget `buildOnReady()` built for the closing frame — the
-  one carrying the `ScreenshotReplacer` that releases the barrier — was thrown
-  away by `updateChild`. `mounted && state is AsyncScopeReady`, which is what
+  subtree, so the widget `buildOnReady()` built for the closing frame — the one
+  carrying the `ScreenshotReplacer` that releases the barrier — was thrown away
+  by `updateChild`. `mounted && state is AsyncScopeReady`, which is what
   `close()` checks before installing the barrier, is necessary but not
   sufficient, and a scope closed in place stays mounted, so the `dispose()`
-  fallback never ran either. The closing frame now rebuilds the subtree
-  anyway; the pending notification is still delivered.
-* Fix a double close() race in LiteScope orphaning the screenshot barrier;
-  cap ScreenshotReplacer retries (new public ScreenshotReplacer.maxRetries).
+  fallback never ran either. The closing frame now rebuilds the subtree anyway;
+  the pending notification is still delivered.
+* Fix a double close() race in LiteScope orphaning the screenshot barrier; cap
+  ScreenshotReplacer retries (new public ScreenshotReplacer.maxRetries).
 * Fix concurrent `LiteScope.close()` callers disagreeing about a failed
   disposal: only the caller that started the run saw the error, while every
   other one — a second `close()`, or the implicit disposal on unmount — was
-  told the very same run had succeeded. All of them now receive the same
-  value, or the same error and stack trace.
+  told the very same run had succeeded. All of them now receive the same value,
+  or the same error and stack trace.
 * Fix the closing screenshot never being taken in release and profile builds:
-  the `debugNeedsPaint` pre-check is now assert-gated, so it no longer throws
-  a `LateInitializationError` on every `close()`.
-* Guard the Ready-state model update against running after disposal has
-  started (an element closed via close() stays mounted while its model is
-  being disposed of).
-* Base the disposeScope() decision on successful initialization instead of
-  the applied model state (resources are now disposed of when the element
-  is removed in the init-completion frame).
+  the `debugNeedsPaint` pre-check is now assert-gated, so it no longer throws a
+  `LateInitializationError` on every `close()`.
+* Guard the Ready-state model update against running after disposal has started
+  (an element closed via close() stays mounted while its model is being
+  disposed of).
+* Base the disposeScope() decision on successful initialization instead of the
+  applied model state (resources are now disposed of when the element is
+  removed in the init-completion frame).
 * Guard AsyncScope post-frame callbacks with `mounted`.
 * Log dependency disposal errors instead of swallowing them.
 * Fix unbalanced parenthesis in `AsyncScopeError.toString()`.
 * Add `repository`, `issue_tracker` and `topics` to pubspec.
 * [breaking changes] Tighten the SDK constraints to Flutter `>=3.27.0` (was
-  `>=1.17.0`) and Dart `^3.6.0` (was `^3.2.0`) — the floor the package
-  actually requires, since it calls `Color.withValues`. This is where 0.10.0
-  ends up after a detour: the floor went to `>=3.29.0` in the middle of the
-  release because `>=3.27.0` would not resolve, and came back once the
-  dependency that stopped it gave up the constraint. The two entries above say
-  why it moved and what moving it back cost.
+  `>=1.17.0`) and Dart `^3.6.0` (was `^3.2.0`) — the floor the package actually
+  requires, since it calls `Color.withValues`. This is where 0.10.0 ends up
+  after a detour: the floor went to `>=3.29.0` in the middle of the release
+  because `>=3.27.0` would not resolve, and came back once the dependency that
+  stopped it gave up the constraint. The two entries above say why it moved and
+  what moving it back cost.
 * Switch analysis to flutter_lints in the package and demo.
 * Rewrite README; sync the pub.dev example; real `debug`/`Scope` doc pages.
 

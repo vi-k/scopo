@@ -41,12 +41,12 @@ final subscription = model.select(
 ```
 
 The listener runs only when the selected value changes. By default that means
-`!=`, and `compare:` replaces the test with one of your own. It answers the same
-question, so `true` means changed: `notIdentical` for a value that is replaced
-rather than mutated, a field-by-field comparison for a record, and so on.
-Passing `identical` there reports the opposite of what it is asked — the same
-object counts as a change and a replacement goes unnoticed. This is the same
-idea `select` uses on a scope, without a widget tree involved.
+`!=`, and `compare:` replaces the test with one of your own. It answers the
+same question, so `true` means changed: `notIdentical` for a value that is
+replaced rather than mutated, a field-by-field comparison for a record, and so
+on. Passing `identical` there reports the opposite of what it is asked — the
+same object counts as a change and a replacement goes unnoticed. This is the
+same idea `select` uses on a scope, without a widget tree involved.
 
 `ListenableSelector` is the widget wrapping the same mechanism:
 
@@ -68,8 +68,8 @@ idea applied to a state model.
 
 `StateAsNotifier` goes the other way: mix it into a `State` and the state
 itself becomes a `Listenable`, with a `notifyListeners()` for its own use. The
-`ChangeNotifier` behind it is created on the first listener and disposed of with
-the state, so a state nobody listens to costs nothing.
+`ChangeNotifier` behind it is created on the first listener and disposed of
+with the state, so a state nobody listens to costs nothing.
 
 ## ProgressIterator
 
@@ -84,10 +84,10 @@ progress.addSteps(1); // 3/3
 progress.isCompleted; // true
 ```
 
-`Progress` is the value it produces: `number`, `total`, `value` as a
-fraction between 0 and 1, and a `toString` of `2/3`. The fraction holds those
-bounds whatever the pair says: a task of no steps at all reads as complete
-rather than as the `NaN` of `0 / 0`, so it can go straight into a
+`Progress` is the value it produces: `number`, `total`, `value` as a fraction
+between 0 and 1, and a `toString` of `2/3`. The fraction holds those bounds
+whatever the pair says: a task of no steps at all reads as complete rather than
+as the `NaN` of `0 / 0`, so it can go straight into a
 `LinearProgressIndicator`. Stepping past the total is a mistake in the caller
 and is caught by an assertion.
 
@@ -115,18 +115,17 @@ bounded by `ScreenshotReplacer.maxRetries` frames, after which `onCompleted` is
 called anyway — and the child is taken away all the same, with nothing in the
 picture's place. Nothing is reported: that is the case this widget documents as
 ordinary, and `onCompleted` together with the absence of a picture is how it is
-said. Giving up on the picture is not giving up on replacing the
-child: what waits on `onCompleted` waits in order to let go of whatever the
-child holds, and a child left standing gives that caller the report without the
-thing it was reported for. `onCompleted` fires exactly once per state,
-whichever way it ended, including when the widget is removed from the tree
-first.
+said. Giving up on the picture is not giving up on replacing the child: what
+waits on `onCompleted` waits in order to let go of whatever the child holds,
+and a child left standing gives that caller the report without the thing it was
+reported for. `onCompleted` fires exactly once per state, whichever way it
+ended, including when the widget is removed from the tree first.
 
 ## The two small ones
 
-`CompareUtils` is `equals`, `notEquals`, `identical` and `notIdentical` as named
-functions, for the places that take a comparison as a parameter — `compare:`
-above, among others — where a tear-off reads better than a lambda.
+`CompareUtils` is `equals`, `notEquals`, `identical` and `notIdentical` as
+named functions, for the places that take a comparison as a parameter —
+`compare:` above, among others — where a tear-off reads better than a lambda.
 
 `IsBuildingExtension` extends `SchedulerBinding`. `isBuilding` says whether a
 build is running, and `runOutsideFrame(action)` runs the action now if it is
