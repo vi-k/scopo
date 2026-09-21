@@ -13,10 +13,10 @@ packages:
     dependency: transitive
     description:
       name: async_job
-      sha256: f9553cd0440e83fc4c1322e68686063cbb5df5a294939e393589a0bde6b872c7
+      sha256: "60c88a8190b4a734316214b5e618a27dada304854b9b1ba2195124987371ac6b"
       url: "https://pub.dev"
     source: hosted
-    version: "0.1.0"
+    version: "0.2.0"
   bloc:
     dependency: "direct main"
     description:

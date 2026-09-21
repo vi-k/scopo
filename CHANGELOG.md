@@ -1,3 +1,24 @@
+## 0.15.0
+
+* **Breaking:** the kernel is `async_job ^0.2.0`, and its cancellation reasons
+  are classes rather than constants. `ManualCancelReason`, `ParentCancelReason`
+  and `HandlerCancelReason` are re-exported beside `CancelReason`, which is now
+  the abstract base of all of them: code that compared `cancelled.reason`
+  against `CancelReason.manual` matches `ManualCancelReason()` instead. Reasons
+  carry data now — the two that stand for somebody else's cancellation keep it
+  in `cause` — and an application can write one of its own, which is what the
+  entry below is about.
+* **Fix:** an initialization that gives itself up reaches the error branch
+  whatever reason it carries. The settlement used to ask which reason the
+  kernel had named, and it stayed quiet for everything it had not been taught:
+  a body that threw `Cancelled.by` with a reason of its own left the loading
+  branch on screen for good and told nobody, which is the defect fixed in
+  0.14.0 arriving through a door 0.2.0 opened. It now asks the one question a
+  scope can answer for certain — whether the teardown here asked for this
+  cancellation — and everything else is an initialization that ended without
+  becoming ready. What you see: the error branch gets the `Cancelled`, and the
+  observer hears it as `ScopePhase.initialization`.
+
 ## 0.14.0
 
 * **Breaking:** an `AsyncScope` initialization is a `Future`, not a `Stream`.

@@ -11,10 +11,13 @@ export 'package:async_job/async_job.dart'
         DeferredJob,
         Done,
         Failed,
+        HandlerCancelReason,
         Job,
         JobContext,
         JobObserver,
-        Outcome;
+        ManualCancelReason,
+        Outcome,
+        ParentCancelReason;
 
 // Listed rather than hidden. `hide` names what stays in, so the next internal
 // helper added beside `notifyObserver` and the two resolvers would join the

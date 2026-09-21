@@ -198,16 +198,7 @@ abstract base class AsyncScopeElementBase<W extends AsyncScopeCore<W, E>,
           // error state and observer, just like a failure of the body.
           _settleFailure(error, stackTrace);
         }
-      case Cancelled(reason: CancelReason.handler):
-        // The body gave up on itself -- `throw Cancelled('why')`, which the
-        // kernel offers and this package re-exports the name for. Nobody
-        // asked for this cancellation, so nobody is waiting to hear it
-        // either: staying quiet here is what used to leave the loading branch
-        // on screen for good, with the only trace a diagnostic line nobody
-        // had turned on. An initialization that ended without becoming ready
-        // is a failed one, whichever way it ended.
-        _settleFailure(outcome, outcome.stackTrace ?? StackTrace.current);
-      case Cancelled():
+      case Cancelled(reason: _ScopeDisposalCancelReason()):
         // The teardown asked for this one, and it is waiting on
         // `_initCompleter` rather than on the model, which the element is
         // leaving behind anyway. A failure that happened before the
@@ -216,6 +207,16 @@ abstract base class AsyncScopeElementBase<W extends AsyncScopeCore<W, E>,
         // job itself to see whether it kept the promise -- for this job and
         // for every child of it, which is the half an element cannot reach.
         break;
+      case Cancelled():
+        // Nobody here asked for it, so the initialization ended without ever
+        // becoming ready -- a failed one, whichever way it ended. Asked the
+        // other way round, by the name the kernel gave the reason, this
+        // branch went quiet for everything it had not been taught: the body
+        // that gives itself up, the body that keeps a reason of its own, the
+        // reason a later kernel adds. Quiet here is what used to leave the
+        // loading branch on screen for good, with the only trace a
+        // diagnostic line nobody had turned on.
+        _settleFailure(outcome, outcome.stackTrace ?? StackTrace.current);
       case Failed(:final error, :final stackTrace):
         _settleFailure(error, stackTrace);
     }
@@ -1378,7 +1379,9 @@ abstract base class AsyncScopeElementBase<W extends AsyncScopeCore<W, E>,
       // scope holds. It cannot finish that foreign future or make the body
       // release what it still holds.
       try {
-        final cancelled = job.cancel();
+        final cancelled = job.cancel(
+          reason: const _ScopeDisposalCancelReason(),
+        );
         final limit = resolveCancellationTimeout(
           initCancellationTimeout,
           ScopeConfig.defaultInitCancellationTimeout,

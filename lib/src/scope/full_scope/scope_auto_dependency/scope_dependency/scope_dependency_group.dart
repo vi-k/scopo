@@ -360,7 +360,12 @@ final class _ScopeDependencyConcurrent extends ScopeDependencyGroup {
           // dependency it belongs to rather than printing as `Job()`.
           key: _keyFor(dependency),
         );
-        ctx.run(job);
+        // The arm is observed below, through `job.value`: that future
+        // carries its failure to the collector and to the siblings. The one
+        // `run` hands back is a second future over the same outcome, and
+        // nobody reads it -- so it is declared handled here rather than left
+        // to the zone, where it would arrive as an error of the package.
+        ctx.run(job).ignore();
         jobs.add(job);
         values.add(
           job.value.onError<Object>((error, stackTrace) {

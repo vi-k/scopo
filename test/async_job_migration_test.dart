@@ -254,7 +254,53 @@ void main() {
     expect(
       shownError,
       isA<Cancelled>()
-          .having((e) => e.reason, 'reason', CancelReason.handler)
+          .having((e) => e.reason, 'reason', isA<HandlerCancelReason>())
+          .having((e) => e.description, 'description', 'no session'),
+    );
+    expect(observer.phases, [ScopePhase.initialization]);
+    expect(tester.takeException(), isNull);
+
+    await tester.pumpWidget(_wrap(const SizedBox.shrink()));
+    await tester.pumpAndSettle();
+  });
+
+  testWidgets(
+      'a body that gives itself up with a reason of its own is not silence '
+      'either', (tester) async {
+    final observer = _Errors();
+    ScopeConfig.observer = observer;
+    Object? shownError;
+    await tester.pumpWidget(
+      _wrap(
+        AsyncScope(
+          // The kernel lets a body keep a reason of its own, and this one
+          // does. What the scope asks of the outcome is not which reason the
+          // kernel happened to name -- it is whether anybody here asked for
+          // this cancellation. Nobody did, so the initialization ended
+          // without becoming ready, and that is a failure whichever reason
+          // it carries.
+          initScope: (context, ctx) async => throw const Cancelled.by(
+            reason: _SessionExpired(),
+            started: true,
+            description: 'no session',
+          ),
+          disposeScope: () {},
+          progressBuilder: (context, progress) => const Text('loading'),
+          errorBuilder: (context, error, stackTrace, progress) {
+            shownError = error;
+            return const Text('failed');
+          },
+          builder: (context) => const Text('ready'),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('loading'), findsNothing);
+    expect(
+      shownError,
+      isA<Cancelled>()
+          .having((e) => e.reason, 'reason', isA<_SessionExpired>())
           .having((e) => e.description, 'description', 'no session'),
     );
     expect(observer.phases, [ScopePhase.initialization]);
@@ -349,7 +395,7 @@ void main() {
               await cleanup.future;
             });
             final child = Job.deferred<void>((_) async => throw failure);
-            ctx.run(child);
+            ctx.run(child).ignore();
             await child.value;
           },
           disposeScope: () {},
@@ -420,7 +466,7 @@ void main() {
               });
               throw failure;
             });
-            ctx.run(child);
+            ctx.run(child).ignore();
             await child.value;
           },
           disposeScope: () {},
@@ -975,4 +1021,12 @@ final class _ContextKeeper implements ScopeDependency {
 
   @override
   String stateToString() => '$state';
+}
+
+/// A reason of the application's own, the way a consumer would write one.
+final class _SessionExpired extends CancelReason {
+  const _SessionExpired();
+
+  @override
+  String get name => 'session expired';
 }

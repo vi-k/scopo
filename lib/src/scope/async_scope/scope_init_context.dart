@@ -93,6 +93,22 @@ final class _ScopeInitContext extends JobContextBase
   }
 }
 
+/// The scope asked for this cancellation itself, taking its job down.
+///
+/// What the settlement of an initialization asks of a `Cancelled` outcome is
+/// whose cancellation it was, not which name the kernel gave it. A body may
+/// give itself up with a reason of its own, and a later kernel may add
+/// reasons nobody here has heard of; both end an initialization that never
+/// became ready, which is a failure. Only the one the teardown asked for is
+/// expected, and only that one is quiet -- so the teardown asks for it by
+/// name.
+final class _ScopeDisposalCancelReason extends CancelReason {
+  const _ScopeDisposalCancelReason();
+
+  @override
+  String get name => 'scope disposal';
+}
+
 final class _ScopeInitObserver extends JobObserver {
   final ScopeObservable _scope;
 

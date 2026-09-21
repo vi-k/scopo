@@ -223,7 +223,7 @@ void main() {
         await job.done,
         isA<Cancelled>()
             .having((o) => o.started, 'started', isFalse)
-            .having((o) => o.reason, 'reason', CancelReason.manual),
+            .having((o) => o.reason, 'reason', isA<ManualCancelReason>()),
       );
       expect(job.start, throwsStateError);
       expect(calls, 0);
@@ -345,7 +345,7 @@ void main() {
       final child = ScopeInitJob<void>((ctx) => ctx.wait(() => gate.future));
       final parent = ScopeInitJob<void>(
         (ctx) async {
-          ctx.run(child);
+          ctx.run(child).ignore();
           await child.done;
         },
       )..start();
@@ -354,7 +354,8 @@ void main() {
       expect(child.isCancelled, isTrue);
       expect(
         await child.done,
-        isA<Cancelled>().having((o) => o.reason, 'reason', CancelReason.parent),
+        isA<Cancelled>()
+            .having((o) => o.reason, 'reason', isA<ParentCancelReason>()),
       );
       gate.complete();
     });
@@ -364,7 +365,7 @@ void main() {
       final child = ScopeInitJob<void>((ctx) => ctx.wait(() => gate.future));
       final parent = ScopeInitJob<void>(
         (ctx) async {
-          ctx.run(child);
+          ctx.run(child).ignore();
           await child.done;
         },
       )..start();
@@ -386,9 +387,8 @@ void main() {
       );
       final parent = ScopeInitJob<void>(
         (ctx) async {
-          ctx
-            ..onCancel(() => told.add('parent'))
-            ..run(child);
+          ctx.onCancel(() => told.add('parent'));
+          ctx.run(child).ignore();
           await ctx.wait(() => gate.future);
         },
       )..start();
@@ -416,7 +416,7 @@ void main() {
           calls++;
         },
       );
-      context.run(first);
+      context.run(first).ignore();
       await first.done;
       expect(calls, 1);
       final cancelled = parent.cancel();
