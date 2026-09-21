@@ -1,3 +1,16 @@
+## 0.15.1
+
+* **Fix:** a mocked controller is accepted by the scope that owns one. 0.15.0
+  let you write `class MockX extends Mock implements MyController`, and
+  `AsyncControllerScope` then refused it: the check that guards against a
+  controller handed over twice read state private to `ScopeController`, which a
+  double built by `implements` has none of — and a private member of another
+  library gets no `noSuchMethod` forwarder either, so the read threw instead of
+  answering and the scope showed its error branch over a `NoSuchMethodError`
+  naming a private field. A double has run nothing, so the check answers for
+  it; what it exists to catch is unchanged. Stub `performInit` and
+  `performDispose`, which the scope awaits.
+
 ## 0.15.0
 
 * **Breaking:** the kernel is `async_job ^0.2.0`, and its cancellation reasons

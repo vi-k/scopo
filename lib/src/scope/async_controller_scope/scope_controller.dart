@@ -1,5 +1,28 @@
 part of '../scope.dart';
 
+/// Whether [controller] has not been through the three wrappers yet.
+///
+/// The state it reads belongs to [ScopeController], and a test double built
+/// the way a mocking package builds one -- `implements`, not `extends` -- has
+/// none of it. A private member of another library is not part of the
+/// interface a class implements, so no `noSuchMethod` forwarder is generated
+/// for it either: the read throws instead of answering, and the scope the
+/// double was handed to used to show its error branch over a
+/// `NoSuchMethodError` naming a private field.
+///
+/// A double has run nothing, so it is unused by construction, and that is the
+/// answer given here. What the check exists to catch -- a controller cached
+/// or handed over a second time -- is unchanged for every controller that
+/// really is one.
+bool _controllerIsUnused(ScopeController controller) {
+  try {
+    return !controller._initStarted && controller._disposeCompleter == null;
+    // ignore: avoid_catching_errors
+  } on NoSuchMethodError {
+    return true;
+  }
+}
+
 /// An object with a lifecycle of its own, owned by a scope.
 ///
 /// The three methods the scope calls are sealed, so a controller never has to

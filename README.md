@@ -782,6 +782,13 @@ or `final`, and both refuse to be implemented, so the modifier on our class
 used to decide whether you could mock *your* controller. You write it as a
 plain class now, and it mocks like any other.
 
+**A double goes where the real controller goes.** `createController` returns
+it, and the check that refuses a controller which has already been used answers
+for a double rather than failing over the private state it has none of. Stub
+the two wrappers the scope awaits — `performInit` and `performDispose` —
+because a `null` in place of a future fails the cast before the scope gets
+anywhere; `mounted` too, if what you build reads it.
+
 Two things stay closed on purpose. The scope widgets and their states, because
 a mock of one could never be found: `of` looks the element up by exact type, so
 the double would sit in the tree unseen. And the state unions

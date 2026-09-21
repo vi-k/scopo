@@ -1,4 +1,4 @@
-// What this file really checks is that it compiles.
+// Most of what this file checks is that it compiles.
 //
 // A mocking package builds its double one way -- `class MockX extends Mock
 // implements X` -- and three class modifiers forbid exactly that: `final`,
@@ -13,9 +13,11 @@
 // `final` -- so the modifier on our class is what used to forbid mocking the
 // consumer's own class built on top of it.
 
-import 'package:flutter/foundation.dart';
+import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:scopo/scopo.dart';
+
+import 'utils/settle.dart';
 
 void main() {
   test('the types a consumer tests against can be mocked', () {
@@ -32,6 +34,44 @@ void main() {
     expect(_MockAppController(), isA<_AppController>());
     expect(_MockAppDependencies(), isA<_AppDependencies>());
   });
+
+  // The half that compiling does not show. A double is mockable only if the
+  // thing that drives it accepts one, and the scope that owns a controller
+  // used to refuse: its freshness check read state private to
+  // `ScopeController`, which a double built by `implements` has none of.
+  testWidgets('a mocked controller is accepted by the scope that owns one',
+      (tester) async {
+    final controller = _MockAppController();
+
+    await tester.pumpWidget(
+      Directionality(
+        textDirection: TextDirection.ltr,
+        child: AsyncControllerScope<_AppController>(
+          createController: (context) => controller,
+          progressBuilder: (context) => const Text('progress'),
+          errorBuilder: (context, error, stackTrace) => Text('error: $error'),
+          builder: (context, controller) => const Text('ready'),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('ready'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+    expect(controller.calls, [#performInit]);
+
+    await tester.pumpWidget(const SizedBox.shrink());
+    await settle(
+      tester,
+      until: () => controller.calls.contains(#performDispose),
+    );
+
+    expect(
+      controller.calls,
+      containsAllInOrder([#performInit, #performUnmount, #performDispose]),
+      reason: 'the scope drives a double through the same three wrappers',
+    );
+  });
 }
 
 /// Stands in for `Mock` of `mocktail`: the base a double extends while it
@@ -39,8 +79,21 @@ void main() {
 /// other than `Object`'s is allowed to leave the interface unimplemented,
 /// which is how every mocking package in Dart works.
 class _Mock {
+  /// What the double was asked for, in order.
+  final calls = <Symbol>[];
+
   @override
-  dynamic noSuchMethod(Invocation invocation) => null;
+  dynamic noSuchMethod(Invocation invocation) {
+    calls.add(invocation.memberName);
+
+    // Stands in for `thenAnswer((_) async {})`: the two wrappers that return
+    // a future are awaited by whoever drives the controller, and `null` in
+    // their place fails the cast before anything else can happen.
+    return invocation.memberName == #performInit ||
+            invocation.memberName == #performDispose
+        ? Future<void>.value()
+        : null;
+  }
 }
 
 // The consumer's own classes, and the point of the second half: both are

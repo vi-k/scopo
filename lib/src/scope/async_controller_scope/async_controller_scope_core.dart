@@ -107,7 +107,7 @@ abstract base class AsyncControllerScopeElementBase<
     // all, and nothing anywhere said a word. Refused here, where the mistake
     // is, and at no cost in release.
     assert(
-      !controller._initStarted && controller._disposeCompleter == null,
+      _controllerIsUnused(controller),
       '$runtimeType.createController handed over a $C that has already been '
       'used. `performInit`, `performUnmount` and `performDispose` run once '
       'each and in that order, so this controller will not initialize again '
