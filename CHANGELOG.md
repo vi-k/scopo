@@ -8,6 +8,20 @@
   carry data now — the two that stand for somebody else's cancellation keep it
   in `cause` — and an application can write one of its own, which is what the
   entry below is about.
+* **New:** the types a test stands on can be mocked. `ScopeController`,
+  `ScopeAutoDependencies`, `ScopeObserver`, `ScopeStateNotifier`,
+  `ScopeStateModelView`, `ScopeStateWithErrorNotifier`,
+  `ScopeStateWithErrorModelView` and `ListenableView` lose `base`, and
+  `ScopeDependencyHandle` — whose constructor is private, so it could be
+  neither built nor doubled — becomes an `interface class`. Nothing that
+  compiled stops compiling: the restriction is being lifted, not added. What it
+  buys is mostly one step further down: a `base` supertype obliges every
+  subclass to be `base` or `final`, and both refuse `implements`, so the
+  modifier here decided whether an application could mock *its own* controller
+  or container. It writes them as plain classes now. The widgets, their states
+  and the `sealed` state unions keep their modifiers, for the reasons given in
+  the README.
+
 * **Fix:** an initialization that gives itself up reaches the error branch
   whatever reason it carries. The settlement used to ask which reason the
   kernel had named, and it stayed quiet for everything it had not been taught:

@@ -1,7 +1,7 @@
 part of '../../../scope.dart';
 
 /// {@category Scope}
-final class ScopeDependencyHandle {
+interface class ScopeDependencyHandle {
   _ScopeDependencyImpl? _dep;
 
   ScopeDependencyHandle._(this._dep);

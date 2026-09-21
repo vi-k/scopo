@@ -12,7 +12,7 @@ part of '../scope.dart';
 /// same three methods in that order.
 ///
 /// {@category AsyncControllerScope}
-abstract base class ScopeController {
+abstract class ScopeController {
   bool _mounted = false;
   bool _initStarted = false;
 

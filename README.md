@@ -773,6 +773,23 @@ Three things worth knowing before the first test:
   when the test ends. Wait for the event you care about instead of assuming the
   frame settled it.
 
+**The types you test against can be mocked.** `ScopeController`,
+`ScopeAutoDependencies`, `ScopeObserver`, `ScopeStateNotifier` and the two
+model views beside it carry no `base`, so
+`class MockX extends Mock implements X` is allowed. The half that matters more
+is the one below them: a `base` supertype obliges every subclass to be `base`
+or `final`, and both refuse to be implemented, so the modifier on our class
+used to decide whether you could mock *your* controller. You write it as a
+plain class now, and it mocks like any other.
+
+Two things stay closed on purpose. The scope widgets and their states, because
+a mock of one could never be found: `of` looks the element up by exact type, so
+the double would sit in the tree unseen. And the state unions
+(`AsyncScopeState`, `ScopeInitState`, `ScopeDependencyState`), because `sealed`
+is what makes a `switch` over them exhaustive — and there is nothing to mock
+there anyway: every leaf has a public constructor, so a test builds the state
+it wants.
+
 **In depth:** the topic
 [debug](https://pub.dev/documentation/scopo/latest/topics/debug-topic.html).
 

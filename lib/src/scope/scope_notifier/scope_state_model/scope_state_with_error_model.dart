@@ -21,7 +21,7 @@ abstract interface class ScopeStateWithErrorModel<S extends Object>
 }
 
 /// {@category ScopeNotifier}
-base class ScopeStateWithErrorNotifier<S extends Object>
+class ScopeStateWithErrorNotifier<S extends Object>
     extends ScopeStateNotifier<S> implements ScopeStateWithErrorModel<S> {
   (Object, StackTrace)? _error;
 
@@ -91,7 +91,7 @@ base class ScopeStateWithErrorNotifier<S extends Object>
 }
 
 /// {@category ScopeNotifier}
-base class ScopeStateWithErrorModelView<S extends Object>
+class ScopeStateWithErrorModelView<S extends Object>
     extends ScopeStateModelView<S> implements ScopeStateWithErrorModel<S> {
   /// Wraps a notifier into a read-only view of it.
   ScopeStateWithErrorModelView(

@@ -8,7 +8,7 @@ abstract interface class ScopeStateModel<S extends Object>
 }
 
 /// {@category ScopeNotifier}
-base class ScopeStateNotifier<S extends Object> extends ChangeNotifier
+class ScopeStateNotifier<S extends Object> extends ChangeNotifier
     implements ScopeStateModel<S> {
   S _state;
 
@@ -52,7 +52,7 @@ base class ScopeStateNotifier<S extends Object> extends ChangeNotifier
 }
 
 /// {@category ScopeNotifier}
-base class ScopeStateModelView<S extends Object> implements ScopeStateModel<S> {
+class ScopeStateModelView<S extends Object> implements ScopeStateModel<S> {
   final ScopeStateNotifier<S> _notifier;
 
   /// Wraps [notifier] into a read-only view of it.

@@ -13,7 +13,7 @@ part of '../../scope.dart';
 /// reads scopes above it, `void` when it needs nothing.
 ///
 /// {@category Scope}
-abstract base class ScopeAutoDependencies<T extends ScopeAutoDependencies<T, C>,
+abstract class ScopeAutoDependencies<T extends ScopeAutoDependencies<T, C>,
     C extends Object?> implements ScopeDependencies, ScopeObservable {
   @override
   String get debugLabel => '$T(#${shortHash(this)})';

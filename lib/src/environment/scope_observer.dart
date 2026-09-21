@@ -59,7 +59,7 @@ enum ScopePhase {
 /// `final` or `sealed` — `final` unless you mean it to be extended further.
 ///
 /// {@category debug}
-base class ScopeObserver {
+class ScopeObserver {
   /// Creates an observer that does nothing.
   const ScopeObserver();
 
