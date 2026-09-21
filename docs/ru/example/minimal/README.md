@@ -1,6 +1,6 @@
 # minimal
 
-> Перевод `example/minimal/README.md` (blob `2504eb6e3e56bf5c007feed73433c5ae35762b87`).
+> Перевод `example/minimal/README.md` (blob `4a24cf86136f094dd9c6b2027a33e853c3ea5ae3`).
 > Правится в том же коммите, что и оригинал; проверка — `sh docs/ru/check.sh`.
 
 Один скоуп, в минимуме файлов: `lib/main.dart`, 245 строк.

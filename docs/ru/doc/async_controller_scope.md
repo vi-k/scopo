@@ -1,6 +1,6 @@
 # AsyncControllerScope
 
-> Перевод `doc/async_controller_scope.md` (blob `fd106f371d661f561c6f0096affcd2947205743b`).
+> Перевод `doc/async_controller_scope.md` (blob `c3cbb0bcd78d8c7d246ff4ac5579ea2f31563e72`).
 > Правится в том же коммите, что и оригинал; проверка — `sh docs/ru/check.sh`.
 
 Скоуп, всё содержимое которого — контроллер: объект со своим жизненным циклом,

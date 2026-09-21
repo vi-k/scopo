@@ -1,6 +1,6 @@
 # scopo
 
-> Перевод `README.md` (blob `2b532e58696562a00ef91151e54dc94b59d08a98`).
+> Перевод `README.md` (blob `c9073a8e14d8ca1474c0bde0e0f66b09bbb211c5`).
 > Правится в том же коммите, что и оригинал; проверка — `sh docs/ru/check.sh`.
 
 [![pub version](https://img.shields.io/pub/v/scopo)](https://pub.dev/packages/scopo)

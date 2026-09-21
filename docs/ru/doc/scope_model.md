@@ -1,6 +1,6 @@
 # ScopeModel
 
-> Перевод `doc/scope_model.md` (blob `c377c4fce24382f6ec45e6a5daf721527058c286`).
+> Перевод `doc/scope_model.md` (blob `53115f2fbd6e4b0f5ce9a9a27129e44f00043cff`).
 > Правится в том же коммите, что и оригинал; проверка — `sh docs/ru/check.sh`.
 
 Скоуп, который владеет одним обычным объектом Dart и отдаёт его своему

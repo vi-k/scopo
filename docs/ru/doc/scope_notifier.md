@@ -1,6 +1,6 @@
 # ScopeNotifier
 
-> Перевод `doc/scope_notifier.md` (blob `ea9122a4090ff7c293128e7470d1db1aa0a8f914`).
+> Перевод `doc/scope_notifier.md` (blob `8428b9509099fa691290f965c52c21ab3c3032ab`).
 > Правится в том же коммите, что и оригинал; проверка — `sh docs/ru/check.sh`.
 
 `ScopeModel` для `Listenable`. Всё из той темы остаётся в силе — `create`
