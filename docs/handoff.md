@@ -48,7 +48,9 @@
    «Following what the controller hears» в теме `AsyncControllerScope`,
    зеркало, три теста в `test/controller_notifier_recipe_test.dart`. Отчёт
    с замерами обеих версий —
-   `docs/records/2026-09-22[8]-controller-stream-recipe-report.md`. Там же
+   `docs/records/2026-09-22[8]-controller-stream-recipe-report.md`. Гейт §6
+   пройден целиком, CI зелёная на `ed196bb` (прогон 35728062702), обе job.
+   Там же
    сказано, за чем следить: **два скоупа над одним объектом** — читателю
    ниже надо знать, у какого просить состояние, а у какого значения. Если
    семья когда-нибудь понадобится, довод придёт отсюда.
