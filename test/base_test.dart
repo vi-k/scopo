@@ -398,6 +398,12 @@ void main() {
       await tester.pumpWidget(
         _Host(
           builder: (context) => ListView.builder(
+            // No cache around the viewport, so that a scroll is certain to
+            // build an item on a later frame rather than reveal one that was
+            // built already. Deprecated after 3.41.0 in favour of
+            // `scrollCacheExtent`, which the floor of this package does not
+            // have; the ignore goes when the floor passes that version.
+            // ignore: deprecated_member_use
             cacheExtent: 0,
             itemExtent: 100,
             itemCount: 30,
