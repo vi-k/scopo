@@ -227,10 +227,18 @@ void main() {
 
     expect(
       observer.events.where((event) => event.contains('initialization')),
-      contains(contains('not accepted by pauseAfterInitialization')),
+      contains(
+        contains(
+          'initialization pauseAfterInitialization does not accept '
+          'ScopeTimeout.none or any other negative Duration.',
+        ),
+      ),
       reason: 'a pause is a length of time, not a limit on a wait: "wait as '
           'long as it takes" says nothing here, and used to mean "do not '
-          'pause at all" -- the opposite of the one thing the parameter does',
+          'pause at all" -- the opposite of the one thing the parameter '
+          'does. The phase name stands right in front of the error in an '
+          'event, so this pins the rule as the first thing the refusal says '
+          'rather than a sentence somewhere inside it',
     );
   });
 
@@ -263,7 +271,13 @@ void main() {
         // ignore: prefer_const_constructors
         timeout: ScopeTimeout.none + Duration.zero,
       ),
-      throwsAssertionError,
+      throwsA(
+        isA<FlutterError>().having(
+          (error) => error.diagnostics.first.toString(),
+          'summary',
+          'A timeout of -0:00:00.000001 is negative.',
+        ),
+      ),
     );
   });
 
@@ -302,7 +316,14 @@ void main() {
     // The same assertion also goes to `FlutterError.reportError`, which the
     // harness turns into an exception of its own; taken here so it does not
     // end the test on its way out.
-    expect(tester.takeException(), isA<AssertionError>());
+    expect(
+      tester.takeException(),
+      isA<FlutterError>().having(
+        (error) => error.diagnostics.first.toString(),
+        'summary',
+        'ScopeTimeout.none is not accepted by initCancellationTimeout.',
+      ),
+    );
 
     expect(
       observer.events.where(

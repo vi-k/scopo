@@ -249,17 +249,32 @@ abstract base class AsyncScopeElementBase<W extends AsyncScopeCore<W, E>,
     // Before the pause below rather than inside it, so a suite that turns
     // every pause off does not also turn off the one thing that says this
     // value is wrong.
-    assert(
-      !(pauseAfterInitialization?.isNegative ?? false),
-      'ScopeTimeout.none is not accepted by pauseAfterInitialization, and '
-      'neither is any other negative Duration ($pauseAfterInitialization). A '
-      'pause is a stretch of time to hold the ready branch back for, not a '
-      'limit on a wait, so "wait as long as it takes" has nothing to say '
-      'about one -- and the marker is a negative Duration, which a timer '
-      'reads as no pause at all. Give a Duration that is not negative, or '
-      'leave the parameter out to show the ready branch as soon as it is '
-      'built.',
-    );
+    assert(() {
+      if (pauseAfterInitialization?.isNegative ?? false) {
+        throw FlutterError.fromParts(<DiagnosticsNode>[
+          ErrorSummary(
+            'pauseAfterInitialization does not accept ScopeTimeout.none or '
+            'any other negative Duration.',
+          ),
+          ErrorDescription(
+            'A pause is a stretch of time to hold the ready branch back for, '
+            'not a limit on a wait, so "wait as long as it takes" has nothing '
+            'to say about one -- and the marker is a negative Duration, which '
+            'a timer reads as no pause at all.',
+          ),
+          ErrorDescription(
+            'The value it was given was $pauseAfterInitialization.',
+          ),
+          ErrorHint(
+            'Give a Duration that is not negative, or leave the parameter out '
+            'to show the ready branch as soon as it is built.',
+          ),
+          describeElement('The scope that was given one was'),
+        ]);
+      }
+
+      return true;
+    }());
 
     final state = AsyncScopeReady();
 

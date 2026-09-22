@@ -1,14 +1,17 @@
 ## 0.15.2
 
-* **New:** the assertions that refuse a misuse fail as a `FlutterError` rather
-  than a bare message — the two about where a scope may be subscribed to, and
-  the one that refuses a live switch between the constructor that owns a model
-  and `.value`. The summary is one line, the rule that was broken, with the
-  explanation and the advice under it and the offending widget named at the
-  bottom, which is the block the console already shows for a mistimed
-  inherited lookup of Flutter's own. Nothing that caught the old failure stops
-  catching this one: `FlutterError` implements `AssertionError`, and its
-  `message` is the whole text.
+* **New:** every assertion that refuses a misuse fails as a `FlutterError`
+  rather than as a bare message — the two about where a scope may be subscribed
+  to, the one that refuses a live switch between the constructor that owns a
+  model and `.value`, the three that refuse `ScopeTimeout.none` or any other
+  negative `Duration` where a limit or a pause is asked for, and the one that
+  refuses a controller `createController` has already taken through its
+  sequence. The summary is one line, the rule that was broken, with the
+  explanation and the advice under it and, where there is one to name, the
+  offending widget at the bottom — which is the block the console already shows
+  for a mistimed inherited lookup of Flutter's own. Nothing that caught the old
+  failure stops catching this one: `FlutterError` implements `AssertionError`,
+  and its `message` is the whole text.
 * **Fix:** the assertion that says where a subscription may be taken draws a
   narrower line, and every shape it now refuses was going stale without a word.
   What a dependent asked for is remembered per frame, so the registrations one

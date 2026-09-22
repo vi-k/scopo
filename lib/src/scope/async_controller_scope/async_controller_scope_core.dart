@@ -106,15 +106,28 @@ abstract base class AsyncControllerScopeElementBase<
     // branch went up over a controller that was not running, `mounted` and
     // all, and nothing anywhere said a word. Refused here, where the mistake
     // is, and at no cost in release.
-    assert(
-      _controllerIsUnused(controller),
-      '$runtimeType.createController handed over a $C that has already been '
-      'used. `performInit`, `performUnmount` and `performDispose` run once '
-      'each and in that order, so this controller will not initialize again '
-      'and the scope would show its ready branch over one that is not '
-      'running. Create the controller in `createController`, rather than '
-      'caching one or handing over one that a previous scope has released.',
-    );
+    assert(() {
+      if (!_controllerIsUnused(controller)) {
+        throw FlutterError.fromParts(<DiagnosticsNode>[
+          ErrorSummary(
+            '$runtimeType.createController handed over a $C that has already '
+            'been used.',
+          ),
+          ErrorDescription(
+            '`performInit`, `performUnmount` and `performDispose` run once '
+            'each and in that order, so this controller will not initialize '
+            'again -- and the scope would show its ready branch over one that '
+            'is not running.',
+          ),
+          ErrorHint(
+            'Create the controller in `createController`, rather than caching '
+            'one or handing over one that a previous scope has released.',
+          ),
+        ]);
+      }
+
+      return true;
+    }());
 
     try {
       await controller.performInit();

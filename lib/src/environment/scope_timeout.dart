@@ -82,7 +82,13 @@ Duration? resolveTimeout(Duration? own, Duration? fallback) {
     return null;
   }
 
-  assert(chosen == null || !chosen.isNegative, _negativeLimit(chosen));
+  assert(() {
+    if (chosen != null && chosen.isNegative) {
+      throw _negativeLimit(chosen);
+    }
+
+    return true;
+  }());
 
   return chosen;
 }
@@ -104,15 +110,29 @@ Duration? resolveTimeout(Duration? own, Duration? fallback) {
 /// default was the one way to ask for no limit at all and be given a wait
 /// that expires on its first tick.
 Duration? resolveCancellationTimeout(Duration? own, Duration? fallback) {
-  assert(
-    own is! _NoTimeout,
-    'ScopeTimeout.none is not accepted by initCancellationTimeout. A '
-    'cancellation waits for the initialization generator to run out, and a '
-    'generator suspended on a future that never completes never does -- so '
-    'an unbounded wait here is the hang the limit exists to prevent. Give a '
-    'longer Duration instead, or remove the limit for every scope at once '
-    'with ScopeConfig.defaultInitCancellationTimeout.',
-  );
+  assert(() {
+    if (own is _NoTimeout) {
+      throw FlutterError.fromParts(<DiagnosticsNode>[
+        ErrorSummary(
+          'ScopeTimeout.none is not accepted by initCancellationTimeout.',
+        ),
+        ErrorDescription(
+          'A cancellation waits for the initialization generator to run out, '
+          'and a generator suspended on a future that never completes never '
+          'does -- so an unbounded wait here is the hang the limit exists to '
+          'prevent.',
+        ),
+        ErrorHint(
+          'Give a longer Duration instead, or remove the limit for every '
+          'scope at once with ScopeConfig.defaultInitCancellationTimeout: an '
+          'unbounded cancellation is a decision for the whole application, '
+          'and that is where it is written.',
+        ),
+      ]);
+    }
+
+    return true;
+  }());
 
   return resolveTimeout(own is _NoTimeout ? null : own, fallback);
 }
@@ -125,12 +145,23 @@ Duration? resolveCancellationTimeout(Duration? own, Duration? fallback) {
 /// than rounding it up is [ScopeTimeout.none] — the one negative [Duration]
 /// here means the opposite, and it is told apart by its type, so anything that
 /// gives back a plain [Duration] loses it.
-String _negativeLimit(Duration value) =>
-    'A timeout of $value is negative, and a wait cannot be bounded by a '
-    'length of time that has already passed. If this came from '
-    'ScopeTimeout.none, something gave back a plain Duration on the way here '
-    '-- `none + d`, `none * 2`, a `deadline.difference(now)` gone past due -- '
-    'and all that is left of the marker is the negative length behind it, '
-    'which a timer reads as "expire at once". Pass ScopeTimeout.none itself '
-    'to remove the limit, Duration.zero to expire at once, or a Duration that '
-    'is not negative to wait for it.';
+FlutterError _negativeLimit(Duration value) =>
+    FlutterError.fromParts(<DiagnosticsNode>[
+      ErrorSummary('A timeout of $value is negative.'),
+      ErrorDescription(
+        'A limit is a length of time to wait, and a wait cannot be bounded by '
+        'a length of time that has already passed: a timer given one fires on '
+        'its first tick, which is Duration.zero with extra steps.',
+      ),
+      ErrorDescription(
+        'If this came from ScopeTimeout.none, something gave back a plain '
+        'Duration on the way here -- `none + d`, `none * 2`, a '
+        '`deadline.difference(now)` gone past due. The marker is told apart '
+        'by its type, so all that is left of it is the negative length behind '
+        'it, which a timer reads as "expire at once".',
+      ),
+      ErrorHint(
+        'Pass ScopeTimeout.none itself to remove the limit, Duration.zero to '
+        'expire at once, or a Duration that is not negative to wait for it.',
+      ),
+    ]);

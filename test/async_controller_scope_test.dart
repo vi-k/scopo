@@ -570,11 +570,19 @@ void main() {
     await tester.pumpWidget(_Host(controller: controller));
     await tester.pumpAndSettle();
 
+    final shown =
+        tester.widget<Text>(find.textContaining('createController')).data!;
+
     expect(
-      find.textContaining('createController'),
-      findsOneWidget,
+      shown.split('\n').first,
+      endsWith(
+        '.createController handed over a _TestController that has already '
+        'been used.',
+      ),
       reason: 'the refusal names the hook that handed the controller over, '
-          'which is where the mistake is',
+          'which is where the mistake is -- and it says so in its first '
+          'line, the summary of a `FlutterError`, rather than opening with '
+          'a paragraph the reader has to get through',
     );
   });
 }
