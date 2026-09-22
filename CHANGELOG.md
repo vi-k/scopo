@@ -30,6 +30,18 @@
   `didChangeDependencies` and `didUpdateWidget`. None of it reaches a release
   build: every flag the check stands on is Flutter's own debug state, so the
   mistake is silent there.
+* **Fix:** a dependency held over from a previous run is refused rather than
+  skipped. A `ScopeDependency` goes through its states once, and the container
+  promised as much — but a group walked only the children that still needed
+  initializing, and a node the previous run had already taken through its
+  states is not one. So the initializer never ran, nothing said so, and the
+  scope showed a ready subtree over a dependency holding nothing. It is now
+  refused where the tree is assembled, in the same `FlutterError` form as the
+  rest, and the node refuses for itself where it stands as the root — which
+  used to be the one bare assertion left in the package, with no message at
+  all. The usual cause is a `late final` field holding the dependency rather
+  than what its initializer produces, and the error names it. Assertions only:
+  in a release build such a node is still passed over in silence.
 
 ## 0.15.1
 

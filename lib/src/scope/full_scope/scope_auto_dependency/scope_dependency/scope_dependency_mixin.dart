@@ -1,5 +1,49 @@
 part of '../../../scope.dart';
 
+/// Refuses a dependency that is being asked to start a second initialization.
+///
+/// A dependency goes through its states once, and the tree a run works on is
+/// built afresh for that run. A node that is in neither of those positions --
+/// a node the previous run took through its states, handed to this one -- is a
+/// mistake with no good outcome behind it: initialize it again and its one
+/// [ScopeDependencyHandle] is replaced, along with the `unmount` and `dispose`
+/// the first run registered on it, and whatever that run had taken is left
+/// with nothing to release it.
+///
+/// Raised from two places, because the mistake arrives from two directions. A
+/// node under a group is seen by the group, as it is built. A node standing as
+/// the root of a tree has no group to see it and refuses for itself, in
+/// [ScopeDependencyMixin.init].
+///
+/// It cannot be more than an assertion. The skip this replaced is what release
+/// still does -- running a second initializer over a container the first run
+/// has already furnished is the worse of the two -- so in a release build the
+/// mistake stays silent, as it was before.
+FlutterError _alreadyUsed(ScopeDependencyMixin dependency) =>
+    FlutterError.fromParts(<DiagnosticsNode>[
+      ErrorSummary(
+        '${dependency.wrappedName} has already been through an initialization '
+        'and cannot start another.',
+      ),
+      ErrorDescription(
+        'A dependency is built, initialized and released, in that order and '
+        'once. This one stands in ${dependency.state}, so whatever it took has '
+        'already been given back, and a second initialization would replace '
+        'the handle that is the only way back to it.',
+      ),
+      ErrorDescription(
+        'A tree is built afresh for every run, so a node left over from the '
+        'previous one came from a field rather than from the build: usually a '
+        '`late final` holding the dependency itself, where what belongs in a '
+        'field is what its initializer produces.',
+      ),
+      ErrorHint(
+        'Build the dependency where the tree is built, so that every run gets '
+        'one of its own. The `Scope` topic says what a `late final` field '
+        'costs a container that runs more than once.',
+      ),
+    ]);
+
 /// {@category Scope}
 mixin ScopeDependencyMixin implements ScopeDependency, ScopeObservable {
   @override
@@ -210,7 +254,13 @@ mixin ScopeDependencyMixin implements ScopeDependency, ScopeObservable {
     ScopeInitContext ctx,
     void Function(String path) onStep,
   ) async {
-    assert(_state is ScopeDependencyInitial);
+    assert(() {
+      if (_state is! ScopeDependencyInitial) {
+        throw _alreadyUsed(this);
+      }
+
+      return true;
+    }());
 
     // [_state] cannot answer this: it stays [ScopeDependencyInitial] for the
     // whole of the run below and leaves it only at the end, so a second call

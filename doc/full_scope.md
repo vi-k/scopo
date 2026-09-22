@@ -150,6 +150,13 @@ much where it will be read: a field that refuses the second run fails with the
 reason attached, not with the bare `LateInitializationError` the field itself
 throws.
 
+**A field holds what an initializer produces, not the dependency itself.** A
+`ScopeDependency` goes through its states once, and every run builds its tree
+afresh, so a node held over in a field and handed to a second run is refused —
+by the group it is put into, or, where it stands as the root, by the node
+itself. In a release build that refusal is gone, as every assertion is, and
+such a node is passed over without a word.
+
 An `init()` at any other moment — while one is running, or on a container that
 has been initialized and not disposed of — is refused with a `StateError` that
 says which of the two it was. It is refused whether or not the tree is holding

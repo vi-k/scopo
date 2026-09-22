@@ -394,6 +394,52 @@ final class TestUnassignedOnRerunDependencies
   String toString() => '$TestUnassignedOnRerunDependencies';
 }
 
+/// A container that caches the dependency *object* in a `late final` field,
+/// rather than caching what its initializer produces.
+///
+/// The field is the one the `Scope` topic warns about, and the mistake is a
+/// step further along: the tree the second run is given is built over the very
+/// node the first run took through its states, and a node goes through them
+/// once.
+final class TestHeldOverDependency
+    extends ScopeAutoDependencies<TestHeldOverDependency, void> {
+  /// How many times the initializer of the held-over node ran.
+  int runs = 0;
+
+  late final ScopeDependency player = dep('player', (dep) async {
+    runs++;
+    dep.dispose = () {};
+  });
+
+  @override
+  ScopeDependency buildDependencies(void context) => sequential('', [player]);
+
+  @override
+  String toString() => '$TestHeldOverDependency';
+}
+
+/// The same held-over node, standing as the root itself rather than under a
+/// group.
+///
+/// The two are refused in different places — there is no group to look at its
+/// children here — and it is the one mistake either way.
+final class TestHeldOverRoot
+    extends ScopeAutoDependencies<TestHeldOverRoot, void> {
+  /// How many times the initializer of the held-over node ran.
+  int runs = 0;
+
+  late final ScopeDependency player = dep('player', (dep) async {
+    runs++;
+    dep.dispose = () {};
+  });
+
+  @override
+  ScopeDependency buildDependencies(void context) => player;
+
+  @override
+  String toString() => '$TestHeldOverRoot';
+}
+
 /// Копия логики `handleInit()` (см. группу `TestDependencies` ниже),
 /// параметризованная экземпляром зависимостей и `MyFakeAsync`, чтобы её можно
 /// было переиспользовать в других группах тестов этого файла.
@@ -2081,6 +2127,57 @@ void main() {
               'assigned at all, and a hint saying otherwise sends the reader '
               'looking for an assignment that does not exist',
         );
+      });
+    });
+
+    // Measured 2026-09-22, and the measurement is what this pair holds. The
+    // node the first run took through its states was silently skipped by the
+    // second: a group walks `where((d) => d.initializationRequired)`, a node
+    // that has been disposed of answers `false`, and so the initializer never
+    // ran, nothing said so, and the scope showed a ready subtree over a
+    // dependency holding nothing. The container's own dartdoc promised the
+    // opposite in so many words -- "every one of them asserts that its
+    // initialization starts from ScopeDependencyInitial".
+    test('refuses a node the previous run has already been through', () {
+      myFakeAsync((async) {
+        final dependencies = TestHeldOverDependency();
+        handleInitFor(dependencies, async);
+        expectDisposed(async, dependencies.dispose());
+        expect(dependencies.runs, 1);
+
+        final progress = handleInitFor(dependencies, async);
+
+        expect(
+          progress.single.split('\n').first,
+          '"player" has already been through an initialization and cannot '
+          'start another.',
+        );
+        expect(
+          dependencies.runs,
+          1,
+          reason: 'the refusal stands where the silence used to: before the '
+              'walk, not after a run nobody made',
+        );
+      });
+    });
+
+    // The same node with no group above it to look at it, which is the other
+    // half of the one mistake: here it is the node itself that is asked to
+    // start a second initialization, and it is the node that refuses.
+    test('refuses a held-over node standing as the root', () {
+      myFakeAsync((async) {
+        final dependencies = TestHeldOverRoot();
+        handleInitFor(dependencies, async);
+        expectDisposed(async, dependencies.dispose());
+
+        final progress = handleInitFor(dependencies, async);
+
+        expect(
+          progress.single.split('\n').first,
+          '"player" has already been through an initialization and cannot '
+          'start another.',
+        );
+        expect(dependencies.runs, 1);
       });
     });
   });

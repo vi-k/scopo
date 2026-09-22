@@ -16,6 +16,29 @@ abstract base class ScopeDependencyGroup with ScopeDependencyMixin {
     _dependencies = List.of(dependencies, growable: false);
     _count = _dependencies.fold<int>(0, (p, e) => p + e.count);
 
+    // Every child has to be one this tree can take through its states, and a
+    // node the previous run already took through them is not. The walk used to
+    // skip it in silence -- `initializationRequired` says `false` for a node
+    // that has been disposed of -- so the initializer never ran, nothing said
+    // so, and the scope showed a ready subtree over a dependency holding
+    // nothing. Asked here, where the tree is assembled, so that the refusal
+    // comes before anything at all is acquired.
+    //
+    // Children of this package's own making only. A dependency of the caller's
+    // making keeps a lifecycle of its own and promises nothing about going
+    // through it once, and its [ScopeDependency.state] is arbitrary code,
+    // which the walks guard and a constructor cannot.
+    assert(() {
+      for (final dependency in _dependencies) {
+        if (dependency is ScopeDependencyMixin &&
+            dependency._state is! ScopeDependencyInitial) {
+          throw _alreadyUsed(dependency);
+        }
+      }
+
+      return true;
+    }());
+
     // Wired here, once, rather than by each walk as it reaches a child. The
     // closures read `_onStepStarted` when they fire and not now, so a group
     // can be wired long before anything above it is: the container points the
