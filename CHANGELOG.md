@@ -9,21 +9,23 @@
   inherited lookup of Flutter's own. Nothing that caught the old failure stops
   catching this one: `FlutterError` implements `AssertionError`, and its
   `message` is the whole text.
-* **Fix:** the assertion that says where a subscription may be taken no longer
-  refuses the item builder of a lazy list. `ListView.builder` and its
-  neighbours build their items from two places — `performLayout` on one frame,
-  their own rebuild in the build phase on the next, as soon as the parent hands
-  them a new delegate — and `debugDoingBuild` is raised for neither, so a
-  `select` in an item builder passed on mount and then threw on the first
-  rebuild that came from the parent. A builder the framework runs on behalf of
-  an element counts as that element's build, wherever it is called from.
-* **Fix:** the same assertion now catches a subscription taken from
-  `didChangeDependencies` of a widget that is itself under a layout callback,
-  which it used to let through. The line is drawn around the dependent rather
-  than the phase: what is refused is a registration made while the framework is
-  rebuilding that very dependent, outside its `build`. Still uncaught is a
-  `didUpdateWidget` under a layout callback, and none of this reaches a release
-  build — every flag the check stands on is Flutter's own debug state, so the
+* **Fix:** the assertion that says where a subscription may be taken draws a
+  narrower line, and every shape it now refuses was going stale without a word.
+  What a dependent asked for is remembered per frame, so the registrations one
+  dependent makes on different frames do not add up — the later ones replace
+  the earlier ones. A `select` in the item builder of a lazy list registers on
+  the list's own element, and the items a scroll brings into view are built a
+  frame later, which left the items above them subscribed to nothing at all; a
+  layout callback that reads the scope through the context of the widget around
+  it registers on an element nobody is rebuilding, and the next relayout wiped
+  whatever that element's own `build` had asked for. Both are refused now, and
+  the way out is named in the error: a `Builder` around the item, and the
+  context the callback is given. What still counts as a build outside a `build`
+  is a builder that re-runs whole — `LayoutBuilder`, `SliverLayoutBuilder` and
+  the delegate of a `SliverPersistentHeader`. That also closes the two hooks
+  which used to slip through under a layout callback,
+  `didChangeDependencies` and `didUpdateWidget`. None of it reaches a release
+  build: every flag the check stands on is Flutter's own debug state, so the
   mistake is silent there.
 
 ## 0.15.1

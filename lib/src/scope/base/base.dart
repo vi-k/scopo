@@ -2,60 +2,62 @@ part of '../scope.dart';
 
 /// Whether a registration arriving right now belongs to a build of [context].
 ///
-/// A build is not only what raises `debugDoingBuild`. An element that builds
-/// its children lazily runs a builder of its own, and the registrations that
-/// builder takes belong to it as surely as the ones a `build()` takes:
-/// `LayoutBuilder`, `OrientationBuilder` and `SliverLayoutBuilder` from
-/// `performLayout`, the item builders of the lazy lists from `performLayout`
-/// on one frame and from the element's own `performRebuild` on the next --
-/// the build phase, with no layout in progress at all. `debugDoingBuild` is
-/// raised for none of them (a `RenderObjectElement` raises it around
-/// `updateRenderObject` alone), so asking that flag by itself refused working
-/// and very common patterns, and refused them in debug only.
+/// What a dependent asked for is remembered per build, and the boundary
+/// between one build and the next is taken from the frame -- Flutter offers no
+/// hook for "this dependent is about to build". A registration is therefore
+/// safe only where **everything** the dependent asked for is asked for again
+/// in the same breath: the registrations of one dependent that arrive on
+/// different frames do not add up, the later ones replace the earlier ones,
+/// and what they replaced goes stale with nothing said.
 ///
-/// What the assertion exists for is the opposite: a registration taken from a
-/// hook of the dependent itself, `didChangeDependencies` above all. It is told
-/// apart by the dependent rather than by the phase -- the framework is
-/// rebuilding it, and an element stays dirty until its own `build` returns,
-/// while an element running a builder for somebody else has been cleaned
-/// before the call. Measured on twelve points of one frame; the table is in
-/// `docs/records/2026-09-22[1]-subscription-boundary-report.md`.
+/// Two places have that property. The dependent's own `build`, which produces
+/// all of its registrations at once. And a builder the framework runs from
+/// layout for an element that has no `build` of its own but re-runs that
+/// builder whole: `LayoutBuilder` and `SliverLayoutBuilder` (both are a
+/// `ConstrainedLayoutBuilder`, and `OrientationBuilder` hands its user the
+/// context of the first), and the delegate of a persistent header, which
+/// builds its one child from scratch whenever the shrink offset changes.
 ///
-/// None of this reaches release. `debugDoingBuild`, `BuildOwner.debugBuilding`
-/// and `RenderObject.debugActiveLayout` are all set inside `assert(() {…}())`,
-/// so in release they answer "no build anywhere" for every caller -- which is
-/// why this can only ever be an assertion, and why the mistake it names is
-/// silent in a release build. `Element.dirty` is the one input here that is
-/// real state.
+/// The item builder of a lazy list looks like the second and is not: its items
+/// are built a few at a time and across frames, all of them registering on the
+/// list's own element, so the items brought into view by a scroll wipe what
+/// the items above them had asked for. It is refused, and the way out is a
+/// `Builder` around the item -- which is better code anyway, since a change
+/// then wakes the one item instead of the whole list. Both shapes were
+/// measured before this was narrowed:
+/// `docs/records/2026-09-22[3]-lazy-registration-report.md`.
+///
+/// None of this reaches release. `debugDoingBuild` and
+/// `RenderObject.debugActiveLayout` are both set inside `assert(() {…}())`, so
+/// in release they answer "no build anywhere" for every caller -- which is why
+/// this can only ever be an assertion, and why the mistake it names is silent
+/// in a release build.
 bool _debugRegistrationBelongsToABuild(BuildContext context) {
   // The dependent's own build.
   if (context.debugDoingBuild) {
     return true;
   }
 
-  // Nothing is being built at all: a timer, a gesture, an `await` that came
-  // back between frames. This is the mistake in its plainest form.
-  if (!(context.owner?.debugBuilding ?? false)) {
+  // Everything else this rule allows is a builder run from layout. Outside
+  // one, there is nothing a registration could belong to: a timer, a gesture,
+  // an `await` that came back between frames, a lifecycle hook of the
+  // dependent -- `didChangeDependencies` above all.
+  if (RenderObject.debugActiveLayout == null) {
     return false;
   }
 
-  // A builder the framework runs on behalf of an element that builds its
-  // children lazily. Only a `RenderObjectElement` does that, and it has no
-  // hook a subscription could be taken from by mistake: the only user code
-  // holding its context is the builder.
-  if (context is RenderObjectElement) {
+  // A layout builder runs its builder whole on every layout, so the
+  // registrations it takes are all of them. The context has to be the
+  // builder's own: a closure that captured the context of the widget around it
+  // registers on an element that is not being rebuilt at all.
+  if (context.widget is ConstrainedLayoutBuilder) {
     return true;
   }
 
-  // A layout callback that reads the scope through the context of a widget
-  // above it -- the closure captures the enclosing `build`'s context instead
-  // of its own. The dependent is not being rebuilt there, so its registration
-  // is re-taken by the same callback on every layout. What is being rebuilt
-  // under a layout callback, and is not inside its own `build`, is a
-  // `didChangeDependencies`.
-  return RenderObject.debugActiveLayout != null &&
-      context is Element &&
-      !context.dirty;
+  // A persistent header does the same through a delegate rather than through a
+  // builder: one child, built from scratch whenever the shrink offset changes.
+  return context is RenderObjectElement &&
+      context.renderObject is RenderSliverPersistentHeader;
 }
 
 /// {@category base}
@@ -200,10 +202,10 @@ abstract interface class ScopeContext<W extends ScopeInheritedWidget> {
           ErrorDescription(
             'What a dependent asked for is remembered per build, and the '
             'boundary between one build and the next is taken from the frame '
-            '-- Flutter offers no hook for "this dependent is about to build" '
-            '-- so a registration made outside a build belongs to whichever '
-            'build shares its frame, and is dropped by the first build that '
-            'does not.',
+            '-- Flutter offers no hook for "this dependent is about to build". '
+            'The registrations one dependent makes on different frames '
+            'therefore do not add up: the later ones replace the earlier ones, '
+            'and whatever they replaced stops being told about changes.',
           ),
           ErrorDescription(
             '`didChangeDependencies` is the usual way to get here: it runs in '
@@ -212,9 +214,18 @@ abstract interface class ScopeContext<W extends ScopeInheritedWidget> {
             'comes from the parent instead of from a change.',
           ),
           ErrorHint(
-            'Subscribe from `build` and read the value there -- the builder '
-            'of a `LayoutBuilder` and the item builder of a lazy list count '
-            'as one.',
+            'Subscribe from `build` and read the value there. The builder of a '
+            '`LayoutBuilder` or a `SliverLayoutBuilder` counts as one, because '
+            'it re-runs whole -- but only through the context it is given, not '
+            'through the context of a widget above it.',
+          ),
+          ErrorHint(
+            'The item builder of a lazy list does not count: its items are '
+            'built a few at a time and across frames, so the ones a scroll '
+            'brings into view would leave the ones above them subscribed to '
+            'nothing. Put a `Builder` around the item and subscribe from '
+            'there, which also wakes that item alone instead of the whole '
+            'list.',
           ),
           ErrorHint(
             'To react to a change rather than to show it, keep the '

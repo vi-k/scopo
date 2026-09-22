@@ -174,32 +174,43 @@ advice under it and the offending dependent named at the bottom, the way the
 framework reports a mistimed lookup of its own. What a dependent asked for is
 remembered per build, and the boundary between one build and the next is taken
 from the frame — Flutter offers no hook for "this dependent is about to build".
-A registration made outside a build therefore belongs to whichever build shares
-its frame, and is dropped by the first build that does not:
-`didChangeDependencies` runs in the same frame as the build after it, so a
-`select` there looks like it works and then disappears on the first rebuild
-that comes from the parent rather than from a change. To react to a change
-rather than to show it, keep the subscription in `build` and
-look the scope up with `listen: false` from `didChangeDependencies`.
+The registrations one dependent makes on different frames therefore do not add
+up: the later ones replace the earlier ones, and whatever they replaced stops
+being told about changes. `didChangeDependencies` is the everyday way to run
+into that — it runs in the same frame as the build after it, so a `select`
+there looks like it works and then disappears on the first rebuild that comes
+from the parent rather than from a change. To react to a change rather than to
+show it, keep the subscription in `build` and look the scope up with
+`listen: false` from `didChangeDependencies`.
 
-**A builder counts as a build too**, and not only the one a `LayoutBuilder`
-runs: `OrientationBuilder`, `SliverLayoutBuilder` and the item builders of the
-lazy lists all build a subtree on behalf of the element that called them, and
-what a `select` there registers belongs to that element. Where the call comes
-from varies — a layout callback on one frame, the element's own rebuild on the
-next — and neither of those is what Flutter calls a build, so the line is drawn
-around the dependent instead: what the assertion refuses is a subscription
-taken while the framework is rebuilding that very dependent, outside its
-`build`. That is `didChangeDependencies`, under a layout callback or anywhere
-else. The one shape left uncaught is a `didUpdateWidget` of a widget that is
-itself under a layout callback.
+**A builder counts as a build when it re-runs whole.** `LayoutBuilder` and
+`SliverLayoutBuilder` — both are a `ConstrainedLayoutBuilder`, and
+`OrientationBuilder` hands its own builder the context of the first — build
+their subtree on behalf of an element that has no `build` of its own, and they
+build all of it every time. The delegate of a `SliverPersistentHeader` is the
+same shape: one child, built from scratch whenever the shrink offset changes.
+Everything such a builder registers is registered again on its next run, so
+nothing is left behind by the frame it happened to fall on. The context has to
+be the one the builder is given, though: a closure that captured the context of
+the widget around it registers on an element that is not being rebuilt at all,
+and the next relayout wipes whatever that element's own `build` had asked for.
 
-**None of this is checked in a release build.** `debugDoingBuild`,
-`BuildOwner.debugBuilding` and `RenderObject.debugActiveLayout` are all set
-inside assertions of Flutter's own, so a release build has no way to tell a
-build from a timer callback — and the assertion is not compiled into it either.
-The mistake is silent there: the subscription disappears at one of the later
-rebuilds, and the widget stops hearing about the value it selected.
+**The item builder of a lazy list does not count.** A lazy list builds a few
+items at a time, and the ones a scroll brings into view are built on a later
+frame — all of them registering on the list's own element, so the later items
+replace what the earlier ones asked for and those items go stale with nothing
+said. Put a `Builder` around the item and subscribe from the context it gives
+you: the registration is then the item's own, and a change wakes that item
+instead of the whole list. Everything else that is neither a build nor one of
+the builders above is refused as well — `didChangeDependencies` and
+`didUpdateWidget` alike, under a layout callback or anywhere else.
+
+**None of this is checked in a release build.** `debugDoingBuild` and
+`RenderObject.debugActiveLayout` are both set inside assertions of Flutter's
+own, so a release build has no way to tell a build from a timer callback — and
+the assertion is not compiled into it either. The mistake is silent there: the
+subscription is replaced by a later one, and the widget stops hearing about the
+value it selected.
 
 ## Where Flutter's own dependencies differ
 
@@ -227,10 +238,12 @@ silent — the dependent is simply rebuilt more often than it needs to be, and
 more often the longer it lives — which is why the timing of the call is not
 worth an assertion there: nothing about it fails outright.
 
-A scope empties what a dependent asked for at the start of each of that
-dependent's builds, so what wakes it is what its latest build actually
-selected. That reset is what the rule above pays for: a registration has to
-say which build it belongs to, and one made from `didChangeDependencies` has
+A scope empties what a dependent asked for at the first registration that
+arrives on a new frame — which, for a dependent that registers only from a
+build of its own, is the start of each of its builds — so what wakes it is what
+its latest build actually selected. That reset is what the rule above pays for:
+a registration has to say which build it belongs to, and one made from
+`didChangeDependencies`, or from a builder that runs a few items at a time, has
 no answer.
 
 ## Where provider draws the line
@@ -255,18 +268,20 @@ exception for a layout callback is written into the assertion as a widget type
 which is a `StatelessWidget` wrapped around a `LayoutBuilder` and hands its
 builder that element's context; it does not cover `SliverLayoutBuilder`, which
 is the other subclass of `ConstrainedLayoutBuilder` and is refused by a check
-written against the first.
+written against the first. The rule here names the shared superclass instead,
+so both go through, and a persistent header delegate with them.
 
 **The item builder of a lazy list is refused outright**, by an assertion of its
 own whose advice is to wrap the item in a `Builder` or pull it out into a
-widget. This is the same question this package answers the other way round, and
-both answers have a reason. The context a lazy list hands its item builder is
-the list's own element, in either package, so a `select` taken on it subscribes
-the list: a change rebuilds every item the list is holding rather than the one
-that cares, which is what that advice exists to prevent. The rule here lets the
-pattern through because it is ordinary, working code that a debug build has no
-business refusing — but the cheaper shape is still a `Builder` around the item,
-for exactly the reason provider gives.
+widget. This package refuses it too, and for a harder reason than the one
+provider gives. The context a lazy list hands its item builder is the list's
+own element, in either package, so a `select` taken on it subscribes the list:
+a change rebuilds every item the list is holding rather than the one that
+cares, and that is the cost provider names. Here it is not only a cost. The
+items are built across frames, and the frame is the boundary this package
+resets on, so the items a scroll brings into view wipe what the items above
+them had asked for — and those items are then subscribed to nothing at all.
+A `Builder` around the item settles both at once.
 
 **What a dependent asked for is cleared on a microtask, not on a build.**
 provider keeps the selectors of one dependent in a set and empties it at the
@@ -287,19 +302,20 @@ took it, because the next build starts from an empty slate.
 Provider reads `Element.dirty` too, in its notification path: a dependent
 already scheduled to rebuild is not worth running selectors for. The comment
 beside that check says the same thing as the assertion here — that `select` can
-never be used inside `didChangeDependencies`. The same flag, in a different
-role: there it spares work, here it tells a dependent's own build from a
-builder it runs on somebody else's behalf.
+never be used inside `didChangeDependencies`. This package read the same flag
+until the rule was narrowed, to tell a dependent's own build from a builder it
+runs on somebody else's behalf; it no longer does, because what it asks now is
+which builder rather than which phase.
 
 All four in one table:
 
 | | `InheritedWidget` | `InheritedModel` | `provider` | a scope |
 | --- | --- | --- | --- | --- |
 | what a dependency holds | membership | a set of aspects | a set of selectors, or "everything" | a pair `(value, selector)` |
-| when it is emptied | on deactivation | on deactivation | at the first registration after a microtask | at the start of each build of the dependent |
+| when it is emptied | on deactivation | on deactivation | at the first registration after a microtask | at the first registration on a new frame |
 | listening to everything | the only mode | `aspect: null`, for good | `watch`, for good | wins inside that one build |
-| where it may be taken | anywhere, `didChangeDependencies` included | anywhere | `watch`: any build phase; `select`: the dependent's own `build`, plus `LayoutBuilder` by name | a build, decided by the dependent |
-| from the item builder of a lazy list | allowed | allowed | refused; wrap the item in a `Builder` | allowed, and it subscribes the list |
+| where it may be taken | anywhere, `didChangeDependencies` included | anywhere | `watch`: any build phase; `select`: the dependent's own `build`, plus `LayoutBuilder` by name | the dependent's own `build`, plus a builder that re-runs whole |
+| from the item builder of a lazy list | allowed | allowed | refused; wrap the item in a `Builder` | refused; wrap the item in a `Builder` |
 
 ## Depending on itself
 

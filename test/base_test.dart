@@ -262,46 +262,74 @@ void main() {
       );
     });
 
-    // The same element runs its builder from two different places, and only
-    // one of them has a layout in progress. `ListView.builder` builds its
-    // items from `performLayout` on the first frame, and from its own
-    // `performRebuild` -- in the build phase, with `debugActiveLayout` back to
-    // null -- as soon as the parent hands it a new delegate. Neither of the
-    // two raises `debugDoingBuild`, so the assert let the first one through
-    // and refused the second: an item builder that reads the scope threw on
-    // the first rebuild that came from the parent.
-    testWidgets(
-        'subscribing from an item builder survives a rebuild from the parent',
+    // A `SliverLayoutBuilder` is the same widget for slivers -- both descend
+    // from `ConstrainedLayoutBuilder`, which is what the rule names. provider
+    // checks for `LayoutBuilder` itself and refuses this one.
+    testWidgets('a sliver layout callback may subscribe as well',
         (tester) async {
       var value = -1;
 
-      Widget tree(String tag) => _Host(
-            builder: (context) => ListView.builder(
-              itemCount: 1,
-              itemBuilder: (context, index) {
-                value = ScopeWidgetCore.select<_Scope, _ScopeElement, int>(
-                  context,
-                  (element) => element.value,
-                );
+      await tester.pumpWidget(
+        _Host(
+          builder: (context) => CustomScrollView(
+            slivers: [
+              SliverLayoutBuilder(
+                builder: (context, constraints) {
+                  value = ScopeWidgetCore.select<_Scope, _ScopeElement, int>(
+                    context,
+                    (element) => element.value,
+                  );
 
-                return SizedBox(height: 40, child: Text(tag));
-              },
-            ),
-          );
-
-      await tester.pumpWidget(tree('first'));
+                  return const SliverToBoxAdapter(
+                    child: SizedBox(height: 40),
+                  );
+                },
+              ),
+            ],
+          ),
+        ),
+      );
 
       expect(tester.takeException(), isNull);
       expect(value, 0);
 
-      await tester.pumpWidget(tree('second'));
+      (tester.element(find.byType(_Scope)) as _ScopeElement).bump();
+      await tester.pump();
 
-      expect(
-        tester.takeException(),
-        isNull,
-        reason: 'the items are rebuilt from the build phase this time, and '
-            'that is the same registration as before',
+      expect(value, 1);
+    });
+
+    // A persistent header builds from layout too, through a delegate of its
+    // own rather than through a builder, and it builds one child whole
+    // whenever the shrink offset changes. That is the property this rule is
+    // about, so the registration is honoured here as well -- measured, the
+    // subscription survives a scroll that re-ran the delegate on a frame of
+    // its own.
+    testWidgets('a persistent header delegate may subscribe', (tester) async {
+      var value = -1;
+
+      await tester.pumpWidget(
+        _Host(
+          builder: (context) => CustomScrollView(
+            slivers: [
+              SliverPersistentHeader(
+                pinned: true,
+                delegate: _SubscribingHeader((seen) => value = seen),
+              ),
+              SliverList.builder(
+                itemCount: 20,
+                itemBuilder: (context, index) => const SizedBox(height: 100),
+              ),
+            ],
+          ),
+        ),
       );
+
+      expect(tester.takeException(), isNull);
+      expect(value, 0);
+
+      await tester.drag(find.byType(CustomScrollView), const Offset(0, -30));
+      await tester.pump();
 
       (tester.element(find.byType(_Scope)) as _ScopeElement).bump();
       await tester.pump();
@@ -309,7 +337,108 @@ void main() {
       expect(
         value,
         1,
-        reason: 'and the subscription is a real one on both paths',
+        reason: 'the relayout re-took the registration on a frame of its own, '
+            'and it is the only registration that element has',
+      );
+    });
+
+    // An item builder of a lazy list is not one build, and it does not belong
+    // to one frame. Items are built a few at a time -- the ones a scroll
+    // brings into view are built on a later frame -- and every registration
+    // taken there lands on the list's own element. The boundary between one
+    // build and the next is the frame, so the items built later wipe what the
+    // items built earlier had asked for, and those items then go stale with
+    // nothing said at all. The assertion allowed this until 2026-09-22 and
+    // the documentation called it working code; measured in
+    // `docs/records/2026-09-22[3]-lazy-registration-report.md`.
+    testWidgets('subscribing from the item builder of a lazy list is rejected',
+        (tester) async {
+      await tester.pumpWidget(
+        _Host(
+          builder: (context) => ListView.builder(
+            itemCount: 1,
+            itemBuilder: (context, index) {
+              ScopeWidgetCore.select<_Scope, _ScopeElement, int>(
+                context,
+                (element) => element.value,
+              );
+
+              return const SizedBox(height: 40);
+            },
+          ),
+        ),
+      );
+
+      expect(
+        tester.takeException(),
+        isA<FlutterError>()
+            .having(
+              (error) => error.diagnostics.first.toString(),
+              'summary',
+              'A scope can only be subscribed to from a build.',
+            )
+            .having(
+              (error) => error.diagnostics.join(' '),
+              'parts',
+              contains('`Builder`'),
+            ),
+        reason: 'and the way out is named in the error itself',
+      );
+    });
+
+    // That way out, and why it is one: a `Builder` around the item gives the
+    // item an element of its own, so the registration belongs to the item
+    // rather than to the list. Nothing wipes it when the next item is built,
+    // and a change wakes the one item that asked for it instead of rebuilding
+    // the whole list.
+    testWidgets('a Builder inside the item subscribes that item alone',
+        (tester) async {
+      final built = <int>[];
+
+      await tester.pumpWidget(
+        _Host(
+          builder: (context) => ListView.builder(
+            cacheExtent: 0,
+            itemExtent: 100,
+            itemCount: 30,
+            itemBuilder: (context, index) => Builder(
+              builder: (context) {
+                built.add(index);
+                ScopeWidgetCore.select<_Scope, _ScopeElement, int>(
+                  context,
+                  (element) => element.values[index],
+                );
+
+                return const SizedBox.shrink();
+              },
+            ),
+          ),
+        ),
+      );
+      final scope = tester.element(find.byType(_Scope)) as _ScopeElement;
+
+      expect(tester.takeException(), isNull);
+      built.clear();
+
+      await tester.drag(find.byType(ListView), const Offset(0, -50));
+      await tester.pump();
+
+      expect(
+        built,
+        isNotEmpty,
+        reason: 'the scroll built an item on a later frame, which is what '
+            'used to wipe the registrations of the items above it',
+      );
+      built.clear();
+
+      scope.bumpAt(0);
+      await tester.pump();
+
+      expect(
+        built,
+        [0],
+        reason: 'the first item is still subscribed, and it alone is woken by '
+            'a change of its own value',
       );
     });
 
@@ -349,19 +478,20 @@ void main() {
 
     // A layout callback that reads the scope through the context of the widget
     // around it: the closure captures the enclosing `build`'s context instead
-    // of its own, which is ordinary enough to write by accident and works.
-    // The registration belongs to that outer element, which is not being
-    // rebuilt while the callback runs, and the callback takes it again on
-    // every layout.
-    testWidgets('a layout callback may subscribe through the context above it',
-        (tester) async {
-      var value = -1;
-
+    // of its own. It is ordinary enough to write by accident, it was allowed
+    // until 2026-09-22, and it goes stale the same way -- the registration
+    // belongs to the outer element, which is not being rebuilt while the
+    // callback runs, so a relayout that comes without a rebuild re-takes that
+    // one registration on a new frame and wipes everything the outer `build`
+    // had asked for.
+    testWidgets(
+        'a layout callback that subscribes through the context above it is '
+        'rejected', (tester) async {
       await tester.pumpWidget(
         _Host(
           builder: (outer) => LayoutBuilder(
             builder: (context, constraints) {
-              value = ScopeWidgetCore.select<_Scope, _ScopeElement, int>(
+              ScopeWidgetCore.select<_Scope, _ScopeElement, int>(
                 outer,
                 (element) => element.value,
               );
@@ -372,36 +502,72 @@ void main() {
         ),
       );
 
-      expect(tester.takeException(), isNull);
-      expect(value, 0);
-
-      (tester.element(find.byType(_Scope)) as _ScopeElement).bump();
-      await tester.pump();
-
       expect(
-        value,
-        1,
-        reason: 'and it is a real subscription, re-taken by the next layout',
+        tester.takeException(),
+        isA<FlutterError>()
+            .having(
+              (error) => error.diagnostics.first.toString(),
+              'summary',
+              'A scope can only be subscribed to from a build.',
+            )
+            .having(
+              (error) => error.diagnostics.join(' '),
+              'parts',
+              contains('the context it is given'),
+            ),
+        reason: 'and the way out is named in the error itself',
       );
     });
 
+    // The one shape the rule of the morning left uncaught: `didUpdateWidget`
+    // of a widget that itself stands under a layout callback. It is not that
+    // widget's build, and the widget is not a layout builder, so the narrowed
+    // rule refuses it along with everything else that is neither.
+    testWidgets(
+      'subscribing from didUpdateWidget under a layout callback is rejected',
+      (tester) async {
+        Widget tree(int tag) => _Host(
+              builder: (context) => LayoutBuilder(
+                builder: (context, constraints) => _SubscribesOnUpdate(tag),
+              ),
+            );
+
+        await tester.pumpWidget(tree(1));
+
+        expect(tester.takeException(), isNull);
+
+        await tester.pumpWidget(tree(2));
+
+        expect(
+          tester.takeException(),
+          isA<FlutterError>().having(
+            (error) => error.diagnostics.first.toString(),
+            'summary',
+            'A scope can only be subscribed to from a build.',
+          ),
+        );
+      },
+      // The rejection is an assert raised from an update, so the subtree it
+      // breaks stays unmounted -- see [unmountableTree].
+      experimentalLeakTesting: unmountableTree,
+    );
+
     // The plainest form of the mistake: a context stashed from a builder and
-    // subscribed to when nothing is being built at all. The builder context of
-    // a lazy list is a `RenderObjectElement`, and that is let through only
-    // while a build is in progress -- `BuildOwner.debugBuilding` is what says
-    // it is.
+    // subscribed to when nothing is being built at all. The context here is
+    // the very one the rule lets through while the callback runs, which is
+    // what makes it worth stashing -- what is allowed is the registration, not
+    // the context that took it.
     testWidgets('subscribing between frames is rejected whatever the context',
         (tester) async {
       late BuildContext stashed;
 
       await tester.pumpWidget(
         _Host(
-          builder: (context) => ListView.builder(
-            itemCount: 1,
-            itemBuilder: (context, index) {
+          builder: (context) => LayoutBuilder(
+            builder: (context, constraints) {
               stashed = context;
 
-              return const SizedBox(height: 40);
+              return const SizedBox.shrink();
             },
           ),
         ),
@@ -651,6 +817,61 @@ final class _SubscribesTooEarlyState extends State<_SubscribesTooEarly> {
   Widget build(BuildContext context) => const SizedBox.shrink();
 }
 
+/// Subscribes from `didUpdateWidget`, which is not a build either.
+final class _SubscribesOnUpdate extends StatefulWidget {
+  /// Tells one build of this widget from the next, so that the update happens
+  /// at all.
+  final int tag;
+
+  const _SubscribesOnUpdate(this.tag);
+
+  @override
+  State<_SubscribesOnUpdate> createState() => _SubscribesOnUpdateState();
+}
+
+final class _SubscribesOnUpdateState extends State<_SubscribesOnUpdate> {
+  @override
+  void didUpdateWidget(covariant _SubscribesOnUpdate oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    ScopeWidgetCore.select<_Scope, _ScopeElement, int>(
+      context,
+      (element) => element.value,
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) => const SizedBox.shrink();
+}
+
+/// A persistent header whose delegate subscribes to the scope.
+final class _SubscribingHeader extends SliverPersistentHeaderDelegate {
+  final void Function(int value) onValue;
+
+  const _SubscribingHeader(this.onValue);
+
+  @override
+  double get minExtent => 50;
+
+  @override
+  double get maxExtent => 100;
+
+  @override
+  Widget build(BuildContext context, double shrinkOffset, bool overlaps) {
+    onValue(
+      ScopeWidgetCore.select<_Scope, _ScopeElement, int>(
+        context,
+        (element) => element.value,
+      ),
+    );
+
+    return const SizedBox.expand();
+  }
+
+  @override
+  bool shouldRebuild(covariant SliverPersistentHeaderDelegate oldDelegate) =>
+      false;
+}
+
 /// A family that builds the `child` it was constructed with, the plain
 /// `InheritedWidget` way. By default that is the placeholder every
 /// `ScopeInheritedWidget` carries.
@@ -690,8 +911,17 @@ final class _ScopeElement
   int other = 0;
   int selfNotifications = 0;
 
+  /// One value per item, for the tests about lazy lists.
+  final values = List<int>.filled(30, 0);
+
   void bump() {
     value++;
+    notifyDependents();
+  }
+
+  /// Changes the value of one item of a list and nothing else.
+  void bumpAt(int index) {
+    values[index]++;
     notifyDependents();
   }
 

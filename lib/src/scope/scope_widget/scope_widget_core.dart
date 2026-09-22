@@ -16,6 +16,13 @@ typedef _ScopeDependency<T extends Object, V extends Object?> = (
 /// The one case this cannot tell apart is a dependent rebuilt twice within a
 /// single frame. A scope's own notification is not that case: it clears the
 /// registration outright before the dependent rebuilds.
+///
+/// The other half of that bargain is held by the assertion in
+/// `ScopeContext._find`, which allows a registration only from the dependent's
+/// own build or from a builder that re-runs whole. Without it the
+/// registrations of one dependent could straddle two frames and the later ones
+/// would silently replace the earlier — which is exactly what the item builder
+/// of a lazy list does, and why it is refused.
 Object _buildPass = Object();
 
 /// Whether the end of [_buildPass] has already been asked for.
