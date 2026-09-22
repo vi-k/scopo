@@ -157,13 +157,122 @@ final position = AsyncControllerScopeBase.select<Player, PlayerController, int>(
 );
 ```
 
+## Following what the controller hears
+
+The scope notifies its dependents when its own state changes — waiting, ready,
+error — and for most scopes that happens once. A controller that is running has
+more to say while it runs: the track the session pushed, the position it
+reached. Carrying that to the widgets is the subtree's business rather than the
+scope's, and the stream the controller opened is the obvious road. Say
+`PlayerController` hands the session's stream out as `tracks`:
+
+```dart
+@override
+Widget buildOnReady(BuildContext context, PlayerController controller) =>
+    StreamBuilder<Track>(
+      stream: controller.tracks,
+      builder: (context, snapshot) => TrackTitle(title: snapshot.data?.title),
+    );
+```
+
+Three things come with it.
+
+**Every event rebuilds the whole branch.** Two tracks with the same title and a
+different position rebuild `TrackTitle` twice, and the title is all it reads.
+
+**An error empties the snapshot.** The builder is handed an `AsyncSnapshot`
+made by `withError`, and that one carries no data: a widget that was showing a
+title shows `null` from the session's first complaint onwards, while the track
+it was showing is still the one playing.
+
+**The stream has one listener.** A second widget that wants the same track gets
+`Bad state: Stream has already been listened to`, so either the stream becomes
+broadcast or the value is carried down by hand.
+
+The value already lives in the controller — the subscription is its own. Let it
+keep what it hears and say when that changed:
+
+```dart
+final class PlayerController extends ScopeController with ChangeNotifier {
+  final Api api;
+
+  StreamSubscription<Track>? _subscription;
+  Track? _track;
+
+  PlayerController({required this.api});
+
+  String get title => _track?.title ?? '';
+
+  int get position => _track?.position ?? 0;
+
+  @override
+  Future<void> init() async {
+    final session = await api.openSession();
+    if (!mounted) return;
+
+    _subscription = session.tracks.listen((track) {
+      _track = track;
+      notifyListeners();
+    });
+  }
+
+  @override
+  void onUnmount() => unawaited(_subscription?.cancel());
+
+  @override
+  Future<void> dispose() async {
+    await _subscription?.cancel();
+    await api.closeSession();
+    super.dispose();
+  }
+}
+```
+
+`ScopeNotifier.value` puts that controller in front of the subtree, and it is
+the whole bridge:
+
+```dart
+@override
+Widget buildOnReady(BuildContext context, PlayerController controller) =>
+    ScopeNotifier<PlayerController>.value(
+      value: controller,
+      builder: (context) => const PlayerView(),
+    );
+```
+
+A widget below then names the one value it shows:
+
+```dart
+final title = ScopeNotifier.select<PlayerController, String>(
+  context,
+  (controller) => controller.title,
+);
+```
+
+and is rebuilt when the title changes and not when the position does. `of` and
+`maybeOf` with `listen: true` are the other end of that scale: they rebuild on
+every `notifyListeners`, which is what the `StreamBuilder` above was doing.
+
+Two things about the teardown are worth reading twice.
+
+`dispose()` is the controller's hook *and* `ChangeNotifier`'s method — the
+mixin sits on top of `ScopeController`, so the two are one member. That is why
+the override ends with `super.dispose()`: without it the listeners are never
+let go of, and Flutter's leak tracker says so in the first test that watches.
+
+The subscription is cancelled in both halves on purpose. `onUnmount()` stops
+the events from reaching a scope that is on its way out, at the moment it
+leaves; `dispose()` awaits the cancellation before closing the session behind
+it. The second one is what a `StreamBuilder` has no way to ask for — it cancels
+from `State.dispose` and lets the returned future go.
+
 ## What this family does not do
 
 **It does not make the controller observable.** The scope notifies its
 dependents when its *state* changes — waiting, ready, error — and not when
-something inside the controller changes. A controller whose values the widgets
-have to follow should be a `Listenable` with a `ScopeNotifier.value` under this
-scope, or should expose a stream.
+something inside the controller changes. The section above is the way to do
+that: a controller that is a `Listenable`, with a `ScopeNotifier.value` under
+this scope.
 
 **It reports no progress.** `init()` is a `Future<void>`, so there is nothing
 between "initializing" and "ready" to show. An initialization that has stages

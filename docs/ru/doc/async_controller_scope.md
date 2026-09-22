@@ -1,6 +1,6 @@
 # AsyncControllerScope
 
-> Перевод `doc/async_controller_scope.md` (blob `c3cbb0bcd78d8c7d246ff4ac5579ea2f31563e72`).
+> Перевод `doc/async_controller_scope.md` (blob `7c0e3e8852a044027326c0fe64d887f71fd08873`).
 > Правится в том же коммите, что и оригинал; проверка — `sh docs/ru/check.sh`.
 
 Скоуп, всё содержимое которого — контроллер: объект со своим жизненным циклом,
@@ -159,13 +159,123 @@ final position = AsyncControllerScopeBase.select<Player, PlayerController, int>(
 );
 ```
 
+## Как следить за тем, что слышит контроллер
+
+Скоуп уведомляет зависимых, когда меняется его собственное состояние —
+ожидание, готовность, ошибка, — и у большинства скоупов это случается один раз.
+Работающему контроллеру есть что сказать и дальше: трек, который прислала
+сессия, позиция, до которой он дошёл. Донести это до виджетов — дело поддерева,
+а не скоупа, и очевидная дорога — поток, который контроллер открыл. Пусть
+`PlayerController` отдаёт поток сессии наружу как `tracks`:
+
+```dart
+@override
+Widget buildOnReady(BuildContext context, PlayerController controller) =>
+    StreamBuilder<Track>(
+      stream: controller.tracks,
+      builder: (context, snapshot) => TrackTitle(title: snapshot.data?.title),
+    );
+```
+
+Вместе с этим приходит три вещи.
+
+**Каждое событие пересобирает всю ветку.** Два трека с одинаковым названием
+и разной позицией пересоберут `TrackTitle` дважды, а название — это всё, что он
+читает.
+
+**Ошибка опустошает снимок.** Билдеру отдают `AsyncSnapshot`, построенный
+через `withError`, а он не несёт данных: виджет, показывавший название,
+с первой же жалобы сессии показывает `null` — хотя трек, который он показывал,
+всё ещё играет.
+
+**У потока один слушатель.** Второй виджет, которому нужен тот же трек,
+получит `Bad state: Stream has already been listened to`, так что либо поток
+становится широковещательным, либо значение несут вниз руками.
+
+Значение и так живёт в контроллере — подписка его собственная. Пусть он хранит
+то, что услышал, и говорит, когда это изменилось:
+
+```dart
+final class PlayerController extends ScopeController with ChangeNotifier {
+  final Api api;
+
+  StreamSubscription<Track>? _subscription;
+  Track? _track;
+
+  PlayerController({required this.api});
+
+  String get title => _track?.title ?? '';
+
+  int get position => _track?.position ?? 0;
+
+  @override
+  Future<void> init() async {
+    final session = await api.openSession();
+    if (!mounted) return;
+
+    _subscription = session.tracks.listen((track) {
+      _track = track;
+      notifyListeners();
+    });
+  }
+
+  @override
+  void onUnmount() => unawaited(_subscription?.cancel());
+
+  @override
+  Future<void> dispose() async {
+    await _subscription?.cancel();
+    await api.closeSession();
+    super.dispose();
+  }
+}
+```
+
+`ScopeNotifier.value` ставит этот контроллер перед поддеревом — и это весь
+мост:
+
+```dart
+@override
+Widget buildOnReady(BuildContext context, PlayerController controller) =>
+    ScopeNotifier<PlayerController>.value(
+      value: controller,
+      builder: (context) => const PlayerView(),
+    );
+```
+
+Виджет ниже называет то единственное значение, которое показывает:
+
+```dart
+final title = ScopeNotifier.select<PlayerController, String>(
+  context,
+  (controller) => controller.title,
+);
+```
+
+— и пересобирается, когда меняется название, а не когда меняется позиция.
+`of` и `maybeOf` с `listen: true` — другой конец той же шкалы: они
+пересобирают на каждый `notifyListeners`, то есть ровно то, что делал
+`StreamBuilder` выше.
+
+Две вещи про разбор стоит прочитать дважды.
+
+`dispose()` — это и хук контроллера, и метод `ChangeNotifier`: примесь лежит
+поверх `ScopeController`, так что член здесь один. Поэтому переопределение
+кончается на `super.dispose()`: без него слушателей никто не отпускает,
+и трекер утечек Flutter скажет об этом в первом же тесте, который смотрит.
+
+Подписку отменяют в обеих половинах намеренно. `onUnmount()` не пускает
+события в скоуп, который уходит, — в тот самый момент, когда он уходит;
+`dispose()` дожидается отмены, прежде чем закрыть за собой сессию. Второго
+у `StreamBuilder` попросить нечем: он отменяет из `State.dispose` и отпускает
+возвращённый future.
+
 ## Чего это семейство не делает
 
 **Не делает контроллер наблюдаемым.** Скоуп уведомляет зависимых при изменении
 своего **состояния** — ожидание, готовность, ошибка — а не когда что-то
-изменилось внутри контроллера. Контроллер, за значениями которого виджеты
-должны следить, — это `Listenable` с `ScopeNotifier.value` под этим скоупом,
-либо поток наружу.
+изменилось внутри контроллера. Как это делается — в разделе выше: контроллер,
+который сам `Listenable`, и `ScopeNotifier.value` под этим скоупом.
 
 **Не сообщает прогресс.** `init()` — это `Future<void>`, между
 «инициализируется» и «готов» показывать нечего. Инициализация, у которой есть
