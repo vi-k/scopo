@@ -233,6 +233,74 @@ selected. That reset is what the rule above pays for: a registration has to
 say which build it belongs to, and one made from `didChangeDependencies` has
 no answer.
 
+## Where provider draws the line
+
+`provider` solves the same problem and draws two lines, one for each of its two
+ways to subscribe — which is worth knowing, because the two do not agree with
+each other and neither of them agrees with the rule above. What follows was
+read off version 6.1.5+1.
+
+**`context.watch`, and `Provider.of` with `listen: true`, are guarded by the
+frame.** The assertion asks whether the build owner is building anything at
+all, which is the coarse line this package used to draw and gave up: it catches
+a button callback and a timer, and it lets `didChangeDependencies` through,
+because a dependent's hooks run inside the same `buildScope` as the builds
+around them. A `watch` taken there is not refused.
+
+**`context.select` is guarded by the dependent**, the way the rule above is:
+the assertion asks whether the calling element is in its own `build`, so a
+`select` from `didChangeDependencies` is refused there as it is here. The
+exception for a layout callback is written into the assertion as a widget type
+— a `LayoutBuilder` is let through by name. That covers `OrientationBuilder`,
+which is a `StatelessWidget` wrapped around a `LayoutBuilder` and hands its
+builder that element's context; it does not cover `SliverLayoutBuilder`, which
+is the other subclass of `ConstrainedLayoutBuilder` and is refused by a check
+written against the first.
+
+**The item builder of a lazy list is refused outright**, by an assertion of its
+own whose advice is to wrap the item in a `Builder` or pull it out into a
+widget. This is the same question this package answers the other way round, and
+both answers have a reason. The context a lazy list hands its item builder is
+the list's own element, in either package, so a `select` taken on it subscribes
+the list: a change rebuilds every item the list is holding rather than the one
+that cares, which is what that advice exists to prevent. The rule here lets the
+pattern through because it is ordinary, working code that a debug build has no
+business refusing — but the cheaper shape is still a `Builder` around the item,
+for exactly the reason provider gives.
+
+**What a dependent asked for is cleared on a microtask, not on a build.**
+provider keeps the selectors of one dependent in a set and empties it at the
+first registration that arrives after a microtask boundary, having scheduled
+that boundary itself when the set was first filled. The batch it delimits is
+therefore "everything registered in one synchronous stretch" rather than "this
+build of this dependent" — which works because `select` is confined to a build
+anyway, but it is a different clock from the one the rule above runs on.
+
+**A `watch` cannot be taken back.** Subscribing to everything is stored as a
+dependency that is not a selector set, and the first thing the registration
+does is return early when it finds one. A dependent that watched a provider
+once is subscribed to all of its changes for the life of the element, whatever
+it selects afterwards — the same trap as `aspect: null` on an `InheritedModel`.
+Here, `of(..., listen: true)` wins over `select` only inside the build that
+took it, because the next build starts from an empty slate.
+
+Provider reads `Element.dirty` too, in its notification path: a dependent
+already scheduled to rebuild is not worth running selectors for. The comment
+beside that check says the same thing as the assertion here — that `select` can
+never be used inside `didChangeDependencies`. The same flag, in a different
+role: there it spares work, here it tells a dependent's own build from a
+builder it runs on somebody else's behalf.
+
+All four in one table:
+
+| | `InheritedWidget` | `InheritedModel` | `provider` | a scope |
+| --- | --- | --- | --- | --- |
+| what a dependency holds | membership | a set of aspects | a set of selectors, or "everything" | a pair `(value, selector)` |
+| when it is emptied | on deactivation | on deactivation | at the first registration after a microtask | at the start of each build of the dependent |
+| listening to everything | the only mode | `aspect: null`, for good | `watch`, for good | wins inside that one build |
+| where it may be taken | anywhere, `didChangeDependencies` included | anywhere | `watch`: any build phase; `select`: the dependent's own `build`, plus `LayoutBuilder` by name | a build, decided by the dependent |
+| from the item builder of a lazy list | allowed | allowed | refused; wrap the item in a `Builder` | allowed, and it subscribes the list |
+
 ## Depending on itself
 
 A scope element may subscribe to its own scope — that is how the richer
