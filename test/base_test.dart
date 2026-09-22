@@ -209,10 +209,10 @@ void main() {
 
         expect(
           tester.takeException(),
-          isA<AssertionError>().having(
-            (error) => error.message.toString(),
-            'message',
-            contains('only be subscribed to from a build'),
+          isA<FlutterError>().having(
+            (error) => error.diagnostics.first.toString(),
+            'summary',
+            'A scope can only be subscribed to from a build.',
           ),
         );
       },
@@ -335,10 +335,10 @@ void main() {
 
         expect(
           tester.takeException(),
-          isA<AssertionError>().having(
-            (error) => error.message.toString(),
-            'message',
-            contains('only be subscribed to from a build'),
+          isA<FlutterError>().having(
+            (error) => error.diagnostics.first.toString(),
+            'summary',
+            'A scope can only be subscribed to from a build.',
           ),
         );
       },
@@ -414,10 +414,10 @@ void main() {
           (element) => element.value,
         ),
         throwsA(
-          isA<AssertionError>().having(
-            (error) => error.message.toString(),
-            'message',
-            contains('only be subscribed to from a build'),
+          isA<FlutterError>().having(
+            (error) => error.diagnostics.first.toString(),
+            'summary',
+            'A scope can only be subscribed to from a build.',
           ),
         ),
       );

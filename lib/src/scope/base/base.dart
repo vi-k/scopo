@@ -171,32 +171,62 @@ abstract interface class ScopeContext<W extends ScopeInheritedWidget> {
     required bool listen,
     V Function(C)? selector,
   }) {
-    assert(
-      !listen || !identical(context, _debugInitializingElement),
-      'A scope cannot be subscribed to from the initialization hook. The hook '
-      'runs once, before the first build, and is never called again, so a '
-      'subscription taken there rebuilds the subtree while the value the hook '
-      'read stays behind. Look the scope up with `listen: false` here, and '
-      'subscribe from `buildChild()` or from the widgets below instead.',
-    );
+    assert(() {
+      if (listen && identical(context, _debugInitializingElement)) {
+        throw FlutterError.fromParts(<DiagnosticsNode>[
+          ErrorSummary(
+            'A scope cannot be subscribed to from the initialization hook.',
+          ),
+          ErrorDescription(
+            'The hook runs once, before the first build, and is never called '
+            'again, so a subscription taken there rebuilds the subtree while '
+            'the value the hook read stays behind.',
+          ),
+          ErrorHint(
+            'Look the scope up with `listen: false` here, and subscribe from '
+            '`buildChild()` or from the widgets below instead.',
+          ),
+          context.describeElement('The scope that tried to subscribe was'),
+        ]);
+      }
 
-    assert(
-      !listen || _debugRegistrationBelongsToABuild(context),
-      'A scope can only be subscribed to from a build. What a dependent asked '
-      'for is remembered per build, and the boundary between one build and '
-      'the next is taken from the frame -- Flutter offers no hook for "this '
-      'dependent is about to build" -- so a registration made outside a build '
-      'belongs to whichever build shares its frame, and is dropped by the '
-      'first build that does not. `didChangeDependencies` is the usual way to '
-      'get here: it runs in the same frame as the build after it, so the '
-      'subscription looks like it works, and then disappears on the first '
-      'rebuild that comes from the parent instead of from a change.\n'
-      'Subscribe from `build` and read the value there -- the builder of a '
-      '`LayoutBuilder` and the item builder of a lazy list count as one. To '
-      'react to a change rather than to show it, keep the subscription in '
-      '`build` and look the scope up with `listen: false` from '
-      '`didChangeDependencies`.',
-    );
+      return true;
+    }());
+
+    assert(() {
+      if (listen && !_debugRegistrationBelongsToABuild(context)) {
+        throw FlutterError.fromParts(<DiagnosticsNode>[
+          ErrorSummary('A scope can only be subscribed to from a build.'),
+          ErrorDescription(
+            'What a dependent asked for is remembered per build, and the '
+            'boundary between one build and the next is taken from the frame '
+            '-- Flutter offers no hook for "this dependent is about to build" '
+            '-- so a registration made outside a build belongs to whichever '
+            'build shares its frame, and is dropped by the first build that '
+            'does not.',
+          ),
+          ErrorDescription(
+            '`didChangeDependencies` is the usual way to get here: it runs in '
+            'the same frame as the build after it, so the subscription looks '
+            'like it works, and then disappears on the first rebuild that '
+            'comes from the parent instead of from a change.',
+          ),
+          ErrorHint(
+            'Subscribe from `build` and read the value there -- the builder '
+            'of a `LayoutBuilder` and the item builder of a lazy list count '
+            'as one.',
+          ),
+          ErrorHint(
+            'To react to a change rather than to show it, keep the '
+            'subscription in `build` and look the scope up with '
+            '`listen: false` from `didChangeDependencies`.',
+          ),
+          context.describeElement('The dependent that tried to subscribe was'),
+        ]);
+      }
+
+      return true;
+    }());
 
     final element = context.getElementForInheritedWidgetOfExactType<W>();
     if (element == null) {

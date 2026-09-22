@@ -95,11 +95,17 @@ void main() {
 
       expect(
         tester.takeException(),
-        isA<AssertionError>().having(
-          (error) => error.message.toString(),
-          'message',
-          contains('listen: false'),
-        ),
+        isA<FlutterError>()
+            .having(
+              (error) => error.diagnostics.first.toString(),
+              'summary',
+              'A scope cannot be subscribed to from the initialization hook.',
+            )
+            .having(
+              (error) => error.diagnostics.join(' '),
+              'parts',
+              contains('`listen: false`'),
+            ),
       );
     });
   });
