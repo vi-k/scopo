@@ -85,15 +85,29 @@ base mixin _ScopeModelElementMixin<W extends _ScopeModelBaseMixin<M>,
   /// releases what the old one owned.
   @override
   void update(W newWidget) {
-    assert(
-      widget.hasValue == newWidget.hasValue,
-      'A scope cannot change between the constructor that owns its model and '
-      '`.value`. The model, its disposer and its listener belong to the mode '
-      'the scope was built in, and that mode is fixed for the lifetime of the '
-      'element. Give the widget a different `Widget.key` instead, so the '
-      'framework builds a new element for the new mode and releases what the '
-      'old one owned.',
-    );
+    assert(() {
+      if (widget.hasValue != newWidget.hasValue) {
+        throw FlutterError.fromParts(<DiagnosticsNode>[
+          ErrorSummary(
+            'A scope cannot change between the constructor that owns its '
+            'model and `.value`.',
+          ),
+          ErrorDescription(
+            'The model, its disposer and its listener belong to the mode the '
+            'scope was built in, and that mode is fixed for the lifetime of '
+            'the element.',
+          ),
+          ErrorHint(
+            'Give the widget a different `Widget.key` instead, so the '
+            'framework builds a new element for the new mode and releases '
+            'what the old one owned.',
+          ),
+          describeElement('The scope that was asked to change was'),
+        ]);
+      }
+
+      return true;
+    }());
     super.update(newWidget);
   }
 

@@ -170,11 +170,18 @@ void main() {
 
         expect(
           tester.takeException(),
-          isA<AssertionError>().having(
-            (error) => error.message.toString(),
-            'message',
-            contains('`Widget.key`'),
-          ),
+          isA<FlutterError>()
+              .having(
+                (error) => error.diagnostics.first.toString(),
+                'summary',
+                'A scope cannot change between the constructor that owns its '
+                    'model and `.value`.',
+              )
+              .having(
+                (error) => error.diagnostics.join(' '),
+                'parts',
+                contains('`Widget.key`'),
+              ),
         );
         expect(
           external.hasAnyListener,

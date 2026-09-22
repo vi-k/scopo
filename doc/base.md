@@ -201,6 +201,38 @@ build from a timer callback — and the assertion is not compiled into it either
 The mistake is silent there: the subscription disappears at one of the later
 rebuilds, and the widget stops hearing about the value it selected.
 
+## Where Flutter's own dependencies differ
+
+**A plain `InheritedWidget` has no such rule**, and
+`State.didChangeDependencies` is documented as a safe place to call
+`dependOnInheritedWidgetOfExactType` from. It can be, because the dependency it
+takes is membership and nothing else: the dependent is in the set or it is not,
+and the set is emptied only when the element is deactivated. There is no
+per-build boundary to fall outside of, so when the call is made does not
+matter.
+
+What a scope stores is not membership but a pair `(value, selector)`, and a
+pair is only true of the build that made it. It has to be replaced build by
+build, and whatever replaces it has to know which build it belongs to — which
+is the whole of the rule above.
+
+**`InheritedModel` is the closest thing Flutter has to a selector, and it keeps
+its aspects forever.** `InheritedModelElement.updateDependencies` adds the new
+aspect to the ones the dependent already had, and nothing takes any of them
+away until the element leaves the tree. A widget that asked for `a` in one
+build and for `b` in the next is woken by both from then on, including for the
+branch it no longer takes; one call with `aspect: null` marks it as depending
+on everything, permanently, whatever it selects afterwards. The accumulation is
+silent — the dependent is simply rebuilt more often than it needs to be, and
+more often the longer it lives — which is why the timing of the call is not
+worth an assertion there: nothing about it fails outright.
+
+A scope empties what a dependent asked for at the start of each of that
+dependent's builds, so what wakes it is what its latest build actually
+selected. That reset is what the rule above pays for: a registration has to
+say which build it belongs to, and one made from `didChangeDependencies` has
+no answer.
+
 ## Depending on itself
 
 A scope element may subscribe to its own scope — that is how the richer

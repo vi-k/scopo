@@ -1,12 +1,14 @@
 ## 0.15.2
 
-* **New:** the two assertions about where a scope may be subscribed to fail as
-  a `FlutterError` rather than a bare message. The summary is one line — the
-  rule that was broken — with the explanation and the advice under it and the
-  offending dependent named at the bottom, which is the block the console
-  already shows for a mistimed inherited lookup of Flutter's own. Nothing that
-  caught the old failure stops catching this one: `FlutterError` implements
-  `AssertionError`, and its `message` is the whole text.
+* **New:** the assertions that refuse a misuse fail as a `FlutterError` rather
+  than a bare message — the two about where a scope may be subscribed to, and
+  the one that refuses a live switch between the constructor that owns a model
+  and `.value`. The summary is one line, the rule that was broken, with the
+  explanation and the advice under it and the offending widget named at the
+  bottom, which is the block the console already shows for a mistimed
+  inherited lookup of Flutter's own. Nothing that caught the old failure stops
+  catching this one: `FlutterError` implements `AssertionError`, and its
+  `message` is the whole text.
 * **Fix:** the assertion that says where a subscription may be taken no longer
   refuses the item builder of a lazy list. `ListView.builder` and its
   neighbours build their items from two places — `performLayout` on one frame,
