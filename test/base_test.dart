@@ -261,6 +261,167 @@ void main() {
             'the next change like any other',
       );
     });
+
+    // The same element runs its builder from two different places, and only
+    // one of them has a layout in progress. `ListView.builder` builds its
+    // items from `performLayout` on the first frame, and from its own
+    // `performRebuild` -- in the build phase, with `debugActiveLayout` back to
+    // null -- as soon as the parent hands it a new delegate. Neither of the
+    // two raises `debugDoingBuild`, so the assert let the first one through
+    // and refused the second: an item builder that reads the scope threw on
+    // the first rebuild that came from the parent.
+    testWidgets(
+        'subscribing from an item builder survives a rebuild from the parent',
+        (tester) async {
+      var value = -1;
+
+      Widget tree(String tag) => _Host(
+            builder: (context) => ListView.builder(
+              itemCount: 1,
+              itemBuilder: (context, index) {
+                value = ScopeWidgetCore.select<_Scope, _ScopeElement, int>(
+                  context,
+                  (element) => element.value,
+                );
+
+                return SizedBox(height: 40, child: Text(tag));
+              },
+            ),
+          );
+
+      await tester.pumpWidget(tree('first'));
+
+      expect(tester.takeException(), isNull);
+      expect(value, 0);
+
+      await tester.pumpWidget(tree('second'));
+
+      expect(
+        tester.takeException(),
+        isNull,
+        reason: 'the items are rebuilt from the build phase this time, and '
+            'that is the same registration as before',
+      );
+
+      (tester.element(find.byType(_Scope)) as _ScopeElement).bump();
+      await tester.pump();
+
+      expect(
+        value,
+        1,
+        reason: 'and the subscription is a real one on both paths',
+      );
+    });
+
+    // The mistake, made by a widget that is itself under a layout callback.
+    // `debugActiveLayout` is raised for everything the callback builds and not
+    // just for the builder itself, so letting layout callbacks in let this
+    // through as well -- the price named in `doc/base.md` when it was done.
+    // What tells the two apart is the dependent rather than the phase: the
+    // framework is rebuilding it, and an element stays dirty until its own
+    // build returns, while an element running a builder for somebody else has
+    // been cleaned before the call.
+    testWidgets(
+      'subscribing from didChangeDependencies is rejected under a layout '
+      'callback too',
+      (tester) async {
+        await tester.pumpWidget(
+          _Host(
+            builder: (context) => LayoutBuilder(
+              builder: (context, constraints) => const _SubscribesTooEarly(),
+            ),
+          ),
+        );
+
+        expect(
+          tester.takeException(),
+          isA<AssertionError>().having(
+            (error) => error.message.toString(),
+            'message',
+            contains('only be subscribed to from a build'),
+          ),
+        );
+      },
+      // The rejection is an assert raised from `didChangeDependencies`, so
+      // the subtree it breaks stays unmounted -- see [unmountableTree].
+      experimentalLeakTesting: unmountableTree,
+    );
+
+    // A layout callback that reads the scope through the context of the widget
+    // around it: the closure captures the enclosing `build`'s context instead
+    // of its own, which is ordinary enough to write by accident and works.
+    // The registration belongs to that outer element, which is not being
+    // rebuilt while the callback runs, and the callback takes it again on
+    // every layout.
+    testWidgets('a layout callback may subscribe through the context above it',
+        (tester) async {
+      var value = -1;
+
+      await tester.pumpWidget(
+        _Host(
+          builder: (outer) => LayoutBuilder(
+            builder: (context, constraints) {
+              value = ScopeWidgetCore.select<_Scope, _ScopeElement, int>(
+                outer,
+                (element) => element.value,
+              );
+
+              return const SizedBox.shrink();
+            },
+          ),
+        ),
+      );
+
+      expect(tester.takeException(), isNull);
+      expect(value, 0);
+
+      (tester.element(find.byType(_Scope)) as _ScopeElement).bump();
+      await tester.pump();
+
+      expect(
+        value,
+        1,
+        reason: 'and it is a real subscription, re-taken by the next layout',
+      );
+    });
+
+    // The plainest form of the mistake: a context stashed from a builder and
+    // subscribed to when nothing is being built at all. The builder context of
+    // a lazy list is a `RenderObjectElement`, and that is let through only
+    // while a build is in progress -- `BuildOwner.debugBuilding` is what says
+    // it is.
+    testWidgets('subscribing between frames is rejected whatever the context',
+        (tester) async {
+      late BuildContext stashed;
+
+      await tester.pumpWidget(
+        _Host(
+          builder: (context) => ListView.builder(
+            itemCount: 1,
+            itemBuilder: (context, index) {
+              stashed = context;
+
+              return const SizedBox(height: 40);
+            },
+          ),
+        ),
+      );
+
+      expect(tester.takeException(), isNull);
+      expect(
+        () => ScopeWidgetCore.select<_Scope, _ScopeElement, int>(
+          stashed,
+          (element) => element.value,
+        ),
+        throwsA(
+          isA<AssertionError>().having(
+            (error) => error.message.toString(),
+            'message',
+            contains('only be subscribed to from a build'),
+          ),
+        ),
+      );
+    });
   });
 
   group('what a dependent subscribes to', () {

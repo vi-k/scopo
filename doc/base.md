@@ -179,12 +179,24 @@ on the first rebuild that comes from the parent rather than from a change. To
 react to a change rather than to show it, keep the subscription in `build` and
 look the scope up with `listen: false` from `didChangeDependencies`.
 
-**The builder of a `LayoutBuilder` counts as a build**, and so do those of
-`OrientationBuilder` and `SliverLayoutBuilder`: they run from `performLayout`,
-inside a build of their own element, and what they return is that element's
-subtree. `select` there is honoured like any other, and the assertion lets it
-through. The one place it can no longer tell the mistake from the pattern is a
-`didChangeDependencies` of a widget that is itself under a layout callback.
+**A builder counts as a build too**, and not only the one a `LayoutBuilder`
+runs: `OrientationBuilder`, `SliverLayoutBuilder` and the item builders of the
+lazy lists all build a subtree on behalf of the element that called them, and
+what a `select` there registers belongs to that element. Where the call comes
+from varies — a layout callback on one frame, the element's own rebuild on the
+next — and neither of those is what Flutter calls a build, so the line is drawn
+around the dependent instead: what the assertion refuses is a subscription
+taken while the framework is rebuilding that very dependent, outside its
+`build`. That is `didChangeDependencies`, under a layout callback or anywhere
+else. The one shape left uncaught is a `didUpdateWidget` of a widget that is
+itself under a layout callback.
+
+**None of this is checked in a release build.** `debugDoingBuild`,
+`BuildOwner.debugBuilding` and `RenderObject.debugActiveLayout` are all set
+inside assertions of Flutter's own, so a release build has no way to tell a
+build from a timer callback — and the assertion is not compiled into it either.
+The mistake is silent there: the subscription disappears at one of the later
+rebuilds, and the widget stops hearing about the value it selected.
 
 ## Depending on itself
 

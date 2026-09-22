@@ -1,3 +1,22 @@
+## 0.15.2
+
+* **Fix:** the assertion that says where a subscription may be taken no longer
+  refuses the item builder of a lazy list. `ListView.builder` and its
+  neighbours build their items from two places — `performLayout` on one frame,
+  their own rebuild in the build phase on the next, as soon as the parent hands
+  them a new delegate — and `debugDoingBuild` is raised for neither, so a
+  `select` in an item builder passed on mount and then threw on the first
+  rebuild that came from the parent. A builder the framework runs on behalf of
+  an element counts as that element's build, wherever it is called from.
+* **Fix:** the same assertion now catches a subscription taken from
+  `didChangeDependencies` of a widget that is itself under a layout callback,
+  which it used to let through. The line is drawn around the dependent rather
+  than the phase: what is refused is a registration made while the framework is
+  rebuilding that very dependent, outside its `build`. Still uncaught is a
+  `didUpdateWidget` under a layout callback, and none of this reaches a release
+  build — every flag the check stands on is Flutter's own debug state, so the
+  mistake is silent there.
+
 ## 0.15.1
 
 * **Fix:** a mocked controller is accepted by the scope that owns one. 0.15.0

@@ -1,5 +1,63 @@
 part of '../scope.dart';
 
+/// Whether a registration arriving right now belongs to a build of [context].
+///
+/// A build is not only what raises `debugDoingBuild`. An element that builds
+/// its children lazily runs a builder of its own, and the registrations that
+/// builder takes belong to it as surely as the ones a `build()` takes:
+/// `LayoutBuilder`, `OrientationBuilder` and `SliverLayoutBuilder` from
+/// `performLayout`, the item builders of the lazy lists from `performLayout`
+/// on one frame and from the element's own `performRebuild` on the next --
+/// the build phase, with no layout in progress at all. `debugDoingBuild` is
+/// raised for none of them (a `RenderObjectElement` raises it around
+/// `updateRenderObject` alone), so asking that flag by itself refused working
+/// and very common patterns, and refused them in debug only.
+///
+/// What the assertion exists for is the opposite: a registration taken from a
+/// hook of the dependent itself, `didChangeDependencies` above all. It is told
+/// apart by the dependent rather than by the phase -- the framework is
+/// rebuilding it, and an element stays dirty until its own `build` returns,
+/// while an element running a builder for somebody else has been cleaned
+/// before the call. Measured on twelve points of one frame; the table is in
+/// `docs/records/2026-09-22[1]-subscription-boundary-report.md`.
+///
+/// None of this reaches release. `debugDoingBuild`, `BuildOwner.debugBuilding`
+/// and `RenderObject.debugActiveLayout` are all set inside `assert(() {…}())`,
+/// so in release they answer "no build anywhere" for every caller -- which is
+/// why this can only ever be an assertion, and why the mistake it names is
+/// silent in a release build. `Element.dirty` is the one input here that is
+/// real state.
+bool _debugRegistrationBelongsToABuild(BuildContext context) {
+  // The dependent's own build.
+  if (context.debugDoingBuild) {
+    return true;
+  }
+
+  // Nothing is being built at all: a timer, a gesture, an `await` that came
+  // back between frames. This is the mistake in its plainest form.
+  if (!(context.owner?.debugBuilding ?? false)) {
+    return false;
+  }
+
+  // A builder the framework runs on behalf of an element that builds its
+  // children lazily. Only a `RenderObjectElement` does that, and it has no
+  // hook a subscription could be taken from by mistake: the only user code
+  // holding its context is the builder.
+  if (context is RenderObjectElement) {
+    return true;
+  }
+
+  // A layout callback that reads the scope through the context of a widget
+  // above it -- the closure captures the enclosing `build`'s context instead
+  // of its own. The dependent is not being rebuilt there, so its registration
+  // is re-taken by the same callback on every layout. What is being rebuilt
+  // under a layout callback, and is not inside its own `build`, is a
+  // `didChangeDependencies`.
+  return RenderObject.debugActiveLayout != null &&
+      context is Element &&
+      !context.dirty;
+}
+
 /// {@category base}
 abstract base class ScopeInheritedWidget extends InheritedWidget {
   /// Names this particular scope in the log.
@@ -122,27 +180,8 @@ abstract interface class ScopeContext<W extends ScopeInheritedWidget> {
       'subscribe from `buildChild()` or from the widgets below instead.',
     );
 
-    // A layout callback counts as a build, and has to: `LayoutBuilder`,
-    // `OrientationBuilder` and `SliverLayoutBuilder` run their builder from
-    // `performLayout`, inside a `BuildOwner.buildScope` of their own, and what
-    // it returns is that element's subtree. `debugDoingBuild` is not raised
-    // for it -- a `RenderObjectElement` raises that flag in `performRebuild`
-    // alone -- so this used to refuse a working and common pattern, and refuse
-    // it in debug only.
-    //
-    // `RenderObject.debugActiveLayout` rather than
-    // `SchedulerBinding.instance.isBuilding`, which is what this looks like it
-    // wants. Measured: `isBuilding` is true throughout
-    // `SchedulerPhase.persistentCallbacks`, which covers `didChangeDependencies`
-    // as well, so it would not widen this assert but switch it off. The three
-    // states it has to tell apart are a build (`debugDoingBuild`), a layout
-    // callback (`debugActiveLayout`), and `didChangeDependencies`, which has
-    // neither -- unless the dependent is itself under a layout callback, the
-    // one corner where this can no longer tell the mistake from the pattern.
     assert(
-      !listen ||
-          context.debugDoingBuild ||
-          RenderObject.debugActiveLayout != null,
+      !listen || _debugRegistrationBelongsToABuild(context),
       'A scope can only be subscribed to from a build. What a dependent asked '
       'for is remembered per build, and the boundary between one build and '
       'the next is taken from the frame -- Flutter offers no hook for "this '
@@ -153,9 +192,10 @@ abstract interface class ScopeContext<W extends ScopeInheritedWidget> {
       'subscription looks like it works, and then disappears on the first '
       'rebuild that comes from the parent instead of from a change.\n'
       'Subscribe from `build` and read the value there -- the builder of a '
-      '`LayoutBuilder` counts as one. To react to a change rather than to '
-      'show it, keep the subscription in `build` and look the scope up with '
-      '`listen: false` from `didChangeDependencies`.',
+      '`LayoutBuilder` and the item builder of a lazy list count as one. To '
+      'react to a change rather than to show it, keep the subscription in '
+      '`build` and look the scope up with `listen: false` from '
+      '`didChangeDependencies`.',
     );
 
     final element = context.getElementForInheritedWidgetOfExactType<W>();
