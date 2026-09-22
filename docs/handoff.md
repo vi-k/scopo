@@ -40,6 +40,19 @@
    а не 0.15.2; `pubspec.yaml` по-прежнему 0.15.1 — номер там ставят
    в связке выпуска. Гейт §6 пройден целиком на `15ee813`: тестов **560**.
 
+   **И следом, по вопросу владельца «чем стримовая семья была бы лучше
+   `StreamBuilder`»: рецепт вместо семьи.** Разбор показал, что почти всё,
+   что дала бы новая семья, собирается из двух готовых: контроллер — сам
+   `ChangeNotifier`, `ScopeNotifier.value` ставит его перед поддеревом,
+   виджет берёт `ScopeNotifier.select`. Владелец: «давай рецепт». Раздел
+   «Following what the controller hears» в теме `AsyncControllerScope`,
+   зеркало, три теста в `test/controller_notifier_recipe_test.dart`. Отчёт
+   с замерами обеих версий —
+   `docs/records/2026-09-22[8]-controller-stream-recipe-report.md`. Там же
+   сказано, за чем следить: **два скоупа над одним объектом** — читателю
+   ниже надо знать, у какого просить состояние, а у какого значения. Если
+   семья когда-нибудь понадобится, довод придёт отсюда.
+
    **До того, тем же днём: граница подписки перерисована
    по зависимому** (`01642bd`). Ассерт в `ScopeContext._find` проводил черту
    по фазе кадра, и от этого ошибался в обе стороны: **отвергал** `select`
@@ -359,10 +372,10 @@
 
 | проверка | результат |
 | --- | --- |
-| `fvm flutter test` | **560 тестов, все зелёные, leak-трекер включён** |
+| `fvm flutter test` | **563 теста, все зелёные, leak-трекер включён** |
 | `fvm flutter analyze` (корень) | `No issues found!` |
 | `analyze` в обоих `example/*` | `No issues found!` в каждом |
-| `fvm dart format --set-exit-if-changed lib test` | 117 файлов, 0 changed |
+| `fvm dart format --set-exit-if-changed lib test` | 118 файлов, 0 changed |
 | `fvm dart doc --dry-run` | 0 warnings, 0 errors |
 | `fvm dart pub publish --dry-run` | 0 warnings |
 | `sh docs/ru/check.sh` | переводы актуальны: 16 |
