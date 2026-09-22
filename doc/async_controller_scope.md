@@ -257,10 +257,7 @@ final title = PlayerController.select(
 );
 ```
 
-and is rebuilt when the title changes and not when the position does. Without
-the accessor every point of use writes the bridge out — `ScopeNotifier.select`
-with both its type arguments — and says again, each time, which of the two
-scopes above holds the values rather than the state.
+and is rebuilt when the title changes and not when the position does.
 
 `ScopeNotifier.of` and `maybeOf` with `listen: true` are the other end of that
 scale: they rebuild on every `notifyListeners`, which is what the
