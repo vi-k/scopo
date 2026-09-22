@@ -116,6 +116,12 @@ final class _PlayerController extends ScopeController with ChangeNotifier {
 
   _PlayerController(this.api);
 
+  static V select<V>(
+    BuildContext context,
+    V Function(_PlayerController controller) selector,
+  ) =>
+      ScopeNotifier.select<_PlayerController, V>(context, selector);
+
   String get title => _track?.title ?? '-';
 
   int get position => _track?.position ?? 0;
@@ -185,7 +191,7 @@ final class _Title extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final title = ScopeNotifier.select<_PlayerController, String>(
+    final title = _PlayerController.select(
       context,
       (controller) => controller.title,
     );

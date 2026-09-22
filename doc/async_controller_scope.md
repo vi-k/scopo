@@ -201,6 +201,12 @@ final class PlayerController extends ScopeController with ChangeNotifier {
 
   PlayerController({required this.api});
 
+  static V select<V>(
+    BuildContext context,
+    V Function(PlayerController controller) selector,
+  ) =>
+      ScopeNotifier.select<PlayerController, V>(context, selector);
+
   String get title => _track?.title ?? '';
 
   int get position => _track?.position ?? 0;
@@ -240,18 +246,25 @@ Widget buildOnReady(BuildContext context, PlayerController controller) =>
     );
 ```
 
-A widget below then names the one value it shows:
+The `select` on the controller is the accessor of this pair, and the reason to
+write it is that it names the bridge once. A widget below asks the controller
+for the one value it shows:
 
 ```dart
-final title = ScopeNotifier.select<PlayerController, String>(
+final title = PlayerController.select(
   context,
   (controller) => controller.title,
 );
 ```
 
-and is rebuilt when the title changes and not when the position does. `of` and
-`maybeOf` with `listen: true` are the other end of that scale: they rebuild on
-every `notifyListeners`, which is what the `StreamBuilder` above was doing.
+and is rebuilt when the title changes and not when the position does. Without
+the accessor every point of use writes the bridge out — `ScopeNotifier.select`
+with both its type arguments — and says again, each time, which of the two
+scopes above holds the values rather than the state.
+
+`ScopeNotifier.of` and `maybeOf` with `listen: true` are the other end of that
+scale: they rebuild on every `notifyListeners`, which is what the
+`StreamBuilder` above was doing.
 
 Two things about the teardown are worth reading twice.
 

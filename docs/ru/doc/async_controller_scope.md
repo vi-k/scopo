@@ -1,6 +1,6 @@
 # AsyncControllerScope
 
-> Перевод `doc/async_controller_scope.md` (blob `7c0e3e8852a044027326c0fe64d887f71fd08873`).
+> Перевод `doc/async_controller_scope.md` (blob `c32a17efb444626ce5cf3e5de9889e077bb9d1b0`).
 > Правится в том же коммите, что и оригинал; проверка — `sh docs/ru/check.sh`.
 
 Скоуп, всё содержимое которого — контроллер: объект со своим жизненным циклом,
@@ -204,6 +204,12 @@ final class PlayerController extends ScopeController with ChangeNotifier {
 
   PlayerController({required this.api});
 
+  static V select<V>(
+    BuildContext context,
+    V Function(PlayerController controller) selector,
+  ) =>
+      ScopeNotifier.select<PlayerController, V>(context, selector);
+
   String get title => _track?.title ?? '';
 
   int get position => _track?.position ?? 0;
@@ -243,18 +249,24 @@ Widget buildOnReady(BuildContext context, PlayerController controller) =>
     );
 ```
 
-Виджет ниже называет то единственное значение, которое показывает:
+`select` на контроллере — аксессор этой пары, и пишут его затем, что он
+называет мост один раз. Виджет ниже спрашивает у контроллера то единственное
+значение, которое показывает:
 
 ```dart
-final title = ScopeNotifier.select<PlayerController, String>(
+final title = PlayerController.select(
   context,
   (controller) => controller.title,
 );
 ```
 
-— и пересобирается, когда меняется название, а не когда меняется позиция.
-`of` и `maybeOf` с `listen: true` — другой конец той же шкалы: они
-пересобирают на каждый `notifyListeners`, то есть ровно то, что делал
+— и пересобирается, когда меняется название, а не когда меняется позиция. Без
+аксессора мост выписывают на каждом месте использования —
+`ScopeNotifier.select` с обоими аргументами типа — и каждый раз заново
+говорят, какой из двух скоупов сверху держит значения, а какой состояние.
+
+`ScopeNotifier.of` и `maybeOf` с `listen: true` — другой конец той же шкалы:
+они пересобирают на каждый `notifyListeners`, то есть ровно то, что делал
 `StreamBuilder` выше.
 
 Две вещи про разбор стоит прочитать дважды.
