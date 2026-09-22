@@ -1,5 +1,23 @@
-## 0.15.2
+## 0.16.0
 
+* **Breaking:** `canReleaseAfterCancellation` is gone. It was the guard that
+  asked whether there was still a scope to release a late value with, and
+  after the fix below the answer is always yes. A family of your own that
+  overrode or read it drops the question along with it.
+* **Fix:** what an initialization built after the teardown had given up on it
+  is released, however late it arrives. A body parked on a future that never
+  completes cannot be cancelled at all, so the teardown waits out
+  `initCancellationTimeout` — three seconds by default — and finishes without
+  it. The element used to give the widget back at that moment, and every
+  release a family has is a hook read off the widget: whatever the body opened
+  afterwards was passed over in silence, with nothing left to release it and
+  no word about it. The element now keeps the widget for as long as the
+  abandoned initialization runs and lets go of it the moment that job ends, so
+  `disposeScope`, `disposeData` and the dependency container's `onUnmount` and
+  `dispose` all run on that path as they do on every other. A release that
+  fails there reaches the observer and `FlutterError.reportError`, there being
+  no caller left to raise it at. The limit bounds how long the teardown waits,
+  not how long the body has to come back.
 * **New:** every assertion that refuses a misuse fails as a `FlutterError`
   rather than as a bare message — the two about where a scope may be subscribed
   to, the one that refuses a live switch between the constructor that owns a

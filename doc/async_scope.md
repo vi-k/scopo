@@ -406,9 +406,10 @@ nothing.** The reason that is safe is a promise of the scope rather than a
 hope: **a body that comes back for a scope which has already given up settles
 nothing, but what it produced is released rather than dropped** —
 `disposeScope` here, `disposeData` in the `AsyncDataScope` topic, the
-container's own teardown in the `Scope` one. The one path where it cannot is a
-teardown that has already finished, an `initCancellationTimeout` it gave up on:
-by then the scope has no widget left to read the hook from.
+container's own teardown in the `Scope` one. However late it comes back: the
+release is a hook of the scope's widget, and the scope holds that widget until
+the initialization is over rather than until it stops waiting for one.
+`initCancellationTimeout` bounds the wait, not the promise.
 
 For several dependencies with an order of their own, the dependency container
 of the `Scope` family keeps the tree and its teardown — see the `Scope` topic.

@@ -120,12 +120,12 @@ would close it twice. The `AsyncScope` topic has the rule in full, including
 `dispose:` for a resource that must be released even on success.
 
 A value the body produces after the cancellation is handed to `disposeData`
-rather than lost, while the scope's teardown is still waiting. That keeps a
-bare call right for a short initialization that never asks `ctx` anything: it
-merely runs to its end for a scope that is already gone. Once an expired
-`initCancellationTimeout` has let the teardown finish, the scope no longer has
-the widget to read `disposeData` from. Cleanup registered with the job does not
-depend on that hook.
+rather than lost, however long the body takes to produce it: the scope holds
+the widget `disposeData` is read from until the initialization is over, and
+`initCancellationTimeout` bounds how long the teardown waits rather than how
+long the body has. That keeps a bare call right for a short initialization that
+never asks `ctx` anything: it merely runs to its end for a scope that is
+already gone.
 
 Two ways to avoid writing the guard at all: build the value in one step that
 cannot fail halfway, or use the dependency container of the `Scope` family,

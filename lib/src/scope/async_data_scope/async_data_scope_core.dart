@@ -149,17 +149,16 @@ abstract base class AsyncDataScopeElementBase<
   /// Releases a value the body produced after the scope had given up.
   ///
   /// It never reached [data], so the release takes it directly rather than
-  /// through [disposeScope], which reads the field — and it happens only
-  /// while there is still a scope to release it with. A family that promises
-  /// more than that overrides this: `AsyncControllerScope` releases its
-  /// controller on every path there is, including this one, and has its own
-  /// release written for exactly that.
+  /// through [disposeScope], which reads the field. However late it is: the
+  /// teardown holds the widget [disposeData] is read off until the
+  /// initialization it gave up on is over, so a value that arrives long after
+  /// an expired `initCancellationTimeout` is released like any other.
+  ///
+  /// A family with more to do than one call overrides this:
+  /// `AsyncControllerScope` has its own release, written around a teardown
+  /// that has already finished.
   @protected
-  Future<void> releaseLateData(T data) async {
-    if (canReleaseAfterCancellation) {
-      await disposeData(data);
-    }
-  }
+  Future<void> releaseLateData(T data) async => disposeData(data);
 
   @override
   void debugFillProperties(DiagnosticPropertiesBuilder properties) {

@@ -199,24 +199,45 @@ abstract base class ScopeElementBase<
   /// this is the only pass there is. `unmount` runs before `dispose` here as
   /// everywhere else, because that is the promise the interface makes and not
   /// a detail of who calls it.
+  ///
+  /// However late it arrives. A container is an object the body built, and
+  /// letting go of one is calling two of its methods: there is nothing here
+  /// that the scope has to still be around for, so a teardown that gave up on
+  /// the cancellation and finished without it takes nothing away from this
+  /// pass. `initCancellationTimeout` bounds how long the scope waits, not how
+  /// long the body has to come back.
   @protected
   Future<void> releaseLateDependencies(D dependencies) async {
-    if (!canReleaseAfterCancellation) {
-      return;
+    // Both roads out, for a failure with no caller left to be raised at. The
+    // neighbouring families get this from the kernel: their late release is
+    // not caught, so the job names what it threw and the observer hears it as
+    // a failure of the cancellation. Here the two halves are caught one by
+    // one -- so that a failing `unmount` does not take the `dispose` with it
+    // -- and what is caught reaches nobody unless it is said out loud.
+    void report(Object error, StackTrace stackTrace, String context) {
+      notifyObserver(
+        (observer) => observer.onError(
+          this,
+          ScopePhase.initializationCancellation,
+          error,
+          stackTrace,
+        ),
+      );
+      _reportFailure(error, stackTrace, context);
     }
 
     try {
       dependencies.onUnmount();
       // ignore: avoid_catching_errors
     } on Object catch (error, stackTrace) {
-      _reportFailure(error, stackTrace, 'while unmounting the dependencies');
+      report(error, stackTrace, 'while unmounting the dependencies');
     }
 
     try {
       await dependencies.dispose();
       // ignore: avoid_catching_errors
     } on Object catch (error, stackTrace) {
-      _reportFailure(error, stackTrace, 'while disposing of the dependencies');
+      report(error, stackTrace, 'while disposing of the dependencies');
     }
   }
 

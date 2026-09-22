@@ -185,40 +185,54 @@ abstract base class AsyncScopeElementBase<W extends AsyncScopeCore<W, E>,
   /// Settles only after the job has finished its children and cleanup.
   Future<void> _settleInit(ScopeInitJob<void> job) async {
     final outcome = await job.done;
-    switch (outcome) {
-      case Done():
-        try {
-          final acceptValue = _acceptInitValue;
-          _acceptInitValue = null;
-          acceptValue?.call();
-          _settleReady();
-        } on Object catch (error, stackTrace) {
-          // The job is done, but accepting its value and applying readiness
-          // are still initialization. Their failures belong to the scope's
-          // error state and observer, just like a failure of the body.
+
+    try {
+      switch (outcome) {
+        case Done():
+          try {
+            final acceptValue = _acceptInitValue;
+            _acceptInitValue = null;
+            acceptValue?.call();
+            _settleReady();
+          } on Object catch (error, stackTrace) {
+            // The job is done, but accepting its value and applying readiness
+            // are still initialization. Their failures belong to the scope's
+            // error state and observer, just like a failure of the body.
+            _settleFailure(error, stackTrace);
+          }
+        case Cancelled(reason: _ScopeDisposalCancelReason()):
+          // The teardown asked for this one, and it is waiting on
+          // `_initCompleter` rather than on the model, which the element is
+          // leaving behind anyway. A failure that happened before the
+          // cancellation and lost its outcome to it is not this method's to
+          // report: the adapter stood aside for that outcome and waits on the
+          // job itself to see whether it kept the promise -- for this job and
+          // for every child of it, which is the half an element cannot reach.
+          break;
+        case Cancelled():
+          // Nobody here asked for it, so the initialization ended without ever
+          // becoming ready -- a failed one, whichever way it ended. Asked the
+          // other way round, by the name the kernel gave the reason, this
+          // branch went quiet for everything it had not been taught: the body
+          // that gives itself up, the body that keeps a reason of its own, the
+          // reason a later kernel adds. Quiet here is what used to leave the
+          // loading branch on screen for good, with the only trace a
+          // diagnostic line nobody had turned on.
+          _settleFailure(outcome, outcome.stackTrace ?? StackTrace.current);
+        case Failed(:final error, :final stackTrace):
           _settleFailure(error, stackTrace);
-        }
-      case Cancelled(reason: _ScopeDisposalCancelReason()):
-        // The teardown asked for this one, and it is waiting on
-        // `_initCompleter` rather than on the model, which the element is
-        // leaving behind anyway. A failure that happened before the
-        // cancellation and lost its outcome to it is not this method's to
-        // report: the adapter stood aside for that outcome and waits on the
-        // job itself to see whether it kept the promise -- for this job and
-        // for every child of it, which is the half an element cannot reach.
-        break;
-      case Cancelled():
-        // Nobody here asked for it, so the initialization ended without ever
-        // becoming ready -- a failed one, whichever way it ended. Asked the
-        // other way round, by the name the kernel gave the reason, this
-        // branch went quiet for everything it had not been taught: the body
-        // that gives itself up, the body that keeps a reason of its own, the
-        // reason a later kernel adds. Quiet here is what used to leave the
-        // loading branch on screen for good, with the only trace a
-        // diagnostic line nobody had turned on.
-        _settleFailure(outcome, outcome.stackTrace ?? StackTrace.current);
-      case Failed(:final error, :final stackTrace):
-        _settleFailure(error, stackTrace);
+      }
+    } finally {
+      _initJobRunning = false;
+
+      // The one place the widget is given back when the teardown decided not
+      // to. It was held for a release the body might still owe; the job is
+      // over, so nothing is owed any more, and the element goes back to
+      // answering from the framework -- which, for an element long gone from
+      // the tree, means not answering at all.
+      if (_disposalFinished) {
+        _widget = null;
+      }
     }
   }
 
@@ -349,11 +363,7 @@ abstract base class AsyncScopeElementBase<W extends AsyncScopeCore<W, E>,
   @protected
   Future<void> runInitBody(ScopeInitContext ctx) async {
     await initScopeAsync(ctx);
-    ctx.onDiscard(() async {
-      if (canReleaseAfterCancellation) {
-        await disposeScope();
-      }
-    });
+    ctx.onDiscard(disposeScope);
   }
 
   /// The initialization; ready at once by default.
@@ -361,24 +371,6 @@ abstract base class AsyncScopeElementBase<W extends AsyncScopeCore<W, E>,
   /// Reports its steps through [ScopeInitContext.progress] and returns when
   /// the scope is ready.
   Future<void> initScopeAsync(ScopeInitContext ctx) async {}
-
-  /// Whether there is still a scope to release a late value with.
-  ///
-  /// Every release a family has -- [disposeScope] here, `disposeData` and the
-  /// container's `dispose` below -- is the widget's, and a teardown that gave
-  /// up on a cancellation it could not wait for (an expired
-  /// `initCancellationTimeout`) runs to its end while the body is still going.
-  /// By then the element has handed back everything it held, the widget
-  /// included, and there is nothing left to release with.
-  ///
-  /// A `false` here is passed over in silence, and that is deliberate:
-  /// reaching this point means the teardown gave up on a wait it has already
-  /// reported, and a second report of the same event says nothing new while
-  /// failing every widget test that deliberately leaves an initialization
-  /// hanging. What the body took on that path stays taken; the way not to end
-  /// up here is to give the body something to stop at.
-  @protected
-  bool get canReleaseAfterCancellation => !_disposalFinished;
 
   /// Releases what [initScopeAsync] acquired; awaited.
   FutureOr<void> disposeScope() {}
@@ -415,7 +407,10 @@ abstract base class AsyncScopeElementBase<W extends AsyncScopeCore<W, E>,
   late final AsyncScopeModel model = _model.asUnmodifiable();
   final _AsyncScopeNotifier _model = _AsyncScopeNotifier();
 
-  /// Keeps the widget reachable during the asynchronous disposal.
+  /// Keeps the widget reachable during the asynchronous disposal -- and,
+  /// while an initialization the teardown gave up on is still running, for as
+  /// long as that takes. Every release of every family is a hook read off the
+  /// widget, and a body that comes back late still has one to hand over.
   @override
   W get widget => _widget ?? super.widget;
   W? _widget;
@@ -427,19 +422,35 @@ abstract base class AsyncScopeElementBase<W extends AsyncScopeCore<W, E>,
   /// tree names itself with its current `tag` rather than with a stale copy.
   ///
   /// The widget is the last thing the teardown lets go of and the first thing
-  /// this label needs, and everything reached after that -- an abandoned wait
-  /// ending in a failure, a controller released long afterwards -- asks an
+  /// this label needs, and what is reached after that -- an abandoned wait
+  /// ending in a failure, a scope named in a report long afterwards -- asks an
   /// element that has nothing left to answer from. Asking anyway raised a
   /// `_TypeError` inside the observer's own hook, and the guard then reported
   /// the observer as the thing that had failed: the failure the report exists
-  /// for reached nobody at all. See [_disposalFinished] for the rest of what
-  /// such code can no longer rely on.
+  /// for reached nobody at all.
+  ///
+  /// The cache is kept even though [_initJobRunning] now holds the widget
+  /// past the end of the teardown for the release a late body still owes.
+  /// That hold ends with the job, and this label is asked after it as well;
+  /// and an initialization that never started leaves no job to hold anything.
+  /// See [_disposalFinished] for the rest of what such code cannot rely on.
   @override
   String get debugLabel => _debugLabel ?? super.debugLabel;
   String? _debugLabel;
 
   /// The job the teardown cancels and waits for.
   ScopeInitJob<void>? _initJob;
+
+  /// Whether that job is still going -- body, children and cleanup alike.
+  ///
+  /// Raised where the job is made and lowered by [_settleInit], which resumes
+  /// only once the kernel has unwound the whole of it. Between a teardown that
+  /// gave up on the cancellation and that moment stands the one thing a
+  /// scope can still do for an initialization it has stopped waiting for:
+  /// take what the body finally built. Every release on that path is a hook
+  /// of the widget's, so this is what the teardown asks before giving the
+  /// widget back.
+  bool _initJobRunning = false;
 
   /// Disposal may begin before the end of asynchronous initialization.
   /// Therefore, we use [_initCompleter] for synchronization.
@@ -473,10 +484,13 @@ abstract base class AsyncScopeElementBase<W extends AsyncScopeCore<W, E>,
   ///
   /// Not the same question as [_isDisposing], and asked by whatever the
   /// teardown left running behind it: an initialization it gave up on can be
-  /// resumed long afterwards, and by then the element has given back
-  /// everything it was holding -- its place with the parent, its `scopeKey`,
-  /// its model, and the widget it reads every parameter from. Code reached on
-  /// that path has to know it is on its own.
+  /// resumed long afterwards, and by then the element has given back its place
+  /// with the parent, its `scopeKey` and its model. Code reached on that path
+  /// has to know it is on its own.
+  ///
+  /// The widget is the exception, and the only one: it is held while the job
+  /// runs, so the release a late body owes has the hooks to go through. See
+  /// [_initJobRunning].
   bool _disposalFinished = false;
 
   /// The [pauseAfterInitialization] delay, while it is running.
@@ -1001,6 +1015,7 @@ abstract base class AsyncScopeElementBase<W extends AsyncScopeCore<W, E>,
         // to take it from; the kernel only prints it.
         key: debugLabel,
       );
+      _initJobRunning = true;
       unawaited(_settleInit(job));
       job.start();
     } on Object catch (error, stackTrace) {
@@ -1242,7 +1257,22 @@ abstract base class AsyncScopeElementBase<W extends AsyncScopeCore<W, E>,
 
       _model.dispose();
 
-      _widget = null;
+      // Everything above is the scope's to give back, and it goes back here
+      // whatever else is true. The widget is not. An initialization this
+      // teardown gave up on can still come back with what it built, and the
+      // release for it is a hook read off the widget: `disposeScope()`,
+      // `disposeData`, the controller's own. So the widget is held for as long
+      // as there is a body that might still owe one, and [_settleInit] lets it
+      // go the moment there is not.
+      //
+      // The alternative was to say that a teardown which ran out of patience
+      // keeps nothing: the release was then skipped in silence, and what the
+      // body had opened stayed open for the rest of the run. Three seconds is
+      // the default limit, and three seconds is not long for a database.
+      if (!_initJobRunning) {
+        _widget = null;
+      }
+
       _disposalFinished = true;
     }
 

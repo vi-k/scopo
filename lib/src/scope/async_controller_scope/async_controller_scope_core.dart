@@ -181,14 +181,17 @@ abstract base class AsyncControllerScopeElementBase<
       final released = controller.performDispose();
 
       // A teardown that gave up on this initialization has since run to the
-      // end, and the release is happening on a generator it abandoned. There
-      // is nothing left for a limit to protect -- nobody is waiting for this,
-      // the model is disposed of and the `scopeKey` is back -- and there is
-      // nothing left to read a limit from either: `disposeScopeTimeout` goes
-      // through `widget`, which the element cleared on its way out, so asking
-      // raised a `_TypeError` where a release belonged. The wait goes on
-      // unbounded, which is what an abandoned release deserves: it can hold
+      // end, and the release is happening on a job it abandoned. There is
+      // nothing left for a limit to protect: nobody is waiting for this, the
+      // model is disposed of and the `scopeKey` is back. The wait goes on
+      // unbounded, which is what an abandoned release deserves -- it can hold
       // nothing up.
+      //
+      // The limit could now be read: the widget `disposeScopeTimeout` goes
+      // through is held until the job ends, which is why this release reaches
+      // a controller at all. Not reading it is therefore a decision rather
+      // than the old necessity, and the same one: a limit is for a wait that
+      // is keeping something, and this one keeps nothing.
       if (_disposalFinished) {
         await released;
 
@@ -255,11 +258,12 @@ abstract base class AsyncControllerScopeElementBase<
 
   /// The whole promise of the family, kept on the latest path there is.
   ///
-  /// The default gives a late value back only while the scope still exists,
-  /// which is right for a value the scope was merely holding. A controller is
-  /// not that: it is running, and this family promises it is released on every
-  /// path, so [_releaseController] is written to work with nothing left around
-  /// it -- an unbounded wait, because an abandoned release can hold nothing up.
+  /// The default is one call to `disposeData`, which is right for a value the
+  /// scope was merely holding. A controller is not that: it is running, and it
+  /// is released through the same [_releaseController] as on the failing path,
+  /// which is written to work with a teardown that has already finished --
+  /// an unbounded wait, and a failure reported rather than raised at a caller
+  /// who is no longer there.
   @override
   Future<void> releaseLateData(C data) => _releaseController(data);
 
