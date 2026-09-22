@@ -194,6 +194,9 @@ nothing is left behind by the frame it happened to fall on. The context has to
 be the one the builder is given, though: a closure that captured the context of
 the widget around it registers on an element that is not being rebuilt at all,
 and the next relayout wipes whatever that element's own `build` had asked for.
+That holds even when the widget around it is another `LayoutBuilder` — being a
+builder of the right kind is not enough, it has to be the builder that is
+running.
 
 **The item builder of a lazy list does not count.** A lazy list builds a few
 items at a time, and the ones a scroll brings into view are built on a later

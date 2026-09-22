@@ -525,6 +525,45 @@ void main() {
       );
     });
 
+    // The same mistake one level down, and the shape that named the widget
+    // type alone let through: the inner callback captured the context of a
+    // `LayoutBuilder` around it, which is a `ConstrainedLayoutBuilder` and so
+    // looked like a builder that re-runs whole. It is one — but not the one
+    // running. Measured: a change of the inner constraints alone re-runs the
+    // inner callback without the outer, which leaves the outer element
+    // subscribed to what the inner callback asked for and to nothing of its
+    // own. What tells them apart is the render object being laid out: it
+    // belongs to the builder that is running.
+    testWidgets(
+        'a layout callback that subscribes through a layout callback above it '
+        'is rejected', (tester) async {
+      await tester.pumpWidget(
+        _Host(
+          builder: (context) => LayoutBuilder(
+            builder: (outer, outerConstraints) => LayoutBuilder(
+              builder: (context, constraints) {
+                ScopeWidgetCore.select<_Scope, _ScopeElement, int>(
+                  outer,
+                  (element) => element.value,
+                );
+
+                return const SizedBox.shrink();
+              },
+            ),
+          ),
+        ),
+      );
+
+      expect(
+        tester.takeException(),
+        isA<FlutterError>().having(
+          (error) => error.diagnostics.first.toString(),
+          'summary',
+          'A scope can only be subscribed to from a build.',
+        ),
+      );
+    });
+
     // The one shape the rule of the morning left uncaught: `didUpdateWidget`
     // of a widget that itself stands under a layout callback. It is not that
     // widget's build, and the widget is not a layout builder, so the narrowed

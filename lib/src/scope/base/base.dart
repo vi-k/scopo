@@ -16,7 +16,11 @@ part of '../scope.dart';
 /// builder whole: `LayoutBuilder` and `SliverLayoutBuilder` (both are a
 /// `ConstrainedLayoutBuilder`, and `OrientationBuilder` hands its user the
 /// context of the first), and the delegate of a persistent header, which
-/// builds its one child from scratch whenever the shrink offset changes.
+/// builds its one child from scratch whenever the shrink offset changes. It
+/// has to be the builder that is running, not merely one of that kind: the
+/// context of a `LayoutBuilder` captured from inside another one is a
+/// registration on an element nobody is re-running, which is told apart by
+/// the render object currently being laid out.
 ///
 /// The item builder of a lazy list looks like the second and is not: its items
 /// are built a few at a time and across frames, all of them registering on the
@@ -38,25 +42,25 @@ bool _debugRegistrationBelongsToABuild(BuildContext context) {
     return true;
   }
 
-  // Everything else this rule allows is a builder run from layout. Outside
-  // one, there is nothing a registration could belong to: a timer, a gesture,
-  // an `await` that came back between frames, a lifecycle hook of the
-  // dependent -- `didChangeDependencies` above all.
-  if (RenderObject.debugActiveLayout == null) {
+  // Everything else this rule allows is a builder the framework runs from
+  // layout, and it has to be the one running *now*, for this very element: the
+  // render object being laid out is the one whose builder is in progress. That
+  // is what refuses a closure which captured the context of a widget around
+  // the callback -- a `LayoutBuilder` around another one included, where the
+  // widget type alone says nothing -- and what refuses a context stashed and
+  // used between frames, when nothing is being laid out at all.
+  if (context is! RenderObjectElement ||
+      !identical(context.renderObject, RenderObject.debugActiveLayout)) {
     return false;
   }
 
-  // A layout builder runs its builder whole on every layout, so the
-  // registrations it takes are all of them. The context has to be the
-  // builder's own: a closure that captured the context of the widget around it
-  // registers on an element that is not being rebuilt at all.
-  if (context.widget is ConstrainedLayoutBuilder) {
-    return true;
-  }
-
-  // A persistent header does the same through a delegate rather than through a
-  // builder: one child, built from scratch whenever the shrink offset changes.
-  return context is RenderObjectElement &&
+  // And it has to be a builder that re-runs whole. A layout builder does;
+  // the item builder of a lazy list, which gets here on the frame it is
+  // mounted, does not.
+  return context.widget is ConstrainedLayoutBuilder ||
+      // A persistent header, which does the same through a delegate rather
+      // than through a builder: one child, built from scratch whenever the
+      // shrink offset changes.
       context.renderObject is RenderSliverPersistentHeader;
 }
 
