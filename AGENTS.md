@@ -170,9 +170,9 @@ sh docs/ru/check.sh                  # переводы отвечают ори�
 команды нельзя: сначала прогон, потом заявление.
 
 **`NavigationNode` живёт в соседнем репозитории** —
-[vi-k/navigation_node](https://github.com/vi-k/navigation_node), вынесен
-2026-08-24 по находке U7. `example/scopo_demo` от него зависит, поэтому правка
-там может упереться в чужой пакет; свой гейт у него свой, в его же `AGENTS.md`.
+[vi-k/navigation_node](https://github.com/vi-k/navigation_node).
+`example/scopo_demo` от него зависит, поэтому правка там может упереться
+в чужой пакет; свой гейт у него свой, в его же `AGENTS.md`.
 
 **Прогнал что-то другим SDK** — глобальным `flutter` с `PATH` (там 3.44.9) или
 через `fvm spawn <версия>` — сразу после этого:
