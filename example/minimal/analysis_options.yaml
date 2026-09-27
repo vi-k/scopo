@@ -4,10 +4,9 @@ include: ../../analysis_options.yaml
 
 linter:
   rules:
-    # Off for an example, the same three `example/scopo_demo` switches off: an
-    # example app exports no API to document, its one-line widget methods read
-    # better as blocks, and a fire-and-forget call is the demo itself rather
-    # than a forgotten `await`.
+    # Off for an example, the same two `example/scopo_demo` switches off: an
+    # example app exports no API to document, and its one-line widget methods
+    # read better as blocks. `discarded_futures` needs no line here: the root
+    # config switches it off for the whole package.
     public_member_api_docs: false
     prefer_expression_function_bodies: false
-    discarded_futures: false
