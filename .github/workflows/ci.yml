@@ -28,7 +28,7 @@ jobs:
     # one takes about four minutes.
     timeout-minutes: 20
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - uses: subosito/flutter-action@v2
         with:
@@ -40,7 +40,7 @@ jobs:
       # every run re-downloaded every package. Keyed by the lockfiles that
       # decide what is in there; the examples' are committed, and the root one
       # is not, so its `pubspec.yaml` stands in for it.
-      - uses: actions/cache@v4
+      - uses: actions/cache@v6
         with:
           path: ~/.pub-cache
           key: pub-${{ runner.os }}-${{ hashFiles('pubspec.yaml', 'example/*/pubspec.lock') }}
@@ -134,7 +134,7 @@ jobs:
     # nothing else.
     timeout-minutes: 15
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - uses: subosito/flutter-action@v2
         with:
