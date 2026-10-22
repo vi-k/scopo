@@ -147,7 +147,7 @@ final class AppDependencies implements ScopeDependencies {
   /// leaves the tree before the initialization is complete, and the body is
   /// thrown into at its next checkpoint. This short initialization can call
   /// directly: nothing after the acquisition asks the context anything. For
-  /// an acquisition that can be left in flight, use `ctx.wait` with
+  /// an acquisition that can be left in flight, use `ctx.abandonable` with
   /// `discard:`; for a call that must finish before reporting cancellation,
   /// use `ctx.join`.
   static Future<AppDependencies> init(

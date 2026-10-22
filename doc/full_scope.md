@@ -30,10 +30,10 @@ through `ctx` — if the widget leaves the tree while the container is still
 being built, the body is thrown into at its next checkpoint, which between two
 steps is usually `ctx.progress` itself, and a half-built container is never
 handed to a state. For an acquisition that can be left in flight, use
-`ctx.wait` with `discard:`: a value the body never receives is still released.
-For a call that must finish, use `ctx.join`; a short initialization that asks
-the context nothing can still use a bare call. The rule is in the `AsyncScope`
-topic.
+`ctx.abandonable` with `discard:`: a value the body never receives is still
+released. For a call that must finish, use `ctx.join`; a short initialization
+that asks the context nothing can still use a bare call. The rule is in the
+`AsyncScope` topic.
 
 What the scope shows, and what it calls, in order:
 
@@ -330,10 +330,10 @@ static Future<AppDependencies> init(ScopeInitContext ctx) async {
 
 `catch` covers a cancellation too: the scope removed from the tree before it
 was ready is reported as `Cancelled` at a checkpoint such as `ctx.progress`.
-The context's `wait(discard:)` can keep the same guard without a handwritten
-`catch`; the `AsyncScope` topic has the whole of it. This is also the shape the
-container writes for you: what a dependency registered with `dep.dispose` is
-released whether the walk failed or was cancelled.
+The context's `abandonable(discard:)` can keep the same guard without a
+handwritten `catch`; the `AsyncScope` topic has the whole of it. This is also
+the shape the container writes for you: what a dependency registered with
+`dep.dispose` is released whether the walk failed or was cancelled.
 
 ## Inspecting the tree
 

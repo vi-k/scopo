@@ -8,11 +8,12 @@ part of '../scope.dart';
 /// to its end, and the scope releases what it returns after cancellation while
 /// its teardown is still waiting.
 ///
-/// See [JobContext.wait], [JobContext.join], [JobContext.uncancellable] and
-/// [JobContext.unattended] for the waiting family. For an acquisition wrapped
-/// in `wait` or `join`, supply `discard:` so a value that never reaches the
-/// body still has someone to release it. Register cleanup of a value already
-/// received through [JobContext.onDiscard] or [JobContext.onDispose].
+/// See [JobContext.abandonable], [JobContext.join],
+/// [JobContext.uncancellable] and [JobContext.unattended] for the waiting
+/// family. For an acquisition wrapped in `abandonable` or `join`, supply
+/// `discard:` so a value that never reaches the body still has someone to
+/// release it. Register cleanup of a value already received through
+/// [JobContext.onDiscard] or [JobContext.onDispose].
 abstract interface class ScopeInitContext implements JobContext {
   /// Reports what `buildOnProgress` will receive, after [JobContext.check].
   ///
@@ -46,7 +47,7 @@ final class ScopeInitJob<T> extends JobBase<T> implements DeferredJob<T> {
   // Finishing without observing, so a `Failed` nobody looked at still reaches
   // the zone by the kernel's own road. The observer waits on this to find out
   // whether the outcome ended up carrying the failure it stood aside for.
-  Future<void> get _finished => whenDone;
+  Future<void> get _finished => untilFinished;
 
   /// Creates an initialization that waits for [start] or [JobContext.run].
   ///
@@ -109,7 +110,7 @@ final class _ScopeDisposalCancelReason extends CancelReason {
   String get name => 'scope disposal';
 }
 
-final class _ScopeInitObserver extends JobObserver {
+final class _ScopeInitObserver extends JobObserver with JobAnswerer {
   final ScopeObservable _scope;
 
   // What this initialization has already said out loud, by identity.
@@ -161,7 +162,7 @@ final class _ScopeInitObserver extends JobObserver {
     // carry them, and names none of them. What it does say is when: a job
     // that has already finished cannot be failing its initialization any
     // more, so what arrives then is work whose end nobody was left to hear
-    // -- an action abandoned by `wait`, or something handed over with
+    // -- an action abandoned by `abandonable`, or something handed over with
     // `unattended`. Calling that an initialization failure points the reader
     // at the wrong half of the scope's life.
     final phase = switch (job) {
@@ -171,6 +172,16 @@ final class _ScopeInitObserver extends JobObserver {
     };
     _report(error, stackTrace, phase);
   }
+
+  // The kernel asks here about an error after `onError` has heard it, and
+  // `onError` above has already spoken: at once, or through the check on
+  // `_finished` for a body failure it stood aside for. The other road here,
+  // a `Failed` nobody observes, is closed for the jobs of a scope: the
+  // element reads `done` in `_settleInit`, and a branch of a group is read
+  // through its `value`. Handing an error on to `super` would send it to the
+  // zone a second time, after the observer and `FlutterError` have had it.
+  @override
+  void onUnanswered(Job<Object?> job, Object error, StackTrace stackTrace) {}
 
   /// Says it once, to both places, and remembers having said it.
   void _report(Object error, StackTrace stackTrace, ScopePhase phase) {

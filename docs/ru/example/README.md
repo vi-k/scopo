@@ -1,6 +1,6 @@
 # example
 
-> Перевод `example/README.md` (blob `2eb3eeb99264275dc46e69f8cfa68ae5cab2c142`).
+> Перевод `example/README.md` (blob `c6d816c1ac34a6061c47c8e4585d1e463ae11d30`).
 > Правится в том же коммите, что и оригинал; проверка — `sh docs/ru/check.sh`.
 
 Полный обзор scopo —
@@ -151,7 +151,7 @@ final class AppDependencies implements ScopeDependencies {
   /// раньше, чем инициализация закончится, и в тело бросают в ближайшей
   /// точке проверки. Здесь можно звать напрямую: после приобретения тело
   /// ничего не спрашивает у контекста. Если приобретение можно оставить
-  /// доигрывать, берите `ctx.wait` с `discard:`; для вызова,
+  /// доигрывать, берите `ctx.abandonable` с `discard:`; для вызова,
   /// который должен закончиться до сообщения об отмене, — `ctx.join`.
   static Future<AppDependencies> init(
     BuildContext context,

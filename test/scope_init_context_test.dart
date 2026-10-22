@@ -73,7 +73,7 @@ void main() {
           _Host(
             init: (context, ctx) async {
               try {
-                await ctx.wait(() => gate.future);
+                await ctx.abandonable(() => gate.future);
                 log.add('past the wait');
               } finally {
                 log.add('finally');
@@ -261,11 +261,12 @@ void main() {
       );
     });
 
-    test('wait ends on cancellation while its action finishes later', () async {
+    test('abandonable ends on cancellation while its action finishes later',
+        () async {
       final gate = Completer<int>();
       var actionFinished = false;
       final job = ScopeInitJob<int>(
-        (ctx) => ctx.wait(() async {
+        (ctx) => ctx.abandonable(() async {
           final value = await gate.future;
           actionFinished = true;
           return value;
@@ -279,12 +280,13 @@ void main() {
       expect(actionFinished, isTrue);
       expect(await job.done, isA<Cancelled>());
 
-      final completed = ScopeInitJob<int>((ctx) => ctx.wait(() => 7))..start();
+      final completed = ScopeInitJob<int>((ctx) => ctx.abandonable(() => 7))
+        ..start();
       expect(await completed.value, 7);
       expect(completed.isCancelled, isFalse);
     });
 
-    test('wait does not start an action under cancellation', () async {
+    test('abandonable does not start an action under cancellation', () async {
       late ScopeInitContext context;
       final gate = Completer<void>();
       var calls = 0;
@@ -294,9 +296,12 @@ void main() {
           return gate.future;
         },
       )..start();
-      expect(await context.wait(() => ++calls), 1);
+      expect(await context.abandonable(() => ++calls), 1);
       final cancelled = job.cancel();
-      await expectLater(context.wait(() => ++calls), throwsA(isA<Cancelled>()));
+      await expectLater(
+        context.abandonable(() => ++calls),
+        throwsA(isA<Cancelled>()),
+      );
       expect(calls, 1);
       gate.complete();
       await cancelled;
@@ -342,7 +347,8 @@ void main() {
   group('a child job', () {
     test('is cancelled with its parent', () async {
       final gate = Completer<void>();
-      final child = ScopeInitJob<void>((ctx) => ctx.wait(() => gate.future));
+      final child =
+          ScopeInitJob<void>((ctx) => ctx.abandonable(() => gate.future));
       final parent = ScopeInitJob<void>(
         (ctx) async {
           ctx.run(child).ignore();
@@ -362,7 +368,8 @@ void main() {
 
     test('is cancelled on its own without touching the parent', () async {
       final gate = Completer<void>();
-      final child = ScopeInitJob<void>((ctx) => ctx.wait(() => gate.future));
+      final child =
+          ScopeInitJob<void>((ctx) => ctx.abandonable(() => gate.future));
       final parent = ScopeInitJob<void>(
         (ctx) async {
           ctx.run(child).ignore();
@@ -382,14 +389,14 @@ void main() {
       final child = ScopeInitJob<void>(
         (ctx) async {
           ctx.onCancel(() => told.add('child'));
-          await ctx.wait(() => gate.future);
+          await ctx.abandonable(() => gate.future);
         },
       );
       final parent = ScopeInitJob<void>(
         (ctx) async {
           ctx.onCancel(() => told.add('parent'));
           ctx.run(child).ignore();
-          await ctx.wait(() => gate.future);
+          await ctx.abandonable(() => gate.future);
         },
       )..start();
       expect(told, isEmpty);

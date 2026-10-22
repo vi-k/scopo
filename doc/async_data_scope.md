@@ -97,14 +97,17 @@ and a cancellation — the scope removed from the tree, or `close()`d, before it
 was ready. The second arrives as `Cancelled`, re-exported by `scopo`, thrown by
 a checkpoint — here the `ctx.progress` above the migration.
 
-The context can own that guard too. **Use `wait` with `discard:` for an
+The context can own that guard too. **Use `abandonable` with `discard:` for an
 acquisition that can be left in flight**: cancellation ends the waiting, the
 action runs on, and `discard` closes a database the body never receives. `join`
 keeps waiting for a migration that must finish before the database can close:
 
 ```dart
 initData: (context, ctx) async {
-  final database = await ctx.wait(Database.open, discard: (db) => db.close());
+  final database = await ctx.abandonable(
+    Database.open,
+    discard: (db) => db.close(),
+  );
   ctx.progress('migrating');
   await ctx.join(database.migrate);
 

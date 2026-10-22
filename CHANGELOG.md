@@ -1,3 +1,22 @@
+## 0.17.0
+
+* **Breaking:** the kernel is `async_job ^0.3.0`, and its breaking changes
+  reach code that drives a job through the names `scopo` re-exports. `ctx.run`
+  takes a `ChildJob`, so a handle declared `Job<T>` no longer compiles there:
+  declare it `DeferredJob<T>`, which `Job.deferred` returns. `Job.ignore()` is
+  `Job.ignoreFailure()`, and a job is continued once: a second `then` throws a
+  `StateError`. A class that implements `JobContext` or `ScopeInitContext`
+  itself adds the members the kernel gave `JobContext`. The whole list is in
+  the kernel's changelog.
+* **Deprecated:** `ctx.wait` is `ctx.abandonable`, and the kernel drops the old
+  name in its next release. The topics, the examples and the IDE templates use
+  the new one.
+* Errors of an initialization are reported as before: once, through the
+  observer and `FlutterError.reportError`. The kernel now sends the errors no
+  outcome carries on to the zone unless the job's observer answers for them,
+  and the scope's observer does: without that each of them would reach the zone
+  a second time, and a widget test would fail on it.
+
 ## 0.16.0
 
 * **Breaking:** `canReleaseAfterCancellation` is gone. It was the guard that

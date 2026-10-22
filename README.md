@@ -395,11 +395,11 @@ cancel a half-finished initialization when the widget is removed from the tree:
 the body is thrown into at its next checkpoint — `ctx.progress` between two
 steps is usually that touch — and unwinds through its own `catch` and
 `finally`. For an acquisition that can be left in flight, use
-`ctx.wait(Api.connect, discard: (api) => api.close())`: cancellation ends the
-waiting, and `discard` closes a value the body never receives. Use `ctx.join`
-for a call that must finish; a short initialization that asks the context
-nothing can still use a bare call. The `AsyncScope` topic has the cleanup and
-handover rule.
+`ctx.abandonable(Api.connect, discard: (api) => api.close())`: cancellation
+ends the waiting, and `discard` closes a value the body never receives. Use
+`ctx.join` for a call that must finish; a short initialization that asks the
+context nothing can still use a bare call. The `AsyncScope` topic has the
+cleanup and handover rule.
 
 ```dart
 final class AppDependencies implements ScopeDependencies {

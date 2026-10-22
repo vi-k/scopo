@@ -1,6 +1,6 @@
 # AsyncDataScope
 
-> Перевод `doc/async_data_scope.md` (blob `5c8da3e77f1a203411f395f62dd0e1c939d4d6d6`).
+> Перевод `doc/async_data_scope.md` (blob `45ae166fc834d94df438ed1a74a4e05e11b283eb`).
 > Правится в том же коммите, что и оригинал; проверка — `sh docs/ru/check.sh`.
 
 `AsyncScope`, который производит значение. Инициализация заканчивается
@@ -102,13 +102,16 @@ disposeData: (database) => database.close(),
 из `scopo`.
 
 Эту уборку можно поручить контексту. **Если приобретение можно оставить
-доигрывать, берите `wait` с `discard:`:** отмена заканчивает ожидание, действие
-доигрывает, а `discard` закрывает базу, которой тело не получило. `join`
-дожидается миграции, которая должна закончиться до закрытия базы:
+доигрывать, берите `abandonable` с `discard:`:** отмена заканчивает ожидание,
+действие доигрывает, а `discard` закрывает базу, которой тело не получило.
+`join` дожидается миграции, которая должна закончиться до закрытия базы:
 
 ```dart
 initData: (context, ctx) async {
-  final database = await ctx.wait(Database.open, discard: (db) => db.close());
+  final database = await ctx.abandonable(
+    Database.open,
+    discard: (db) => db.close(),
+  );
   ctx.progress('migrating');
   await ctx.join(database.migrate);
 

@@ -1861,7 +1861,7 @@ _CloseScopeElement _mountInEnterWindow(
 Future<void> _neverEmits(ScopeInitContext ctx) =>
     // Through the context, so the cancellation ends the wait at once -- what
     // a stream that emits nothing and cancels immediately used to do.
-    ctx.wait(() => Completer<void>().future);
+    ctx.abandonable(() => Completer<void>().future);
 
 /// Like [_neverEmits], but the cancellation the disposal awaits does not
 /// finish until [gate] is completed.
@@ -1873,8 +1873,8 @@ Future<void> Function(ScopeInitContext) _neverEmitsUntilCancelled(
   Completer<void> gate,
 ) =>
     (ctx) async {
-      // Not through `ctx.wait`: the body has to be still running when the
-      // cancellation arrives, and to end only once the gate lets it.
+      // Not through `ctx.abandonable`: the body has to be still running when
+      // the cancellation arrives, and to end only once the gate lets it.
       await gate.future;
     };
 
@@ -1882,7 +1882,7 @@ Future<void> Function(ScopeInitContext) _neverEmitsUntilCancelled(
 Future<void> _emitsProgressOnly(ScopeInitContext ctx) {
   ctx.progress(1);
 
-  return ctx.wait(() => Completer<void>().future);
+  return ctx.abandonable(() => Completer<void>().future);
 }
 
 /// Moves the scope into [AsyncScopeError].

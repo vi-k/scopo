@@ -47,16 +47,17 @@ final class AppDependencies implements ScopeDependencies {
     ScopeInitContext ctx,
   ) async {
     // Until the container is handed over, the job owns the cleanup.
-    // `discard` also closes a value that arrives after `wait` was cancelled,
-    // and releases received values in reverse order if a later step fails.
+    // `discard` also closes a value that arrives after `abandonable` was
+    // cancelled, and releases received values in reverse order if a later
+    // step fails.
     ctx.progress('opening the database');
-    final database = await ctx.wait(
+    final database = await ctx.abandonable(
       Database.open,
       discard: (value) => value.close(),
     );
 
     ctx.progress('connecting');
-    final session = await ctx.wait(
+    final session = await ctx.abandonable(
       Session.connect,
       discard: (value) => value.close(),
     );

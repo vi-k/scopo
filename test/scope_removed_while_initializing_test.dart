@@ -160,8 +160,9 @@ void main() {
       expect(
         log,
         ['took', 'released'],
-        reason: 'the cancellation arrives as a throw from `ctx.wait`, so the '
-            'catch runs and the body gives back what it had taken',
+        reason:
+            'the cancellation arrives as a throw from `ctx.abandonable`, so '
+            'the catch runs and the body gives back what it had taken',
       );
       expect(
         gate.isCompleted,
@@ -581,7 +582,7 @@ final class _Guarded extends AsyncScopeBase<_Guarded> {
   /// The step that follows the acquisition, waited for in one of the two ways
   /// a body can wait.
   Future<void> _step(ScopeInitContext ctx) =>
-      waitsThroughContext ? ctx.wait(() => gate.future) : gate.future;
+      waitsThroughContext ? ctx.abandonable(() => gate.future) : gate.future;
 
   @override
   Future<void> initScope(BuildContext context, ScopeInitContext ctx) async {

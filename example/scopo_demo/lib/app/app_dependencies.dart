@@ -42,11 +42,11 @@ final class AppDependencies implements ScopeDependencies {
     // `join` keeps each `init` in flight until it finishes, then throws any
     // cancellation: the `catch` below must not close a client that is still
     // starting up. It replaces a bare call followed by `ctx.check()`.
-    // The pause uses `wait`: nobody needs it once the screen is gone.
+    // The pause uses `abandonable`: nobody needs it once the screen is gone.
     try {
       ctx.progress('init storage');
       final sharedPreferences = await SharedPreferences.getInstance();
-      await ctx.wait(
+      await ctx.abandonable(
         () => Future<void>.delayed(AppEnvironment.defaultInitPause),
       );
 

@@ -163,15 +163,15 @@ scope had reached when it failed.
 One failure is handled differently, and deserves to be known.
 
 **An error with no outcome of its own** — a late failure of an action abandoned
-by `wait`, a disposer, an `onCancel` callback or work started by `unattended` —
-reaches `ScopeObserver.onError` and `FlutterError.reportError`. It does not
-switch the screen to `buildOnError`, and a ready scope stays ready. That is
-deliberate: the widgets on screen are the ready ones, whatever `initScope`
-acquired still has to be released by `disposeScope`, and swapping the subtree
-for an error screen behind the user's back would strand both. A body that goes
-on working after it has returned — a helper it left running — is unusual, but
-it is exactly the case where the difference matters. Bare asynchronous work
-outside the context still reports to its own zone.
+by `abandonable`, a disposer, an `onCancel` callback or work started by
+`unattended` — reaches `ScopeObserver.onError` and `FlutterError.reportError`.
+It does not switch the screen to `buildOnError`, and a ready scope stays ready.
+That is deliberate: the widgets on screen are the ready ones, whatever
+`initScope` acquired still has to be released by `disposeScope`, and swapping
+the subtree for an error screen behind the user's back would strand both. A
+body that goes on working after it has returned — a helper it left running — is
+unusual, but it is exactly the case where the difference matters. Bare
+asynchronous work outside the context still reports to its own zone.
 
 ## Disposal, in order
 
@@ -333,23 +333,27 @@ the job, must be able to finish too; the job puts no timeout around a disposer.
 
 `ScopeInitContext` adds `progress` to `JobContext`. Dart cannot interrupt
 somebody else's `await`, so the body hears about cancellation through
-checkpoints: `progress`, `check`, `wait`, `join`, `uncancellable`, `onCancel`
-and `run`. Registering cleanup and starting `unattended` work still work after
-cancellation while the job is alive; `ctx.job.isCancelled` answers without
-throwing.
+checkpoints: `progress`, `check`, `abandonable`, `join`, `uncancellable`,
+`onCancel` and `run`. Registering cleanup and starting `unattended` work still
+work after cancellation while the job is alive; `ctx.job.isCancelled` answers
+without throwing.
 
-**`wait` with `discard:` is the form to reach for when an acquisition can be
-left in flight.** It ends the waiting rather than the work. The action runs on,
-but the value has someone to close it even if it never reaches the body:
+**`abandonable` with `discard:` is the form to reach for when an acquisition
+can be left in flight.** It ends the waiting rather than the work. The action
+runs on, but the value has someone to close it even if it never reaches the
+body:
 
 ```dart
-final opened = await ctx.wait(Api.connect, discard: (api) => api.close());
+final opened = await ctx.abandonable(
+  Api.connect,
+  discard: (api) => api.close(),
+);
 ```
 
 The rule is one: **a value that never reaches the body is cleaned up
 unconditionally; a value that does goes on the cleanup stack.** An abandoned
-`wait` puts its value on the stack while the job is still unwinding it, or
-closes it on the spot if the job is already over. On that stack, `discard:`
+`abandonable` puts its value on the stack while the job is still unwinding it,
+or closes it on the spot if the job is already over. On that stack, `discard:`
 runs on failure or cancellation; `dispose:` runs whatever the outcome. Use
 `dispose:` for a temporary file, a lock or a subscription the body keeps to
 itself, and pass only one of the two.
@@ -357,7 +361,7 @@ itself, and pass only one of the two.
 For a read, a warm-up or a pause there may be nothing to release:
 
 ```dart
-await ctx.wait(cache.warmUp);   // let go the moment the scope gives up
+await ctx.abandonable(cache.warmUp);   // let go the moment the scope gives up
 ```
 
 **`join` is for a call that must not be left halfway** — a migration, a device
@@ -380,14 +384,17 @@ the observer; it neither waits for nor cancels that work.
 
 For a value the body already holds, `onDispose` and `onDiscard` register the
 same two kinds of cleanup. They return a function that unregisters it;
-`disown(value)` instead removes cleanup attached to that value by `wait` or
-`join`. The stack unwinds in reverse registration order, after the child jobs
-and before the outcome, awaiting each release:
+`disown(value)` instead removes cleanup attached to that value by `abandonable`
+or `join`. The stack unwinds in reverse registration order, after the child
+jobs and before the outcome, awaiting each release:
 
 ```dart
 ctx.onDispose(temporary.close);          // released on every outcome
 final unregister = ctx.onDiscard(session.close); // on failure or cancellation
-final opened = await ctx.wait(Api.connect, discard: (api) => api.close());
+final opened = await ctx.abandonable(
+  Api.connect,
+  discard: (api) => api.close(),
+);
 
 connection = Connection(opened, session);
 // Handed to the scope: its disposeScope now owns both releases.

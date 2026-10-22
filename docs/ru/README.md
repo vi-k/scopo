@@ -1,6 +1,6 @@
 # scopo
 
-> Перевод `README.md` (blob `68c8fcf80cf6efff71eb70a6aa240e56f3bb77a6`).
+> Перевод `README.md` (blob `a38ed7e267a786ff58fecf5c49800ee85ba3d6b5`).
 > Правится в том же коммите, что и оригинал; проверка — `sh docs/ru/check.sh`.
 
 [![pub version](https://img.shields.io/pub/v/scopo)](https://pub.dev/packages/scopo)
@@ -402,11 +402,11 @@ final class ScreenScopeState
 бросят в ближайшей точке проверки — между двумя шагами это обычно
 `ctx.progress`, — и оно раскручивается через собственные `catch` и `finally`.
 Если приобретение можно оставить доигрывать, берите
-`ctx.wait(Api.connect, discard: (api) => api.close())`: отмена заканчивает
-ожидание, а `discard` закрывает значение, которого тело не получило. Для
-вызова, который должен закончиться, берите `ctx.join`; короткая инициализация,
-ничего не спрашивающая у контекста, по-прежнему может звать напрямую. Правило
-уборки и передачи — в теме `AsyncScope`.
+`ctx.abandonable(Api.connect, discard: (api) => api.close())`: отмена
+заканчивает ожидание, а `discard` закрывает значение, которого тело
+не получило. Для вызова, который должен закончиться, берите `ctx.join`;
+короткая инициализация, ничего не спрашивающая у контекста, по-прежнему может
+звать напрямую. Правило уборки и передачи — в теме `AsyncScope`.
 
 ```dart
 final class AppDependencies implements ScopeDependencies {

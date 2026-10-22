@@ -42,7 +42,7 @@ final class CounterModel with ChangeNotifier {
         // Through the context rather than a bare `await`: the wait ends the
         // moment the scope gives up, instead of running the demo out to its
         // last step for a screen that is already gone.
-        await ctx.wait(
+        await ctx.abandonable(
           () => Future<void>.delayed(const Duration(milliseconds: 100)),
         );
         ctx.progress(iterator.nextStep());

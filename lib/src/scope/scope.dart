@@ -1,6 +1,6 @@
 import 'dart:async';
 
-import 'package:async_job/async_job.dart';
+import 'package:async_job/engine.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';

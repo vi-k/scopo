@@ -139,7 +139,7 @@ void main() {
           initScope: (context, ctx) async {
             ctx.onCancel(() => throw failure);
             try {
-              await ctx.wait(() => gate.future);
+              await ctx.abandonable(() => gate.future);
             } finally {
               unwound = true;
             }
@@ -281,7 +281,6 @@ void main() {
           // it carries.
           initScope: (context, ctx) async => throw const Cancelled.by(
             reason: _SessionExpired(),
-            started: true,
             description: 'no session',
           ),
           disposeScope: () {},
