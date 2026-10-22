@@ -12,17 +12,17 @@
 
 1. Прочитай этот файл целиком, потом `docs/backlog.md`.
 2. Сверься: `git log --oneline -5`, `git status`.
-3. **В работе — переход на `async_job ^0.3.0`** (2026-10-23, по просьбе
-   владельца «обнови async_job»). Ведётся в worktree
-   `.claude/worktrees/async-job-0.3`, ветка `worktree-async-job-0.3`; в `main`
-   ещё не влито. Сделано: импорт `engine.dart` в `scope.dart` (`JobBase`,
-   `JobContextBase` ушли из основного импорта ядра), `whenDone` →
-   `untilFinished`, `_ScopeInitObserver` стал `JobAnswerer` с пустым
-   `onUnanswered`, `ctx.wait` → `ctx.abandonable` везде, раздел `## 0.17.0`
-   в `CHANGELOG.md`. **Без `JobAnswerer` падают 10 тестов**: ядро 0.3.0 после
-   `onError` шлёт ошибку ещё и в зону, а наблюдатель scopo уже отчитался сам.
-   С ним сьюта 563/563. Версия в `pubspec.yaml` не поднята: это подготовка
-   выпуска, а не эта работа.
+3. **Переход на `async_job ^0.3.0` сделан и влит в `main`** (2026-10-23,
+   по просьбе владельца «обнови async_job», коммит `d22a070`; рабочая ветка
+   удалена после мержа). Гейт §6 пройден целиком, сьюта `example/scopo_demo` 5
+   зелёных; CI на `main` после мержа — проверь `gh run list --branch main`.
+   Сделано: импорт `engine.dart` в `scope.dart` (`JobBase`, `JobContextBase`
+   ушли из основного импорта ядра), `whenDone` → `untilFinished`,
+   `_ScopeInitObserver` стал `JobAnswerer` с пустым `onUnanswered`, `ctx.wait`
+   → `ctx.abandonable` везде, раздел `## 0.17.0` в `CHANGELOG.md`. **Без
+   `JobAnswerer` падают 10 тестов**: ядро 0.3.0 после `onError` шлёт ошибку ещё
+   и в зону, а наблюдатель scopo уже отчитался сам. С ним сьюта 563/563. Версия
+   в `pubspec.yaml` не поднята: это подготовка выпуска, а не эта работа.
 
    **Вопросы владельцу, не решённые этой работой** (публичная поверхность):
    реэкспортировать ли новые имена ядра — `ChildJob` (теперь его принимает
