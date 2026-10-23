@@ -1952,6 +1952,157 @@ void main() {
       });
     });
 
+    for (final concurrent in [false, true]) {
+      for (final nested in [false, true]) {
+        final shape = '${concurrent ? 'concurrent' : 'sequential'}, '
+            '${nested ? 'nested' : 'flat'}';
+
+        test('a foreign disposal retry permits a fresh init ($shape)', () {
+          myFakeAsync((async) {
+            final reported = <Object>[];
+            final previous = FlutterError.onError;
+            FlutterError.onError = (details) => reported.add(details.exception);
+
+            try {
+              final dependencies = TestRetryingForeignDependencies(
+                useConcurrent: concurrent,
+                nested: nested,
+              );
+              handleInitFor(dependencies, async);
+              final firstRoot = dependencies.root;
+              final resource = dependencies._resource;
+              final released = dependencies._released;
+
+              expectDisposed(async, dependencies.dispose());
+              expect(resource.attempts, 1);
+              expect(resource.held, isTrue);
+              expect(released.attempts, 1);
+              expect(released.held, isFalse);
+              expect(reported, hasLength(1));
+              final disposalChecks = released.disposalChecks;
+
+              expectDisposed(async, dependencies.dispose());
+              expect(resource.attempts, 2);
+              expect(resource.held, isFalse);
+              expect(reported, hasLength(1));
+              expect(released.attempts, 1);
+              expect(
+                released.disposalChecks,
+                disposalChecks,
+                reason: 'the successful sibling group is not walked again',
+              );
+              expect(firstRoot.disposalRequired, isFalse);
+
+              handleInitFor(dependencies, async);
+              expect(dependencies.buildCount, 2);
+              expect(dependencies.root, isNot(same(firstRoot)));
+              expect(dependencies.root.isInitialized, isTrue);
+            } finally {
+              FlutterError.onError = previous;
+            }
+          });
+        });
+
+        test('a foreign disposal retry that still holds refuses init ($shape)',
+            () {
+          myFakeAsync((async) {
+            final reported = <Object>[];
+            final previous = FlutterError.onError;
+            FlutterError.onError = (details) => reported.add(details.exception);
+
+            try {
+              final dependencies = TestRetryingForeignDependencies(
+                useConcurrent: concurrent,
+                nested: nested,
+                failuresBeforeRelease: 2,
+              );
+              handleInitFor(dependencies, async);
+              final firstRoot = dependencies.root;
+              final resource = dependencies._resource;
+              final refusal = allOf(
+                startsWith(
+                  'Bad state: TestRetryingForeignDependencies has already '
+                  'been initialized (disposal failed',
+                ),
+                endsWith(
+                  ') and has not been disposed of. Dispose of it before '
+                  'initializing it again: a second `init()` builds the tree '
+                  'afresh and runs every initializer over the same container, '
+                  'whose fields the first run has already assigned — and '
+                  'where that run is still holding something, nothing would '
+                  'ever release it.',
+                ),
+              );
+
+              expectDisposed(async, dependencies.dispose());
+              expect(resource.attempts, 1);
+              expect(resource.held, isTrue);
+              expect(handleInitFor(dependencies, async).single, refusal);
+
+              expectDisposed(async, dependencies.dispose());
+              expect(resource.attempts, 2);
+              expect(resource.held, isTrue);
+              expect(reported, hasLength(2));
+              expect(handleInitFor(dependencies, async).single, refusal);
+              expect(dependencies.buildCount, 1);
+              expect(dependencies.root, same(firstRoot));
+
+              expectDisposed(async, dependencies.dispose());
+              expect(resource.attempts, 3);
+              expect(resource.held, isFalse);
+              handleInitFor(dependencies, async);
+              expect(dependencies.buildCount, 2);
+              expect(dependencies.root.isInitialized, isTrue);
+            } finally {
+              FlutterError.onError = previous;
+            }
+          });
+        });
+      }
+
+      test(
+          'a foreign disposal retry stopped before the walk refuses init '
+          '(concurrent=$concurrent)', () {
+        myFakeAsync((async) {
+          final reported = <Object>[];
+          final previous = FlutterError.onError;
+          FlutterError.onError = (details) => reported.add(details.exception);
+
+          try {
+            final dependencies = TestRetryingForeignDependencies(
+              useConcurrent: concurrent,
+              nested: false,
+            );
+            handleInitFor(dependencies, async);
+            final firstRoot = dependencies.root;
+            final resource = dependencies._resource;
+
+            expectDisposed(async, dependencies.dispose());
+            resource.throwFromRequired = true;
+            expectDisposed(async, dependencies.dispose());
+            expect(resource.attempts, 1);
+            expect(resource.held, isTrue);
+            expect(reported, hasLength(2));
+            expect(
+              handleInitFor(dependencies, async).single,
+              contains('has not been disposed of'),
+            );
+            expect(dependencies.buildCount, 1);
+            expect(dependencies.root, same(firstRoot));
+
+            resource.throwFromRequired = false;
+            expectDisposed(async, dependencies.dispose());
+            expect(resource.attempts, 2);
+            expect(resource.held, isFalse);
+            handleInitFor(dependencies, async);
+            expect(dependencies.buildCount, 2);
+          } finally {
+            FlutterError.onError = previous;
+          }
+        });
+      });
+    }
+
     test('a second init() on a live tree fails with a clear error', () {
       myFakeAsync((async) {
         final dependencies = TestAutoDisposeDependencies();
@@ -3143,6 +3294,93 @@ final class TestForeignDisposeDependencies
         }),
         _ForeignDependency(name: 'foreign'),
       ]);
+}
+
+final class TestRetryingForeignDependencies
+    extends ScopeAutoDependencies<TestRetryingForeignDependencies, void> {
+  final bool useConcurrent;
+  final bool nested;
+  final int failuresBeforeRelease;
+  int buildCount = 0;
+  late _RetryingForeignDependency _resource;
+  late _RetryingForeignDependency _released;
+
+  TestRetryingForeignDependencies({
+    required this.useConcurrent,
+    required this.nested,
+    this.failuresBeforeRelease = 1,
+  });
+
+  @override
+  ScopeDependency buildDependencies(_) {
+    buildCount++;
+    _resource = _RetryingForeignDependency('resource', failuresBeforeRelease);
+    _released = _RetryingForeignDependency('released', 0);
+    final group =
+        useConcurrent ? ScopeDependency.concurrent : ScopeDependency.sequential;
+    return group('root', [
+      group('successful', [_released]),
+      if (nested) group('inner', [_resource]) else _resource,
+    ]);
+  }
+}
+
+/// Keeps its resource until a disposal attempt actually succeeds.
+final class _RetryingForeignDependency implements ScopeDependency {
+  @override
+  final String name;
+
+  final int failuresBeforeRelease;
+  int attempts = 0;
+  int disposalChecks = 0;
+  bool held = false;
+  bool throwFromRequired = false;
+
+  _RetryingForeignDependency(this.name, this.failuresBeforeRelease);
+
+  @override
+  final int count = 1;
+
+  @override
+  ScopeDependencyState get state => _state;
+  ScopeDependencyState _state = const ScopeDependencyInitial();
+
+  @override
+  bool get disposalRequired {
+    disposalChecks++;
+    if (throwFromRequired) {
+      throw StateError('$name cannot say whether it needs disposing');
+    }
+    return held;
+  }
+
+  @override
+  Future<void> init(ScopeInitContext ctx, void Function(String path) onStep) {
+    held = true;
+    _state = const ScopeDependencyInitialized();
+    onStep(name);
+    return Future<void>.value();
+  }
+
+  @override
+  void onUnmount() {}
+
+  @override
+  Future<void> dispose(void Function(String path) onStep) async {
+    attempts++;
+    if (attempts <= failuresBeforeRelease) {
+      throw StateError('$name cannot let go');
+    }
+    held = false;
+    _state = const ScopeDependencyDisposed();
+    onStep(name);
+  }
+
+  @override
+  String get wrappedName => '"$name"';
+
+  @override
+  String stateToString() => '$state';
 }
 
 /// A dependency of somebody else's making: the interface, and nothing beyond.

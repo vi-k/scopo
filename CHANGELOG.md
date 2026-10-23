@@ -54,6 +54,12 @@
   `ErrorWidget` instead of leaving it on screen. And `ScopeNotifier.value`
   moves its listener to the new model before the subtree is built, so a
   builder that changes the new model during that rebuild is heard.
+* **Fix:** a second `dispose()` after a failed one reaches what the first
+  left held. A group whose disposal failed now still reports
+  `disposalRequired`, so a parent group walks into it again instead of
+  skipping it, and each attempt decides afresh whether something may still be
+  held: a retry that released everything lets the container be initialized
+  again, where it used to keep refusing with `has not been disposed of`.
 * **Fix:** the `LiteScope` recipe that holds the branch back with
   `isInitialized` now reaches the ready screen: completion notifies the
   scope's dependents but does not rebuild the state's own `build`, so the

@@ -423,6 +423,10 @@ mixin ScopeDependencyMixin implements ScopeDependency, ScopeObservable {
     // joiner still hears what the walk raised.
     unawaited(inFlight.future.catchError((Object _) {}));
     _disposalFailure = null;
+    // Both answers belong to this attempt: a retry can release what the last
+    // walk left holding, or fail before reaching children it visited before.
+    _walkReachedEveryChild = false;
+    _mayStillHold = false;
 
     // Whether the walk got to its end, however it got there.
     //

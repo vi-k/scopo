@@ -81,11 +81,14 @@ abstract base class ScopeDependencyGroup with ScopeDependencyMixin {
   /// that was disposed of because something under it failed keeps saying
   /// [ScopeDependencyFailed], so that the caller can still read what failed,
   /// and that must not be mistaken for a disposal that is still due.
+  /// A failed disposal whose children may still hold resources needs another
+  /// walk, including when this group is itself a child of another group.
   @override
   bool get disposalRequired =>
       !_isDisposalDone &&
       (state is ScopeDependencyInitialized ||
           state is ScopeDependencyFailed ||
+          state is ScopeDependencyDisposalFailed ||
           state is ScopeDependencyCancelled);
 
   /// Unmounts every child, in reverse, whatever any one of them makes of it.
