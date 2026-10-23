@@ -541,6 +541,74 @@ void main() {
       },
     );
 
+    testWidgets('a notification recovers from a later builder failure',
+        (tester) async {
+      final model = ValueNotifier<int>(0);
+      addTearDown(model.dispose);
+      var failOnce = false;
+      var builderCalls = 0;
+
+      Widget build() => Directionality(
+            textDirection: TextDirection.ltr,
+            child: ScopeNotifier<ValueNotifier<int>>.value(
+              value: model,
+              builder: (context) {
+                builderCalls++;
+                if (failOnce) {
+                  failOnce = false;
+                  throw StateError('temporary builder failure');
+                }
+
+                return Builder(
+                  builder: (context) {
+                    final value = ScopeNotifier.select<ValueNotifier<int>, int>(
+                      context,
+                      (model) => model.value,
+                    );
+
+                    return Text('value: $value');
+                  },
+                );
+              },
+            ),
+          );
+
+      await tester.pumpWidget(build());
+      expect(find.text('value: 0'), findsOneWidget);
+      expect(builderCalls, 1);
+
+      failOnce = true;
+      await tester.pumpWidget(build());
+      expect(
+        tester.takeException(),
+        isA<StateError>().having(
+          (error) => error.message,
+          'message',
+          'temporary builder failure',
+        ),
+      );
+      expect(find.byType(ErrorWidget), findsOneWidget);
+      expect(builderCalls, 2);
+
+      model.value = 1;
+      await tester.pumpAndSettle();
+
+      expect(find.text('value: 1'), findsOneWidget);
+      expect(find.byType(ErrorWidget), findsNothing);
+      expect(builderCalls, 3);
+
+      model.value = 2;
+      await tester.pumpAndSettle();
+
+      expect(find.text('value: 2'), findsOneWidget);
+      expect(
+        builderCalls,
+        3,
+        reason: 'a successful recovery restores the notify-only path',
+      );
+      expect(tester.takeException(), isNull);
+    });
+
     // The other side of the same rule. A notify-only rebuild hands back what
     // the last real build made and leaves the child element alone -- which
     // needs there to have been a real build. When the first one threw, the

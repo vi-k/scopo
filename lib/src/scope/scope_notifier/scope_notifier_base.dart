@@ -96,34 +96,37 @@ final class _ScopeNotifierElement<W extends ScopeNotifierBase<W, M>,
 
   @override
   void update(W newWidget) {
-    // The old model is read before `super.update`, and the subscription is
-    // moved after it: the constructor mode is checked there, and a rebuild
-    // that has no honest answer must not have moved a listener first.
-    final oldValue = widget.value;
-
-    super.update(newWidget);
-
+    // The subscription is moved before `super.update`, because that is where
+    // the subtree is built, and a builder may already notify the new model.
+    // Moved after it, as this used to be, that notification reached nobody:
+    // the listener was still on the old model. A change of constructor mode
+    // is left alone -- the mixin's assertion in `super.update` refuses it,
+    // and a rebuild that has no honest answer must not have moved a listener
+    // first.
+    //
     // Nothing to move where nothing was ever added. `init()` sets the flag
     // after it subscribes, so a value that refused the listener -- one already
     // disposed of, or any `Listenable` of the caller's own that says no --
     // leaves it down, and that element is an `ErrorWidget` from then on and
-    // for good. Moved on regardless, as this used to do, the subscription
+    // for good. Moved on regardless, as this once did, the subscription
     // landed on the new value while the teardown went on asking the flag: the
     // listener stayed behind on a live notifier with nothing left to remove
     // it, and its next notification reached a defunct element.
-    if (!_didListen) {
-      return;
+    if (_didListen && widget.hasValue == newWidget.hasValue) {
+      final oldValue = widget.value;
+
+      // Identity, not equality: a listener belongs to the object that holds
+      // the list it is in. Two models that compare equal are still two
+      // lists, and reading `==` as "the same subscription" left the listener
+      // on the model the scope had just let go of, with every notification of
+      // the new one lost.
+      if (!identical(oldValue, newWidget.value)) {
+        oldValue?.removeListener(notifyDependents);
+        newWidget.value?.addListener(notifyDependents);
+      }
     }
 
-    // Identity, not equality: a listener belongs to the object that holds the
-    // list it is in. Two models that compare equal are still two lists, and
-    // reading `==` as "the same subscription" left the listener on the model
-    // the scope had just let go of, with every notification of the new one
-    // lost.
-    if (!identical(oldValue, newWidget.value)) {
-      oldValue?.removeListener(notifyDependents);
-      newWidget.value?.addListener(notifyDependents);
-    }
+    super.update(newWidget);
   }
 }
 

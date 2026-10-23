@@ -46,6 +46,14 @@
   `HomeDependencies` stops listening to its BLoC once loading ends, so a reload
   after the screen is ready no longer throws `Future already completed`, and
   `CounterScope.countOf` rebuilds its reader when the count changes.
+* **Fix:** a selector that throws no longer costs its widget every later
+  update. The subscription used to be taken only after the selector answered,
+  so a widget whose `select` failed once, even inside a `try`, stopped hearing
+  the scope for good. A scope widget whose rebuild threw stops reusing the
+  child it built before the failure, so the next notification replaces the
+  `ErrorWidget` instead of leaving it on screen. And `ScopeNotifier.value`
+  moves its listener to the new model before the subtree is built, so a
+  builder that changes the new model during that rebuild is heard.
 * **Fix:** the `LiteScope` recipe that holds the branch back with
   `isInitialized` now reaches the ready screen: completion notifies the
   scope's dependents but does not rebuild the state's own `build`, so the

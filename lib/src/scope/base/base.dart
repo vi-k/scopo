@@ -270,8 +270,15 @@ abstract interface class ScopeContext<W extends ScopeInheritedWidget> {
     if (selector == null) {
       context.dependOnInheritedElement(element);
     } else {
-      value = selector(scopeContext);
-      context.dependOnInheritedElement(element, aspect: (value, selector));
+      Object? aspect;
+      try {
+        value = selector(scopeContext);
+        aspect = (value, selector);
+      } finally {
+        // A failed selector has no value to compare. Subscribe to the next
+        // change so the dependent can recover, even if it catches the error.
+        context.dependOnInheritedElement(element, aspect: aspect);
+      }
     }
 
     return (scopeContext, value);

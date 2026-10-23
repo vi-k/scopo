@@ -412,6 +412,62 @@ void main() {
     },
   );
 
+  testWidgets(
+    'a replacement model notified from inside the builder reaches the consumer',
+    (tester) async {
+      final first = _Counter();
+      final second = _Counter();
+      addTearDown(first.dispose);
+      addTearDown(second.dispose);
+
+      Widget build(_Counter counter, {bool notifyOnBuild = false}) =>
+          Directionality(
+            textDirection: TextDirection.ltr,
+            child: ScopeNotifier<_Counter>.value(
+              value: counter,
+              builder: (context) {
+                if (notifyOnBuild) {
+                  counter.increment();
+                }
+
+                return const _CounterValueView();
+              },
+            ),
+          );
+
+      await tester.pumpWidget(build(first));
+      expect(find.text('value: 0'), findsOneWidget);
+      expect(_CounterValueView.buildCount, 1);
+
+      // Both models select 0 at update time. Only the builder's notification
+      // can tell the reused child about the value it changes afterwards.
+      await tester.pumpWidget(build(second, notifyOnBuild: true));
+      await tester.pumpAndSettle();
+
+      expect(second.value, 1);
+      expect(find.text('value: 1'), findsOneWidget);
+      expect(_CounterValueView.buildCount, 2);
+      expect(first.listened, isFalse);
+      expect(second.listened, isTrue);
+
+      // Change the current model silently. A listener left on the old model
+      // would now see a changed selection and rebuild the child.
+      second._value = 2;
+      first.increment();
+      await tester.pumpAndSettle();
+
+      expect(find.text('value: 1'), findsOneWidget);
+      expect(_CounterValueView.buildCount, 2);
+
+      second.increment();
+      await tester.pumpAndSettle();
+
+      expect(find.text('value: 3'), findsOneWidget);
+      expect(_CounterValueView.buildCount, 3);
+      expect(tester.takeException(), isNull);
+    },
+  );
+
   // L2 of the sixth review. An `init()` that could not add its listener --
   // a value that is already disposed of, or any `Listenable` of the caller's
   // own that refuses -- fails the element for good: what it shows from then on

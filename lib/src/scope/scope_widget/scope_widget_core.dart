@@ -719,6 +719,10 @@ abstract base class ScopeWidgetElementBase<W extends ScopeWidgetCore<W, E>,
     try {
       return _builtChild = buildChild();
     } on Object catch (error, stackTrace) {
+      // The boundary replaces the old subtree with an `ErrorWidget`. A later
+      // notification must build again instead of keeping that error in place.
+      _builtChild = null;
+
       // The one point every build of every family passes through: the five
       // `buildOn*` of a state-carrying family, `ScopeWidgetBase.build` and
       // `ScopeModel.build` are all reached from here and nowhere else.
