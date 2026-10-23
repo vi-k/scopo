@@ -237,6 +237,14 @@ RETRY_SECOND nested=true attempts=1 held=true rootRequired=false
 Исправление должно пересматривать обе стороны учёта: необходимость повторного
 обхода ошибочной группы и признак оставшихся ресурсов после очередной попытки.
 
+**Вердикт: исправлено.** `6fb8896`, задание `retry` через Codex (Astra).
+`ScopeDependencyGroup.disposalRequired` учитывает
+и `ScopeDependencyDisposalFailed`, так что родитель заходит в такую группу
+снова, а `ScopeDependencyMixin.dispose` сбрасывает `_walkReachedEveryChild`
+и `_mayStillHold` в начале каждой попытки. Десять тестов
+в `test/scope_auto_dependencies_test.dart`; откат любой из двух правок роняет
+часть из них.
+
 ### 2. P2 — обещание переноса контроллера в `controllerDep` скрывает другое поведение `mounted`
 
 **Координаты:**
@@ -272,6 +280,13 @@ DEP_FINISHED mounted=false calls=[init, after await mounted=true, started extern
 гарантии остановки. Нужно либо обеспечить ранний сигнал остановки, либо явно
 описать ограничение рядом с предложением переносить контроллер без изменений.
 
+**Вердикт: исправлено правкой обещания, а не кода.** `5c44e81`, задание `docs`;
+решение моё, принятое за владельца. Поведение `mounted` у `controllerDep`
+не меняется: README и `doc/full_scope.md` больше не говорят, что контроллер
+переносится «без изменений», и описывают ограничение — `mounted` остаётся
+`true`, пока идёт инициализатор, а проверять отмену надо через
+`ScopeInitContext` и `ctx.check()`.
+
 ### 3. P2 — рецепт ожидания `initStateAsync` оставляет собственный экран на загрузке
 
 **Координаты:** `doc/lite_scope.md`, раздел `Two initializations`, пример
@@ -298,6 +313,10 @@ STATE_INIT repair=true initialized=true loading=0 ready=1
 и отдельно объяснено. Поэтому это дефект рецепта, а не требование менять общую
 семантику `notifyDependents`. Пример должен показать действие, переводящее
 собственный экран из loading в ready, и проверяться целиком.
+
+**Вердикт: исправлено.** `5c44e81`, задание `docs`; это та же находка, что
+третья у Astra, и закрыта она тем же исполняемым рецептом с `setState`
+из `onInitialized()`.
 
 ### 4. P2 — публичная поверхность и dartdoc сохранили API, объявленный удалённым
 
@@ -329,6 +348,13 @@ A value of type 'Stream<ScopeInitState<Progress, Dependencies>>' can't be return
 согласовать экспорт, changelog и примеры. Заодно у `ScopeObserver` dartdoc всё
 ещё называет класс `base`, хотя объявление уже открыто для реализации
 и мокирования.
+
+**Вердикт: исправлено удалением.** `55c8a2a`, задание `legacy` через Codex
+(Sol); решение моё, принятое за владельца: обещание 0.14.0 исполняется,
+а не переписывается. `ScopeInitState`, `ScopeProgress`, `ScopeReady`, состояния
+`AsyncDataScope*` и `ScopeDependenciesExtension.asStream` удалены, пример
+`ProgressIterator` переписан на `ctx.progress`, в CHANGELOG 0.17.0 — пункт
+**Breaking**. Замечание о dartdoc `ScopeObserver` закрыто в `5c44e81`.
 
 ### 5. P2 — документы восстановления противоречат действующему устройству и состоянию проекта
 
