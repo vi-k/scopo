@@ -385,7 +385,7 @@ final class _ScopeDependencyConcurrent extends ScopeDependencyGroup {
           // So that an error the kernel raises about this arm names the
           // dependency it belongs to rather than printing as `Job()`.
           key: _keyFor(dependency),
-        );
+        ).._failureCarriedByOwner = true;
         // The arm is observed below, through `job.value`: that future
         // carries its failure to the collector and to the siblings. The one
         // `run` hands back is a second future over the same outcome, and

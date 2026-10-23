@@ -483,7 +483,11 @@ void main() {
     );
     await tester.pumpAndSettle();
     expect(cleanupStarted, isTrue);
-    expect(observer.errors, isEmpty);
+    // Root and group-arm jobs leave their reports to their owners. This
+    // child's failure is heard before cleanup ends, even if cancellation
+    // covers it.
+    expect(observer.errors, [same(failure)]);
+    expect(observer.phases, [ScopePhase.initialization]);
 
     // The tree goes while the child's cleanup is parked, so the child ends
     // Cancelled and the failure it was carrying has nobody left.
@@ -933,6 +937,156 @@ void main() {
     expect(tester.takeException(), isNull);
     await tester.pumpWidget(_wrap(const SizedBox.shrink()));
     await tester.pumpAndSettle();
+  });
+
+  for (final fails in [true, false]) {
+    testWidgets(
+        fails
+            ? 'a handled child ScopeInitJob failure is heard exactly once'
+            : 'a successful child ScopeInitJob produces no error report',
+        (tester) async {
+      final observer = _Errors();
+      ScopeConfig.observer = observer;
+      final failure = Exception('child initialization failed');
+      Object? caught;
+      var childRan = false;
+
+      await tester.pumpWidget(
+        _wrap(
+          AsyncScope(
+            initScope: (context, ctx) async {
+              try {
+                await ctx.run(
+                  ScopeInitJob<void>((inner) async {
+                    childRan = true;
+                    if (fails) throw failure;
+                  }),
+                );
+              } on Exception catch (error) {
+                caught = error;
+              }
+            },
+            disposeScope: () {},
+            progressBuilder: (context, progress) => const Text('loading'),
+            errorBuilder: (context, error, stackTrace, progress) =>
+                const Text('failed'),
+            builder: (context) => const Text('ready'),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(childRan, isTrue);
+      expect(caught, fails ? same(failure) : isNull);
+      expect(find.text('ready'), findsOneWidget);
+      expect(find.text('failed'), findsNothing);
+      await tester.pumpWidget(_wrap(const SizedBox.shrink()));
+      await tester.pumpAndSettle();
+      expect(observer.errors, fails ? [same(failure)] : isEmpty);
+      expect(observer.phases, fails ? [ScopePhase.initialization] : isEmpty);
+      expect(tester.takeException(), isNull);
+    });
+  }
+
+  for (final recover in [false, true]) {
+    testWidgets(
+        recover
+            ? 'a handled failure through two child jobs is heard exactly once'
+            : 'a failure through two child jobs reaches the error screen once',
+        (tester) async {
+      final observer = _Errors();
+      ScopeConfig.observer = observer;
+      final failure = Exception('nested child failed');
+      Object? caught;
+      Object? shownError;
+
+      await tester.pumpWidget(
+        _wrap(
+          AsyncScope(
+            initScope: (context, ctx) async {
+              try {
+                await ctx.run(
+                  Job.deferred<void>((middle) async {
+                    await middle.run(
+                      Job.deferred<void>((inner) async => throw failure),
+                    );
+                  }),
+                );
+              } on Exception catch (error) {
+                if (!recover) rethrow;
+                caught = error;
+              }
+            },
+            disposeScope: () {},
+            progressBuilder: (context, progress) => const Text('loading'),
+            errorBuilder: (context, error, stackTrace, progress) {
+              shownError = error;
+              return const Text('failed');
+            },
+            builder: (context) => const Text('ready'),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(caught, recover ? same(failure) : isNull);
+      expect(shownError, recover ? isNull : same(failure));
+      expect(find.text('ready'), recover ? findsOneWidget : findsNothing);
+      expect(find.text('failed'), recover ? findsNothing : findsOneWidget);
+      await tester.pumpWidget(_wrap(const SizedBox.shrink()));
+      await tester.pumpAndSettle();
+      expect(observer.errors, [same(failure)]);
+      expect(observer.phases, [ScopePhase.initialization]);
+      expect(tester.takeException(), isNull);
+    });
+  }
+
+  testWidgets('a settled body failure keeps its first report and phase',
+      (tester) async {
+    final observer = _Errors();
+    ScopeConfig.observer = observer;
+    final failure = StateError('body and background failed');
+    final background = Completer<void>();
+    Object? shownError;
+
+    await tester.pumpWidget(
+      _wrap(
+        AsyncScope(
+          initScope: (context, ctx) async {
+            ctx.unattended(() async {
+              await background.future;
+              throw failure;
+            });
+            throw failure;
+          },
+          disposeScope: () {},
+          progressBuilder: (context, progress) => const Text('loading'),
+          errorBuilder: (context, error, stackTrace, progress) {
+            shownError = error;
+            return const Text('failed');
+          },
+          builder: (context) => const Text('ready'),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+    expect(shownError, same(failure));
+    expect(find.text('failed'), findsOneWidget);
+    expect(observer.errors, [same(failure)]);
+    expect(observer.phases, [ScopePhase.initialization]);
+    expect(tester.takeException(), isNull);
+
+    background.complete();
+    await tester.pumpAndSettle();
+    expect(tester.takeException(), same(failure));
+    await tester.pumpWidget(_wrap(const SizedBox.shrink()));
+    await tester.pumpAndSettle();
+
+    // The late action is unanswered, but its error was already heard when
+    // the body settled. The observer keeps the first phase for that object.
+    expect(observer.errors, [same(failure)]);
+    expect(observer.phases, [ScopePhase.initialization]);
+    expect(tester.takeException(), isNull);
   });
 
   for (final filtered in [true, false]) {

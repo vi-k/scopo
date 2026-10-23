@@ -39,7 +39,8 @@
   filter now applies to scopes too: an operation that stops at its token with
   an error of its own, and an app that declared that error a cancellation, no
   longer get a red line for it. `ScopeObserver.onError` still hears every
-  failure, a child's handled one included — the child did fail.
+  failure, a child's handled one included — the child did fail — and hears it
+  once, however many jobs it passes through on its way up.
 * **Fix:** the `scopo-deps` template closes the database even when closing the
   session throws: its `dispose` now closes the database in a `finally`, where a
   failed session close used to leave it open. In the demo app,

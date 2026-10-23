@@ -40,9 +40,14 @@ final class ScopeInitJob<T> extends JobBase<T> implements DeferredJob<T> {
   final Future<T> Function(ScopeInitContext ctx) _body;
   final void Function(Object progress)? _onProgress;
 
-  // The scope settles a body failure through its model. Other errors from the
-  // same running job have no outcome of their own and must still be reported.
+  // Identifies the body failure carried by the outcome. For the root and
+  // group-arm jobs, their owners report it when they settle that outcome.
   Object? _bodyError;
+
+  // _ScopeDependencyConcurrent marks its arms: it carries the first failure
+  // upwards and announces the others. The observer leaves those reports to
+  // the group rather than announcing the same failures from the arm jobs.
+  bool _failureCarriedByOwner = false;
 
   /// Creates an initialization that waits for [start] or [JobContext.run].
   ///
@@ -107,24 +112,20 @@ final class _ScopeDisposalCancelReason extends CancelReason {
 
 final class _ScopeInitObserver extends JobObserver with JobAnswerer {
   final ScopeObservable _scope;
+  // Bound before start: the job whose outcome the element settles.
+  late final ScopeInitJob<void> _rootJob;
 
   // What the scope observer has already been told, by identity.
   //
-  // A child job inherits the observer of the job that ran it, so one failure
-  // can pass here twice: once as the child's, where nothing defers it and it
-  // is named at once, and once as the parent's, where the body caught it from
-  // `child.value` and the report is left to the outcome. The two passes look
-  // alike from inside this method, and the flag they set is read as "nobody
-  // has spoken about this yet" -- which was true only of the first. The
-  // settlement of the outcome asks the same question through [announced].
+  // Children inherit the observer, so one failure can pass through several
+  // jobs before the root settles. Both kernel hooks and settlement use
+  // [_announce], keeping the first report and its phase even if the same
+  // error arrives later from work nobody waited for.
   //
   // Identity, not equality: two failures that compare equal are still two.
   final _announced = Set<Object>.identity();
 
   _ScopeInitObserver(this._scope);
-
-  /// Whether the scope observer has already been told about [error].
-  bool announced(Object error) => _announced.contains(error);
 
   // The two channels split where the kernel splits its own two hooks. This
   // one tells the scope observer, which is a log of what failed and where,
@@ -137,13 +138,16 @@ final class _ScopeInitObserver extends JobObserver with JobAnswerer {
   @override
   void onError(Job<Object?> job, Object error, StackTrace stackTrace) {
     if (job is ScopeInitJob<Object?> &&
+        (identical(job, _rootJob) || job._failureCarriedByOwner) &&
         identical(job._bodyError, error) &&
         !job.isCancelled) {
-      // The outcome of this job is about to carry the failure, and the
-      // element tells the observer when it settles it. A cancellation arriving
-      // while the cleanup unwinds can take the outcome over, and then the
-      // failure has nobody -- which is exactly when the kernel hands it to
-      // [onUnanswered], where it is told after all.
+      // The outcome of this job is about to carry the failure, and whoever
+      // settles it -- the element for its root job, the group for an arm --
+      // tells the observer then. Any other job's outcome is settled by
+      // nobody here, so a child of the caller's own is told at once. A
+      // cancellation arriving while the cleanup unwinds can take the outcome
+      // over, and then the failure has nobody -- which is exactly when the
+      // kernel hands it to [onUnanswered], where it is told after all.
       return;
     }
 
@@ -174,9 +178,7 @@ final class _ScopeInitObserver extends JobObserver with JobAnswerer {
   // for, whose outcome a cancellation took over during the cleanup.
   @override
   void onUnanswered(Job<Object?> job, Object error, StackTrace stackTrace) {
-    if (!_announced.contains(error)) {
-      _announce(error, stackTrace, ScopePhase.initializationCancellation);
-    }
+    _announce(error, stackTrace, ScopePhase.initializationCancellation);
 
     FlutterError.reportError(
       FlutterErrorDetails(
@@ -189,7 +191,7 @@ final class _ScopeInitObserver extends JobObserver with JobAnswerer {
 
   /// Tells the scope observer, and remembers having told it.
   void _announce(Object error, StackTrace stackTrace, ScopePhase phase) {
-    _announced.add(error);
+    if (!_announced.add(error)) return;
     notifyObserver(
       (observer) => observer.onError(_scope, phase, error, stackTrace),
     );

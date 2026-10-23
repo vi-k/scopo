@@ -201,16 +201,16 @@ abstract base class AsyncScopeElementBase<W extends AsyncScopeCore<W, E>,
             // The job is done, but accepting its value and applying readiness
             // are still initialization. Their failures belong to the scope's
             // error state and observer, just like a failure of the body.
-            _settleFailure(error, stackTrace);
+            _settleFailure(error, stackTrace, observer);
           }
         case Cancelled(reason: _ScopeDisposalCancelReason()):
           // The teardown asked for this one, and it is waiting on
           // `_initCompleter` rather than on the model, which the element is
           // leaving behind anyway. A failure that happened before the
           // cancellation and lost its outcome to it is not this method's to
-          // report: the adapter stood aside for that outcome and waits on the
-          // job itself to see whether it kept the promise -- for this job and
-          // for every child of it, which is the half an element cannot reach.
+          // report: the adapter stood aside for the root outcome, and the
+          // kernel hands that failure to its `onUnanswered` hook. Other
+          // failures are announced by the adapter or the dependency group.
           break;
         case Cancelled():
           // Nobody here asked for it, so the initialization ended without ever
@@ -221,12 +221,16 @@ abstract base class AsyncScopeElementBase<W extends AsyncScopeCore<W, E>,
           // reason a later kernel adds. Quiet here is what used to leave the
           // loading branch on screen for good, with the only trace a
           // diagnostic line nobody had turned on.
-          _settleFailure(outcome, outcome.stackTrace ?? StackTrace.current);
+          _settleFailure(
+            outcome,
+            outcome.stackTrace ?? StackTrace.current,
+            observer,
+          );
         case Failed(:final error, :final stackTrace):
           _settleFailure(
             error,
             stackTrace,
-            announced: observer.announced(error),
+            observer,
           );
       }
     } finally {
@@ -330,25 +334,12 @@ abstract base class AsyncScopeElementBase<W extends AsyncScopeCore<W, E>,
   }
 
   /// Settles a failure of the body, value acceptance or readiness.
-  ///
-  /// [announced] is for a failure the observer has already been told about
-  /// on its way up from a child job: the screen still needs it, the observer
-  /// does not need it twice.
   void _settleFailure(
     Object error,
-    StackTrace stackTrace, {
-    bool announced = false,
-  }) {
-    if (!announced) {
-      notifyObserver(
-        (observer) => observer.onError(
-          this,
-          ScopePhase.initialization,
-          error,
-          stackTrace,
-        ),
-      );
-    }
+    StackTrace stackTrace,
+    _ScopeInitObserver observer,
+  ) {
+    observer._announce(error, stackTrace, ScopePhase.initialization);
 
     // No guard for "the scope is already ready" here, and that is a property
     // of the form rather than an omission: the ready state is settled *after*
@@ -1033,6 +1024,7 @@ abstract base class AsyncScopeElementBase<W extends AsyncScopeCore<W, E>,
         // to take it from; the kernel only prints it.
         key: debugLabel,
       );
+      initObserver._rootJob = job;
       _initJobRunning = true;
       unawaited(_settleInit(job, initObserver));
       job.start();
