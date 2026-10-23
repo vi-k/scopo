@@ -409,15 +409,20 @@ void main() {
     giveBack();
 
     // The child is not a `ScopeInitJob`, so the adapter has nothing to leave
-    // the report to and makes it at once. One, and it belongs.
+    // the observer's line to and writes it at once. `FlutterError` waits: the
+    // parent let the failure out, its outcome is due to carry it to the
+    // screen, and while it may still do so nobody has been left without it.
+    // An immediate report here used to be pinned as right, and it was what
+    // made a child's failure cost a red line the body's own never did.
     expect(cleanupStarted, isTrue);
     expect(observer.errors.where((e) => identical(e, failure)), hasLength(1));
-    expect(reported.where((e) => identical(e, failure)), hasLength(1));
+    expect(reported.where((e) => identical(e, failure)), isEmpty);
 
     // Now the cover: the tree goes while the cleanup is parked, so the outcome
-    // of the parent becomes a cancellation. The failure it carried has been
-    // spoken about already, and saying it again is what the wave of
-    // 2026-09-07 existed to stop.
+    // of the parent becomes a cancellation, and the failure has nobody left
+    // to reach. The kernel says so once, and that is the red line. The
+    // observer has heard it already, and saying it there again is what the
+    // wave of 2026-09-07 existed to stop.
     collect();
     await tester.pumpWidget(_wrap(const SizedBox.shrink()));
     cleanup.complete();
@@ -855,6 +860,250 @@ void main() {
           'stood -- anything but `Job()`',
     );
   });
+
+  testWidgets('a child failure the body handles stays out of FlutterError',
+      (tester) async {
+    final observer = _Errors();
+    ScopeConfig.observer = observer;
+    const failure = _Stopped();
+    var fellBack = false;
+    await tester.pumpWidget(
+      _wrap(
+        AsyncScope(
+          initScope: (context, ctx) async {
+            try {
+              await ctx.run(Job.deferred<void>((_) async => throw failure));
+            } on _Stopped {
+              fellBack = true;
+            }
+          },
+          disposeScope: () {},
+          progressBuilder: (context, progress) => const Text('loading'),
+          errorBuilder: (context, error, stackTrace, progress) =>
+              const Text('failed'),
+          builder: (context) => const Text('ready'),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    // The child did fail, and the observer is the log that says so. The body
+    // took the failure and went on, so there is nobody it still has to reach:
+    // a red line for it would fail the widget test of the app that handled it.
+    expect(fellBack, isTrue);
+    expect(find.text('ready'), findsOneWidget);
+    expect(observer.errors, [failure]);
+    expect(observer.phases, [ScopePhase.initialization]);
+    expect(tester.takeException(), isNull);
+    await tester.pumpWidget(_wrap(const SizedBox.shrink()));
+    await tester.pumpAndSettle();
+  });
+
+  testWidgets(
+      'a child failure the body lets out is reported like its own failure',
+      (tester) async {
+    final observer = _Errors();
+    ScopeConfig.observer = observer;
+    final failure = StateError('child failed');
+    Object? shownError;
+    await tester.pumpWidget(
+      _wrap(
+        AsyncScope(
+          initScope: (context, ctx) async {
+            await ctx.run(Job.deferred<void>((_) async => throw failure));
+          },
+          disposeScope: () {},
+          progressBuilder: (context, progress) => const Text('loading'),
+          errorBuilder: (context, error, stackTrace, progress) {
+            shownError = error;
+            return const Text('failed');
+          },
+          builder: (context) => const Text('ready'),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    // The same counts as `a body failure is reported to the scope observer
+    // exactly once`: the road the failure took up to the body is not a
+    // second failure, and the screen already shows it.
+    expect(shownError, same(failure));
+    expect(observer.errors, [failure]);
+    expect(observer.phases, [ScopePhase.initialization]);
+    expect(tester.takeException(), isNull);
+    await tester.pumpWidget(_wrap(const SizedBox.shrink()));
+    await tester.pumpAndSettle();
+  });
+
+  for (final filtered in [true, false]) {
+    testWidgets(
+        filtered
+            ? 'an error the app calls a cancellation stays out of FlutterError'
+            : 'the same error without the app filter reaches FlutterError',
+        (tester) async {
+      if (filtered) {
+        Job.isCancellationError = (error) => error is _Stopped;
+        addTearDown(() => Job.isCancellationError = null);
+      }
+      final observer = _Errors();
+      ScopeConfig.observer = observer;
+      await tester.pumpWidget(
+        _wrap(
+          AsyncScope(
+            initScope: (context, ctx) async {
+              final stop = Completer<void>();
+              ctx.onCancel(stop.complete);
+              // An operation that stops at its own token and says so with an
+              // error of its own rather than with `Cancelled`.
+              await ctx.join(() async {
+                await stop.future;
+                throw const _Stopped();
+              });
+            },
+            disposeScope: () {},
+            progressBuilder: (context, progress) => const Text('loading'),
+            errorBuilder: (context, error, stackTrace, progress) =>
+                const Text('failed'),
+            builder: (context) => const Text('ready'),
+          ),
+        ),
+      );
+      await tester.pump();
+      await tester.pumpWidget(_wrap(const SizedBox.shrink()));
+      await tester.pumpAndSettle();
+
+      // The observer hears it either way, as the kernel's own `onError` does.
+      // Whether it is a failure nobody else can be handed is the app's call,
+      // made through the filter, and the kernel is the one that asks it.
+      expect(observer.errors, [isA<_Stopped>()]);
+      expect(observer.phases, [ScopePhase.initializationCancellation]);
+      expect(tester.takeException(), filtered ? isNull : isA<_Stopped>());
+    });
+  }
+
+  // The three names below come from `package:scopo` alone: a consumer reads
+  // these outcomes and writes these observers without importing the kernel.
+  testWidgets('a child that timed out is named in what the screen receives',
+      (tester) async {
+    Object? shownError;
+    await tester.pumpWidget(
+      _wrap(
+        AsyncScope(
+          initScope: (context, ctx) async {
+            await ctx.run(
+              Job.deferred<void>(
+                timeout: const Duration(seconds: 1),
+                (ctx) => ctx.abandonable(() => Completer<void>().future),
+              ),
+            );
+          },
+          disposeScope: () {},
+          progressBuilder: (context, progress) => const Text('loading'),
+          errorBuilder: (context, error, stackTrace, progress) {
+            shownError = error;
+            return const Text('failed');
+          },
+          builder: (context) => const Text('ready'),
+        ),
+      ),
+    );
+    await tester.pump(const Duration(seconds: 2));
+    await tester.pumpAndSettle();
+
+    var reason = shownError;
+    final reasons = <CancelReason>[];
+    while (reason is Cancelled) {
+      reasons.add(reason.reason);
+      reason = switch (reason.reason) {
+        HandlerCancelReason(:final cause) => cause,
+        ParentCancelReason(:final cause) => cause,
+        _ => null,
+      };
+    }
+    expect(find.text('failed'), findsOneWidget);
+    expect(
+      reasons.whereType<TimeoutCancelReason>().single.timeout,
+      const Duration(seconds: 1),
+    );
+    expect(tester.takeException(), isNull);
+    await tester.pumpWidget(_wrap(const SizedBox.shrink()));
+    await tester.pumpAndSettle();
+  });
+
+  testWidgets('a branch stopped by its failing sibling says so',
+      (tester) async {
+    final failure = StateError('sibling failed');
+    final stopped = Job.deferred<void>(
+      (ctx) => ctx.abandonable(() => Completer<void>().future),
+    );
+    await tester.pumpWidget(
+      _wrap(
+        AsyncScope(
+          initScope: (context, ctx) async {
+            await ctx.runAll(<DeferredJob<void>>[
+              stopped,
+              Job.deferred<void>((_) async => throw failure),
+            ]);
+          },
+          disposeScope: () {},
+          progressBuilder: (context, progress) => const Text('loading'),
+          errorBuilder: (context, error, stackTrace, progress) =>
+              const Text('failed'),
+          builder: (context) => const Text('ready'),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('failed'), findsOneWidget);
+    expect(
+      await stopped.done,
+      isA<Cancelled>().having(
+        (c) => c.reason,
+        'reason',
+        isA<SiblingCancelReason>().having((r) => r.cause, 'cause', failure),
+      ),
+    );
+    await tester.pumpWidget(_wrap(const SizedBox.shrink()));
+    await tester.pumpAndSettle();
+  });
+
+  testWidgets('a child with an observer of its own can answer for its errors',
+      (tester) async {
+    final observer = _Errors();
+    ScopeConfig.observer = observer;
+    final own = _Answering();
+    final failure = StateError('left behind');
+    await tester.pumpWidget(
+      _wrap(
+        AsyncScope(
+          initScope: (context, ctx) async {
+            ctx.start(
+              Job.deferred<void>(
+                observer: own,
+                (_) async => throw failure,
+              ),
+            );
+          },
+          disposeScope: () {},
+          progressBuilder: (context, progress) => const Text('loading'),
+          errorBuilder: (context, error, stackTrace, progress) =>
+              const Text('failed'),
+          builder: (context) => const Text('ready'),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    // Nobody reads the child, so its failure is unanswered -- and its own
+    // observer, not the scope's, is the one the kernel asks.
+    expect(find.text('ready'), findsOneWidget);
+    expect(own.unanswered, [failure]);
+    expect(observer.errors, isEmpty);
+    expect(tester.takeException(), isNull);
+    await tester.pumpWidget(_wrap(const SizedBox.shrink()));
+    await tester.pumpAndSettle();
+  });
 }
 
 Widget _wrap(Widget child) => Directionality(
@@ -883,6 +1132,18 @@ final class _ConcurrentDependencies
           Error.throwWithStackTrace(failure, StackTrace.current);
         }),
       ]);
+}
+
+final class _Stopped implements Exception {
+  const _Stopped();
+}
+
+final class _Answering extends JobObserver with JobAnswerer {
+  final unanswered = <Object>[];
+
+  @override
+  void onUnanswered(Job<Object?> job, Object error, StackTrace stackTrace) =>
+      unanswered.add(error);
 }
 
 final class _Errors extends ScopeObserver {

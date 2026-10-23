@@ -173,6 +173,16 @@ body that goes on working after it has returned — a helper it left running —
 unusual, but it is exactly the case where the difference matters. Bare
 asynchronous work outside the context still reports to its own zone.
 
+A child job's failure counts as the body's. One the body lets out ends the
+initialization the way its own throw would: the screen switches to
+`buildOnError`, and `ScopeObserver.onError` hears it once. One the body catches
+and recovers from is told to the observer and goes no further: the child did
+fail, and the scope is ready all the same. `FlutterError.reportError` gets only
+what nobody else is left to be handed. An error your app has declared a
+cancellation through `Job.isCancellationError` is not one of those while the
+initialization is being cancelled: an operation that stops at its token with an
+error of its own is heard by the observer and leaves the console alone.
+
 ## Disposal, in order
 
 The teardown runs as one sequence, and every asynchronous step of it is

@@ -183,7 +183,10 @@ abstract base class AsyncScopeElementBase<W extends AsyncScopeCore<W, E>,
   }
 
   /// Settles only after the job has finished its children and cleanup.
-  Future<void> _settleInit(ScopeInitJob<void> job) async {
+  Future<void> _settleInit(
+    ScopeInitJob<void> job,
+    _ScopeInitObserver observer,
+  ) async {
     final outcome = await job.done;
 
     try {
@@ -220,7 +223,11 @@ abstract base class AsyncScopeElementBase<W extends AsyncScopeCore<W, E>,
           // diagnostic line nobody had turned on.
           _settleFailure(outcome, outcome.stackTrace ?? StackTrace.current);
         case Failed(:final error, :final stackTrace):
-          _settleFailure(error, stackTrace);
+          _settleFailure(
+            error,
+            stackTrace,
+            announced: observer.announced(error),
+          );
       }
     } finally {
       _initJobRunning = false;
@@ -323,15 +330,25 @@ abstract base class AsyncScopeElementBase<W extends AsyncScopeCore<W, E>,
   }
 
   /// Settles a failure of the body, value acceptance or readiness.
-  void _settleFailure(Object error, StackTrace stackTrace) {
-    notifyObserver(
-      (observer) => observer.onError(
-        this,
-        ScopePhase.initialization,
-        error,
-        stackTrace,
-      ),
-    );
+  ///
+  /// [announced] is for a failure the observer has already been told about
+  /// on its way up from a child job: the screen still needs it, the observer
+  /// does not need it twice.
+  void _settleFailure(
+    Object error,
+    StackTrace stackTrace, {
+    bool announced = false,
+  }) {
+    if (!announced) {
+      notifyObserver(
+        (observer) => observer.onError(
+          this,
+          ScopePhase.initialization,
+          error,
+          stackTrace,
+        ),
+      );
+    }
 
     // No guard for "the scope is already ready" here, and that is a property
     // of the form rather than an omission: the ready state is settled *after*
@@ -1003,10 +1020,11 @@ abstract base class AsyncScopeElementBase<W extends AsyncScopeCore<W, E>,
       }
 
       notifyObserver((observer) => observer.onInit(this));
+      final initObserver = _ScopeInitObserver(this);
       final job = _initJob = ScopeInitJob<void>(
         runInitBody,
         onProgress: _onInitStep,
-        observer: _ScopeInitObserver(this),
+        observer: initObserver,
         // Every error the kernel raises about a job prints the job, and a job
         // with no key prints as `Job()`. Those messages reach a consumer --
         // a `ctx` kept in a closure and asked something after the scope is
@@ -1016,7 +1034,7 @@ abstract base class AsyncScopeElementBase<W extends AsyncScopeCore<W, E>,
         key: debugLabel,
       );
       _initJobRunning = true;
-      unawaited(_settleInit(job));
+      unawaited(_settleInit(job, initObserver));
       job.start();
     } on Object catch (error, stackTrace) {
       // `_initSucceeded` stays false: nothing was initialized, so nothing is

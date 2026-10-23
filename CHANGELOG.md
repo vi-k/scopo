@@ -11,11 +11,27 @@
 * **Deprecated:** `ctx.wait` is `ctx.abandonable`, and the kernel drops the old
   name in its next release. The topics, the examples and the IDE templates use
   the new one.
-* Errors of an initialization are reported as before: once, through the
-  observer and `FlutterError.reportError`. The kernel now sends the errors no
-  outcome carries on to the zone unless the job's observer answers for them,
-  and the scope's observer does: without that each of them would reach the zone
-  a second time, and a widget test would fail on it.
+* **New:** `TimeoutCancelReason`, `SiblingCancelReason` and `JobAnswerer` are
+  re-exported. The first two are the reasons a child job started with a
+  `timeout`, or a branch of `ctx.runAll` stopped by a failing sibling, is
+  cancelled with, and a `switch` on a `Cancelled` needs their names.
+  `JobAnswerer` is the other half of `JobObserver`: an observer you give a
+  child job of your own replaces the scope's, and with it the child's
+  unanswered errors are yours to take instead of going to the zone.
+* **Fix:** `FlutterError.reportError` gets only the errors nobody else can be
+  handed, which is what the debug topic promised. A child job's failure used to
+  go there at once, so a failure the body caught and recovered from — falling
+  back to a mirror when the primary server is down — still failed the widget
+  test of the app that handled it, and a failure the body let out reached the
+  observer twice and the console once, where the same failure thrown by the
+  body itself reaches the observer once and shows only on screen. The scope now
+  leaves the question to the kernel, which asks the job's observer about an
+  error only once no outcome somebody read carries it, no body caught it, and
+  the app's `Job.isCancellationError` has not called it a cancellation. So that
+  filter now applies to scopes too: an operation that stops at its token with
+  an error of its own, and an app that declared that error a cancellation, no
+  longer get a red line for it. `ScopeObserver.onError` still hears every
+  failure, a child's handled one included — the child did fail.
 
 ## 0.16.0
 

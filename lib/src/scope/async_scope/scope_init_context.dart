@@ -44,11 +44,6 @@ final class ScopeInitJob<T> extends JobBase<T> implements DeferredJob<T> {
   // same running job have no outcome of their own and must still be reported.
   Object? _bodyError;
 
-  // Finishing without observing, so a `Failed` nobody looked at still reaches
-  // the zone by the kernel's own road. The observer waits on this to find out
-  // whether the outcome ended up carrying the failure it stood aside for.
-  Future<void> get _finished => untilFinished;
-
   /// Creates an initialization that waits for [start] or [JobContext.run].
   ///
   /// [onProgress] receives the body's steps. The remaining options have the
@@ -113,90 +108,74 @@ final class _ScopeDisposalCancelReason extends CancelReason {
 final class _ScopeInitObserver extends JobObserver with JobAnswerer {
   final ScopeObservable _scope;
 
-  // What this initialization has already said out loud, by identity.
+  // What the scope observer has already been told, by identity.
   //
   // A child job inherits the observer of the job that ran it, so one failure
   // can pass here twice: once as the child's, where nothing defers it and it
   // is named at once, and once as the parent's, where the body caught it from
   // `child.value` and the report is left to the outcome. The two passes look
   // alike from inside this method, and the flag they set is read as "nobody
-  // has spoken about this yet" -- which was true only of the first.
+  // has spoken about this yet" -- which was true only of the first. The
+  // settlement of the outcome asks the same question through [announced].
   //
   // Identity, not equality: two failures that compare equal are still two.
   final _announced = Set<Object>.identity();
 
   _ScopeInitObserver(this._scope);
 
+  /// Whether the scope observer has already been told about [error].
+  bool announced(Object error) => _announced.contains(error);
+
+  // The two channels split where the kernel splits its own two hooks. This
+  // one tells the scope observer, which is a log of what failed and where,
+  // and hears everything -- a child failure the body went on to handle
+  // included, since the child did fail. `FlutterError` is for the failures
+  // nobody else can be handed, and which those are is decided by the kernel
+  // in [onUnanswered]: the outcomes somebody read, the children a body
+  // caught and the errors the app's `Job.isCancellationError` calls
+  // cancellations are all settled there before it asks.
   @override
   void onError(Job<Object?> job, Object error, StackTrace stackTrace) {
     if (job is ScopeInitJob<Object?> &&
         identical(job._bodyError, error) &&
         !job.isCancelled) {
-      // The outcome of this job is about to carry the failure, so nothing is
-      // said here -- unless the error was already named on its way up from a
-      // child, in which case it has an owner and a second report of it is what
-      // the wave of 2026-09-07 existed to remove.
-      if (_announced.contains(error)) {
-        return;
-      }
-
-      // Standing aside is a promise that somebody else will speak, and the
-      // outcome keeps it only while it stays a `Failed`. A cancellation
-      // arriving while the cleanup unwinds takes the outcome over, and then
-      // the failure has nobody: the kernel's own late report is for an outcome
-      // nobody looked at, and a scope looks at every one of them. This used to
-      // be the element's net, which meant it was spread under the one job the
-      // element owns -- a child of that job fell straight through.
-      unawaited(
-        job._finished.then((_) {
-          if (job.outcome is Failed || _announced.contains(error)) {
-            return;
-          }
-          _report(error, stackTrace, ScopePhase.initializationCancellation);
-        }),
-      );
+      // The outcome of this job is about to carry the failure, and the
+      // element tells the observer when it settles it. A cancellation arriving
+      // while the cleanup unwinds can take the outcome over, and then the
+      // failure has nobody -- which is exactly when the kernel hands it to
+      // [onUnanswered], where it is told after all.
       return;
     }
 
-    // The kernel hands this hook four kinds of error with no outcome to
-    // carry them, and names none of them. What it does say is when: a job
-    // that has already finished cannot be failing its initialization any
-    // more, so what arrives then is work whose end nobody was left to hear
-    // -- an action abandoned by `abandonable`, or something handed over with
-    // `unattended`. Calling that an initialization failure points the reader
-    // at the wrong half of the scope's life.
+    // The kernel names none of the errors it hands this hook -- a child's
+    // failure, or one of the four kinds with no outcome to carry them. What
+    // it does say is when: a job that has already finished cannot be failing
+    // its initialization any more, so what arrives then is work whose end
+    // nobody was left to hear -- an action abandoned by `abandonable`, or
+    // something handed over with `unattended`. Calling that an initialization
+    // failure points the reader at the wrong half of the scope's life.
     final phase = switch (job) {
       _ when job.isFinished => ScopePhase.abandonedWait,
       _ when job.isCancelled => ScopePhase.initializationCancellation,
       _ => ScopePhase.initialization,
     };
-    _report(error, stackTrace, phase);
+    _announce(error, stackTrace, phase);
   }
 
-  // The kernel asks here about an error after `onError` has heard it, and
-  // `onError` above has already spoken: at once, or through the check on
-  // `_finished` for a body failure it stood aside for. The other road here,
-  // a `Failed` nobody observes, is closed for the jobs of a scope: the
-  // element reads `done` in `_settleInit`, and a branch of a group is read
-  // through its `value`. Handing an error on to `super` would send it to the
-  // zone a second time, after the observer and `FlutterError` have had it.
+  // The kernel asks here once nothing else will carry an error: no outcome
+  // that somebody read holds it, no body caught it, and the app's filter did
+  // not call it a cancellation. A `Cancelled` never comes here -- "a
+  // cancellation is a decision somebody made, not a failure, and none of
+  // them reaches the zone" -- so there is no red line for a decision either.
+  //
+  // `FlutterError` takes the place of the zone, which is where `super` would
+  // send it. The scope observer has normally heard the error in `onError`
+  // already; the one exception is the body failure [onError] stood aside
+  // for, whose outcome a cancellation took over during the cleanup.
   @override
-  void onUnanswered(Job<Object?> job, Object error, StackTrace stackTrace) {}
-
-  /// Says it once, to both places, and remembers having said it.
-  void _report(Object error, StackTrace stackTrace, ScopePhase phase) {
-    _announced.add(error);
-    notifyObserver(
-      (observer) => observer.onError(_scope, phase, error, stackTrace),
-    );
-
-    // A cancellation stops with the observer, which is where the kernel
-    // stops it too: "a cancellation is a decision somebody made, not a
-    // failure, and none of them reaches the zone". Passing it on would put a
-    // red line in the console for a decision, and fail the widget test of a
-    // consumer who had no exception to take.
-    if (error is Cancelled) {
-      return;
+  void onUnanswered(Job<Object?> job, Object error, StackTrace stackTrace) {
+    if (!_announced.contains(error)) {
+      _announce(error, stackTrace, ScopePhase.initializationCancellation);
     }
 
     FlutterError.reportError(
@@ -205,6 +184,14 @@ final class _ScopeInitObserver extends JobObserver with JobAnswerer {
         stack: stackTrace,
         library: 'scopo',
       ),
+    );
+  }
+
+  /// Tells the scope observer, and remembers having told it.
+  void _announce(Object error, StackTrace stackTrace, ScopePhase phase) {
+    _announced.add(error);
+    notifyObserver(
+      (observer) => observer.onError(_scope, phase, error, stackTrace),
     );
   }
 
