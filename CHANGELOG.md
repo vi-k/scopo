@@ -114,6 +114,15 @@
   `.value` fails in debug builds with a `FlutterError` that names the scope,
   says that `hasValue` is `false` and `create` is `null`, and points to a
   factory or the `.value` constructor, where it used to fail on a bare assert.
+* **Fix:** the Dart blocks of the README and the topics are now compiled
+  against the package, and four that did not compile are corrected. The
+  accessor example of the `base` topic declares the members its `App` scope has
+  to implement. The migration from 0.12.x in the `debug` topic puts the old and
+  the new `onProgress` in two observers instead of one file. The teardown
+  example of the `Scope` topic writes the failing initializer as the
+  `initDependencies` override it is, not as a named argument `Scope` does not
+  take. The subscription example of the `utils` topic says what goes between
+  `listen` and `cancel` instead of a bare ellipsis.
 * **New:** `example/quickstart` — one screen, one `AsyncDataScope` over a local
   resource: loading, ready, and a re-created scope that releases the old
   resource before opening the new one, with a test of that order. The README

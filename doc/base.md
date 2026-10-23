@@ -371,6 +371,28 @@ Each family also ships an accessor object that takes those arguments once:
 ```dart
 final class App extends Scope<App, AppDependencies, AppState> {
   static const access = ScopeAccess<App, AppDependencies, AppState>();
+
+  @override
+  Future<AppDependencies> initDependencies(
+    BuildContext context,
+    ScopeInitContext ctx,
+  ) async => AppDependencies();
+
+  @override
+  Widget buildOnProgress(BuildContext context, Object? progress) =>
+      const SizedBox.shrink();
+
+  @override
+  Widget buildOnError(
+    BuildContext context,
+    Object error,
+    StackTrace stackTrace,
+    Object? progress,
+  ) =>
+      Text('$error');
+
+  @override
+  AppState createState() => AppState();
 }
 
 final counter = App.access.select(context, (state) => state.counter);

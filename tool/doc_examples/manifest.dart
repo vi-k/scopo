@@ -2,8 +2,10 @@
 ///
 /// [blocks] maps a block's key to its environment. A key is the section slug
 /// plus a name the block declares, or the slug of its first line when it
-/// declares nothing; a name declared twice in one section is no key at all.
-/// Every block of the document is listed exactly once, by any of its keys.
+/// declares nothing. A name declared twice in one section is no key at all,
+/// unless its environment is [DocEnvironment.shared] and then it covers every
+/// block declaring it. Every block of the document is listed exactly once, by
+/// any of its keys.
 final class DocManifest {
   /// The document, relative to the package root.
   final String path;
@@ -31,10 +33,17 @@ final class DocEnvironment {
   /// Why the block is not compiled at all, or `null` when it is.
   final String? skipReason;
 
+  /// Whether the key names several blocks of a section, each compiled in this
+  /// environment: two overrides of the same method shown one after another.
+  /// A shared key declared by one block only is refused, as is an unshared
+  /// key declared by several.
+  final bool shared;
+
   const DocEnvironment(
     this.before,
     this.after, {
     this.expectedErrors = const [],
+    this.shared = false,
   }) : skipReason = null;
 
   /// A block that is not Dart a reader could compile, such as a signature
@@ -42,7 +51,8 @@ final class DocEnvironment {
   const DocEnvironment.skip(String this.skipReason)
       : before = '',
         after = '',
-        expectedErrors = const [];
+        expectedErrors = const [],
+        shared = false;
 
   /// The source of a whole library around [block].
   String wrap(String support, String block) =>

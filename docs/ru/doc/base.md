@@ -1,6 +1,6 @@
 # base
 
-> Перевод `doc/base.md` (blob `27d77e335b4b0699b7b3924bf8f120a367c4fea8`).
+> Перевод `doc/base.md` (blob `8ca8e6f1ff64b23f1d60ca3f43b56c9199b1fb9a`).
 > Правится в том же коммите, что и оригинал; проверка — `sh docs/ru/check.sh`.
 
 Каждое семейство скоупов этого пакета — `ScopeWidgetBase`, `ScopeModel`,
@@ -370,6 +370,28 @@ Exception: The element of ScopeModel<Counter> is not ScopeModelContext<ScopeMode
 ```dart
 final class App extends Scope<App, AppDependencies, AppState> {
   static const access = ScopeAccess<App, AppDependencies, AppState>();
+
+  @override
+  Future<AppDependencies> initDependencies(
+    BuildContext context,
+    ScopeInitContext ctx,
+  ) async => AppDependencies();
+
+  @override
+  Widget buildOnProgress(BuildContext context, Object? progress) =>
+      const SizedBox.shrink();
+
+  @override
+  Widget buildOnError(
+    BuildContext context,
+    Object error,
+    StackTrace stackTrace,
+    Object? progress,
+  ) =>
+      Text('$error');
+
+  @override
+  AppState createState() => AppState();
 }
 
 final counter = App.access.select(context, (state) => state.counter);

@@ -1,6 +1,6 @@
 # debug
 
-> Перевод `doc/debug.md` (blob `ad164a95515e4297fc4f737e426e9b59298378dc`).
+> Перевод `doc/debug.md` (blob `e8d08a9c077bfd16d257bfca705840f584480bb8`).
 > Правится в том же коммите, что и оригинал; проверка — `sh docs/ru/check.sh`.
 
 Наблюдатель и глобальные настройки пакета. Всё на этой странице статическое
@@ -662,23 +662,27 @@ void main() {
 
 ```dart
 // было
-@override
-void onProgress(ScopeObservable target, Object? progress) {
-  if (progress is String) {
-    log('освобождено $progress');
-  } else {
-    log('построено $progress');
+final class BeforeObserver extends ScopeObserver {
+  @override
+  void onProgress(ScopeObservable target, Object? progress) {
+    if (progress is String) {
+      log('освобождено $progress');
+    } else {
+      log('построено $progress');
+    }
   }
 }
 
 // стало
-@override
-void onProgress(ScopeObservable target, Object? progress) =>
-    log('построено $progress');
+final class AfterObserver extends ScopeObserver {
+  @override
+  void onProgress(ScopeObservable target, Object? progress) =>
+      log('построено $progress');
 
-@override
-void onDisposalProgress(ScopeObservable target, String path) =>
-    log('освобождено $path');
+  @override
+  void onDisposalProgress(ScopeObservable target, String path) =>
+      log('освобождено $path');
+}
 ```
 
 `ScopeCompositeObserver` и `ScopePrintObserver` идут в составе пакета

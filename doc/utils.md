@@ -24,7 +24,7 @@ returns the subscription instead, the way `Stream` does:
 
 ```dart
 final subscription = counter.listen(() => print(counter.value));
-…
+// Other work can run before cancelling the subscription.
 subscription.cancel();
 ```
 

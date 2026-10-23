@@ -1,14 +1,36 @@
 import 'dart:convert';
 import 'dart:io';
 
+import 'doc_examples/async_controller_scope.dart';
 import 'doc_examples/async_data_scope.dart';
+import 'doc_examples/async_scope.dart';
+import 'doc_examples/base.dart';
 import 'doc_examples/contracts.dart';
+import 'doc_examples/debug.dart';
+import 'doc_examples/full_scope.dart';
+import 'doc_examples/lite_scope.dart';
 import 'doc_examples/manifest.dart';
+import 'doc_examples/readme.dart';
+import 'doc_examples/scope_model.dart';
+import 'doc_examples/scope_notifier.dart';
+import 'doc_examples/scope_widget.dart';
+import 'doc_examples/utils.dart';
 
 // One manifest per document, in its own file under doc_examples/. Add another
 // document here to extend coverage; unlisted blocks fail closed.
 const _documents = <DocManifest>[
+  readme,
+  asyncControllerScope,
   asyncDataScope,
+  asyncScope,
+  baseTopic,
+  debugTopic,
+  fullScope,
+  liteScope,
+  scopeModel,
+  scopeNotifier,
+  scopeWidget,
+  utilsTopic,
 ];
 
 final class _Example {
@@ -34,6 +56,9 @@ final class _Block {
 /// An optional argument selects the parent of the temporary package. Analysis
 /// uses the running Dart SDK with machine output: only errors are contractual,
 /// so an illustrative local variable's unused warning is not a failed example.
+/// The one warning counted with them is an `@override` that overrides nothing:
+/// blocks are often wrapped in abstract classes, where a method renamed in the
+/// package leaves the document's override compiling.
 Future<void> main(List<String> arguments) async {
   Directory? bench;
   try {
@@ -56,25 +81,34 @@ Future<void> main(List<String> arguments) async {
       final listed = <_Block, String>{};
       for (final entry in document.blocks.entries) {
         final hits = owners[entry.key] ?? const [];
+        final lines = hits.map((b) => b.line).join(', ');
         if (hits.isEmpty) {
           problems.add('${document.path}: missing key ${entry.key}');
-        } else if (hits.length > 1) {
+        } else if (hits.length > 1 && !entry.value.shared) {
           problems.add('${document.path}: key ${entry.key} is declared by '
-              'the blocks at lines ${hits.map((b) => b.line).join(', ')}');
-        } else if (listed[hits.single] case final other?) {
-          problems.add('${document.path}: the block at line '
-              '${hits.single.line} is listed twice, as $other '
-              'and as ${entry.key}');
+              'the blocks at lines $lines');
+        } else if (hits.length == 1 && entry.value.shared) {
+          problems.add('${document.path}: shared key ${entry.key} is '
+              'declared by the block at line $lines only');
         } else {
-          listed[hits.single] = entry.key;
-          examples.add(
-            _Example(
-              '${document.path}:${entry.key}',
-              hits.single.source,
-              document.support,
-              entry.value,
-            ),
-          );
+          for (final block in hits) {
+            if (listed[block] case final other?) {
+              problems.add('${document.path}: the block at line '
+                  '${block.line} is listed twice, as $other '
+                  'and as ${entry.key}');
+              continue;
+            }
+            listed[block] = entry.key;
+            examples.add(
+              _Example(
+                '${document.path}:${entry.key}'
+                '${hits.length > 1 ? '@${block.line}' : ''}',
+                block.source,
+                document.support,
+                entry.value,
+              ),
+            );
+          }
         }
       }
       for (final block in blocks) {
@@ -112,6 +146,8 @@ environment:
   sdk: ^3.6.0
 dependencies:
   flutter:
+    sdk: flutter
+  flutter_test:
     sdk: flutter
   scopo:
     path: ${jsonEncode(root.path)}
@@ -159,7 +195,11 @@ dependencies:
     for (final line in const LineSplitter()
         .convert('${analysis.stdout}\n${analysis.stderr}')) {
       final fields = line.split('|');
-      if (fields.length < 8 || fields.first != 'ERROR') continue;
+      if (fields.length < 8) continue;
+      if (fields.first != 'ERROR' &&
+          fields[2] != 'OVERRIDE_ON_NON_OVERRIDING_MEMBER') {
+        continue;
+      }
       final path = File(fields[3]).absolute.path;
       if (!byFile.containsKey(path)) {
         throw FormatException('Diagnostic outside manifest: $line');

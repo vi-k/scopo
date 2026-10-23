@@ -660,23 +660,27 @@ two halves apart by the type of `progress`, that branch is now a hook:
 
 ```dart
 // before
-@override
-void onProgress(ScopeObservable target, Object? progress) {
-  if (progress is String) {
-    log('released $progress');
-  } else {
-    log('built $progress');
+final class BeforeObserver extends ScopeObserver {
+  @override
+  void onProgress(ScopeObservable target, Object? progress) {
+    if (progress is String) {
+      log('released $progress');
+    } else {
+      log('built $progress');
+    }
   }
 }
 
 // after
-@override
-void onProgress(ScopeObservable target, Object? progress) =>
-    log('built $progress');
+final class AfterObserver extends ScopeObserver {
+  @override
+  void onProgress(ScopeObservable target, Object? progress) =>
+      log('built $progress');
 
-@override
-void onDisposalProgress(ScopeObservable target, String path) =>
-    log('released $path');
+  @override
+  void onDisposalProgress(ScopeObservable target, String path) =>
+      log('released $path');
+}
 ```
 
 `ScopeCompositeObserver` and `ScopePrintObserver` come with the package and

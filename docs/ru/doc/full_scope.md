@@ -1,6 +1,6 @@
 # Scope
 
-> Перевод `doc/full_scope.md` (blob `19cc36e9438936c1242d93987c56aa8751e50c93`).
+> Перевод `doc/full_scope.md` (blob `0807fb326f424b22de4fc803c940a07b51707372`).
 > Правится в том же коммите, что и оригинал; проверка — `sh docs/ru/check.sh`.
 
 `Scope` — основной строительный блок пакета: виджет, который владеет
@@ -565,12 +565,18 @@ concurrent1/sequential1/dep3: Exception: no network
 
 ```dart
 // Неправильно: соединение открыто, и ни одному хуку его уже не передадут.
-initDependencies: (context, ctx) async {
+@override
+Future<AppDependencies> initDependencies(
+  BuildContext context,
+  ScopeInitContext ctx,
+) async {
   final connection = await Connection.open();
 
   return somethingThatFails();
 }
+```
 
+```dart
 // Правильно: что этот инициализатор взял, тот же и регистрирует.
 ScopeDependency buildDependencies(BuildContext context) => sequential('', [
       dep('connection', (dep) async {

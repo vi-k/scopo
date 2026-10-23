@@ -567,12 +567,18 @@ initialization gives back — through `dep.dispose` when it was taken through
 
 ```dart
 // Wrong: the connection is open and no hook will ever be handed it.
-initDependencies: (context, ctx) async {
+@override
+Future<AppDependencies> initDependencies(
+  BuildContext context,
+  ScopeInitContext ctx,
+) async {
   final connection = await Connection.open();
 
   return somethingThatFails();
 }
+```
 
+```dart
 // Right: what this initializer took, this initializer registers.
 ScopeDependency buildDependencies(BuildContext context) => sequential('', [
       dep('connection', (dep) async {

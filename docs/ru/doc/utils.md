@@ -1,6 +1,6 @@
 # utils
 
-> Перевод `doc/utils.md` (blob `4c37e2d8ea2995c817869b14b7e67f674149d429`).
+> Перевод `doc/utils.md` (blob `07216566198d3bb6bd4a941b2d71f62a6e254c44`).
 > Правится в том же коммите, что и оригинал; проверка — `sh docs/ru/check.sh`.
 
 Хелперы, которые едут вместе с пакетом, но не принадлежат ни одному семейству
@@ -28,7 +28,7 @@
 
 ```dart
 final subscription = counter.listen(() => print(counter.value));
-…
+// До отмены подписки может выполняться другая работа.
 subscription.cancel();
 ```
 
