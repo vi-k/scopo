@@ -16,6 +16,89 @@ void main() {
   });
 
   group('ScopeNotifier', () {
+    testWidgets('creates the model once and releases it after removal', (
+      tester,
+    ) async {
+      final counter = _Counter();
+      var createCount = 0;
+      final provided = <_Counter>[];
+      final disposed = <_Counter>[];
+
+      Widget buildTree() => Directionality(
+            textDirection: TextDirection.ltr,
+            child: ScopeNotifier<_Counter>(
+              create: (context) {
+                createCount++;
+
+                return counter;
+              },
+              dispose: (model) {
+                disposed.add(model);
+                model.dispose();
+              },
+              builder: (context) => Builder(
+                builder: (context) {
+                  final model =
+                      ScopeNotifier.of<_Counter>(context, listen: true);
+                  provided.add(model);
+
+                  return Text('value: ${model.value}');
+                },
+              ),
+            ),
+          );
+
+      await tester.pumpWidget(buildTree());
+
+      expect(createCount, 1);
+      expect(provided, [same(counter)]);
+      expect(find.text('value: 0'), findsOneWidget);
+      expect(counter.listened, isTrue);
+      expect(disposed, isEmpty);
+
+      await tester.pumpWidget(buildTree());
+
+      expect(createCount, 1);
+      expect(provided, [same(counter), same(counter)]);
+      expect(disposed, isEmpty);
+
+      await tester.pumpWidget(const SizedBox.shrink());
+
+      expect(disposed, [same(counter)]);
+      expect(counter.disposeCount, 1);
+      expect(counter.listened, isFalse);
+    });
+
+    testWidgets('provides a model by value and leaves disposal to its owner', (
+      tester,
+    ) async {
+      final counter = _Counter();
+      addTearDown(counter.dispose);
+      final provided = <_Counter>[];
+
+      await tester.pumpWidget(
+        _Host(
+          counter: counter,
+          child: Builder(
+            builder: (context) {
+              provided.add(ScopeNotifier.of<_Counter>(context, listen: true));
+
+              return const Text('external model');
+            },
+          ),
+        ),
+      );
+
+      expect(provided, [same(counter)]);
+      expect(find.text('external model'), findsOneWidget);
+      expect(counter.listened, isTrue);
+
+      await tester.pumpWidget(const SizedBox.shrink());
+
+      expect(counter.disposeCount, 0);
+      expect(counter.listened, isFalse);
+    });
+
     testWidgets('a failed create leaves nothing to unsubscribe from', (
       tester,
     ) async {

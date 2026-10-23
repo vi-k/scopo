@@ -16,6 +16,11 @@
   and could not be returned from any hook. Return the dependencies or the data,
   and report steps with `ctx.progress` — the `ProgressIterator` example now
   shows that form.
+* **Breaking:** the owning constructors of `ScopeModel`, `ScopeNotifier` and
+  their `Base` classes take a non-nullable `create`. `create: null`, or a
+  nullable factory, compiled and then failed while the scope was built, on
+  the assert `widget.create != null`; it is now a compile-time error. The
+  field stays nullable for the `.value` constructors.
 * **Deprecated:** `ctx.wait` is `ctx.abandonable`, and the kernel drops the old
   name in its next release. The topics, the examples and the IDE templates use
   the new one.

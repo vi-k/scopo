@@ -21,7 +21,7 @@ abstract base class ScopeNotifierBase<W extends ScopeNotifierBase<W, M>,
   const ScopeNotifierBase({
     super.key,
     super.tag,
-    required this.create,
+    required M Function(BuildContext context) this.create,
     required this.dispose,
     super.child, // Not used by default. You can use it at your own discretion.
   })  : hasValue = false,
