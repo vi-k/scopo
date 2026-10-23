@@ -106,10 +106,10 @@ void main() {
       final log = <String>[];
       final deps = _Deps(log, failSecond: true);
 
-      // No `onUnmount()` here on purpose. A scope whose initialization failed
-      // never reaches `ScopeReady`, so the element never gets the container
+      // No `onUnmount()` here on purpose. An initialization that failed
+      // never returns the container, so the element never gets it
       // and its own `onUnmount()` has nothing to call: the container is torn
-      // down from inside the generator instead, by `autoDisposeOnError`. That
+      // down from inside `init()` instead, by `autoDisposeOnError`. That
       // path is the one the promise has to hold on.
       await _init(deps);
 

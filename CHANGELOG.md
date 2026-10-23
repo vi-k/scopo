@@ -8,6 +8,14 @@
   `StateError`. A class that implements `JobContext` or `ScopeInitContext`
   itself adds the members the kernel gave `JobContext`. The whole list is in
   the kernel's changelog.
+* **Breaking:** `ScopeInitState`, `ScopeProgress`, `ScopeReady`,
+  `AsyncDataScopeInitState`, `AsyncDataScopeProgress`, `AsyncDataScopeReady`
+  and `ScopeDependenciesExtension.asStream` are gone for real. The 0.14.0 notes
+  said so when initialization became a `Future`, but the names stayed exported,
+  with nothing left that accepts them: an initializer built from them compiled
+  and could not be returned from any hook. Return the dependencies or the data,
+  and report steps with `ctx.progress` — the `ProgressIterator` example now
+  shows that form.
 * **Deprecated:** `ctx.wait` is `ctx.abandonable`, and the kernel drops the old
   name in its next release. The topics, the examples and the IDE templates use
   the new one.

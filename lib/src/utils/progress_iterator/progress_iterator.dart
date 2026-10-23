@@ -1,21 +1,24 @@
 import 'package:flutter/foundation.dart';
 
-/// A helper class to track initialization progress as an [Progress] value.
+/// A helper class to track initialization progress as a [Progress] value.
+///
+/// Report each step through the initialization context, then return the
+/// dependencies:
 ///
 /// ```dart
-/// static Stream<ScopeInitState<Progress, MyFeatureDeps>> init() async* {
+/// static Future<MyFeatureDeps> initDependencies(ScopeInitContext ctx) async {
 ///   final progressIterator = ProgressIterator(3);
 ///
 ///   // Step 1
-///   yield ScopeProgress(progressIterator.nextStep()); // 1/3
+///   ctx.progress(progressIterator.nextStep()); // 1/3
 ///
 ///   // Step 2
-///   yield ScopeProgress(progressIterator.nextStep()); // 2/3
+///   ctx.progress(progressIterator.nextStep()); // 2/3
 ///
 ///   // Step 3
-///   yield ScopeProgress(progressIterator.nextStep()); // 3/3
+///   ctx.progress(progressIterator.nextStep()); // 3/3
 ///
-///   ...
+///   return MyFeatureDeps();
 /// }
 /// ```
 ///

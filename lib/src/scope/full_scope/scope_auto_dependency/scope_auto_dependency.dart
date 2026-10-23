@@ -268,8 +268,8 @@ abstract class ScopeAutoDependencies<T extends ScopeAutoDependencies<T, C>,
 
         // `unmount` is promised to run exactly once and always before
         // `dispose`, whichever way the scope goes -- and this is one of the
-        // ways it goes. An initialization that failed never reaches
-        // `ScopeReady`, so the element is never handed the container and its
+        // ways it goes. An initialization that failed never returns the
+        // container, so the element is never handed it and its
         // own `onUnmount()` has nothing to call: this is the only pass left.
         // Without it a dependency that took a subscription before the failure
         // kept it forever, while its `dispose` closed the sink underneath.

@@ -26,7 +26,7 @@ final class AsyncDataScope<T extends Object?>
 
   /// Built while the initialization is running.
   ///
-  /// The second argument is what the last [AsyncDataScopeProgress] carried, and
+  /// The second argument is what the last [AsyncScopeProgress] carried, and
   /// `null` before the first one.
   final Widget Function(BuildContext context, Object? progress) progressBuilder;
 
