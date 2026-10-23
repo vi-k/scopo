@@ -156,6 +156,13 @@
   into the three-second default and reports a timeout, and the demo's README
   says why. A test closes the screen and checks that every release ran and no
   timeout was reported.
+* **Fix:** the topic table of the README names the repository file behind each
+  topic: `Scope` lives in `doc/full_scope.md`, and the others are not spelled
+  as their topic names either.
+* **Fix:** the `AsyncScope` topic says what happens to a body that fails after
+  the scope has given up — it is reported through `FlutterError.reportError` —
+  and how to let such an expected failure end as the cancellation: catch it and
+  call `ctx.check()` before rethrowing.
 * **New:** `example/quickstart` — one screen, one `AsyncDataScope` over a local
   resource: loading, ready, and a re-created scope that releases the old
   resource before opening the new one, with a test of that order. The README

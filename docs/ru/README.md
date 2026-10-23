@@ -1,6 +1,6 @@
 # scopo
 
-> Перевод `README.md` (blob `746f44d5505a14c84cf0c08805e684c93ef9c925`).
+> Перевод `README.md` (blob `3de74664da82f3c7f94ad8ee59a060c1d2b15be1`).
 > Правится в том же коммите, что и оригинал; проверка — `sh docs/ru/check.sh`.
 
 [![pub version](https://img.shields.io/pub/v/scopo)](https://pub.dev/packages/scopo)
@@ -915,19 +915,19 @@ Flutter, — потому и уехал. Добавьте пакет, попра
 По теме на семейство; каждая рассказывает то, чего не может справочник API:
 порядок происходящего, разменные решения и ловушки. Ссылки ниже ведут в Topics
 справочника по API выше — там всегда последний релиз; те же страницы лежат
-в репозитории как `doc/*.md`, и читать их стоит оттуда, если у вас закреплена
-другая версия.
+в репозитории под именами из второй колонки, и читать их стоит оттуда, если
+у вас закреплена другая версия.
 
-| тема | начинать здесь ради |
-| --- | --- |
-| [base](https://pub.dev/documentation/scopo/latest/topics/base-topic.html) | `of`, `select`, `listen` и того, как скоуп вообще находят |
-| [ScopeWidget](https://pub.dev/documentation/scopo/latest/topics/ScopeWidget-topic.html) | пары «виджет — элемент», от которой наследуются все семейства |
-| [ScopeModel](https://pub.dev/documentation/scopo/latest/topics/ScopeModel-topic.html) | владения обычным объектом |
-| [ScopeNotifier](https://pub.dev/documentation/scopo/latest/topics/ScopeNotifier-topic.html) | владения `Listenable` |
-| [AsyncScope](https://pub.dev/documentation/scopo/latest/topics/AsyncScope-topic.html) | асинхронного жизненного цикла, `scopeKey`, координатора |
-| [AsyncDataScope](https://pub.dev/documentation/scopo/latest/topics/AsyncDataScope-topic.html) | того же, но с производимым значением |
-| [AsyncControllerScope](https://pub.dev/documentation/scopo/latest/topics/AsyncControllerScope-topic.html) | то же, где это значение — контроллер с собственным жизненным циклом |
-| [LiteScope](https://pub.dev/documentation/scopo/latest/topics/LiteScope-topic.html) | класса состояния с этим циклом и `close()` |
-| [Scope](https://pub.dev/documentation/scopo/latest/topics/Scope-topic.html) | полного семейства: зависимости, состояние, четыре ветки |
-| [debug](https://pub.dev/documentation/scopo/latest/topics/debug-topic.html) | наблюдателя, таймаутов и настройки для тестов |
-| [utils](https://pub.dev/documentation/scopo/latest/topics/utils-topic.html) | хелперов, которые едут вместе с пакетом |
+| тема | файл | начинать здесь ради |
+| --- | --- | --- |
+| [base](https://pub.dev/documentation/scopo/latest/topics/base-topic.html) | `doc/base.md` | `of`, `select`, `listen` и того, как скоуп вообще находят |
+| [ScopeWidget](https://pub.dev/documentation/scopo/latest/topics/ScopeWidget-topic.html) | `doc/scope_widget.md` | пары «виджет — элемент», от которой наследуются все семейства |
+| [ScopeModel](https://pub.dev/documentation/scopo/latest/topics/ScopeModel-topic.html) | `doc/scope_model.md` | владения обычным объектом |
+| [ScopeNotifier](https://pub.dev/documentation/scopo/latest/topics/ScopeNotifier-topic.html) | `doc/scope_notifier.md` | владения `Listenable` |
+| [AsyncScope](https://pub.dev/documentation/scopo/latest/topics/AsyncScope-topic.html) | `doc/async_scope.md` | асинхронного жизненного цикла, `scopeKey`, координатора |
+| [AsyncDataScope](https://pub.dev/documentation/scopo/latest/topics/AsyncDataScope-topic.html) | `doc/async_data_scope.md` | того же, но с производимым значением |
+| [AsyncControllerScope](https://pub.dev/documentation/scopo/latest/topics/AsyncControllerScope-topic.html) | `doc/async_controller_scope.md` | то же, где это значение — контроллер с собственным жизненным циклом |
+| [LiteScope](https://pub.dev/documentation/scopo/latest/topics/LiteScope-topic.html) | `doc/lite_scope.md` | класса состояния с этим циклом и `close()` |
+| [Scope](https://pub.dev/documentation/scopo/latest/topics/Scope-topic.html) | `doc/full_scope.md` | полного семейства: зависимости, состояние, четыре ветки |
+| [debug](https://pub.dev/documentation/scopo/latest/topics/debug-topic.html) | `doc/debug.md` | наблюдателя, таймаутов и настройки для тестов |
+| [utils](https://pub.dev/documentation/scopo/latest/topics/utils-topic.html) | `doc/utils.md` | хелперов, которые едут вместе с пакетом |

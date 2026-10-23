@@ -902,19 +902,19 @@ side.
 One topic per family, each covering what the API reference cannot: the order
 things happen in, the trade-offs, and the traps. The links below go to the
 Topics of the API reference above, which always show the latest release; the
-same pages live in the repository as `doc/*.md`, which is where to read them
-alongside the source of a version you have pinned.
+same pages live in the repository under the file names in the second column,
+which is where to read them alongside the source of a version you have pinned.
 
-| topic | start here for |
-| --- | --- |
-| [base](https://pub.dev/documentation/scopo/latest/topics/base-topic.html) | `of`, `select`, `listen`, and how a scope is found at all |
-| [ScopeWidget](https://pub.dev/documentation/scopo/latest/topics/ScopeWidget-topic.html) | the widget/element pair every family extends |
-| [ScopeModel](https://pub.dev/documentation/scopo/latest/topics/ScopeModel-topic.html) | owning a plain object |
-| [ScopeNotifier](https://pub.dev/documentation/scopo/latest/topics/ScopeNotifier-topic.html) | owning a `Listenable` |
-| [AsyncScope](https://pub.dev/documentation/scopo/latest/topics/AsyncScope-topic.html) | the asynchronous lifecycle, `scopeKey`, the coordinator |
-| [AsyncDataScope](https://pub.dev/documentation/scopo/latest/topics/AsyncDataScope-topic.html) | the same, producing a value |
-| [AsyncControllerScope](https://pub.dev/documentation/scopo/latest/topics/AsyncControllerScope-topic.html) | the same, where that value is a controller with a lifecycle of its own |
-| [LiteScope](https://pub.dev/documentation/scopo/latest/topics/LiteScope-topic.html) | a state class with that lifecycle, and `close()` |
-| [Scope](https://pub.dev/documentation/scopo/latest/topics/Scope-topic.html) | the full family: dependencies, state, four branches |
-| [debug](https://pub.dev/documentation/scopo/latest/topics/debug-topic.html) | the observer, timeouts, and the test setup |
-| [utils](https://pub.dev/documentation/scopo/latest/topics/utils-topic.html) | the helpers that come with the package |
+| topic | file | start here for |
+| --- | --- | --- |
+| [base](https://pub.dev/documentation/scopo/latest/topics/base-topic.html) | `doc/base.md` | `of`, `select`, `listen`, and how a scope is found at all |
+| [ScopeWidget](https://pub.dev/documentation/scopo/latest/topics/ScopeWidget-topic.html) | `doc/scope_widget.md` | the widget/element pair every family extends |
+| [ScopeModel](https://pub.dev/documentation/scopo/latest/topics/ScopeModel-topic.html) | `doc/scope_model.md` | owning a plain object |
+| [ScopeNotifier](https://pub.dev/documentation/scopo/latest/topics/ScopeNotifier-topic.html) | `doc/scope_notifier.md` | owning a `Listenable` |
+| [AsyncScope](https://pub.dev/documentation/scopo/latest/topics/AsyncScope-topic.html) | `doc/async_scope.md` | the asynchronous lifecycle, `scopeKey`, the coordinator |
+| [AsyncDataScope](https://pub.dev/documentation/scopo/latest/topics/AsyncDataScope-topic.html) | `doc/async_data_scope.md` | the same, producing a value |
+| [AsyncControllerScope](https://pub.dev/documentation/scopo/latest/topics/AsyncControllerScope-topic.html) | `doc/async_controller_scope.md` | the same, where that value is a controller with a lifecycle of its own |
+| [LiteScope](https://pub.dev/documentation/scopo/latest/topics/LiteScope-topic.html) | `doc/lite_scope.md` | a state class with that lifecycle, and `close()` |
+| [Scope](https://pub.dev/documentation/scopo/latest/topics/Scope-topic.html) | `doc/full_scope.md` | the full family: dependencies, state, four branches |
+| [debug](https://pub.dev/documentation/scopo/latest/topics/debug-topic.html) | `doc/debug.md` | the observer, timeouts, and the test setup |
+| [utils](https://pub.dev/documentation/scopo/latest/topics/utils-topic.html) | `doc/utils.md` | the helpers that come with the package |

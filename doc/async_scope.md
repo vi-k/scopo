@@ -438,6 +438,15 @@ release is a hook of the scope's widget, and the scope holds that widget until
 the initialization is over rather than until it stops waiting for one.
 `initCancellationTimeout` bounds the wait, not the promise.
 
+A body that fails instead, after the scope has given up, is reported through
+`FlutterError.reportError`: the error branch is gone, and the crash reporting
+of the application is the one place left to hear of it. When such a failure is
+expected — an acquisition the user walked away from — catch it and call
+`ctx.check()` before rethrowing. Once the scope has given up, the check throws
+`Cancelled`, and the failure ends as the cancellation it followed; while the
+scope still waits for the body, the check passes, and the error branch shows
+the failure.
+
 For several dependencies with an order of their own, the dependency container
 of the `Scope` family keeps the tree and its teardown — see the `Scope` topic.
 `AsyncControllerScope` closes the same hole from the other side: its controller
