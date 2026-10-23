@@ -100,6 +100,13 @@
   trace. They still reach the zone or Flutter as before, and the teardown
   still runs. The debug topic names the Flutter hooks the observer does not
   hear.
+* **Fix:** the `AsyncDataScope` topic shows `return await Database.open();`
+  where its Dart block held prose, and says that `ctx.progress` takes an
+  `Object` while the builders receive `Object?`.
+* **New:** `example/quickstart` — one screen, one `AsyncDataScope` over a local
+  resource: loading, ready, and a re-created scope that releases the old
+  resource before opening the new one, with a test of that order. The README
+  points to it before the families.
 
 ## 0.16.0
 

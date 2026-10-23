@@ -1,0 +1,20 @@
+name: quickstart
+description: A single asynchronous resource owned by a widget.
+publish_to: none
+version: 0.1.0
+
+environment:
+  sdk: ^3.6.0
+
+dependencies:
+  flutter:
+    sdk: flutter
+  scopo:
+    path: ../..
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+
+flutter:
+  uses-material-design: true

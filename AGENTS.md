@@ -164,14 +164,17 @@ fvm flutter test                     # все зелёные; число — в 
 fvm flutter analyze                  # корень
 (cd example/minimal && fvm flutter analyze)
 (cd example/scopo_demo && fvm flutter analyze)
+(cd example/quickstart && fvm flutter analyze)
+(cd example/quickstart && fvm flutter test)
 fvm dart format --set-exit-if-changed lib test
 fvm dart doc --dry-run               # 0 warnings, 0 errors
 fvm dart pub publish --dry-run       # 0 warnings
 sh docs/ru/check.sh                  # переводы отвечают оригиналам
+fvm dart run tool/check_doc_examples.dart  # блоки doc/ собираются
 ```
 
-Перед мержем в `main` проходят все восемь. Утверждать «работает» без вывода
-команды нельзя: сначала прогон, потом заявление.
+Перед мержем в `main` проходят все одиннадцать. Утверждать «работает» без
+вывода команды нельзя: сначала прогон, потом заявление.
 
 **`NavigationNode` живёт в соседнем репозитории** —
 [vi-k/navigation_node](https://github.com/vi-k/navigation_node).
@@ -197,12 +200,12 @@ fvm flutter clean && fvm flutter pub get
 в корень репозитория — прогони `dart pub publish --dry-run` и посмотри список:
 всё лишнее сразу в `.pubignore`.
 
-Особенности: у `example/minimal` и `example/scopo_demo` свои `pubspec`, при
-обновлении зависимостей их обновляют отдельно; корневой `pubspec.lock`
-в `.gitignore`, локи примеров закоммичены и пересозданы закреплённым тулчейном.
-Форматирование примеров в гейт §6 не входит, но `example/scopo_demo`
-с форматтером сходится: `fvm dart format --set-exit-if-changed lib test` из его
-папки даёт 0 changed.
+Особенности: у `example/minimal`, `example/scopo_demo` и `example/quickstart`
+свои `pubspec`, при обновлении зависимостей их обновляют отдельно; корневой
+`pubspec.lock` в `.gitignore`, локи примеров закоммичены и пересозданы
+закреплённым тулчейном. Форматирование примеров в гейт §6 не входит,
+но `example/scopo_demo` с форматтером сходится:
+`fvm dart format --set-exit-if-changed lib test` из его папки даёт 0 changed.
 
 ## 7. Язык и терминология
 

@@ -32,11 +32,11 @@ AsyncDataScope<Database>(
 ## The value in each place
 
 ```dart
-returning `await Database.open()`
+return await Database.open();
 ```
 
-is where the value enters. The element stores it as the ready state is applied,
-and from that moment on:
+This is where the value enters. The element stores it as the ready state is
+applied, and from that moment on:
 
 - **`builder`** receives it as its second argument — the ready branch never has
   to check for `null`;
@@ -47,8 +47,9 @@ and from that moment on:
 - **descendants** read it from the context (below).
 
 The progress side is typed loosely on purpose: `ctx.progress` takes an
-`Object?`, and the builders receive it as `Object?`. The value being built is
-what the type parameter is for; the progress is a caption.
+`Object`, while the builders receive `Object?`: until the first message, the
+scope has no progress to pass them. The value being built is what the type
+parameter is for; the progress is a caption.
 
 ### A value that never arrives still needs a release
 

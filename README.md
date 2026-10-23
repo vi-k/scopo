@@ -86,6 +86,11 @@ flutter pub add scopo
 import 'package:scopo/scopo.dart';
 ```
 
+Start with
+[quickstart](https://github.com/vi-k/scopo/tree/main/example/quickstart): one
+`AsyncDataScope`, loading and ready states, and a button that recreates the
+scope after releasing its previous resource.
+
 ## The families
 
 Eight of them, and the right one is the smallest that fits. They are listed
@@ -876,6 +881,9 @@ side.
 
 ## Examples
 
+- [quickstart](https://github.com/vi-k/scopo/tree/main/example/quickstart) —
+  one screen, a local asynchronous resource, and ordered release before
+  reopening.
 - [minimal](https://github.com/vi-k/scopo/tree/main/example/minimal) — one
   scope, `SharedPreferences` initialized asynchronously, loading and error
   screens, a counter. Minimal in files rather than in lines: it walks through

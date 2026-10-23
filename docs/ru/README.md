@@ -1,6 +1,6 @@
 # scopo
 
-> Перевод `README.md` (blob `92c8e2fc4753bfed7f9f75f14187dd4a81c4ac60`).
+> Перевод `README.md` (blob `746f44d5505a14c84cf0c08805e684c93ef9c925`).
 > Правится в том же коммите, что и оригинал; проверка — `sh docs/ru/check.sh`.
 
 [![pub version](https://img.shields.io/pub/v/scopo)](https://pub.dev/packages/scopo)
@@ -91,6 +91,11 @@ flutter pub add scopo
 ```dart
 import 'package:scopo/scopo.dart';
 ```
+
+Начните
+с [quickstart](https://github.com/vi-k/scopo/tree/main/example/quickstart):
+один `AsyncDataScope`, загрузка и готовность, кнопка пересоздания скоупа
+с освобождением прежнего ресурса перед новым открытием.
 
 ## Семейства
 
@@ -888,6 +893,9 @@ Flutter, — потому и уехал. Добавьте пакет, попра
 
 ## Примеры
 
+- [quickstart](https://github.com/vi-k/scopo/tree/main/example/quickstart) —
+  один экран, локальный асинхронный ресурс и освобождение перед повторным
+  открытием.
 - [minimal](https://github.com/vi-k/scopo/tree/main/example/minimal) — один
   скоуп, асинхронно инициализируемые `SharedPreferences`, экраны загрузки
   и ошибки, счётчик. Минимальный по файлам, а не по строкам: разбирает полный

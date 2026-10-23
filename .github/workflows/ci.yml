@@ -78,6 +78,9 @@ jobs:
       - name: Analyze
         run: flutter analyze
 
+      - name: Documentation examples
+        run: dart run tool/check_doc_examples.dart
+
       - name: Dartdoc
         run: dart doc --dry-run
 
@@ -99,11 +102,10 @@ jobs:
             (cd "$example" && flutter analyze)
           done
 
-      # One of the two has a suite of its own. It is outside the local gate,
-      # which is exactly why a machine should run it.
+      # Both runnable demos have suites of their own, outside the root suite.
       - name: Examples, tested
         run: |
-          for example in example/scopo_demo; do
+          for example in example/quickstart example/scopo_demo; do
             echo "== $example"
             (cd "$example" && flutter test)
           done
