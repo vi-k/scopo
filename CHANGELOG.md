@@ -72,6 +72,14 @@
   a `base class`, and a controller under `controllerDep` keeps `mounted` true
   until its initializer finishes, so it checks the `ScopeInitContext` instead.
   The README now credits `get_it` with managing ownership over time.
+* **Fix:** the texts about cancelling an initialization stop describing the
+  stream it used to be. The dartdoc of `initCancellationTimeout`,
+  `ScopeConfig.defaultInitCancellationTimeout` and `ScopeTimeout`, the debug
+  topic and the assert raised when `initCancellationTimeout` is given
+  `ScopeTimeout.none` now say that a cancellation waits for the initialization
+  to finish, where they spoke of a generator running out, and the `StateError`
+  of `ScopeAutoDependencies.dispose` called mid-initialization no longer speaks
+  of cancelling a subscription.
 
 ## 0.16.0
 

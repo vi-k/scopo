@@ -92,7 +92,7 @@ final class _ScopeDependencyImpl with ScopeDependencyMixin {
     // After the early return above, not before it: a dependency that
     // registered only an `unmount` is still walked -- `disposalRequired`
     // counts that hook as much as a disposer, and it is right to -- but it
-    // has no release to run and yields nothing. Announced from the top of
+    // has no release to run and reports nothing. Announced from the top of
     // this method it would have been an entry with no exit behind it, which
     // is precisely the shape a reader takes for a release that hung.
     _onDisposalStepStarted?.call(name);

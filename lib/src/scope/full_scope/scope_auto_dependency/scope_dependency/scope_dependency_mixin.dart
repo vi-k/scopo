@@ -128,16 +128,16 @@ mixin ScopeDependencyMixin implements ScopeDependency, ScopeObservable {
   /// Told the path of each step of this subtree as it is entered, before the
   /// step does anything.
   ///
-  /// The other half of what [init] yields once the step is done. Set by the
-  /// enclosing group, which wraps it in its own `_path` — the very assembly
-  /// the completed step travels through on its way up, so the two halves
-  /// cannot come to report different paths for one step.
+  /// The other half of the `onStep` call [init] makes once the step is done.
+  /// Set by the enclosing group, which wraps it in its own `_path` — the very
+  /// assembly the completed step travels through on its way up, so the two
+  /// halves cannot come to report different paths for one step.
   ///
-  /// A second channel rather than a second kind of stream element, because
-  /// the stream is the public [ScopeDependency.init] and its element type is
-  /// what a caller's own implementation returns; and because the container
-  /// counts its steps by the elements of that stream, so a mark travelling it
-  /// would move every progress bar by one.
+  /// A second channel rather than a second kind of `onStep` call, because
+  /// `onStep` belongs to the public [ScopeDependency.init] and what it carries
+  /// is what a caller's own implementation passes; and because the container
+  /// counts its steps by the calls of `onStep`, so a mark travelling it would
+  /// move every progress bar by one.
   void Function(String path)? _onStepStarted;
 
   /// Turns a path in this dependency's own space into one in the tree's.
@@ -199,7 +199,7 @@ mixin ScopeDependencyMixin implements ScopeDependency, ScopeObservable {
   /// A dependency of the caller's own making is not a [ScopeDependencyMixin]
   /// and has nowhere to take these, so it announces neither entry itself. Its
   /// completed initialization step still arrives, since that half travels the
-  /// stream of [ScopeDependency.init], which is the part of the contract it
+  /// `onStep` of [ScopeDependency.init], which is the part of the contract it
   /// does implement; and its release is announced for it — by the group above
   /// it as the path comes through, or, for such a dependency standing as the
   /// root, by the container's own listener.
@@ -389,9 +389,9 @@ mixin ScopeDependencyMixin implements ScopeDependency, ScopeObservable {
     // waited on it went on to use what it thought it had given back.
     //
     // The joiner is told when the walk is over and is given no paths of its
-    // own: they were handed to whoever asked first, and a walk cannot yield
-    // them twice without every node keeping a copy of its own history for as
-    // long as it lives.
+    // own: they were handed to whoever asked first, and a walk cannot hand
+    // them out twice without every node keeping a copy of its own history for
+    // as long as it lives.
     while (true) {
       final running = _disposalInFlight;
       if (running == null) {

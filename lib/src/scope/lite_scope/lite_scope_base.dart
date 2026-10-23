@@ -28,7 +28,7 @@ abstract base class LiteScope<W extends LiteScope<W, S>,
   ///
   /// Defaults to [ScopeConfig.defaultInitCancellationTimeout]. This is the one
   /// timeout that refuses [ScopeTimeout.none], with an assert: a cancellation
-  /// waits for a generator to run out, and one suspended on a future that
+  /// waits for the initialization to finish, and one parked on a future that
   /// never completes never does. Removing this limit is a decision for the
   /// whole application, and it is made there.
   final Duration? initCancellationTimeout;

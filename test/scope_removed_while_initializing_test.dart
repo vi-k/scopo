@@ -15,10 +15,10 @@ import 'utils/settle.dart';
 /// `_initSucceeded` false, so the teardown skips `disposeScope()` — and with it
 /// the pass that disposes of the dependencies. The only thing left to release a
 /// half-built tree is the `finally` of [ScopeAutoDependencies.init], reached by
-/// cancelling the subscription to it.
+/// cancelling the initialization it runs in.
 ///
-/// The container suite reaches that `finally` by cancelling a subscription it
-/// holds itself. Nothing reached it the way an application does — by removing
+/// The container suite reaches that `finally` by cancelling a job it holds
+/// itself. Nothing reached it the way an application does — by removing
 /// the widget — and the two are not the same path: between them lie the
 /// synchronous teardown, the bounded wait for the cancellation to land, and the
 /// order the four stages of the disposal run in.
@@ -48,8 +48,8 @@ void main() {
 
       await tester.pumpWidget(_wrap(const SizedBox.shrink()));
 
-      // A generator suspended on a future nobody completes is never resumed,
-      // so cancelling it never returns. The step in flight is let go of here,
+      // A body parked on a future nobody completes is never woken, so
+      // cancelling it never returns. The step in flight is let go of here,
       // which is what lets the cancellation land at all.
       deps.gate.complete();
       await settle(tester, until: () => deps.released.isNotEmpty);
@@ -77,9 +77,9 @@ void main() {
         deps.started,
         ['a', 'b'],
         reason: 'the step in flight finishes because nothing can stop it, but '
-            'the walk goes no further: a cancelled generator ends at its next '
-            'yield rather than building the rest of the tree for a scope that '
-            'has already left',
+            'the walk goes no further: a cancelled walk stops where it next '
+            'asks the context, before the next child, rather than building the '
+            'rest of the tree for a scope that has already left',
       );
     });
 
@@ -246,14 +246,13 @@ void main() {
     // The narrowest state the two can be caught in. `pauseAfterInitialization`
     // holds the ready branch back, so the scope has registered the
     // initialization -- `disposeScope` will run -- while the screen still shows
-    // the loading one. If the flag beside the `yield` could disagree with that,
-    // this is where it would: the guard would release what the scope is about to
-    // release too.
+    // the loading one. If the flag the body sets before it returns could
+    // disagree with that, this is where it would: the guard would release what
+    // the scope is about to release too.
     //
-    // It cannot. The statement after a `yield` runs when the stream asks for the
-    // next event, which happens in a microtask after the scope has taken the
-    // one it was given -- and a tree can only change in a frame, which is later
-    // than any pending microtask.
+    // It cannot. The body sets the flag as its last statement and returns, and
+    // the scope takes the result in the microtasks that follow -- and a tree
+    // can only change in a frame, which is later than any pending microtask.
     testWidgets('says handed over while the ready branch is still held back',
         (tester) async {
       final log = <String>[];

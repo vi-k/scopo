@@ -167,9 +167,9 @@ abstract base class AsyncScopeElementBase<W extends AsyncScopeCore<W, E>,
 
   /// Reports one step of the initialization.
   ///
-  /// The guards are the ones the stream's `asyncMap` carried: a step that
-  /// arrives once the scope is ready has nowhere to go, and one that arrives
-  /// for a model already holding a failure must not paint over it.
+  /// Two guards: a step that arrives once the scope is ready has nowhere to
+  /// go, and one that arrives for a model already holding a failure must not
+  /// paint over it.
   void _onInitStep(Object progress) {
     if (_initSucceeded || !mounted || _isDisposing) {
       return;
@@ -920,14 +920,14 @@ abstract base class AsyncScopeElementBase<W extends AsyncScopeCore<W, E>,
         _registerWithParent();
       });
 
-    // Everything below either hands `_initCompleter` over to the subscription
-    // that completes it, or completes it itself. A failure in between -- the
-    // coordinator lookup, or `initScope()` raising while the stream is being
-    // built -- would otherwise leave the completer unsettled forever: this
-    // future is discarded, so nothing retries and nothing else settles it,
-    // while `_performAsyncDispose` waits for it before it may unregister the
-    // scope from its parent. The error is re-thrown untouched, so it still
-    // surfaces as an uncaught error of the zone the mount ran in.
+    // Everything below either hands `_initCompleter` over to the job that
+    // completes it, or completes it itself. A failure in between -- the
+    // coordinator lookup, or an `onScopeKeyTimeout()` that throws -- would
+    // otherwise leave the completer unsettled forever: this future is
+    // discarded, so nothing retries and nothing else settles it, while
+    // `_performAsyncDispose` waits for it before it may unregister the scope
+    // from its parent. The error is re-thrown untouched, so it still surfaces
+    // as an uncaught error of the zone the mount ran in.
     try {
       // `scopeKey` is read exactly once, here. The answer -- a key, or the
       // decision that none is needed -- is what everything below is built on,
@@ -982,19 +982,19 @@ abstract base class AsyncScopeElementBase<W extends AsyncScopeCore<W, E>,
         }
 
         // `_isDisposing`, and not `mounted` alone: the disposal reaches the
-        // initialization through `_subscription`, which does not exist yet on
-        // this side of the `await` -- and a scope closed with `close()` stays
+        // initialization through `_initJob`, which does not exist yet on this
+        // side of the `await` -- and a scope closed with `close()` stays
         // mounted on purpose, so `mounted` says nothing about a disposal that
-        // has already begun. Without this, a scope on its way out would
-        // subscribe to `initScope()` here and run it to completion, acquiring
-        // resources for a scope that no longer exists; `_performAsyncDispose`
-        // is meanwhile parked on `_initCompleter`, past the point where it
-        // could have cancelled anything.
+        // has already begun. Without this, a scope on its way out would start
+        // `initScope()` here and run it to completion, acquiring resources for
+        // a scope that no longer exists; `_performAsyncDispose` is meanwhile
+        // parked on `_initCompleter`, past the point where it could have
+        // cancelled anything.
         if (entry.isCancelled || !mounted || _isDisposing) {
           notifyObserver((observer) => observer.onCancelled(this));
           // The one completion of the seven that is not guarded by
           // `isCompleted`, because here it cannot be the second: the only other
-          // hand on this completer before the subscription exists is
+          // hand on this completer before the job exists is
           // `_performAsyncDispose`, and it completes it only for an
           // initialization that never started (`_didStartAsyncInit`). Asserted
           // rather than guarded -- a silent `if` would hide the day that stops
@@ -1050,15 +1050,14 @@ abstract base class AsyncScopeElementBase<W extends AsyncScopeCore<W, E>,
         _initCompleter.complete();
       }
 
-      // The same state the stream's own failures land in, for the same
-      // reason. A failure raised here -- the coordinator lookup, an
-      // `initScope()` that throws while the stream is being built -- is an
-      // initialization that failed before it was ready, which is what
-      // [AsyncScopeError] means and what `buildOnError` is for. Left out, as
-      // it was, the model stayed [AsyncScopeWaiting] and the scope went on
-      // showing its loading branch for good: loud in the console, where the
-      // re-throw below puts it, and silent on screen, which is the half the
-      // user sees.
+      // The same state a failure of the job lands in, for the same reason. A
+      // failure raised here -- the coordinator lookup, an
+      // `onScopeKeyTimeout()` that throws -- is an initialization that failed
+      // before it was ready, which is what [AsyncScopeError] means and what
+      // `buildOnError` is for. Left out, as it was, the model stayed
+      // [AsyncScopeWaiting] and the scope went on showing its loading branch
+      // for good: loud in the console, where the re-throw below puts it, and
+      // silent on screen, which is the half the user sees.
       //
       // Outside the frame, and that is not a precaution: the failures this
       // catch exists for are raised *before the first `await`*, so it runs
@@ -1346,7 +1345,7 @@ abstract base class AsyncScopeElementBase<W extends AsyncScopeCore<W, E>,
     }
 
     // Abandoned, not forgotten. The work may still fail long after nobody is
-    // waiting for it -- a generator resumed at last, throwing from its
+    // waiting for it -- a body that wakes at last and throws from its
     // `finally` -- and a failure that reaches no listener is one more thing
     // lost in silence.
     unawaited(

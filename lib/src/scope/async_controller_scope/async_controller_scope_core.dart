@@ -171,11 +171,11 @@ abstract base class AsyncControllerScopeElementBase<
   /// that the path it is most likely to fail on.
   ///
   /// The wait is bounded for the same reason the rest of the teardown is: a
-  /// release that never finishes never lets the generator finish either, so
-  /// the failure of `init()` would never reach the model and the scope would
-  /// show its loading branch for ever. `disposeScopeTimeout` is the limit the
-  /// `AsyncControllerScope` topic names for the wait on `dispose()`, and this
-  /// is a wait on `dispose()`.
+  /// release that never finishes never lets the initialization finish either,
+  /// so the failure of `init()` would never reach the model and the scope
+  /// would show its loading branch for ever. `disposeScopeTimeout` is the
+  /// limit the `AsyncControllerScope` topic names for the wait on `dispose()`,
+  /// and this is a wait on `dispose()`.
   Future<void> _releaseController(C controller) async {
     try {
       final released = controller.performDispose();

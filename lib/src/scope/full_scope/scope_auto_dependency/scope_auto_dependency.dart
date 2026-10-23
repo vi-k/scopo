@@ -252,10 +252,10 @@ abstract class ScopeAutoDependencies<T extends ScopeAutoDependencies<T, C>,
       return this as T;
     } finally {
       // Put down first, before the teardown below rather than after it. By
-      // here the run is over -- it failed, or the subscription was cancelled
-      // -- and what follows is the disposal of what it built. Left standing,
-      // it would be the container refusing its own cleanup through the guard
-      // that keeps a *caller* from disposing of a container mid-run.
+      // here the run is over -- it failed, or it was cancelled -- and what
+      // follows is the disposal of what it built. Left standing, it would be
+      // the container refusing its own cleanup through the guard that keeps a
+      // *caller* from disposing of a container mid-run.
       //
       // The window this opens is closed by the guard behind it: an `init()`
       // arriving here meets a tree that is neither initialized nor finished
@@ -441,7 +441,7 @@ abstract class ScopeAutoDependencies<T extends ScopeAutoDependencies<T, C>,
     // because the tree now claims its disposal ran to the end -- built a new
     // tree over one that was still holding.
     //
-    // A scope never gets here: it cancels the subscription to `init()` first,
+    // A scope never gets here: it cancels the job running `init()` first,
     // and cancelling disposes of what the run had built. This is for whoever
     // drives the container by hand, and it tells them to do what the scope
     // does.
@@ -454,8 +454,8 @@ abstract class ScopeAutoDependencies<T extends ScopeAutoDependencies<T, C>,
     // run had taken, in the one mode where the extra step matters most.
     if (_initializing) {
       final afterCancelling = autoDisposeOnError
-          ? 'cancelling the subscription releases what it had built'
-          : 'cancelling the subscription unmounts what it had built and '
+          ? 'cancelling it releases what it had built'
+          : 'cancelling it unmounts what it had built and '
               'leaves the rest of it standing, this container having turned '
               '`autoDisposeOnError` off, so dispose of it once the '
               'cancellation has come back';
@@ -538,9 +538,9 @@ abstract class ScopeAutoDependencies<T extends ScopeAutoDependencies<T, C>,
       // ignore: avoid_catching_errors
     } on Object catch (error, stackTrace) {
       // `dispose()` is a public interface method, and one of the caller's own
-      // making is free to throw before it ever returns a stream -- the
-      // package's own cannot, its `dispose()` being an `async*` whose body
-      // does not run until it is listened to. Such a throw used to leave
+      // making is free to throw before it ever returns a future -- the
+      // package's own cannot, its `dispose()` being `async`, so whatever its
+      // body throws arrives through the future. Such a throw used to leave
       // through the future this method hands its caller, past the handler
       // above and past the `onDisposed` below: the entry had been announced,
       // and nothing ever closed it.

@@ -21,8 +21,7 @@ typedef ScopeWaitingBuilder = Widget? Function(BuildContext context);
 /// A builder function used to display a widget while the [Scope] is
 /// initializing dependencies.
 ///
-/// Contains optional [progress] data dynamically yielded during
-/// initialization.
+/// Contains optional [progress] data reported during initialization.
 ///
 /// {@category Scope}
 typedef ScopeProgressBuilder<P extends Object> = Widget Function(

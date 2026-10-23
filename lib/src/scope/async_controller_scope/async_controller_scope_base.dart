@@ -27,7 +27,7 @@ abstract base class AsyncControllerScopeBase<
   ///
   /// Defaults to [ScopeConfig.defaultInitCancellationTimeout]. This is the one
   /// timeout that refuses [ScopeTimeout.none], with an assert: a
-  /// cancellation waits for a generator to run out, and one suspended on a
+  /// cancellation waits for the initialization to finish, and one parked on a
   /// future that never completes never does. Removing this limit is a
   /// decision for the whole application, and it is made there.
   final Duration? initCancellationTimeout;
@@ -110,9 +110,9 @@ abstract base class AsyncControllerScopeBase<
   /// **No progress argument here, unlike the three other families.** That is
   /// not an omission: this scope's initialization is `createController()`
   /// followed by the controller's own `init()`, and neither reports steps —
-  /// the stream behind them yields the ready state and nothing else. The state
-  /// is still [AsyncScopeProgress] while that runs, which is what this branch
-  /// answers; there is simply nothing for it to carry.
+  /// the initialization behind them only finishes. The state is still
+  /// [AsyncScopeProgress] while that runs, which is what this branch answers;
+  /// there is simply nothing for it to carry.
   Widget buildOnProgress(BuildContext context);
 
   /// Built when the initialization of the controller failed.
@@ -218,8 +218,8 @@ final class _AsyncControllerScopeElement<
   Widget buildOnState(AsyncScopeState state) => switch (state) {
         AsyncScopeWaiting() =>
           widget.buildOnWaiting(this) ?? widget.buildOnProgress(this),
-        // A controller reports no progress: the stream above yields the ready
-        // state and nothing else.
+        // A controller reports no progress: its initialization only
+        // finishes.
         AsyncScopeProgress() => widget.buildOnProgress(this),
         AsyncScopeReady() => widget.buildOnReady(this, data),
         AsyncScopeError(:final error, :final stackTrace) =>

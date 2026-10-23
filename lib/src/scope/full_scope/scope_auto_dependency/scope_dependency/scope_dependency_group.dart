@@ -230,10 +230,10 @@ abstract base class ScopeDependencyGroup with ScopeDependencyMixin {
   ///
   /// A dependency of the caller's own making is not a [ScopeDependencyMixin]
   /// and has no channel to be given, so the group speaks for it, from the one
-  /// place it sees that child's steps come back: the stream it is already
-  /// forwarding. The type test is also what keeps the exit from being
-  /// announced twice — a child of the package's own making has sent it from
-  /// inside itself before this path ever got here.
+  /// place it sees that child's steps come back: the `onStep` it hands that
+  /// child, whose paths it is already forwarding. The type test is also what
+  /// keeps the exit from being announced twice — a child of the package's own
+  /// making has sent it from inside itself before this path ever got here.
   ///
   /// Called before the path is passed upwards, so that the two halves keep the
   /// order they have everywhere else.
@@ -247,7 +247,7 @@ abstract base class ScopeDependencyGroup with ScopeDependencyMixin {
   ///
   /// A child of the caller's own making cannot announce its own failure any
   /// more than it can announce its own exit, and the group sees both in the
-  /// one place: the stream it is forwarding.
+  /// one place: its call to that child's `dispose`.
   void _announceFailureFor(
     ScopeDependency dependency,
     Object error,

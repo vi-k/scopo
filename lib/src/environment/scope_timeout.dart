@@ -21,9 +21,10 @@ part of 'scope_config.dart';
 /// `waitForChildrenTimeout`, on the scopes and on `waitForChildren`, and by
 /// all four [ScopeConfig] defaults, where it says for the whole application
 /// what `null` says there — and **not** by `initCancellationTimeout`, which
-/// asserts against it. A cancellation waits for a generator to run out, and a
-/// generator suspended on a future that never completes never does; waiting
-/// for that with no limit is the hang the limit was put there to prevent.
+/// asserts against it. A cancellation waits for the initialization to finish,
+/// and an initialization parked on a future that never completes never does;
+/// waiting for that with no limit is the hang the limit was put there to
+/// prevent.
 /// That is a decision for the whole application, so
 /// [ScopeConfig.defaultInitCancellationTimeout] does take it.
 ///
@@ -117,9 +118,9 @@ Duration? resolveCancellationTimeout(Duration? own, Duration? fallback) {
           'ScopeTimeout.none is not accepted by initCancellationTimeout.',
         ),
         ErrorDescription(
-          'A cancellation waits for the initialization generator to run out, '
-          'and a generator suspended on a future that never completes never '
-          'does -- so an unbounded wait here is the hang the limit exists to '
+          'A cancellation waits for the initialization to finish, and an '
+          'initialization parked on a future that never completes never does '
+          '-- so an unbounded wait here is the hang the limit exists to '
           'prevent.',
         ),
         ErrorHint(

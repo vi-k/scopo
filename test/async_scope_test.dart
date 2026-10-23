@@ -102,8 +102,8 @@ void main() {
 
         // `TestWidgetsFlutterBinding.idle()` runs `FakeAsync.elapse
         // (Duration.zero)`: it flushes pending microtasks/zero-duration
-        // timers *without* drawing a frame. This lets `initScope()`
-        // (`Stream.value(AsyncScopeReady())`) deliver its value and the
+        // timers *without* drawing a frame. This lets the default
+        // `initScopeAsync()`, ready at once, return and the
         // `AsyncScopeReady` branch run -- scheduling the post-frame
         // callback and calling `scheduleFrame()` -- while leaving that
         // callback pending, since nothing has drawn a frame yet.
@@ -126,13 +126,13 @@ void main() {
         binding.buildOwner!.finalizeTree();
 
         // `idle()`/`FakeAsync.elapse` alone was not enough to let
-        // `_performAsyncDispose()`'s chain (await subscription.cancel(),
-        // then eventually `_model.dispose()`) run to completion in this
-        // scenario -- verified experimentally, even after repeated
-        // `idle()` calls. `runAsync` escapes the fake-async zone and runs
-        // a real `Future.delayed` on the real event loop, which lets that
-        // chain -- and any real microtask/timer continuations it depends
-        // on -- actually finish before we drain the stale callback below.
+        // `_performAsyncDispose()`'s chain (await the cancellation of
+        // `_initJob`, then eventually `_model.dispose()`) run to completion
+        // in this scenario -- verified experimentally, even after repeated
+        // `idle()` calls. `runAsync` escapes the fake-async zone and runs a
+        // real `Future.delayed` on the real event loop, which lets that chain
+        // -- and any real microtask/timer continuations it depends on --
+        // actually finish before we drain the stale callback below.
         await tester.runAsync(
           () => Future<void>.delayed(const Duration(milliseconds: 20)),
         );
@@ -204,7 +204,7 @@ void main() {
   });
 
   // Both tests below cover the same defect: `_performAsyncInit()` runs on a
-  // discarded future, so a failure raised *before* `_subscription` is assigned
+  // discarded future, so a failure raised *before* the initialization started
   // used to leave `_initCompleter` unsettled forever -- nothing else on that
   // path completes it. `_performAsyncDispose()` then parked on
   // `await _initCompleter.future`, never reached its `finally`, and never
@@ -435,7 +435,7 @@ void main() {
         expect(
           find.text('initializing: connecting'),
           findsOneWidget,
-          reason: 'the progress the stream reported is what is shown',
+          reason: 'the progress the body reported is what is shown',
         );
 
         gate.complete();
@@ -451,13 +451,13 @@ void main() {
     );
 
     testWidgets(
-      'an error raised inside the init stream reaches the model with the last '
+      'an error raised inside the init body reaches the model with the last '
       'progress, and the error branch is built',
       (tester) async {
-        // The other failure tests raise *before* the stream exists, so the
-        // error goes through the `try` of `_performAsyncInit` and reaches
-        // nobody but the zone. An error raised by the stream itself takes the
-        // other path — the subscription's `onError`, which is what puts
+        // Most other failure tests raise *before* the job exists, in the
+        // coordinator lookup, so the error goes through the `try` of
+        // `_performAsyncInit`. An error raised by the body itself takes the
+        // other path — the failure of the job, which is what puts
         // `AsyncScopeError` into the model and keeps the last progress with
         // it — and nothing covered that path.
         await tester.pumpWidget(
@@ -507,11 +507,13 @@ void main() {
         late _FailingInitScopeElement child;
         late int childrenBefore;
 
-        // The failure reaches nobody but the zone: `_performAsyncInit()`'s
-        // future is discarded, so it never gets to the framework's error
-        // handling and `tester.takeException()` cannot see it. `flutter_test`'s
-        // own `handleUncaughtError` would end the test on the spot, so
-        // everything runs inside a guarded child zone that catches it first.
+        // Nothing should reach the zone here: a body that throws before its
+        // first await fails as a job, which the last expectation checks. A
+        // failure that did escape `_performAsyncInit()`'s discarded future
+        // would reach nobody but the zone -- `tester.takeException()` cannot
+        // see it, and `flutter_test`'s own `handleUncaughtError` would end the
+        // test on the spot -- so everything runs inside a guarded child zone
+        // that catches it first.
         //
         // Nothing inside that zone may throw: an assertion that fails there is
         // swallowed by the zone's error handler and the test hangs instead of
@@ -606,8 +608,7 @@ void main() {
                 textDirection: TextDirection.ltr,
                 // No `AsyncScopeCoordinator` anywhere above: the lookup in
                 // `AsyncScopeCoordinator._elementOf` throws, and it throws
-                // before
-                // `_subscription` exists.
+                // before `_initJob` exists.
                 child: _WaitingParentScope(
                   child: _FailingInitScope(testKey: 'shared'),
                 ),
@@ -675,7 +676,7 @@ void main() {
 
     // The two tests above ask where the failure goes and what the teardown
     // does with it. This one asks what the user sees, which is the half
-    // nobody was asking: a failure raised while the stream is being built
+    // nobody was asking: a failure raised before the initialization started
     // never reached the model, so the scope stayed in `AsyncScopeWaiting` and
     // went on showing its loading branch for good. Loud in the console,
     // silent on screen.
@@ -691,9 +692,9 @@ void main() {
                 textDirection: TextDirection.ltr,
                 // No `AsyncScopeCoordinator` above a scope that asks for a
                 // `scopeKey`: the lookup throws, and it throws before the
-                // subscription exists. This is the likeliest way an
-                // initialization fails synchronously, and it is a mistake in
-                // the tree rather than in the work.
+                // job exists. This is the likeliest way an initialization
+                // fails synchronously, and it is a mistake in the tree rather
+                // than in the work.
                 child: AsyncScope(
                   scopeKey: 'k',
                   initScope: (context, ctx) async {},
@@ -987,11 +988,11 @@ void main() {
 
 /// the budget runs out.
 ///
-/// The `StreamSubscription.cancel()` chain of
-/// `AsyncScopeElementBase._performAsyncDispose` only makes progress outside the
-/// test's fake-async zone, so `pumpAndSettle()` alone never reaches
-/// `disposeScope()`. The same workaround is documented in
-/// `async_scope_coordinator_test.dart` and `lite_scope_test.dart`.
+/// The cancellation chain of `AsyncScopeElementBase._performAsyncDispose`
+/// only makes progress outside the test's fake-async zone, so
+/// `pumpAndSettle()` alone never reaches `disposeScope()`. The same workaround
+/// is documented in `async_scope_coordinator_test.dart` and
+/// `lite_scope_test.dart`.
 /// A scope that can be moved between parents with a [GlobalKey], and can hold
 /// its own disposal open so that the parent awaiting it can be observed
 /// waiting.
@@ -1023,9 +1024,9 @@ final class _MovableScopeElement
 }
 
 /// A scope whose initialization raises *while it is being cancelled*: the
-/// `finally` of its generator throws, and an `async*` generator delivers that
-/// failure through the `cancel()` future — the one `_performAsyncDispose`
-/// awaits before it has unregistered anything.
+/// `finally` of its body throws, and the failure lands in the wait for the
+/// cancellation — the one `_performAsyncDispose` makes before it has
+/// unregistered anything.
 final class _RaisingOnCancelScope extends AsyncScopeCore<_RaisingOnCancelScope,
     _RaisingOnCancelScopeElement> {
   const _RaisingOnCancelScope();
@@ -1043,15 +1044,15 @@ final class _RaisingOnCancelScopeElement extends AsyncScopeElementBase<
   Future<void> initScopeAsync(ScopeInitContext ctx) async {
     try {
       ctx.progress('step');
-      // Short enough for the disposal to catch the generator here, and
-      // bounded, so the cancellation can finish: a generator parked on a
-      // future that never completes can never be cancelled at all, which is
-      // a different problem from the one this scope is about.
+      // Short enough for the disposal to catch the body here, and bounded,
+      // so the cancellation can finish: a body parked on a future that never
+      // completes can never be cancelled at all, which is a different problem
+      // from the one this scope is about.
       await Future<void>.delayed(const Duration(milliseconds: 10));
     } finally {
-      // The `finally` is where a cancelled generator resumes, so throwing
+      // The `finally` is what the body runs on its way out, so throwing
       // here is the whole point of this fixture: it is how a failure reaches
-      // the `cancel()` future the disposal awaits.
+      // the wait for the cancellation that the disposal makes.
       // ignore: throw_in_finally
       throw StateError('raised while being cancelled');
     }
@@ -1082,10 +1083,9 @@ final class _RegisterRaceScopeElement extends AsyncScopeElementBase<
 
 /// Minimal [AsyncScopeCore] used to test the `_model.update(state)`
 /// post-frame callback scheduled once `initScope()` completes
-/// (async_scope_core.dart, in `_performAsyncInit`'s `AsyncScopeReady`
-/// case), and the corresponding `disposeScope()` call in
-/// `_performAsyncDispose`. Uses the default `initScope()`
-/// (`Stream.value(AsyncScopeReady())`) and default `pauseAfterInitialization`
+/// (async_scope_core.dart, in `_settleReady`), and the corresponding
+/// `disposeScope()` call in `_performAsyncDispose`. Uses the default
+/// `initScopeAsync()`, ready at once, and default `pauseAfterInitialization`
 /// (`null`), so it takes the immediate `scheduleFrame()` +
 /// `addPostFrameCallback` branch rather than the delayed one.
 final class _ReadyRaceScope
@@ -1206,11 +1206,12 @@ final class _SyncInitAsyncScopeElement extends AsyncScopeElementBase<
   Widget buildOnState(AsyncScopeState state) => const SizedBox.shrink();
 }
 
-/// A scope whose initialization fails before `_subscription` exists.
+/// A scope whose initialization fails early.
 ///
 /// With a [testKey] and no [AsyncScopeCoordinator] above it, the coordinator
-/// lookup fails first and `initScope()` is never even called; without one,
-/// `initScope()` itself throws synchronously.
+/// lookup fails before `_initJob` exists and `initScope()` is never even
+/// called; without one, `initScope()` itself throws before its first await,
+/// inside the job.
 final class _FailingInitScope
     extends AsyncScopeCore<_FailingInitScope, _FailingInitScopeElement> {
   final Object? testKey;
@@ -1231,8 +1232,8 @@ final class _FailingInitScopeElement
   @override
   Object? get scopeKey => widget.testKey;
 
-  // Deliberately not `async*`: the point is a plain user error raised while
-  // the stream is being built, before there is anything to subscribe to.
+  // Deliberately not `async`: the point is a plain user error raised before
+  // the body reaches its first await.
   @override
   Future<void> initScopeAsync(ScopeInitContext ctx) =>
       throw StateError('initScope failed');

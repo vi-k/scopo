@@ -82,15 +82,16 @@ class ScopeObserver {
   /// A dependency of your own making — one that implements `ScopeDependency`
   /// rather than being built by `dep`, `sequential` or `concurrent` — has
   /// nowhere to take this from, so its step is not announced. Its
-  /// [onProgress] still arrives: that half travels the stream, which is the
-  /// part of the contract such a dependency does implement.
+  /// [onProgress] still arrives: that half travels the `onStep` callback its
+  /// `init` is handed, which is the part of the contract such a dependency
+  /// does implement.
   void onStepStarted(ScopeObservable target, String path) {}
 
   /// One step of an initialization is done.
   ///
-  /// [progress] is what that source reports: the value an `initScope` yielded
-  /// for a scope, or a `ScopeAutoDependenciesProgress` while a container
-  /// initializes.
+  /// [progress] is what that source reports: the value an `initScope` passed
+  /// to `ctx.progress` for a scope, or a `ScopeAutoDependenciesProgress` while
+  /// a container initializes.
   void onProgress(ScopeObservable target, Object? progress) {}
 
   /// An initialization has finished successfully.

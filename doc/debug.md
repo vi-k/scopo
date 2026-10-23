@@ -526,14 +526,14 @@ wherever it resolves one, so this is loud in debug rather than silent; a
 timeout is still a value to pass on rather than one to compute with.
 
 **`initCancellationTimeout` is the one that refuses it**, with an assert. A
-cancellation waits for the initialization generator to run out, and a generator
-suspended on a future that never completes never does — an unbounded wait there
-is the hang the limit exists to prevent. Removing that one is a decision for
-the whole application, and `ScopeConfig.defaultInitCancellationTimeout` is
-where it is made — as `null`, or as the `ScopeTimeout.none` that means the same
-thing there. The assert is raised inside the teardown's own guard for that
-stage, so it arrives as `onError` with `ScopePhase.initializationCancellation`
-and the teardown goes on.
+cancellation waits for the initialization to finish, and an initialization
+parked on a future that never completes never does — an unbounded wait there is
+the hang the limit exists to prevent. Removing that one is a decision for the
+whole application, and `ScopeConfig.defaultInitCancellationTimeout` is where it
+is made — as `null`, or as the `ScopeTimeout.none` that means the same thing
+there. The assert is raised inside the teardown's own guard for that stage, so
+it arrives as `onError` with `ScopePhase.initializationCancellation` and the
+teardown goes on.
 
 **`pauseAfterInitialization` refuses it too**, with an assert of its own, and
 for the opposite reason: a pause is a stretch of time to hold the ready branch

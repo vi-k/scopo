@@ -84,7 +84,7 @@ abstract final class ScopeConfig {
 
   /// Timeout for waiting for an initialization to be cancelled.
   ///
-  /// A generator suspended on a future that never completes cannot be
+  /// An initialization parked on a future that never completes cannot be
   /// cancelled, and a teardown that waited for it with no limit never reached
   /// the release that follows. When this expires, the expiry is reported and
   /// the teardown goes on without the initialization.
