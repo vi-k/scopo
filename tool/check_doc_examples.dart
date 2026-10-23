@@ -33,6 +33,12 @@ const _documents = <DocManifest>[
   utilsTopic,
 ];
 
+// Documents that show a whole source file, which its own package analyzes:
+// the document's only Dart block must stay that file, byte for byte.
+const _copies = <String, String>{
+  'example/README.md': 'example/minimal/lib/main.dart',
+};
+
 final class _Example {
   final String key;
   final String source;
@@ -121,6 +127,19 @@ Future<void> main(List<String> arguments) async {
             'is unlisted; ${unique.isEmpty ? 'it has no unique key, '
                 'declared: ${block.keys.join(', ')}' : 'its keys: '
                 '${unique.join(', ')}'}');
+      }
+    }
+    for (final MapEntry(key: path, value: source) in _copies.entries) {
+      final blocks = _extract(File('${root.path}/$path'));
+      final file = File('${root.path}/$source').readAsStringSync();
+      if (blocks.length != 1) {
+        problems.add('$path: ${blocks.length} Dart blocks, expected the one '
+            'copy of $source');
+      } else if (blocks.single.source != file) {
+        problems.add('$path: the block at line ${blocks.single.line} is no '
+            'longer $source');
+      } else {
+        stdout.writeln('PASS $path: the copy of $source');
       }
     }
     if (problems.isNotEmpty) throw FormatException(problems.join('\n'));
