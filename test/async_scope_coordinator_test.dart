@@ -768,6 +768,98 @@ void main() {
     },
   );
 
+  for (final bounded in [true, false]) {
+    testWidgets(
+      bounded
+          ? 'a scopeKey timeout allows readiness during previous disposal'
+          : 'a null scopeKey timeout waits for previous disposal',
+      (tester) async {
+        ScopeConfig.defaultScopeKeyTimeout =
+            bounded ? const Duration(milliseconds: 50) : null;
+        // Only the key wait may expire: the old owner keeps its key until
+        // its actual disposal finishes, however long this test holds it.
+        ScopeConfig.defaultDisposeScopeTimeout = null;
+        final observer = RecordingObserver();
+        ScopeConfig.observer = observer;
+        final gate = Completer<void>();
+        var disposing = false;
+        var released = false;
+        addTearDown(() {
+          if (!gate.isCompleted) gate.complete();
+        });
+
+        Widget build(String owner) => Directionality(
+              textDirection: TextDirection.ltr,
+              child: AsyncScopeCoordinator(
+                child: AsyncScope(
+                  key: ValueKey(owner),
+                  tag: owner,
+                  scopeKey: 'shared',
+                  initScope: (context, ctx) async {},
+                  progressBuilder: (context, progress) => const Text('loading'),
+                  errorBuilder: (context, e, s, p) => const Text('error'),
+                  disposeScope: owner == 'old'
+                      ? () async {
+                          disposing = true;
+                          await gate.future;
+                          released = true;
+                        }
+                      : () {},
+                  builder: (context) => Text('$owner ready'),
+                ),
+              ),
+            );
+
+        await tester.pumpWidget(build('old'));
+        await tester.pumpAndSettle();
+        expect(find.text('old ready'), findsOneWidget);
+
+        await tester.pumpWidget(build('new'));
+        await settle(tester, until: () => disposing);
+        expect(disposing, isTrue);
+        expect(released, isFalse);
+        expect(find.text('new ready'), findsNothing);
+
+        // The queue uses a root-zone timer. Give it real time as well as
+        // frames, including in the unlimited case to detect a finite limit.
+        await settle(tester, until: () => false);
+        expect(released, isFalse);
+        if (bounded) {
+          expect(find.text('new ready'), findsOneWidget);
+          expect(observer.events, contains('ready AsyncScope(new)'));
+          expect(observer.timeouts, hasLength(1));
+          expect(
+            observer.timeouts.single.message,
+            contains("couldn't wait to get access to [shared]"),
+          );
+          expect(tester.takeException(), same(observer.timeouts.single));
+        } else {
+          expect(find.text('new ready'), findsNothing);
+          expect(observer.events, isNot(contains('ready AsyncScope(new)')));
+          expect(observer.timeouts, isEmpty);
+          expect(tester.takeException(), isNull);
+        }
+
+        gate.complete();
+        await settle(tester, until: () => released);
+        await tester.pumpAndSettle();
+        expect(released, isTrue);
+        expect(find.text('new ready'), findsOneWidget);
+        expect(observer.events, contains('ready AsyncScope(new)'));
+        expect(observer.timeouts, hasLength(bounded ? 1 : 0));
+        expect(tester.takeException(), isNull);
+
+        await tester.pumpWidget(const SizedBox.shrink());
+        await settle(
+          tester,
+          until: () => observer.events.contains('disposed AsyncScope(new)'),
+        );
+        expect(observer.events, contains('disposed AsyncScope(old)'));
+        expect(observer.events, contains('disposed AsyncScope(new)'));
+      },
+    );
+  }
+
   testWidgets('an expired wait for a scopeKey is reported', (tester) async {
     ScopeConfig.defaultScopeKeyTimeout = const Duration(milliseconds: 50);
 

@@ -85,6 +85,14 @@
   to finish, where they spoke of a generator running out, and the `StateError`
   of `ScopeAutoDependencies.dispose` called mid-initialization no longer speaks
   of cancelling a subscription.
+* **Fix:** the README and the `AsyncScope` topic say where the ordering they
+  promise ends. The wait behind a `scopeKey`, the wait for children, the
+  cancellation of an initialization and a scope's own disposal are each
+  bounded, three seconds by default; on expiry the scope goes on, and the
+  previous owner, or a child, may still be releasing the resource. The
+  `scopeKey` section shows the four `ScopeConfig` defaults to set to `null`
+  for unbounded waits, and what that costs: a hung disposal then stops the
+  teardown for good.
 
 ## 0.16.0
 

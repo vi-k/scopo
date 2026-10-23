@@ -24,10 +24,12 @@ database, a socket, a player, a signed-in session. What scopo adds:
 - **an unfinished initialization is cancelled**, and whatever it already took
   is given back; the widget leaving the tree is enough to start that;
 - **disposal is ordered** — a scope waits for its child scopes before releasing
-  its own dependencies, so nothing is released while something below still
-  holds it;
+  its own dependencies, with a timeout of 3 s by default; after expiry it
+  proceeds even if a child is still releasing resources (see
+  [scopeKey](#scopekey));
 - **`scopeKey` serialises two scopes over one resource**: a re-created scope
-  waits for the previous holder of the same key to finish letting go;
+  waits for the previous holder to finish letting go, with a timeout of 3 s by
+  default; after expiry both owners may overlap (see [scopeKey](#scopekey));
 - **`close()` keeps the last frame on screen** while an asynchronous teardown
   runs, instead of tearing the subtree away mid-flight;
 - **every step is observable** through a typed observer — the failures
@@ -61,7 +63,8 @@ you nothing: `provider` is smaller, better known, and enough.
 - **Ordered disposal**: a scope waits for its child scopes to be disposed of
   before disposing of its own dependencies (`waitForChildrenTimeout`), and
   `scopeKey` makes a re-created scope wait for the previous scope with the same
-  key.
+  key. These waits time out after 3 s by default, then proceed even if release
+  is unfinished; owners may overlap (see [scopeKey](#scopekey)).
 - **Selective rebuilds**: `select` and `selectParam` subscribe a descendant to
   a single value; `notifyDependents` rebuilds only those descendants, never the
   scope's own subtree. `setState` is the other half and is untouched: it
@@ -677,10 +680,30 @@ how templates and accessors relate.
 
 ## scopeKey
 
-`scopeKey` serializes scopes that must not overlap: a new scope with the same
-key waits until the previous one has finished disposing of its dependencies. It
-requires an `AsyncScopeCoordinator` above the scopes that use it — the most
-universal place is above `MaterialApp`:
+`scopeKey` queues successive owners of one resource: a new scope with the same
+key waits for the previous one to finish disposing of its dependencies, bounded
+by a timeout of 3 s by default. On expiry the timeout is reported and the new
+scope proceeds, even if the previous owner is still releasing the resource: two
+owners can overlap. The waits for children, initialization cancellation and a
+scope's own disposal also default to 3 s; after expiry a parent can release
+dependencies while a child still uses them.
+
+For waiting without limits, set all four defaults to `null` before `runApp` and
+leave per-scope timeout overrides unset:
+
+```dart
+ScopeConfig.defaultScopeKeyTimeout = null;
+ScopeConfig.defaultWaitForChildrenTimeout = null;
+ScopeConfig.defaultDisposeScopeTimeout = null;
+ScopeConfig.defaultInitCancellationTimeout = null;
+```
+
+A hung disposal or initialization can then block further teardown forever. The
+[debug](https://pub.dev/documentation/scopo/latest/topics/debug-topic.html)
+topic, section Timeouts, describes the timeout policy and per-scope overrides.
+
+A key requires an `AsyncScopeCoordinator` above the scopes that use it — the
+most universal place is above `MaterialApp`:
 
 ```dart
 AsyncScopeCoordinator(child: MaterialApp(home: HomeScreen()))
@@ -703,12 +726,12 @@ finishing a splash screen:
 await AsyncScopeCoordinator.waitForChildren(context);
 ```
 
-It awaits the scopes registered at the moment of the call, and, like every
-other wait in the package, it is bounded — by a `timeout` when one is passed,
-by `ScopeConfig.defaultWaitForChildrenTimeout` otherwise. An expiry is not an
-error the caller has to handle: the future completes normally and the
-`TimeoutException` is reported through `FlutterError.reportError`, unless an
-`onTimeout` callback is given.
+It awaits the scopes registered at the moment of the call. Its limit is the
+passed `timeout`, or `ScopeConfig.defaultWaitForChildrenTimeout` otherwise;
+`null` in the default removes the limit. An expiry is not an error the caller
+has to handle: the future completes normally and the `TimeoutException` is
+reported through `FlutterError.reportError`, unless an `onTimeout` callback is
+given.
 
 ## Observing and configuration
 

@@ -476,10 +476,17 @@ coordinator that looked decorative.
 
 ## scopeKey and the coordinator
 
-`scopeKey` serializes scopes that must not overlap. A scope with a key waits at
-the head of a queue until the previous holder of that key has finished
-disposing of itself — the whole seven-step sequence above, not just its removal
-from the tree.
+`scopeKey` queues successive owners of one resource. A scope with a key waits
+for the previous holder of that key to finish disposing of itself — the whole
+seven-step sequence above, not just its removal from the tree — bounded by a
+timeout of 3 s by default. On expiry the timeout is reported and the new scope
+proceeds, even if the old owner is still releasing the resource: two owners can
+overlap. The waits for children, initialization cancellation and a scope's own
+disposal also default to 3 s; after expiry a parent can release dependencies
+while a child still uses them. The README, section `scopeKey`, shows how to
+disable all four limits before `runApp`: a hung disposal or initialization can
+then block further teardown forever. Per-scope overrides and the reporting of
+an expiry are in the `debug` topic, section Timeouts.
 
 The queues belong to the nearest `AsyncScopeCoordinator`:
 
