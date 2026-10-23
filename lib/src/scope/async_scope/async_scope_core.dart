@@ -1522,16 +1522,18 @@ abstract base class AsyncScopeElementBase<W extends AsyncScopeCore<W, E>,
   void debugFillProperties(DiagnosticPropertiesBuilder properties) {
     super.debugFillProperties(properties);
     properties.add(DiagnosticsProperty<AsyncScopeState>('state', model.state));
-    if (scopeKey case final scopeKey?) {
-      properties.add(DiagnosticsProperty<Object?>('scopeKey', scopeKey));
-    }
-    if (pauseAfterInitialization case final pauseAfterInitialization?) {
-      properties.add(
-        DiagnosticsProperty<Duration>(
-          'pauseAfterInitialization',
-          pauseAfterInitialization,
-        ),
-      );
+    if (mounted) {
+      if (scopeKey case final scopeKey?) {
+        properties.add(DiagnosticsProperty<Object?>('scopeKey', scopeKey));
+      }
+      if (pauseAfterInitialization case final pauseAfterInitialization?) {
+        properties.add(
+          DiagnosticsProperty<Duration>(
+            'pauseAfterInitialization',
+            pauseAfterInitialization,
+          ),
+        );
+      }
     }
   }
 }

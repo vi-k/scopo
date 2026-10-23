@@ -70,7 +70,13 @@ abstract base class ScopeModelElementBase<
   void debugFillProperties(DiagnosticPropertiesBuilder properties) {
     super.debugFillProperties(properties);
     if (_didInit) {
-      properties.add(MessageProperty('model', '$model'));
+      final diagnosticModel = switch (this) {
+        _ScopeModelElementMixin(:final _diagnosticModel) => _diagnosticModel,
+        _ => model,
+      };
+      if (diagnosticModel case final model?) {
+        properties.add(MessageProperty('model', '$model'));
+      }
     }
   }
 }

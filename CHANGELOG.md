@@ -103,6 +103,17 @@
 * **Fix:** the `AsyncDataScope` topic shows `return await Database.open();`
   where its Dart block held prose, and says that `ctx.progress` takes an
   `Object` while the builders receive `Object?`.
+* **Fix:** a scope element stays printable after it leaves the tree.
+  `toString()` and the diagnostics of an unmounted async scope, of
+  `ScopeModel.value` and of `ScopeNotifier.value` read the widget and threw;
+  they now leave out what only the mounted widget knows — `scopeKey`,
+  `pauseAfterInitialization`, a borrowed model — and keep the rest, the state
+  and an owned model among it. An element printed while its asynchronous
+  disposal is still running no longer throws.
+* **Fix:** a custom model scope that has no `create` and is not built through
+  `.value` fails in debug builds with a `FlutterError` that names the scope,
+  says that `hasValue` is `false` and `create` is `null`, and points to a
+  factory or the `.value` constructor, where it used to fail on a bare assert.
 * **New:** `example/quickstart` — one screen, one `AsyncDataScope` over a local
   resource: loading, ready, and a re-created scope that releases the old
   resource before opening the new one, with a test of that order. The README

@@ -56,6 +56,9 @@ base mixin _ScopeModelElementMixin<W extends _ScopeModelBaseMixin<M>,
 
   M get model => _model ?? widget.value!;
 
+  // An owned model stays on the element; a borrowed one lives on the widget.
+  M? get _diagnosticModel => _model ?? (mounted ? widget.value : null);
+
   /// Refuses a rebuild that changes which constructor the scope was built
   /// with.
   ///
@@ -114,7 +117,24 @@ base mixin _ScopeModelElementMixin<W extends _ScopeModelBaseMixin<M>,
   @override
   void init() {
     if (!widget.hasValue) {
-      assert(widget.create != null);
+      assert(() {
+        if (widget.create == null) {
+          throw FlutterError.fromParts(<DiagnosticsNode>[
+            ErrorSummary('A scope that owns its model requires `create`.'),
+            ErrorDescription(
+              '`hasValue` is false, but `create` is null, so the scope '
+              'cannot create its model.',
+            ),
+            ErrorHint(
+              'Pass a non-null `create` factory, or build the scope through '
+              '`.value` with a model owned elsewhere.',
+            ),
+            describeElement('The scope without a model factory was'),
+          ]);
+        }
+
+        return true;
+      }());
       _model = widget.create!(this);
     }
     super.init();
