@@ -1,11 +1,11 @@
 --- a/lib/app.dart
 +++ b/lib/app.dart
-@@ -96,7 +96,7 @@
+@@ -112,7 +112,7 @@
                    )
                  : AsyncDataScope<Resource>(
                      key: ValueKey((id, _attempt)),
 -                    scopeKey: _ownership,
 +                    scopeKey: (_ownership, id),
-                     initData: (context, ctx) => widget.backend.open(id),
-                     disposeData: (resource) => resource.close(),
-                     progressBuilder: (context, progress) => _loading(id),
+                     initData: (context, ctx) async {
+                       try {
+                         return await widget.backend.open(id);

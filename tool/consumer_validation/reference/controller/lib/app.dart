@@ -5,9 +5,25 @@ import 'package:scopo/scopo.dart';
 
 import 'backend.dart';
 
-Widget buildApp(Backend backend) => AsyncScopeCoordinator(
-      child: MaterialApp(home: _ResourceDesk(backend: backend)),
-    );
+/// The backend promises no bound on how long it takes, and the task promises
+/// one live resource and an awaited release all the same. Every default limit
+/// of the package is three seconds, and an expired one gives up the wait it
+/// bounds -- a second owner then overlaps the first -- so a solution removes
+/// them. The README section `scopeKey` sets these before `runApp`; the tests
+/// enter through [buildApp], so that is where they are set here.
+void _removeTimeLimits() {
+  ScopeConfig.defaultScopeKeyTimeout = null;
+  ScopeConfig.defaultInitCancellationTimeout = null;
+  ScopeConfig.defaultDisposeScopeTimeout = null;
+  ScopeConfig.defaultWaitForChildrenTimeout = null;
+}
+
+Widget buildApp(Backend backend) {
+  _removeTimeLimits();
+  return AsyncScopeCoordinator(
+    child: MaterialApp(home: _ResourceDesk(backend: backend)),
+  );
+}
 
 final class _ResourceController extends ScopeController {
   _ResourceController(this.backend, this.id);
@@ -22,7 +38,13 @@ final class _ResourceController extends ScopeController {
   Future<void> init() async {
     // Keep the acquisition even if the scope left while open was pending.
     // The scope releases this controller when the late init returns.
-    _resource = await backend.open(id);
+    try {
+      _resource = await backend.open(id);
+    } on Object {
+      // Nobody is left to show a failure that arrives after Leave.
+      if (!mounted) return;
+      rethrow;
+    }
   }
 
   @override

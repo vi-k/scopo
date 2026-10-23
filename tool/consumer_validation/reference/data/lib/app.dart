@@ -2,9 +2,25 @@ import 'package:flutter/material.dart';
 import 'package:scopo/scopo.dart';
 import 'backend.dart';
 
-Widget buildApp(Backend backend) => AsyncScopeCoordinator(
-      child: MaterialApp(home: _Desk(backend: backend)),
-    );
+/// The backend promises no bound on how long it takes, and the task promises
+/// one live resource and an awaited release all the same. Every default limit
+/// of the package is three seconds, and an expired one gives up the wait it
+/// bounds -- a second owner then overlaps the first -- so a solution removes
+/// them. The README section `scopeKey` sets these before `runApp`; the tests
+/// enter through [buildApp], so that is where they are set here.
+void _removeTimeLimits() {
+  ScopeConfig.defaultScopeKeyTimeout = null;
+  ScopeConfig.defaultInitCancellationTimeout = null;
+  ScopeConfig.defaultDisposeScopeTimeout = null;
+  ScopeConfig.defaultWaitForChildrenTimeout = null;
+}
+
+Widget buildApp(Backend backend) {
+  _removeTimeLimits();
+  return AsyncScopeCoordinator(
+    child: MaterialApp(home: _Desk(backend: backend)),
+  );
+}
 
 final class _Desk extends StatefulWidget {
   const _Desk({required this.backend});
@@ -97,7 +113,16 @@ final class _DeskState extends State<_Desk> {
                 : AsyncDataScope<Resource>(
                     key: ValueKey((id, _attempt)),
                     scopeKey: _ownership,
-                    initData: (context, ctx) => widget.backend.open(id),
+                    initData: (context, ctx) async {
+                      try {
+                        return await widget.backend.open(id);
+                      } on Object {
+                        // A failure after Leave ends as the cancellation
+                        // it followed; a current one shows the error.
+                        ctx.check();
+                        rethrow;
+                      }
+                    },
                     disposeData: (resource) => resource.close(),
                     progressBuilder: (context, progress) => _loading(id),
                     errorBuilder: (context, error, stack, progress) =>

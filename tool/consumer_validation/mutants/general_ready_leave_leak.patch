@@ -1,6 +1,6 @@
 --- a/lib/app.dart
 +++ b/lib/app.dart
-@@ -19,6 +19,7 @@
+@@ -35,6 +35,7 @@
    String? _id;
    int _attempt = 0;
    bool _closing = false;
@@ -8,7 +8,7 @@
  
    void _leave() => setState(() => _id = null);
  
-@@ -63,7 +64,10 @@
+@@ -79,7 +80,10 @@
          mainAxisSize: MainAxisSize.min,
          children: [
            ResourceChild(resource: resource),
@@ -20,10 +20,10 @@
            _button('switch', 'Switch', () {
              setState(() {
                _id = _id == 'a' ? 'b' : 'a';
-@@ -98,7 +102,9 @@
-                     key: ValueKey((id, _attempt)),
-                     scopeKey: _ownership,
-                     initData: (context, ctx) => widget.backend.open(id),
+@@ -123,7 +127,9 @@
+                         rethrow;
+                       }
+                     },
 -                    disposeData: (resource) => resource.close(),
 +                    disposeData: (resource) async {
 +                      if (!_leakReadyLeave) await resource.close();

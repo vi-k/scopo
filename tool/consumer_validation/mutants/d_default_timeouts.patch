@@ -1,0 +1,10 @@
+--- a/lib/app.dart
++++ b/lib/app.dart
+@@ -16,7 +16,6 @@
+ }
+ 
+ Widget buildApp(Backend backend) {
+-  _removeTimeLimits();
+   return AsyncScopeCoordinator(
+     child: MaterialApp(home: _Desk(backend: backend)),
+   );

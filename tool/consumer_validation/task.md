@@ -68,12 +68,15 @@ short real-time delays. Tests can use holdOpens/holdCloses, releaseOpen(id),
 releaseClose(id), failNextOpen(id), events, liveResources and useAfterClose.
 Releasing a gate affects currently pending operations only. A failure consumes
 one opening attempt and allocates no resource. Events include open:id,
-opened:id, failed:id, close:id, closed:id and use:id:mount/tap/dispose.
+opened:id, failed:id, close:id, closed:id and use:id:mount/tap/dispose. Backend
+operations have no upper bound on duration: an opening or a release may outlast
+any default time limit of the package, and every requirement above still holds.
 
 Real event-loop time matters: some teardown work in the package runs outside
 the fake clock of widget tests. In your own tests, alternate short real waits
 inside tester.runAsync with tester.pump; pumpAndSettle alone is insufficient.
-Do not disable timeout/error reporting. Write your own meaningful widget tests,
+Removing or raising a time limit is allowed; switching off how a failure or an
+expired limit is reported is not. Write your own meaningful widget tests,
 covering the lifecycle as well as the visible screen. Finish with green fvm
 flutter analyze and fvm flutter test. Do not add dependencies beyond the
 provided scopo, Flutter/flutter_test and packages already present in the pub
@@ -88,15 +91,18 @@ that directory. Use fvm flutter and fvm dart for all SDK work.
 You may read and search your own application workspace, and these public
 materials (including code examples within them):
 
-- /Users/user/.claude/jobs/715c8327/tmp/r7/vendor/scopo/README.md
-- /Users/user/.claude/jobs/715c8327/tmp/r7/vendor/scopo/CHANGELOG.md
-- /Users/user/.claude/jobs/715c8327/tmp/r7/vendor/scopo/doc/
-- /Users/user/.claude/jobs/715c8327/tmp/r7/vendor/scopo/example/
-- /Users/user/.claude/jobs/715c8327/tmp/r7/vendor/scopo/ide/
-- /Users/user/.claude/jobs/715c8327/tmp/r7/vendor/api/ (HTML API reference)
+- @VENDOR@/scopo/README.md
+- @VENDOR@/scopo/CHANGELOG.md
+- @VENDOR@/scopo/doc/
+- @VENDOR@/scopo/example/
+- @VENDOR@/scopo/ide/
+- @VENDOR@/api/ (HTML API reference)
+- @VENDOR@/async_job_api/ (HTML API
+  reference of async_job, which scopo builds on: JobContext and its check()
+  link out to pub.dev from the scopo pages, and are documented here offline)
 
 Do not read vendor/scopo/lib/**, other scopo clones (including scopo-src), the
-kit, pub-cache sources, /Users/user/development, SDK sources, or any other path
+kit, pub-cache sources, @SOURCES@, SDK sources, or any other path
 outside your application except the public materials listed above. Toolchain
 execution and automatic compiler/package resolution are permitted; reading
 compiler and analyzer diagnostics is permitted. Do not use tools to retrieve

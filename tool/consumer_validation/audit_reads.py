@@ -18,8 +18,13 @@ import sys
 
 JS_STRING = r'''("(?:\\.|[^"\\])*"|'(?:\\.|[^'\\])*'|`(?:\\.|[^`\\])*`)'''
 PROPERTY = re.compile(r'\b(cmd|command|workdir|cwd)\s*:\s*' + JS_STRING)
+SHORTHAND = re.compile(r'[{,]\s*(cmd|command)\s*[,}]')
+_STRING = JS_STRING.replace("(", "(?:", 1)
+STRING_ARRAY = re.compile(r'\[\s*(?:' + _STRING + r'\s*,\s*)*' + _STRING + r'\s*,?\s*\]')
 READ_TOOLS = {"read_file", "read_text_file", "view_image", "open_file"}
 PATH_KEYS = ("path", "file_path", "filename", "file")
+# Source trees the executor must not read; `prepare.sh` fills it in.
+SOURCES = "@SOURCES@"
 READ_COMMANDS = {"cat", "sed", "head", "tail", "less", "more", "rg", "grep",
                  "find", "ls", "wc", "stat", "diff", "readlink", "realpath"}
 
@@ -34,7 +39,31 @@ def decode_literal(value):
 
 
 def js_commands(source):
-    """Extract literal exec_command objects without executing logged JavaScript."""
+    """Extract literal exec_command objects without executing logged JavaScript.
+
+    An object with the shorthand ``{cmd}`` takes its command from a variable;
+    Codex fills it by mapping over a literal array of strings, so every string
+    of every such array in the source stands for the shorthand calls together.
+    """
+    shorthand = False
+    for command, workdir in _js_objects(source):
+        if command is _SHORTHAND:
+            shorthand = True
+        else:
+            yield command, workdir
+    if shorthand:
+        arrays = [array.group(0) for array in STRING_ARRAY.finditer(source)]
+        if not arrays:
+            yield None, None
+        for array in arrays:
+            for literal in re.finditer(JS_STRING, array):
+                yield decode_literal(literal.group(1)), None
+
+
+_SHORTHAND = object()
+
+
+def _js_objects(source):
     for match in re.finditer(r'\bexec_command\s*\(\s*\{', source):
         start = match.end() - 1
         depth, quote, escaped, end = 0, None, False, len(source)
@@ -56,11 +85,14 @@ def js_commands(source):
                 if depth == 0:
                     end = i + 1
                     break
+        body = source[start:end]
         fields = {m.group(1): decode_literal(m.group(2))
-                  for m in PROPERTY.finditer(source[start:end])}
+                  for m in PROPERTY.finditer(body)}
         command = fields.get("cmd", fields.get("command"))
         if command is not None:
             yield command, fields.get("workdir", fields.get("cwd"))
+        elif SHORTHAND.search(body):
+            yield _SHORTHAND, None
         else:
             yield None, None
 
@@ -80,13 +112,21 @@ def flags(path):
         result.append("SCOPO_SRC")
     if "kit" in parts:
         result.append("KIT")
-    if path == "/Users/user/development" or path.startswith("/Users/user/development/"):
+    if path == SOURCES or path.startswith(SOURCES + "/"):
         result.append("DEVELOPMENT")
     if ".pub-cache" in parts:
         index = parts.index(".pub-cache")
         if any(part.startswith("scopo") for part in parts[index + 1:]):
             result.append("PUB_CACHE_SCOPO")
     return result
+
+
+def environment(path):
+    """The executor's own skills and plugins are its tooling, not the package."""
+    codex = os.path.expanduser("~/.codex")
+    if path == codex or path.startswith(codex + "/"):
+        return "environment"
+    return "unflagged"
 
 
 def pathlike(token):
@@ -269,7 +309,7 @@ def audit(files, app_root=None):
                     labels = flags(path)
                     if labels:
                         forbidden += 1
-                    print(f"READ? line {line_number} [{'|'.join(labels) or 'unflagged'}] {path}")
+                    print(f"READ? line {line_number} [{'|'.join(labels) or environment(path)}] {path}")
     print("Limitations: static literal evidence, not proof of filesystem access or intent. "
           "Directory operands are candidate read roots, not enumerated files; listings and writes may be overcounted. "
           "Variables, glob expansion, subprocesses, runtime-generated JS/shell, symlinks, and dynamic Python paths "

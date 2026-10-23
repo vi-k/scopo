@@ -28,7 +28,7 @@ def main():
         if not sdk.is_symlink():
             raise SystemExit('SDK entry must be a symlink')
         sdk.unlink()
-    sdk.symlink_to('/Users/user/fvm/versions/3.27.0')
+    sdk.symlink_to('@FLUTTER_SDK@')
     (app / '.fvmrc').write_text('{"flutter": "3.27.0"}\n')
     target = app / "test/acceptance"
     if target.exists():

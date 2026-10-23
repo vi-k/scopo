@@ -47,6 +47,20 @@ Future<void> ready(WidgetTester tester, Backend backend, String id) async {
   expect(backend.events.last, 'use:$id:tap');
 }
 
+/// Real time past every default limit of the package, which is three seconds.
+///
+/// The task promises one live resource and an awaited release with no bound on
+/// how long the backend takes, so a solution has to hold those promises beyond
+/// any default timeout too, not only within short delays.
+Future<void> outlast(WidgetTester tester) async {
+  for (var i = 0; i < 8; i++) {
+    await tester.runAsync(() => Future<void>.delayed(
+          const Duration(milliseconds: 500),
+        ));
+    await tester.pump(const Duration(milliseconds: 10));
+  }
+}
+
 void before(Backend backend, String first, String second) {
   expect(backend.events, contains(first));
   expect(backend.events, contains(second));
@@ -280,6 +294,59 @@ void main() {
     await until(
         tester, () => backend.events.where((e) => e == 'open:a').length == 2);
     await ready(tester, backend, 'a');
+    await clean(tester, backend);
+  });
+
+  testWidgets('b failure arriving after leave stays silent', (tester) async {
+    final backend = Backend(holdOpens: true)..failNextOpen('a');
+    await start(tester, backend);
+    await press(tester, 'leave');
+    expect(keyed('home'), findsOneWidget);
+    backend.releaseOpen('a');
+    await until(tester, () => backend.events.contains('failed:a'));
+    await tick(tester, 10);
+    expect(keyed('home'), findsOneWidget);
+    expect(keyed('error'), findsNothing);
+    expect(backend.liveResources, 0);
+    await clean(tester, backend);
+  });
+
+  testWidgets('d long opening after leave still excludes the next owner',
+      (tester) async {
+    final backend = Backend(holdOpens: true, holdCloses: true);
+    await start(tester, backend);
+    await press(tester, 'leave');
+    await press(tester, 'open');
+    await outlast(tester);
+    expect(keyed('loading'), findsOneWidget);
+    expect(backend.events, ['open:a'], reason: 'a second owner overlapped');
+    backend.releaseOpen('a');
+    await until(tester, () => backend.events.contains('close:a'));
+    await outlast(tester);
+    expect(backend.events.where((e) => e == 'open:a'), hasLength(1),
+        reason: backend.events.join(', '));
+    backend.releaseClose('a');
+    await until(
+        tester, () => backend.events.where((e) => e == 'open:a').length == 2);
+    expect(backend.events.indexOf('closed:a'),
+        lessThan(backend.events.lastIndexOf('open:a')));
+    await ready(tester, backend, 'a');
+    await clean(tester, backend);
+  });
+
+  testWidgets('e long release keeps closing until it is over', (tester) async {
+    final backend = Backend(holdOpens: true, holdCloses: true);
+    await start(tester, backend);
+    await ready(tester, backend, 'a');
+    await press(tester, 'close');
+    await until(tester, () => backend.events.contains('close:a'));
+    await outlast(tester);
+    expect(keyed('closing'), findsOneWidget);
+    expect(keyed('home'), findsNothing);
+    expect(backend.events, isNot(contains('closed:a')));
+    backend.releaseClose('a');
+    await until(tester, () => keyed('home').evaluate().isNotEmpty);
+    expect(backend.events, contains('closed:a'));
     await clean(tester, backend);
   });
 }

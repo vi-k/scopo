@@ -1,0 +1,12 @@
+--- a/lib/app.dart
++++ b/lib/app.dart
+@@ -117,9 +117,6 @@
+                       try {
+                         return await widget.backend.open(id);
+                       } on Object {
+-                        // A failure after Leave ends as the cancellation
+-                        // it followed; a current one shows the error.
+-                        ctx.check();
+                         rethrow;
+                       }
+                     },

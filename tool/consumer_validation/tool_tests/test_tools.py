@@ -8,6 +8,7 @@ import unittest
 
 
 KIT = Path(__file__).resolve().parents[1]
+CODEX = Path("~/.codex").expanduser()
 (KIT / ".review-tmp").mkdir(exist_ok=True)
 
 
@@ -45,6 +46,32 @@ class ToolTests(unittest.TestCase):
             self.assertIn("KIT", result.stdout)
             self.assertIn("forbidden reads: 4", result.stdout)
             self.assertIn("Limitations:", result.stdout)
+
+    def test_audit_exec_command_mapped_over_a_literal_array(self):
+        # Codex batches reads as an array of strings mapped through
+        # exec_command({cmd}); the shorthand property hides every command.
+        with tempfile.TemporaryDirectory(dir=KIT / ".review-tmp") as directory:
+            rollout = Path(directory) / "rollout.jsonl"
+            source = ('const cmds=[\n"rtk proxy cat /work/vendor/scopo/lib/a.dart",\n'
+                      f'"rtk proxy cat {CODEX}/skills/dart/SKILL.md"\n];\n'
+                      'const results=await Promise.allSettled(cmds.map('
+                      'cmd=>tools.exec_command({cmd,max_output_tokens:10000})));'
+                      'results.forEach(text);\n'
+                      'await Promise.allSettled(["rtk proxy cat README.md"].map('
+                      'cmd=>tools.exec_command({cmd})));')
+            records = [
+                {"type": "session_meta", "payload": {"cwd": "/work/app"}},
+                {"type": "response_item", "payload": {
+                    "type": "custom_tool_call", "name": "exec", "input": source}},
+            ]
+            rollout.write_text("\n".join(map(json.dumps, records)) + "\n")
+            result = self.run_tool("audit_reads.py", rollout)
+            self.assertEqual(result.returncode, 1, result.stdout)
+            self.assertNotIn("dynamic/unparsed", result.stdout)
+            self.assertIn("[VENDOR_SOURCE] /work/vendor/scopo/lib/a.dart", result.stdout)
+            self.assertIn(f"[environment] {CODEX}/skills/dart/SKILL.md", result.stdout)
+            self.assertIn("[unflagged] /work/app/README.md", result.stdout)
+            self.assertIn("forbidden reads: 1", result.stdout)
 
     def test_audit_does_not_treat_chat_mentions_as_reads_and_reports_bad_lines(self):
         with tempfile.TemporaryDirectory(dir=KIT / ".review-tmp") as directory:
