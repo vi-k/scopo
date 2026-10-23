@@ -6,6 +6,14 @@ const fullScope = DocManifest(
   support: _support,
   {
     'the-initialization-branch/AppDependencies': _library,
+    'the-initialization-branch/initDependencies': DocEnvironment(
+      '$_appDependencies\n'
+          'abstract base class ExampleState '
+          'extends ScopeState<Example, AppDependencies, ExampleState> {}\n'
+          'abstract base class Example '
+          'extends Scope<Example, AppDependencies, ExampleState> {',
+      '}',
+    ),
     'the-initialization-branch/final-job-scopeinitjob-ctx-app': DocEnvironment(
       '$_appDependencies\nFuture<void> example() async {',
       '}',

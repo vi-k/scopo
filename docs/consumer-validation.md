@@ -44,11 +44,8 @@ scopo. Экран открывает ресурс через управляем�
    Он печатает коммит scopo и базовый коммит приложения исполнителя. Переменные
    `FLUTTER_SDK` и `SOURCES` меняют путь к SDK пола и корень исходников, чтение
    которых запрещено.
-3. Проверь комплект до исполнителя, из `<каталог>/kit`:
-   `./run_acceptance.sh reference/data`,
-   `./run_acceptance.sh reference/controller` — зелёные,
-   `./run_acceptance.sh starter` — красная, `./run_mutants.sh` — все мутанты
-   `KILLED`, `python3 -m unittest discover -s tool_tests` — зелёные.
+3. Проверь комплект до исполнителя из `<каталог>/kit` командой
+   `python3 tools/verify.py --output ../verification`.
 4. Запусти исполнителя скиллом `codex` в `<каталог>/app` с брифом
    `<каталог>/brief-exec.md` и базовым коммитом из шага 2. Нужны
    writable-каталоги `~/fvm`, `~/.pub-cache`, `~/.dart-tool`,

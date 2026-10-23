@@ -287,12 +287,31 @@ scopo связывает ресурсы с деревом виджетов че�
 частично упавший `initStateAsync`. После успеха вызываются `onInitialized`
 и `notifyDependents`; собственный экран перестраивает `setState`.
 
-`close` оставляет элемент в дереве. В готовом смонтированном скоупе
-`_screenshotCompleter` ставит барьер; `_forceRebuild` обеспечивает кадр,
+Общий барьер закрытия живёт ниже, в `AsyncScopeElementBase`
+(`lib/src/scope/async_scope/async_scope_core.dart`), и на нём стоит `close()`
+трёх асинхронных семейств. `close()` смонтированного скоупа ставит
+`_closingCompleter`, и `buildChild` строит вместо ветки состояния
+`buildOnClosing` под своим `KeyedSubtree`, чтобы `State.dispose` прежнего
+поддерева отработал при любом совпадении типов. Барьер отпускает
+post-frame-колбэк этой сборки (`_completeClosingFrame`), то есть уже после
+`finalizeTree`: потребители и дочерние скоупы к тому времени сняты, и только
+тогда `_prepareClosing` пускает разбор. Когда кадры не идут,
+`_ClosingFrameObserver` и `_ensureClosingFrame` заказывают warm-up frame. Отказ
+подготовки — `close()` из сборки потомка — сбрасывает `_closingCompleter`
+и `_closeCompleter` в `_runAsyncDispose`, и следующий вызов начинает разбор
+заново.
+
+`LiteScope` и полный `Scope` переопределяют `_prepareClosing` своим барьером —
+скриншотным. `close` оставляет элемент в дереве. В готовом смонтированном
+скоупе `_screenshotCompleter` ставит барьер; `_forceRebuild` обеспечивает кадр,
 `buildOnReady` строит `ScreenshotReplacer` и `buildOnClosing` поверх. Ядро
 разбора стартует после барьера. `_closeCompleter` объединяет повторные вызовы
 и удаление в один результат, включая ошибку. В других фазах барьера нет. Ошибка
-построения закрывающей ветки и `dispose` элемента освобождают барьер.
+построения закрывающей ветки и `dispose` элемента освобождают барьер. Отказ
+`close()` из сборки потомка снимает и его: `_prepareClosing` обнуляет
+`_screenshotCompleter`, если `markNeedsBuild` бросил, так что обычная
+пересборка снова строит готовое поддерево, а следующий `close()` ставит свежий
+барьер.
 
 `ScreenshotReplacer` ждёт до `maxRetries` дополнительных кадров. При успехе
 показывает `RawImage`, при окончательной неудаче — `SizedBox.shrink`: живое

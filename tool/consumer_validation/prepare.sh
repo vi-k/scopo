@@ -9,6 +9,7 @@
 #   kit/                   this kit with its placeholders filled in
 #   app/                   the executor's repository, made from kit/starter
 #   brief-exec.md          the executor's brief: head, task.md, tail
+#   manifest.json          scopo commit and SHA-256 of prepared vendor/kit inputs
 #
 # The placeholders are @VENDOR@, @SOURCES@, @FLUTTER_SDK@ and, in the brief,
 # @APP@. FLUTTER_SDK and SOURCES can be overridden from the environment.
@@ -44,8 +45,9 @@ pin() {
 
 # 1. The public copy, and the API reference built from it.
 V=$RUN/vendor/scopo
+SCOPO_COMMIT=$(git -C "$REPO" rev-parse HEAD)
 mkdir -p "$V"
-git -C "$REPO" archive HEAD | tar -x -C "$V"
+git -C "$REPO" archive "$SCOPO_COMMIT" | tar -x -C "$V"
 (
   cd "$V"
   # Anchored entries of .pubignore are paths; the rest never reach git.
@@ -134,6 +136,16 @@ rm -rf "$RUN/app/.dart_tool" "$RUN/app/build"
   echo
   cat "$RUN/kit/brief/exec-tail.md"
 } > "$RUN/brief-exec.md"
+
+python3 - "$RUN" "$SCOPO_COMMIT" <<'PY'
+import importlib.util, sys
+from pathlib import Path
+root = Path(sys.argv[1])
+spec = importlib.util.spec_from_file_location('verify', root/'kit/tools/verify.py')
+verify = importlib.util.module_from_spec(spec)
+spec.loader.exec_module(verify)
+verify.write_manifest(root, sys.argv[2])
+PY
 
 echo "scopo:  $(git -C "$REPO" rev-parse --short HEAD)"
 echo "api:    $(find "$RUN/vendor/api" -name '*.html' | wc -l | tr -d ' ') pages"

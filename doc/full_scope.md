@@ -78,9 +78,18 @@ final class AppDependencies implements ScopeDependencies {
 }
 ```
 
-A container that needs no asynchronous work at all is returned as it is —
-`initDependencies` is a `Future`, and `AppDependencies()` satisfies one without
-a wrapper of any kind.
+For a container built entirely synchronously, return it from an `async`
+`initDependencies` method. `async` wraps the returned container in the
+`Future<AppDependencies>` the override requires:
+
+```dart
+@override
+Future<AppDependencies> initDependencies(
+  BuildContext context,
+  ScopeInitContext ctx,
+) async =>
+    AppDependencies();
+```
 
 The four function types the scope is built from are named as well, for anyone
 passing them around: `ScopeInitCallback`, `ScopeWaitingBuilder`,
@@ -191,11 +200,11 @@ Groups nest freely and a group name may be empty (see the paths below).
 The **first** type parameter of `ScopeAutoDependencies` is the class being
 declared —
 `HomeDependencies extends ScopeAutoDependencies<HomeDependencies, …>`. It is
-what the container hands the scope once the tree is up, so it is what
-`Scope.of` returns to the subtree. Naming another container there is the one
-mistake this parameter invites, and it is refused before anything is built: the
-type of the container that finishes cannot be the type of a container that
-never started.
+the container type that `initDependencies` returns to the scope once the tree
+is up. `Scope.of` returns the state; the subtree gets the container through its
+`dependencies`. Naming another container there is the one mistake this
+parameter invites, and it is refused before anything is built: the type of the
+container that finishes cannot be the type of a container that never started.
 
 The **second** is what `buildDependencies` receives: `void` for the container
 above, which needs nothing from the outside; declare `BuildContext` instead
@@ -440,8 +449,9 @@ of it is awaited:
    framework calls it before the whole teardown when the tree takes the scope
    down, and not until the tree comes down after a `close()`. It is sealed on
    `ScopeState` for that reason. Ticker mixins have the same restriction here:
-   use the [child-state animation owner](lite_scope.md#the-state) rather than
-   releasing an active controller in the scope state's `onUnmount`.
+   use the
+   [child-state animation owner](https://pub.dev/documentation/scopo/latest/topics/LiteScope-topic.html#the-state)
+   rather than releasing an active controller in the scope state's `onUnmount`.
 2. An initialization still in flight is cancelled, or awaited if it cannot be
    cancelled. The cancellation is bounded by `initCancellationTimeout`
    (`ScopeConfig.defaultInitCancellationTimeout` by default), so that an
@@ -467,11 +477,19 @@ of it is awaited:
    let through.
 
 Every step is guarded on its own, and so are the two halves of steps 1 and 4–5:
-a failure in one is never a reason to skip what comes behind it. The first
-failure is handed to whoever called `close()` once the whole teardown is over.
-For a scope taken off the tree, it is reported through
-`FlutterError.reportError` instead. Every failure behind it is reported through
-`FlutterError.reportError` too.
+a failure in one is never a reason to skip what comes behind it. Of the
+failures thrown by the scope's own steps, including a hand-written
+`ScopeDependencies.dispose`, the first is handed to whoever called `close()`
+once the whole teardown is over. For a scope taken off the tree, it is reported
+through `FlutterError.reportError` instead. Subsequent failures of those steps
+are reported through `FlutterError.reportError` too.
+
+`ScopeAutoDependencies.dispose` handles tree failures itself: it reports the
+failure raised by the root walk through `FlutterError.reportError` and does not
+rethrow it. Even when two leaves fail, that is one report for the failed tree.
+A successful `await close()` does not mean that every automatic dependency was
+released successfully. All leaf failures remain available in
+`flattenDependenciesWithErrors()` and through `ScopeConfig.observer.onError`.
 
 `close()` starts that same teardown while the scope is still on screen: the
 ready subtree is frozen into a screenshot, `buildOnClosing` is shown on top of

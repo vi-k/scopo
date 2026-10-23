@@ -284,13 +284,21 @@ alone. A `Scope` tears its state down before its dependencies, and each half is
 guarded on its own, so both can fail, and `onError` carries them both.
 
 Where such a failure goes besides the observer depends on whether anybody is
-left to be handed it. The asynchronous teardown raises the first one at whoever
-asked for it — `close()`, say — and reports the rest. Nothing at all is raised
-while the framework is taking a scope off the tree: that caller is a loop
-unmounting a whole batch of elements with no boundary around any one of them,
-over a list it has already cleared, so a throw there would cost every scope
-behind this one the teardown it is owed. Both channels still carry the failure;
-neither of them is the throw.
+left to be handed it. Of the failures thrown by the scope's own teardown steps,
+including a hand-written `ScopeDependencies.dispose`, the first reaches whoever
+asked for the teardown — `close()`, say — and the rest are reported. Nothing at
+all is raised while the framework is taking a scope off the tree: that caller
+is a loop unmounting a whole batch of elements with no boundary around any one
+of them, over a list it has already cleared, so a throw there would cost every
+scope behind this one the teardown it is owed. Both channels still carry the
+failure; neither of them is the throw.
+
+`ScopeAutoDependencies.dispose` handles tree failures itself and does not
+rethrow them: `FlutterError.reportError` gets one report for the failed tree,
+even if several leaves failed. A successful `await close()` therefore does not
+prove that every automatic dependency was released successfully. All leaf
+failures are available in `flattenDependenciesWithErrors()` and through
+`onError`.
 
 An error reaching `onError` is never the only way it is reported: a scope also
 hands its initialization failures to `buildOnError`, and the failures nobody
@@ -698,7 +706,7 @@ behaviour, so the analyzer names it and renaming your member settles it.
 The nine public names built on `logger_builder` are gone: `ScopeConfig.logger`,
 `ScopeLogger`, `ScopeLevelLogger`, `ScopeLog`, `ScopeLogPublisher`,
 `ScopeLogFormatter`, `ScopeLogTransformer`, `ScopeLogLevel` and
-`ScopeLogCallback`. The package has no external dependencies now.
+`ScopeLogCallback`. The package no longer depends on `logger_builder`.
 
 What each of them was for:
 

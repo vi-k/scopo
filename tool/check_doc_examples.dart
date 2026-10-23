@@ -75,7 +75,7 @@ Future<void> main(List<String> arguments) async {
     }
     final root = File.fromUri(Platform.script).parent.parent.absolute;
     final examples = <_Example>[];
-    final problems = <String>[];
+    final problems = _checkTopicLinks(root);
     for (final document in _documents) {
       final blocks = _extract(File('${root.path}/${document.path}'));
       final owners = <String, List<_Block>>{};
@@ -275,6 +275,65 @@ dependencies:
   } finally {
     await bench?.delete(recursive: true);
   }
+}
+
+List<String> _checkTopicLinks(Directory root) {
+  final problems = <String>[];
+  final documents = Directory('${root.path}/doc')
+      .listSync()
+      .whereType<File>()
+      .where((file) => file.path.endsWith('.md'))
+      .toList()
+    ..sort((a, b) => a.path.compareTo(b.path));
+  final links = RegExp(
+    r'\]\(\s*(?:<([^>]*)>|([^\s)]*))'
+    r'|^ {0,3}\[[^\]]+\]:\s*(?:<([^>]*)>|(\S+))',
+    multiLine: true,
+  );
+  for (final document in documents) {
+    final lines = const LineSplitter().convert(document.readAsStringSync());
+    String? fence;
+    final prose = <String>[];
+    for (final line in lines) {
+      final marker = RegExp(r'^ {0,3}(`{3,}|~{3,})(.*)$').firstMatch(line);
+      if (fence == null && marker != null) {
+        fence = marker.group(1);
+        prose.add('');
+      } else if (fence != null) {
+        if (RegExp('^ {0,3}${RegExp.escape(fence)}'
+                '${RegExp.escape(fence[0])}*\\s*\$')
+            .hasMatch(line)) {
+          fence = null;
+        }
+        prose.add('');
+      } else {
+        prose.add(line);
+      }
+    }
+    // Keep offsets and line numbers while excluding inline code as well.
+    final text = prose.join('\n').replaceAllMapped(
+          RegExp(r'(`+)[\s\S]*?\1'),
+          (match) => match[0]!.replaceAll(RegExp(r'[^\n]'), ' '),
+        );
+    for (final match in links.allMatches(text)) {
+      final target = match[1] ?? match[2] ?? match[3] ?? match[4]!;
+      if (target.startsWith('https://') ||
+          target.startsWith('http://') ||
+          target.startsWith('#')) {
+        continue;
+      }
+      final line = '\n'.allMatches(text.substring(0, match.start)).length + 1;
+      final path = 'doc/${document.uri.pathSegments.last}';
+      final problem = '$path:$line: relative Markdown link: $target';
+      problems.add(problem);
+      stdout.writeln('FAIL $problem');
+    }
+  }
+  if (problems.isEmpty) {
+    stdout.writeln('PASS doc/*.md: Markdown links use HTTP(S) URLs or anchors');
+  }
+
+  return problems;
 }
 
 String _flutterExecutable() {

@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Mutations must cause behavioral failures, not compilation or runner errors."""
 import os
+import json
 from pathlib import Path
 import shutil
 import subprocess
@@ -8,13 +9,36 @@ import tempfile
 
 KIT = Path(__file__).resolve().parents[1]
 
+def classify(run):
+    paths = [line[len('Result: '):] for line in run.stdout.splitlines()
+             if line.startswith('Result: ')]
+    try:
+        if len(paths) != 1:
+            raise ValueError('missing or ambiguous result path')
+        result = json.loads(Path(paths[0]).read_text())
+        keys = ('passed', 'failed', 'skipped', 'incomplete', 'infrastructure_errors')
+        if any(not isinstance(result[key], list) or
+               any(not isinstance(name, str) for name in result[key]) for key in keys):
+            raise ValueError('invalid result lists')
+        if any(result[key] for key in ('skipped', 'incomplete', 'infrastructure_errors')):
+            return 'INVALID', 'infrastructure, skipped or incomplete scenarios'
+        if not result['passed'] and not result['failed']:
+            return 'INVALID', 'no completed scenarios'
+        if result['failed'] and run.returncode:
+            return 'KILLED', '; '.join(result['failed'])
+        if not result['failed'] and not run.returncode:
+            return 'SURVIVED', 'none'
+        return 'INVALID', 'inconsistent exit and scenario results'
+    except (OSError, ValueError, KeyError, TypeError):
+        return 'INVALID', 'missing or malformed acceptance result'
+
 def main():
     work = Path(tempfile.mkdtemp(prefix='mutants-', dir=KIT/'.review-tmp'))
     env = dict(os.environ, TMPDIR=str(KIT/'.review-tmp'))
     baseline = subprocess.run([str(KIT/'run_acceptance.sh'), str(KIT/'reference/data')],
                               env=env, capture_output=True, text=True)
     (work/'baseline.log').write_text(baseline.stdout+baseline.stderr)
-    if baseline.returncode:
+    if classify(baseline)[0] != 'SURVIVED':
         print('INVALID baseline: reference acceptance must pass before mutation')
         print(f'Artifacts: {work}')
         return 1
@@ -35,19 +59,14 @@ def main():
         run = subprocess.run([str(KIT/'run_acceptance.sh'), str(app)],
                              env=env, capture_output=True, text=True)
         (work/f'{patch.stem}.log').write_text(run.stdout+run.stderr)
-        failures = [line[5:] for line in run.stdout.splitlines()
-                    if line.startswith('FAIL ') and not line.startswith('FAIL loading ')]
-        if 'Compilation failed' in run.stdout or 'Failed to load' in run.stdout:
-            failures = []
-        if run.returncode and failures:
+        status, reason = classify(run)
+        if status == 'KILLED':
             killed += 1
-            print(f'KILLED {patch.stem}: {"; ".join(failures)}', flush=True)
-        elif run.returncode:
+        elif status == 'INVALID':
             invalid += 1
-            print(f'INVALID {patch.stem}: infrastructure or compilation failure', flush=True)
         else:
             survived += 1
-            print(f'SURVIVED {patch.stem}: none', flush=True)
+        print(f'{status} {patch.stem}: {reason}', flush=True)
     print(f'Artifacts: {work}')
     print(f'Mutants: {killed} KILLED, {survived} SURVIVED, {invalid} INVALID')
     return 0 if patches and killed == len(patches) else 1

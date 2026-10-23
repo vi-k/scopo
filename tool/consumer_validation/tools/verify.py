@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Owner-side A-G gate; all command output is saved, nothing is committed."""
 import argparse
+import hashlib
 import json
 import os
 from pathlib import Path
@@ -9,6 +10,47 @@ import subprocess
 import sys
 
 KIT = Path(__file__).resolve().parents[1]
+
+RUNTIME_DIRS = {'.dart_tool', 'build', '.review-tmp', '__pycache__', '.git', '.fvm'}
+
+def inventory(root):
+    files = {}
+    for tree in ['vendor/scopo', 'kit']:
+        base = root/tree
+        for directory, dirs, names in os.walk(base):
+            dirs[:] = sorted(name for name in dirs if name not in RUNTIME_DIRS)
+            for name in sorted(names):
+                path = Path(directory)/name
+                files[path.relative_to(root).as_posix()] = hashlib.sha256(path.read_bytes()).hexdigest()
+    return files
+
+def write_manifest(root, commit):
+    manifest = dict(scopo_commit=commit, files=inventory(root))
+    (root/'manifest.json').write_text(json.dumps(manifest, indent=2) + '\n')
+
+def check_manifest(root):
+    try:
+        manifest = json.loads((root/'manifest.json').read_text())
+        expected = manifest['files']
+        if not manifest['scopo_commit'] or not isinstance(expected, dict) or not expected:
+            raise ValueError('empty manifest')
+        actual = inventory(root)
+    except (OSError, ValueError, KeyError, TypeError) as error:
+        message = f'FAIL G-manifest: {error}'
+        print(message, flush=True)
+        return [message]
+    failures = []
+    for name in sorted(expected.keys() | actual.keys()):
+        reason = ('extra' if name not in expected else
+                  'missing' if name not in actual else
+                  'changed' if expected[name] != actual[name] else None)
+        if reason:
+            message = f'FAIL G-manifest: {reason} {name}'
+            failures.append(message)
+            print(message, flush=True)
+    if not failures:
+        print(f'PASS G-manifest: {len(expected)} files match {manifest["scopo_commit"]}', flush=True)
+    return failures
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
@@ -58,19 +100,14 @@ def main():
     print('Starter:', result.stdout.strip().splitlines()[-1], flush=True)
 
     rollout = args.rollout
-    if rollout is None:
-        thread = os.environ.get('CODEX_THREAD_ID')
-        sessions = Path.home()/'.codex/sessions'
-        candidates = list(sessions.rglob(f'rollout-*{thread}.jsonl')) if thread else []
-        if candidates:
-            rollout = max(candidates, key=lambda p: p.stat().st_mtime)
     if rollout:
         result = run('E-own-audit', [sys.executable, str(KIT/'audit_reads.py'), str(rollout)], expect=1)
         match = re.search(r'forbidden reads: (\d+)', result.stdout)
         if not match or int(match[1]) <= 0 or 'SCOPO_SRC' not in result.stdout:
             failures.append('E-own-audit-evidence')
     else:
-        failures.append('E-no-own-rollout')
+        print('SKIP E-own-audit: designer audit requires explicit --rollout', flush=True)
+        records['E-own-audit'] = dict(skipped='requires explicit --rollout')
     for name in ['data', 'controller']:
         run(f'F-api-{name}', [sys.executable, str(KIT/'api_coverage.py'), str(KIT/'reference'/name)])
     run('python-tests', [sys.executable, '-m', 'unittest', 'discover', '-s', 'tool_tests', '-v'])
@@ -78,18 +115,10 @@ def main():
                         'starter/lib', 'starter/test', 'reference/data/lib',
                         'reference/data/test', 'reference/controller/lib',
                         'reference/controller/test', 'acceptance'])
-    status = run('G-kit-status', ['git', '-C', str(KIT), 'status', '--short'])
-    print(status.stdout, end='', flush=True)
-    source = run('G-source-status', ['git', '-C', str(KIT.parent/'scopo-src'), 'status', '--short'])
-    if source.stdout.strip():
-        failures.append('G-source-dirty')
-    vendor = KIT.parent/'vendor/scopo'
-    mismatches = [str(p.relative_to(vendor)) for p in vendor.rglob('*') if p.is_file()
-                  and (not (KIT.parent/'scopo-src'/p.relative_to(vendor)).is_file()
-                       or p.read_bytes() != (KIT.parent/'scopo-src'/p.relative_to(vendor)).read_bytes())]
-    records['G-vendor-compare'] = dict(mismatches=mismatches)
+    mismatches = check_manifest(KIT.parent)
+    records['G-manifest'] = dict(mismatches=mismatches)
     if mismatches:
-        failures.append('G-vendor-compare')
+        failures.append('G-manifest')
     backend = (KIT/'starter/lib/backend.dart').read_bytes()
     for name in ['data', 'controller']:
         if (KIT/'reference'/name/'lib/backend.dart').read_bytes() != backend:

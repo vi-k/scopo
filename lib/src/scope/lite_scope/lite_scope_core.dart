@@ -334,7 +334,15 @@ abstract base class LiteScopeElementBase<
       // anyway; `notifyClients` still runs, so the pending notification is not
       // lost.
       _forceRebuild = true;
-      markNeedsBuild();
+      var prepared = false;
+      try {
+        markNeedsBuild();
+        prepared = true;
+      } finally {
+        // A refused rebuild has no disposal waiting on this barrier yet.
+        // Keep the live subtree, and let a later close install a fresh one.
+        if (!prepared) _screenshotCompleter = null;
+      }
 
       return screenshotCompleter.future;
     } else {
@@ -354,10 +362,10 @@ abstract base class LiteScopeElementBase<
     // longer in the tree -- nothing would ever release the barrier, so
     // installing it would make this future hang forever.
     //
-    // The barrier is installed at most once per element: a repeated [close]
-    // must not replace the barrier that the already running
-    // [_performAsyncDispose] is waiting for, otherwise [_completeScreenshot]
-    // would release the new one and orphan the old one.
+    // Once preparation succeeds, a repeated [close] must not replace the
+    // barrier that an already running [_performAsyncDispose] is waiting for,
+    // otherwise [_completeScreenshot] would release the new one and orphan
+    // the old one.
     if (mounted && state is AsyncScopeReady) {
       _screenshotCompleter ??= Completer<void>();
     }

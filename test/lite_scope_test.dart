@@ -1324,6 +1324,127 @@ void main() {
       );
     });
 
+    testWidgets(
+        'a refused close() keeps the ready subtree on an ordinary rebuild',
+        (tester) async {
+      final closeNow = ValueNotifier(false);
+      addTearDown(closeNow.dispose);
+      late final _CloseScopeElement element;
+      Object? refusal;
+
+      Widget app() => _app(
+            _CloseScope(
+              init: _becomesReady,
+              closingBody: const Text('closing'),
+              body: ListenableBuilder(
+                listenable: closeNow,
+                builder: (context, child) {
+                  if (closeNow.value) {
+                    element.close().onError((error, stackTrace) {
+                      refusal = error;
+                    });
+                  }
+
+                  return const SizedBox(
+                    width: 100,
+                    height: 100,
+                    child: Text('ready'),
+                  );
+                },
+              ),
+            ),
+          );
+
+      await tester.pumpWidget(app());
+      await tester.pumpAndSettle();
+      element = _scopeOf(tester);
+      final state = element.createdState!;
+      closeNow.value = true;
+      await tester.pump();
+      expect(refusal, isFlutterError);
+
+      closeNow.value = false;
+      await tester.pumpWidget(app());
+      await tester.pumpAndSettle();
+
+      try {
+        expect(find.text('ready'), findsOneWidget);
+        expect(find.text('closing'), findsNothing);
+        expect(state.disposeStateAsyncCount, 0);
+        expect(state.mounted, isTrue);
+        expect(element.createdState, same(state));
+      } finally {
+        await _teardown(tester);
+      }
+    });
+
+    testWidgets(
+        'a retry after a refused close() waits for the subtree before disposal',
+        (tester) async {
+      final closeNow = ValueNotifier(false);
+      addTearDown(closeNow.dispose);
+      final disposeGate = Completer<void>();
+      late final _CloseScopeElement element;
+      Object? refusal;
+
+      await tester.pumpWidget(
+        _app(
+          _CloseScope(
+            init: _becomesReady,
+            disposeGate: disposeGate,
+            closingBody: const Text('closing'),
+            body: ListenableBuilder(
+              listenable: closeNow,
+              builder: (context, child) {
+                if (closeNow.value) {
+                  element.close().onError((error, stackTrace) {
+                    refusal = error;
+                  });
+                }
+
+                return const SizedBox(
+                  width: 100,
+                  height: 100,
+                  child: Text('ready'),
+                );
+              },
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+      element = _scopeOf(tester);
+      final state = element.createdState!;
+      closeNow.value = true;
+      await tester.pump();
+      expect(refusal, isFlutterError);
+      closeNow.value = false;
+      await tester.pump();
+
+      var closed = false;
+      unawaited(element.close().then((_) => closed = true));
+      // The retry must wait for a new frame to unmount the live subtree.
+      expect(state.mounted, isTrue);
+      expect(state.disposeStateAsyncCount, 0);
+      await settle(tester, until: () => state.disposeStateAsyncCount == 1);
+
+      expect(state.mounted, isFalse);
+      expect(find.text('ready'), findsNothing);
+      expect(find.text('closing'), findsOneWidget);
+      expect(state.disposeStateAsyncCount, 1);
+      expect(closed, isFalse);
+
+      var joined = false;
+      unawaited(element.close().then((_) => joined = true));
+      disposeGate.complete();
+      await settle(tester, until: () => closed && joined);
+      expect(closed, isTrue);
+      expect(joined, isTrue);
+      await _teardown(tester);
+      expect(state.disposeStateAsyncCount, 1);
+      expect(element.disposeScopeCount, 1);
+    });
+
     // M5 of the sixth review. `close()` from the build of a descendant is a
     // mistake of the caller's -- the framework refuses `markNeedsBuild()`
     // there -- but the refusal used to be permanent. The whole run was sealed
@@ -2135,6 +2256,9 @@ final class _CloseScope
   /// failure the guard around the closing build cannot see.
   final bool failClosingMount;
 
+  /// The closing branch when neither of the controlled failures is requested.
+  final Widget? closingBody;
+
   const _CloseScope({
     super.key,
     required this.init,
@@ -2151,6 +2275,7 @@ final class _CloseScope
     this.wrapInApp = false,
     this.failClosingBuild = false,
     this.failClosingMount = false,
+    this.closingBody,
   });
 
   @override
@@ -2228,7 +2353,7 @@ final class _CloseScopeElement extends LiteScopeElementBase<_CloseScope,
       return const Stack();
     }
 
-    return null;
+    return widget.closingBody;
   }
 
   @override

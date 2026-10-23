@@ -70,7 +70,7 @@ abstract base class AsyncControllerScopeElementBase<
   @override
   bool get hasController => hasData;
 
-  /// Kept from the moment it is created, so the synchronous half of the
+  /// Kept once accepted as unused, so the synchronous half of the
   /// teardown can reach it even when the initialization never finished.
   C? _controller;
 
@@ -96,7 +96,7 @@ abstract base class AsyncControllerScopeElementBase<
   @nonVirtual
   @override
   Future<C> initDataAsync(ScopeInitContext ctx) async {
-    final controller = _controller = createController(this);
+    final controller = createController(this);
 
     // The family promises "a controller created, initialized and released on
     // every path", and it can only keep that for a controller that has not
@@ -105,7 +105,7 @@ abstract base class AsyncControllerScopeElementBase<
     // reused instance passed straight through this initialization: the ready
     // branch went up over a controller that was not running, `mounted` and
     // all, and nothing anywhere said a word. Refused here, where the mistake
-    // is, and at no cost in release.
+    // is, before taking ownership, and at no cost in release.
     assert(() {
       if (!_controllerIsUnused(controller)) {
         throw FlutterError.fromParts(<DiagnosticsNode>[
@@ -128,6 +128,8 @@ abstract base class AsyncControllerScopeElementBase<
 
       return true;
     }());
+
+    _controller = controller;
 
     try {
       await controller.performInit();

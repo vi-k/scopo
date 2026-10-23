@@ -585,6 +585,88 @@ void main() {
           'a paragraph the reader has to get through',
     );
   });
+
+  for (final closeBeforeRemoval in [false, true]) {
+    testWidgets(
+      closeBeforeRemoval
+          ? 'closing a rejected scope leaves the original controller running'
+          : 'removing a rejected scope leaves the original controller running',
+      (tester) async {
+        final controller = _TestController();
+        Future<void> Function()? closeRejectedScope;
+        addTearDown(() async {
+          await tester.pumpWidget(const SizedBox.shrink());
+          await settle(
+            tester,
+            until: () => controller.calls.contains('dispose'),
+          );
+        });
+
+        Widget scope(String name) => AsyncControllerScope<_TestController>(
+              key: ValueKey(name),
+              createController: (context) => controller,
+              progressBuilder: (context) => const Text('initializing'),
+              errorBuilder: (context, error, stackTrace) {
+                closeRejectedScope =
+                    () => AsyncControllerScope.of<_TestController>(
+                          context,
+                          listen: false,
+                        ).close();
+
+                return Text('error: $error');
+              },
+              builder: (context, controller) => const Text('ready'),
+            );
+
+        Widget app(bool second) => Directionality(
+              textDirection: TextDirection.ltr,
+              child: Column(
+                children: [
+                  scope('first'),
+                  if (second) scope('second'),
+                ],
+              ),
+            );
+
+        await tester.pumpWidget(app(false));
+        await tester.pumpAndSettle();
+        expect(controller.mounted, isTrue);
+        expect(controller.calls, ['init']);
+        expect(find.text('ready'), findsOneWidget);
+
+        await tester.pumpWidget(app(true));
+        await tester.pumpAndSettle();
+        expect(find.textContaining('has already been used'), findsOneWidget);
+        expect(controller.calls, ['init']);
+
+        if (closeBeforeRemoval) {
+          var closed = false;
+          unawaited(closeRejectedScope!().then((_) => closed = true));
+          await tester.pumpAndSettle();
+
+          expect(closed, isTrue);
+          expect(controller.mounted, isTrue);
+          expect(controller.calls, ['init']);
+          expect(find.text('ready'), findsOneWidget);
+        }
+
+        await tester.pumpWidget(app(false));
+        await tester.pumpAndSettle();
+
+        expect(controller.mounted, isTrue);
+        expect(controller.calls, ['init']);
+        expect(find.text('ready'), findsOneWidget);
+        expect(find.textContaining('error:'), findsNothing);
+
+        await tester.pumpWidget(const SizedBox.shrink());
+        await settle(tester, until: () => controller.calls.contains('dispose'));
+
+        expect(controller.mounted, isFalse);
+        expect(controller.calls, ['init', 'onUnmount', 'dispose']);
+        expect(tester.takeException(), isNull);
+      },
+    );
+  }
 }
 
 /// Reads the controller from the context, the way a descendant does.

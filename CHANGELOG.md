@@ -177,6 +177,28 @@
   the scope has given up — it is reported through `FlutterError.reportError` —
   and how to let such an expected failure end as the cancellation: catch it and
   call `ctx.check()` before rethrowing.
+* **Fix:** a `LiteScope.close()` or `Scope.close()` refused during a
+  descendant's build no longer leaves its screenshot barrier behind. The ready
+  subtree used to vanish on the next ordinary rebuild of the scope that was
+  never closed; it now stays mounted, and a later valid `close()` installs a
+  fresh barrier and releases the resources once.
+* **Fix:** in debug builds, an `AsyncControllerScope` that rejects a
+  controller already used by another scope no longer unmounts that controller
+  when the rejected scope is closed or leaves the tree. The controller stays
+  with its original owner until that scope is torn down.
+* **Fix:** the `Scope` and debug topics tell the failures of the scope's own
+  teardown steps, which `close()` completes with, from the failures inside a
+  `ScopeAutoDependencies` container: the container reports them through one
+  `FlutterError` without failing `close()`, and each leaf failure stays
+  available through `flattenDependenciesWithErrors()` and
+  `ScopeConfig.observer.onError`.
+* **Fix:** the `Scope` topic shows a synchronous dependency container returned
+  from an `async initDependencies` override, says that `Scope.of` returns the
+  state and the subtree reaches the container through its `dependencies`, and
+  links to the `LiteScope` topic by its published address; the documentation
+  check now fails on a relative Markdown link in a topic. The migration note of
+  the debug topic no longer claims the package has no external dependencies;
+  what it dropped is `logger_builder`.
 * **New:** `example/quickstart` — one screen, one `AsyncDataScope` over a local
   resource: loading, ready, and a re-created scope that releases the old
   resource before opening the new one, with a test of that order. The README
