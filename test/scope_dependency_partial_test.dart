@@ -331,6 +331,71 @@ void _diagnosticsGroup() {
   // Two callers can ask one tree for the same disposal, and the second is
   // owed the truth about the first: that it is not over, and how it ended.
   group('a second disposal', () {
+    for (final (label, build, path)
+        in <(String, ScopeDependency Function(ScopeDependency), String)>[
+      ('leaf', (leaf) => leaf, 'db'),
+      (
+        'named group',
+        (leaf) => ScopeDependency.sequential('app', [leaf]),
+        'app/db',
+      ),
+      (
+        'anonymous group',
+        (leaf) => ScopeDependency.concurrent('', [leaf]),
+        'db',
+      ),
+      (
+        'nested named group',
+        (leaf) => ScopeDependency.sequential('app', [
+              ScopeDependency.concurrent('storage', [leaf]),
+            ]),
+        'app/storage/db',
+      ),
+    ]) {
+      test('receives the same wrapped failure for the $label', () async {
+        final started = Completer<void>();
+        final parked = Completer<void>();
+        final cause = StateError('cannot close db');
+        final stackTrace = StackTrace.fromString('database disposal');
+        var disposeCalls = 0;
+        final tree = build(
+          ScopeDependency('db', (handle) {
+            handle.dispose = () async {
+              disposeCalls++;
+              started.complete();
+              await parked.future;
+              Error.throwWithStackTrace(cause, stackTrace);
+            };
+          }),
+        );
+
+        Future<AsyncError> capture(Future<void> disposal) =>
+            disposal.then<AsyncError>(
+              (_) => fail('Disposal must fail'),
+              onError: AsyncError.new,
+            );
+
+        await runScopeInit((ctx) => tree.init(ctx, (_) {}));
+
+        final first = capture(tree.dispose((_) {}));
+        await started.future;
+        final joined = capture(tree.dispose((_) {}));
+        parked.complete();
+
+        final failures = await Future.wait([first, joined]);
+        expect(disposeCalls, 1);
+        for (final failure in failures) {
+          expect(failure.error, isA<ScopeDependencyException>());
+          final error = failure.error as ScopeDependencyException;
+          expect(error.name, path);
+          expect(error.error, same(cause));
+          expect(error.stackTrace, same(stackTrace));
+          expect(failure.stackTrace, same(stackTrace));
+        }
+        expect(failures[1].error, same(failures[0].error));
+      });
+    }
+
     // A group promises reverse order, and the promise was kept only as long as
     // one walk was running. A second `dispose()` arriving while the first was
     // parked found the child it was parked in already stripped of its hook --

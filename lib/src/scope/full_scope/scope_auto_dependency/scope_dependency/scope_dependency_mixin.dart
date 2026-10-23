@@ -581,10 +581,14 @@ mixin ScopeDependencyMixin implements ScopeDependency, ScopeObservable {
   }
 
   void _handleDisposalError(Object error, StackTrace stackTrace) {
-    // Kept for whoever joined this walk; the first one is the one they get,
-    // as it is the one the walk itself carries out.
-    _disposalFailure ??= AsyncError(error, stackTrace);
-    _handleError(error, stackTrace, ScopeDependencyDisposalFailed.new);
+    try {
+      _handleError(error, stackTrace, ScopeDependencyDisposalFailed.new);
+    } on ScopeDependencyException catch (error, stackTrace) {
+      // Keep the outgoing error, after this node has wrapped it or prefixed
+      // its path, so whoever joined receives exactly what the walk raises.
+      _disposalFailure ??= AsyncError(error, stackTrace);
+      rethrow;
+    }
   }
 
   void _handlePostCancelError(

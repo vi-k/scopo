@@ -53,6 +53,10 @@ frozen into a screenshot, the closing screen is drawn on top of it, and the
 button returns only when the disposal is over. It is the tab to look at before
 using `close()` for anything real.
 
+The screen sets `disposeScopeTimeout` to ten seconds to allow its four
+sequential one-second releases and pauses to finish with room to spare. The
+default three-second limit is too short for this teardown.
+
 **NavigationNode** pushes screens, dialogs and bottom sheets through a nested
 `Navigator`, and lets them read the scope above — which is what the root
 navigator of an application cannot do. The child screen reads a counter from a

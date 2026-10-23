@@ -119,7 +119,10 @@ said. Giving up on the picture is not giving up on replacing the child: what
 waits on `onCompleted` waits in order to let go of whatever the child holds,
 and a child left standing gives that caller the report without the thing it was
 reported for. `onCompleted` fires exactly once per state, whichever way it
-ended, including when the widget is removed from the tree first.
+ended, including when the widget is removed from the tree first. It fires after
+the child has been unmounted, not when the replacement is merely scheduled: by
+then every `dispose` in the child's subtree has run, so the caller can release
+what those states were still using.
 
 ## The two small ones
 

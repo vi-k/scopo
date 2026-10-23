@@ -123,6 +123,39 @@
   `initDependencies` override it is, not as a named argument `Scope` does not
   take. The subscription example of the `utils` topic says what goes between
   `listen` and `cancel` instead of a bare ellipsis.
+* **Fix:** `LiteScope.close()` releases the state's resources only after the
+  ready subtree has been unmounted. `ScreenshotReplacer` used to report
+  completion as soon as it had scheduled the replacement, so
+  `disposeStateAsync` could release a resource before an ordinary child `State`
+  that used it had run its `dispose`. `onCompleted` now fires after the child
+  is gone, whether the capture produced an image or gave up, and a replacement
+  still pending when the app is paused is applied without waiting for it to
+  resume.
+* **Fix:** custom elements of `AsyncDataScopeCore` and
+  `AsyncControllerScopeCore` now call their `disposeData` override during
+  ordinary teardown. The controller hook can extend cleanup and chain to
+  `super` without being bypassed; the controller is still disposed of once.
+* **Fix:** callers joining a dependency's running `dispose()` receive the same
+  `ScopeDependencyException` as the first caller, including the full dependency
+  path, original cause and stack trace.
+* **Fix:** the partial-cleanup recipe of the `AsyncScope` topic catches every
+  failure, releases each acquired resource on its own so that one failed
+  release does not skip the rest, and rethrows the original error with its
+  stack trace. The documentation bench now runs that recipe, not only compiles
+  it. The topic also stops calling every wait of the scope bounded: a release
+  in that cleanup that never completes keeps a mounted scope loading for as
+  long as nothing disposes of it, and `initCancellationTimeout` bounds only the
+  wait for the cancellation once disposal has begun.
+* **Fix:** the `LiteScope` topic no longer says a scope state disposes of its
+  resources "as usual": ticker mixins on a scope state cannot release an active
+  animation controller in `onUnmount`. The topic shows an ordinary child
+  `State` that owns the controller and disposes of it before `super.dispose()`,
+  which holds both on removal and on `close()`.
+* **Fix:** the "Deferred closing" screen of the demo app gives its 4.8-second
+  disposal a ten-second `disposeScopeTimeout`, so closing it no longer runs
+  into the three-second default and reports a timeout, and the demo's README
+  says why. A test closes the screen and checks that every release ran and no
+  timeout was reported.
 * **New:** `example/quickstart` — one screen, one `AsyncDataScope` over a local
   resource: loading, ready, and a re-created scope that releases the old
   resource before opening the new one, with a test of that order. The README

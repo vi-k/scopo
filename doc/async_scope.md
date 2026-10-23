@@ -321,22 +321,33 @@ try {
   acquired.add(session.close);
 
   connection = Connection(database, session);
-} on Object {
+} on Object catch (error, stackTrace) {
   for (final release in acquired.reversed) {
-    await release();
+    try {
+      await release();
+    } on Object catch (cleanupError, cleanupStack) {
+      FlutterError.reportError(
+        FlutterErrorDetails(
+          exception: cleanupError,
+          stack: cleanupStack,
+          context: ErrorDescription('during partial initialization cleanup'),
+        ),
+      );
+    }
   }
-  rethrow;
+  Error.throwWithStackTrace(error, stackTrace);
 }
 ```
 
 Keep what the guard awaits able to finish. Nothing downstream sees the failure
 until the body is done with it, so an `await` in the guard holds the failure as
-well as the resource: a `close()` that never completes leaves the scope showing
-its loading branch until `initCancellationTimeout` expires, with nothing on
-screen and nothing in the console. The scope's own waits are all bounded for
-this reason, and so is the one the dependency container of the `Scope` family
-makes on your behalf. A guard you write yourself, or cleanup registered with
-the job, must be able to finish too; the job puts no timeout around a disposer.
+well as the resource. While the scope remains mounted and no disposal has been
+requested, a `close()` that never completes keeps the loading branch visible
+indefinitely: `initCancellationTimeout` does not run then. It bounds only the
+wait for initialization cancellation during disposal; expiry lets disposal
+proceed, but does not finish the hung cleanup or deliver the body's error. A
+guard you write yourself, or cleanup registered with the job, must be able to
+finish too; the job puts no timeout around a disposer.
 
 ### What goes through the context, and what does not
 

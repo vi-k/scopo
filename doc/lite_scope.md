@@ -1,10 +1,10 @@
 # LiteScope
 
 A state class with the whole scope lifecycle behind it, and no dependency
-container in front of it. `initState` and `dispose` as usual, plus an
-asynchronous `initStateAsync` and a `disposeStateAsync` the scope waits for,
-plus `notifyDependents`, `close()`, `scopeKey` and the waiting for child
-scopes.
+container in front of it. `initState`, `build` and `setState` work as usual;
+teardown uses `onUnmount` and the awaited `disposeStateAsync` instead of an
+override of `dispose`. There is also asynchronous `initStateAsync`, plus
+`notifyDependents`, `close()`, `scopeKey` and the waiting for child scopes.
 
 This is the family for per-screen state that owns things worth releasing
 properly — controllers, subscriptions, a socket. `Scope` adds a dependency
@@ -58,6 +58,54 @@ constructor parameters are readable from the state; `isInitialized`; and
 widget of its own — `params` is the scope widget, and that is the whole answer.
 Reading `widget` throws an `UnsupportedError` saying so, which is what a
 `State` mixin written for ordinary widgets runs into.
+
+**Ticker mixins need a separate owner.** `SingleTickerProviderStateMixin` and
+`TickerProviderStateMixin` on the scope state cannot release an active
+`AnimationController` in `onUnmount()`: on ordinary removal Flutter unmounts
+descendants before ancestors, so the scope state's element runs the mixin's
+`dispose` check before the parent scope element calls `onUnmount()`. The result
+is `was disposed with an active Ticker`, and the analyzer does not warn about
+it.
+
+Let an ordinary child `State` own the animation and its ticker mixin, and
+release the controller before `super.dispose()`. Return `const AnimatedMark()`
+from the scope state's `build`, for example; this owner works both on ordinary
+removal and when `close()` takes down the ready subtree:
+
+```dart
+class AnimatedMark extends StatefulWidget {
+  const AnimatedMark({super.key});
+
+  @override
+  State<AnimatedMark> createState() => _AnimatedMarkState();
+}
+
+class _AnimatedMarkState extends State<AnimatedMark>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _controller;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(seconds: 1),
+    )..repeat();
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose(); // Before the mixin checks for active tickers.
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) => FadeTransition(
+        opacity: _controller,
+        child: const FlutterLogo(),
+      );
+}
+```
 
 The ordinary `initState` of a `State` still works and still runs synchronously,
 and `initStateAsync` is where an `await` belongs. `disposeStateAsync` is what
@@ -227,7 +275,10 @@ await ScreenScope.of(context).close();
 when the disposal is over. The ready subtree is frozen into a screenshot,
 `buildOnClosing` is shown on top of it, and the element stays mounted until the
 end — which is the point: a scope that takes a noticeable time to release
-things shows "closing…" instead of freezing on its last frame.
+things shows "closing…" instead of freezing on its last frame. The disposal
+waits until the screenshot has replaced the live subtree and that subtree has
+been unmounted, so an ordinary child `State` can still use what the scope state
+owns in its own `dispose`.
 
 The screenshot is best-effort in a precise sense: it is installed only when the
 scope is actually ready and still mounted, because in any other state nothing

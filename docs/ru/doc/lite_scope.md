@@ -1,12 +1,13 @@
 # LiteScope
 
-> Перевод `doc/lite_scope.md` (blob `c7d9005ff6d5188174050130cd319a6fd2596dab`).
+> Перевод `doc/lite_scope.md` (blob `83832e97a18bdc06cb6f36724e910fc48bd48212`).
 > Правится в том же коммите, что и оригинал; проверка — `sh docs/ru/check.sh`.
 
 Класс состояния, за которым стоит весь жизненный цикл скоупа, но перед которым
-нет контейнера зависимостей. `initState` и `dispose` как обычно, плюс
-асинхронный `initStateAsync` и `disposeStateAsync`, которого скоуп дожидается,
-плюс `notifyDependents`, `close()`, `scopeKey` и ожидание дочерних скоупов.
+нет контейнера зависимостей. `initState`, `build` и `setState` работают как
+обычно; разбор использует `onUnmount` и ожидаемый `disposeStateAsync` вместо
+переопределения `dispose`. Есть также асинхронный `initStateAsync`, плюс
+`notifyDependents`, `close()`, `scopeKey` и ожидание дочерних скоупов.
 
 Это семейство для состояния экрана, владеющего тем, что стоит освобождать
 по-человечески, — контроллерами, подписками, сокетом. `Scope` добавляет перед
@@ -60,6 +61,54 @@ final class ScreenScopeState
 виджета — `params` и есть виджет скоупа, и это весь ответ. Чтение `widget`
 бросает `UnsupportedError`, который так и говорит; на это натыкается миксин
 к `State`, написанный для обычных виджетов.
+
+**Миксинам тикера нужен отдельный владелец.** `SingleTickerProviderStateMixin`
+и `TickerProviderStateMixin` на состоянии скоупа несовместимы с освобождением
+активного `AnimationController` в `onUnmount()`: при обычном удалении Flutter
+снимает потомков раньше предков, поэтому элемент состояния скоупа выполняет
+проверку `dispose` миксина до того, как родительский элемент скоупа вызовет
+`onUnmount()`. Результат — `was disposed with an active Ticker`, и анализатор
+об этом не предупреждает.
+
+Пусть анимацией и миксином тикера владеет обычный дочерний `State`, который
+освобождает контроллер до `super.dispose()`. Например, верните
+`const AnimatedMark()` из `build` состояния скоупа; такой владелец работает
+и при обычном удалении, и когда `close()` снимает готовое поддерево:
+
+```dart
+class AnimatedMark extends StatefulWidget {
+  const AnimatedMark({super.key});
+
+  @override
+  State<AnimatedMark> createState() => _AnimatedMarkState();
+}
+
+class _AnimatedMarkState extends State<AnimatedMark>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _controller;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(seconds: 1),
+    )..repeat();
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose(); // До проверки активных тикеров в миксине.
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) => FadeTransition(
+        opacity: _controller,
+        child: const FlutterLogo(),
+      );
+}
+```
 
 Обычный `initState` у `State` продолжает работать и остаётся синхронным,
 а `initStateAsync` — место для `await`. `disposeStateAsync` — то, что
@@ -230,7 +279,10 @@ await ScreenScope.of(context).close();
 утилизация закончена. Готовое поддерево замораживается снимком, поверх
 показывается `buildOnClosing`, а элемент остаётся на дереве до самого конца —
 в этом и смысл: скоуп, который освобождает что-то заметное время, показывает
-«закрываемся…», а не замирает на последнем кадре.
+«закрываемся…», а не замирает на последнем кадре. Утилизация ждёт, пока снимок
+заменит живое поддерево и это поддерево будет размонтировано, поэтому обычный
+дочерний `State` в своём `dispose` ещё может пользоваться тем, чем владеет
+состояние скоупа.
 
 Снимок делается по возможности, и это уточнение точное: барьер снимка ставится,
 только если скоуп действительно готов и ещё на дереве, — в любом другом

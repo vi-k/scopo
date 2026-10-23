@@ -150,9 +150,9 @@ abstract base class AsyncControllerScopeElementBase<
       // What is left are the two paths where the controller really is still
       // this body's to give back: `performInit` threw, which is here, and the
       // cancellation, where the value never reaches the scope and
-      // `releaseLateValue` hands it to `disposeData` -- which is
-      // `performDispose` for this family. A controller that was handed over is
-      // released by the teardown, exactly once, as before.
+      // `releaseLateData` hands it to `_releaseController`. A controller that
+      // was handed over is released through `disposeData` by the teardown,
+      // exactly once, as before.
       await _releaseController(controller);
       rethrow;
     }
@@ -252,6 +252,11 @@ abstract base class AsyncControllerScopeElementBase<
   /// it is the only place the controller is released when the scope reached
   /// its ready state, and forgetting it leaks exactly what this family
   /// exists to keep hold of.
+  ///
+  /// Inherited [disposeScope] calls this hook once for the accepted controller,
+  /// even during the pause before the ready branch. Failed initialization and
+  /// late results never become [data]: the family releases those controllers
+  /// itself, without calling this hook.
   @mustCallSuper
   @override
   FutureOr<void> disposeData(C data) => data.performDispose();
@@ -266,7 +271,4 @@ abstract base class AsyncControllerScopeElementBase<
   /// who is no longer there.
   @override
   Future<void> releaseLateData(C data) => _releaseController(data);
-
-  @override
-  FutureOr<void> disposeScope() => _controller?.performDispose();
 }

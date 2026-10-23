@@ -70,8 +70,13 @@ abstract base class AsyncDataScopeElementBase<
   /// The initialization, ending with the value.
   Future<T> initDataAsync(ScopeInitContext ctx);
 
+  /// Releases the accepted value through [disposeData]; awaited.
+  ///
+  /// Called only after successful initialization, including the pause before
+  /// the ready branch is shown. A value that arrives after cancellation goes
+  /// through [releaseLateData] instead.
   @override
-  FutureOr<void> disposeScope() {}
+  FutureOr<void> disposeScope() => disposeData(data);
 
   @override
   Widget buildOnState(AsyncScopeState state);
@@ -143,6 +148,10 @@ abstract base class AsyncDataScopeElementBase<
   }
 
   /// Releases the value the initialization produced; awaited.
+  ///
+  /// Called by [disposeScope] for the accepted value and, by default, by
+  /// [releaseLateData] for a value that was never accepted. A failed
+  /// initialization that produced no value does not call this hook.
   @protected
   FutureOr<void> disposeData(T data);
 

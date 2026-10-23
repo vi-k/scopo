@@ -1,3 +1,4 @@
+import 'async_scope_cleanup.dart';
 import 'manifest.dart';
 
 /// The blocks of the `AsyncScope` topic.
@@ -17,7 +18,11 @@ const asyncScope = DocManifest(
         DocEnvironment.skip('Schematic conditional body contains an ellipsis.'),
     'disposal-in-order/wrong-the-connection-is-open-a': _arguments,
     'disposal-in-order/right-what-a-step-took-is-give': _arguments,
-    'disposal-in-order/final-acquired-future-void-fun': _initializer,
+    'disposal-in-order/final-acquired-future-void-fun': DocEnvironment(
+      'Future<void> example(ScopeInitContext ctx) async {',
+      '}',
+      execution: partialCleanup,
+    ),
     'disposal-in-order/final-opened-await-ctx-abandon': _initializer,
     'disposal-in-order/await-ctx-abandonable-cache-wa': _initializer,
     'disposal-in-order/await-ctx-join-database-migrat': _initializer,

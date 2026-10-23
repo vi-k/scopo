@@ -230,9 +230,6 @@ final class _AsyncDataScopeElement<W extends AsyncDataScopeBase<W, T>,
   FutureOr<void> disposeData(T data) => widget.disposeData(data);
 
   @override
-  FutureOr<void> disposeScope() => disposeData(data);
-
-  @override
   Widget buildOnState(AsyncScopeState state) => switch (state) {
         AsyncScopeWaiting() =>
           widget.buildOnWaiting(this) ?? widget.buildOnProgress(this, null),

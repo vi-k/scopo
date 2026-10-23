@@ -6,6 +6,7 @@ const liteScope = DocManifest(
   support: _support,
   {
     'litescope/ScreenScope': DocEnvironment('', ''),
+    'the-state/AnimatedMark': DocEnvironment('', ''),
     'the-state/onUnmount': DocEnvironment(
       '$_screenScope\n'
       'final StreamSubscription<void> _subscription = '

@@ -39,11 +39,15 @@ final class DocEnvironment {
   /// key declared by several.
   final bool shared;
 
+  /// An optional executable check using the same verbatim block.
+  final DocExecution? execution;
+
   const DocEnvironment(
     this.before,
     this.after, {
     this.expectedErrors = const [],
     this.shared = false,
+    this.execution,
   }) : skipReason = null;
 
   /// A block that is not Dart a reader could compile, such as a signature
@@ -52,11 +56,26 @@ final class DocEnvironment {
       : before = '',
         after = '',
         expectedErrors = const [],
-        shared = false;
+        shared = false,
+        execution = null;
 
   /// The source of a whole library around [block].
   String wrap(String support, String block) =>
       '$support\n$before\n$block$after\n';
+}
+
+/// Fakes and a Flutter test driver surrounding a document's verbatim block.
+final class DocExecution {
+  /// Imports, fakes and the opening of the function under test.
+  final String before;
+
+  /// The end of the function and its test driver.
+  final String after;
+
+  const DocExecution(this.before, this.after);
+
+  /// The source of an executable test around [block].
+  String wrap(String block) => '$before\n$block$after\n';
 }
 
 /// A contract held at compile time, outside any document.

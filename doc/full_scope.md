@@ -439,7 +439,9 @@ of it is awaited:
    Flutter's own `State.dispose` is not part of this order and cannot be: the
    framework calls it before the whole teardown when the tree takes the scope
    down, and not until the tree comes down after a `close()`. It is sealed on
-   `ScopeState` for that reason.
+   `ScopeState` for that reason. Ticker mixins have the same restriction here:
+   use the [child-state animation owner](lite_scope.md#the-state) rather than
+   releasing an active controller in the scope state's `onUnmount`.
 2. An initialization still in flight is cancelled, or awaited if it cannot be
    cancelled. The cancellation is bounded by `initCancellationTimeout`
    (`ScopeConfig.defaultInitCancellationTimeout` by default), so that an

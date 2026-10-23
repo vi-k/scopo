@@ -173,6 +173,7 @@ dependencies:
 ''');
     final sources = await Directory('${bench.path}/lib').create();
     final byFile = <String, _Example>{};
+    final executions = <String, _Example>{};
     for (var i = 0; i < examples.length; i++) {
       final example = examples[i];
       if (example.environment.skipReason case final reason?) {
@@ -184,6 +185,12 @@ dependencies:
         example.environment.wrap(example.support, example.source),
       );
       byFile[file.absolute.path] = example;
+      if (example.environment.execution case final execution?) {
+        final test = File('${bench.path}/test/example_${i}_test.dart');
+        await test.parent.create(recursive: true);
+        await test.writeAsString(execution.wrap(example.source));
+        executions[test.path] = example;
+      }
     }
 
     final get = await Process.run(
@@ -246,6 +253,20 @@ dependencies:
         failed = true;
         (details[entry.key] ?? <String>[]).forEach(stderr.writeln);
       }
+    }
+    for (final entry in executions.entries) {
+      final run = await Process.run(
+        _flutterExecutable(),
+        ['test', '--no-pub', '--reporter', 'expanded', entry.key],
+        workingDirectory: bench.path,
+      );
+      final passed = run.exitCode == 0;
+      stdout
+        ..writeln('${passed ? "PASS" : "FAIL"} ${entry.value.key}: '
+            'runtime contract')
+        ..write(run.stdout);
+      stderr.write(run.stderr);
+      if (!passed) failed = true;
     }
     if (failed) exitCode = 1;
   } on Object catch (error) {

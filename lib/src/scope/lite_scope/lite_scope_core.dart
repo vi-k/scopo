@@ -481,6 +481,11 @@ final class _LiteScopeCoreElement<
 
 /// The core state base class for [LiteScopeCore].
 ///
+/// Ticker mixins check for active tickers before [onUnmount] on tree removal;
+/// disposing an active controller in that hook is too late. Use an ordinary
+/// child [State] as the animation owner, as the `LiteScope` topic shows under
+/// "The state".
+///
 /// {@category LiteScope}
 abstract base class LiteScopeCoreState<
         W extends LiteScopeCore<W, E, S>,

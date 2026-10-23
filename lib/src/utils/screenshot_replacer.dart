@@ -27,9 +27,9 @@ final class ScreenshotReplacer extends StatefulWidget {
 
   /// Called once the screenshot is no longer pending.
   ///
-  /// Called exactly once per state: either after [child] has been replaced with
-  /// the captured image, or after the capture has definitively failed (see
-  /// [maxRetries]), or when this widget is removed from the tree.
+  /// Called exactly once per state, after [child] has been unmounted: either
+  /// replaced with the captured image, replaced with nothing after the capture
+  /// has definitively failed (see [maxRetries]), or removed with this widget.
   final void Function() onCompleted;
 
   /// The widget to be screenshot.
@@ -46,7 +46,8 @@ final class ScreenshotReplacer extends StatefulWidget {
   State<ScreenshotReplacer> createState() => _ScreenshotReplacerState();
 }
 
-final class _ScreenshotReplacerState extends State<ScreenshotReplacer> {
+final class _ScreenshotReplacerState extends State<ScreenshotReplacer>
+    with WidgetsBindingObserver {
   final GlobalKey _globalKey = GlobalKey();
   ui.Image? _image;
   bool _isCaptured = false;
@@ -57,26 +58,56 @@ final class _ScreenshotReplacerState extends State<ScreenshotReplacer> {
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     WidgetsBinding.instance.addPostFrameCallback((_) => _capture());
   }
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     // The state owns this handle: [RawImage] clones the image for its render
     // object and never disposes of the original. Released before the
     // application is told anything, so that what this state holds does not
     // depend on what the callback does.
     //
-    // The two do not meet today: a capture that produced an image reported
-    // completion in the same synchronous step, so when [dispose] is the one to
-    // report, [_image] is null. The order costs nothing and does not rely on
-    // that staying true.
+    // Removal can win the race with the replacement frame after an image has
+    // arrived. Release it here even if that frame never gets to report.
     _image?.dispose();
     _image = null;
     // The last chance to report completion: no further capture attempt can
     // happen once the state is gone.
     _reportCompleted();
     super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if ((_isCaptured || _gaveUp) && !_isCompletionReported) {
+      _ensureReplacementFrame();
+    }
+  }
+
+  void _ensureReplacementFrame() {
+    if (WidgetsBinding.instance.framesEnabled) return;
+
+    // A capture already in flight can finish after the app is paused. Its
+    // replacement must still unmount the child before releasing the caller.
+    // A warm-up frame needs no vsync; the microtask also lets a give-up in a
+    // post-frame callback leave the current frame before requesting it.
+    scheduleMicrotask(() {
+      if (mounted &&
+          !_isCompletionReported &&
+          !WidgetsBinding.instance.framesEnabled) {
+        WidgetsBinding.instance.scheduleWarmUpFrame();
+      }
+    });
+  }
+
+  void _reportAfterReplacement() {
+    // setState only marks the element dirty. The next frame applies the
+    // replacement and finalizes the old subtree before post-frame callbacks.
+    WidgetsBinding.instance.addPostFrameCallback((_) => _reportCompleted());
+    _ensureReplacementFrame();
   }
 
   /// Reports that the screenshot is no longer pending.
@@ -131,16 +162,13 @@ final class _ScreenshotReplacerState extends State<ScreenshotReplacer> {
   /// said the way it is always said, through [ScreenshotReplacer.onCompleted]
   /// and the absence of a picture.
   void _retryOrGiveUp() {
+    if (!mounted) return;
+
     if (_retries >= ScreenshotReplacer.maxRetries) {
-      // Before the report, so a caller told that the screenshot is no longer
-      // pending finds the subtree already on its way out rather than still
-      // standing.
-      if (mounted) {
-        setState(() {
-          _gaveUp = true;
-        });
-      }
-      _reportCompleted();
+      setState(() {
+        _gaveUp = true;
+      });
+      _reportAfterReplacement();
 
       return;
     }
@@ -206,7 +234,7 @@ final class _ScreenshotReplacerState extends State<ScreenshotReplacer> {
       _isCaptured = true;
     });
 
-    _reportCompleted();
+    _reportAfterReplacement();
   }
 
   @override

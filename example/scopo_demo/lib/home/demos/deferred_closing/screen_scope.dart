@@ -56,7 +56,11 @@ final class ScreenScope
   const ScreenScope({
     super.key,
     super.scopeKey,
-  }) : super(pauseAfterInitialization: const Duration(milliseconds: 200));
+  }) : super(
+          pauseAfterInitialization: const Duration(milliseconds: 200),
+          // Four sequential one-second releases need more than the default 3s.
+          disposeScopeTimeout: const Duration(seconds: 10),
+        );
 
   static ScreenState of(BuildContext context) =>
       Scope.of<ScreenScope, ScreenDependencies, ScreenState>(context);

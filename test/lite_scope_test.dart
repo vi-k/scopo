@@ -10,6 +10,91 @@ import 'utils/settle.dart';
 
 void main() {
   group('LiteScope.close()', () {
+    for (final offstage in [false, true]) {
+      testWidgets(
+        'disposes the child before its resource (offstage=$offstage)',
+        (tester) async {
+          final events = <String>[];
+          final state = _ResourceState(events);
+          await tester.pumpWidget(
+            _app(Offstage(offstage: offstage, child: _ResourceScope(state))),
+          );
+          await tester.pumpAndSettle();
+          expect(
+            find.byType(_ResourceChild, skipOffstage: false),
+            findsOneWidget,
+          );
+
+          var closed = false;
+          unawaited(state.close().then((_) => closed = true));
+          await settle(tester, until: () => closed);
+
+          expect(closed, isTrue);
+          expect(events, ['child.dispose', 'resource.dispose']);
+          expect(
+            find.byType(RawImage, skipOffstage: false),
+            offstage ? findsNothing : findsOneWidget,
+          );
+          await _teardown(tester);
+        },
+      );
+
+      testWidgets(
+        'the child can use its resource in dispose (offstage=$offstage)',
+        (tester) async {
+          final events = <String>[];
+          final state = _ResourceState(events, useResourceOnDispose: true);
+          await tester.pumpWidget(
+            _app(Offstage(offstage: offstage, child: _ResourceScope(state))),
+          );
+          await tester.pumpAndSettle();
+          expect(
+            find.byType(_ResourceChild, skipOffstage: false),
+            findsOneWidget,
+          );
+
+          var closed = false;
+          unawaited(state.close().then((_) => closed = true));
+          await settle(tester, until: () => closed);
+          // close() itself may finish before the next frame on the broken
+          // path. Give the old child its dispose before checking for errors.
+          await tester.pump();
+
+          expect(tester.takeException(), isNull);
+          expect(closed, isTrue);
+          expect(events, ['child.dispose', 'resource.dispose']);
+          await _teardown(tester);
+        },
+      );
+
+      testWidgets(
+        'removal during capture finishes close (offstage=$offstage)',
+        (tester) async {
+          final events = <String>[];
+          final state = _ResourceState(events, useResourceOnDispose: true);
+          await tester.pumpWidget(
+            _app(Offstage(offstage: offstage, child: _ResourceScope(state))),
+          );
+          await tester.pumpAndSettle();
+
+          var closed = false;
+          unawaited(state.close().then((_) => closed = true));
+          await tester.pump();
+          expect(
+            find.byType(ScreenshotReplacer, skipOffstage: false),
+            findsOneWidget,
+          );
+          await tester.pumpWidget(_app(const SizedBox.shrink()));
+          await settle(tester, until: () => closed);
+
+          expect(closed, isTrue);
+          expect(tester.takeException(), isNull);
+          expect(events, ['child.dispose', 'resource.dispose']);
+          await _teardown(tester);
+        },
+      );
+    }
+
     // `close()` installs a screenshot barrier and waits for it. The barrier is
     // only ever released by the `ScreenshotReplacer` that `buildOnReady()`
     // mounts, and `buildOnReady()` is the `AsyncScopeReady` branch of
@@ -1701,10 +1786,8 @@ void main() {
     // The order `dispose` does its two jobs in was a finding of the third review
     // (P3-8): telling the application before releasing the `ui.Image` would lose
     // the native memory of the screenshot if the callback raised. The order is
-    // the other way round now, and this is the reason it costs nothing: the two
-    // never meet. A capture that produced an image reported completion in the
-    // same synchronous step, so when `dispose` is the one to report, there is no
-    // image at all.
+    // the other way round now. This covers the no-image path, where disposal
+    // interrupts the retries and has to report completion itself.
     testWidgets(
       'when disposal is the one to report, there is no image to release',
       (tester) async {
@@ -1788,13 +1871,25 @@ void main() {
 
         await tester.pump();
 
+        expect(completedCount, 0, reason: 'the replacement is not built yet');
+        expect(
+          find.byKey(const ValueKey('captured'), skipOffstage: false),
+          findsOneWidget,
+        );
+        // Giving up still takes exactly maxRetries extra attempts. The next
+        // frame applies that decision and unmounts the child before reporting.
+        await tester.pump();
+
         expect(
           completedCount,
           1,
-          reason: 'and the attempt after the last retry gives up, exactly '
-              'once',
+          reason: 'the replacement after the last retry completes exactly once',
         );
         expect(find.byType(RawImage, skipOffstage: false), findsNothing);
+        expect(
+          find.byKey(const ValueKey('captured'), skipOffstage: false),
+          findsNothing,
+        );
 
         // Retrying must have stopped: no further frame reports again.
         for (var i = 0; i < 3; i++) {
@@ -1814,6 +1909,84 @@ void main() {
 }
 
 Widget _app(Widget child) => MaterialApp(home: Center(child: child));
+
+final class _ResourceScope extends LiteScope<_ResourceScope, _ResourceState> {
+  final _ResourceState instance;
+
+  const _ResourceScope(this.instance);
+
+  @override
+  _ResourceState createState() => instance;
+
+  @override
+  Widget buildOnWaiting(BuildContext context) => const SizedBox.shrink();
+
+  @override
+  Widget buildOnClosing(BuildContext context) => const SizedBox.shrink();
+}
+
+final class _ResourceState
+    extends LiteScopeState<_ResourceScope, _ResourceState> {
+  final List<String> events;
+  final bool useResourceOnDispose;
+  final resource = ChangeNotifier();
+
+  _ResourceState(this.events, {this.useResourceOnDispose = false});
+
+  @override
+  Widget build(BuildContext context) => _ResourceChild(
+        resource: resource,
+        onDispose: () => events.add('child.dispose'),
+        useResourceOnDispose: useResourceOnDispose,
+      );
+
+  @override
+  void disposeStateAsync() {
+    events.add('resource.dispose');
+    resource.dispose();
+  }
+}
+
+class _ResourceChild extends StatefulWidget {
+  final ChangeNotifier resource;
+  final VoidCallback onDispose;
+  final bool useResourceOnDispose;
+
+  const _ResourceChild({
+    required this.resource,
+    required this.onDispose,
+    required this.useResourceOnDispose,
+  });
+
+  @override
+  State<_ResourceChild> createState() => _ResourceChildState();
+}
+
+class _ResourceChildState extends State<_ResourceChild> {
+  void _onChanged() {}
+
+  @override
+  void initState() {
+    super.initState();
+    widget.resource.addListener(_onChanged);
+  }
+
+  @override
+  void dispose() {
+    widget.onDispose();
+    widget.resource.removeListener(_onChanged);
+    if (widget.useResourceOnDispose) {
+      // ChangeNotifier permits removeListener after disposal. Adding a
+      // listener checks that the resource is still usable by the child.
+      widget.resource.addListener(_onChanged);
+      widget.resource.removeListener(_onChanged);
+    }
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) => const SizedBox(width: 20, height: 20);
+}
 
 /// The scope element currently in the tree, offstage or not.
 _CloseScopeElement _scopeOf(WidgetTester tester) =>
