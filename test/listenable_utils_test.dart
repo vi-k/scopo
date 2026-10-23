@@ -5,6 +5,7 @@
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:scopo/listenable.dart';
 import 'package:scopo/scopo.dart';
 
 import 'utils/leaks.dart';

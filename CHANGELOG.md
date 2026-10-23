@@ -1,3 +1,17 @@
+## 0.18.0
+
+* **Breaking:** `listen` and `select` on a `Listenable` moved out of
+  `package:scopo/scopo.dart` into `package:scopo/listenable.dart`, together
+  with `ListenableListenExtension`, `ListenableSelectExtension`,
+  `ListenableSubscription`, `ListenableSelectSubscription` and
+  `CompositeListenableSubscription`. They are extensions on the framework's own
+  `Listenable`, and a file that also imported another package with a `listen`
+  and a `select` there — `flutter_solo` has both — found `listen` ambiguous and
+  its `select` silently replaced by this one, the more specific of the two; only
+  a `hide` on the `scopo` import got the code to compile. Add
+  `import 'package:scopo/listenable.dart';` where they are used.
+  `ListenableSelector` stays in the main import.
+
 ## 0.17.0
 
 * **Breaking:** the kernel is `async_job ^0.3.0`, and its breaking changes

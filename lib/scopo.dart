@@ -41,7 +41,9 @@ export 'src/utils/compare_utils.dart';
 // `ScopeWidgetElementBase`, read by `isBuilding`, and no business of a
 // consumer.
 export 'src/utils/is_building.dart' show IsBuildingExtension;
-export 'src/utils/listenable/listen.dart';
+// `listen` and `select` on a `Listenable` are not here but in
+// `package:scopo/listenable.dart`: extensions on the framework's own type meet
+// those of every other package that has one, and the import is the choice.
 export 'src/utils/listenable/listenable_selector.dart';
 export 'src/utils/listenable/listenable_view.dart';
 export 'src/utils/listenable/state_as_notifier.dart';

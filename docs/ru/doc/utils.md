@@ -1,6 +1,6 @@
 # utils
 
-> Перевод `doc/utils.md` (blob `3a7e5994cc1bd2b575e4bfb678d666de113ebde7`).
+> Перевод `doc/utils.md` (blob `30d86188f84b1f70984d011163341b3080801184`).
 > Правится в том же коммите, что и оригинал; проверка — `sh docs/ru/check.sh`.
 
 Хелперы, которые едут вместе с пакетом, но не принадлежат ни одному семейству
@@ -10,8 +10,8 @@
 
 | хелпер | что это |
 | --- | --- |
-| `ListenableListenExtension.listen` | подписка на `Listenable` в стиле `Stream` |
-| `ListenableSelectExtension.select` | слушатель, который зовут только при изменении выбранного значения |
+| `ListenableListenExtension.listen` | подписка на `Listenable` в стиле `Stream`; из `package:scopo/listenable.dart` |
+| `ListenableSelectExtension.select` | слушатель, который зовут только при изменении выбранного значения; из `package:scopo/listenable.dart` |
 | `ListenableSelector` | виджетная форма того же селектора |
 | `ListenableView` | фасад только для чтения над `Listenable` |
 | `StateAsNotifier` | миксин, делающий `State` слушаемым |
@@ -21,6 +21,20 @@
 | `IsBuildingExtension` | идёт ли сейчас сборка и как дождаться её конца |
 
 ## Слушать Listenable
+
+`listen` и `select` в `package:scopo/scopo.dart` нет. Они приходят отдельным
+импортом:
+
+`import 'package:scopo/listenable.dart';`
+
+Оба — расширения на собственный `Listenable` фреймворка, куда и другой пакет
+вправе поставить свои `listen` и `select`. Пока они экспортировались вместе
+со скоупами, то встречались с чужими в каждом файле, импортирующем оба пакета:
+`listen` становился неоднозначным, а `select` другого пакета молча подменялся
+этим — более точным из двух, — и вызов падал с ошибками о чужой сигнатуре.
+Отдельно они приходят только в тот файл, который их попросил.
+`ListenableSelector` ниже — виджет, ни с чем не сталкивается и остаётся
+в главном импорте.
 
 `addListener` и `removeListener` требуют держать колбэк при себе, поэтому
 от замыкания нельзя отписаться, не сохранив его где-то. `listen` вместо этого

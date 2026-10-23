@@ -6,8 +6,8 @@ tends to want the same tools; nothing here needs a scope above it.
 
 | helper | what it is |
 | --- | --- |
-| `ListenableListenExtension.listen` | `Stream`-style subscription to a `Listenable` |
-| `ListenableSelectExtension.select` | a listener called only when a selected value changes |
+| `ListenableListenExtension.listen` | `Stream`-style subscription to a `Listenable`; from `package:scopo/listenable.dart` |
+| `ListenableSelectExtension.select` | a listener called only when a selected value changes; from `package:scopo/listenable.dart` |
 | `ListenableSelector` | the widget form of that selector |
 | `ListenableView` | a read-only façade over a `Listenable` |
 | `StateAsNotifier` | a mixin that makes a `State` listenable |
@@ -17,6 +17,20 @@ tends to want the same tools; nothing here needs a scope above it.
 | `IsBuildingExtension` | is a build running, and how to wait for the end of it |
 
 ## Listening to a Listenable
+
+`listen` and `select` are not in `package:scopo/scopo.dart`. They come from an
+import of their own:
+
+`import 'package:scopo/listenable.dart';`
+
+Both are extensions on the framework's own `Listenable`, where another package
+is free to put a `listen` and a `select` of its own. Exported with the scopes,
+they met those in every file that imported both: `listen` was ambiguous, and
+the other package's `select` was quietly replaced by this one — the more
+specific of the two — so the call failed with errors about the wrong
+signature. Kept apart, they arrive only in a file that asks for them.
+`ListenableSelector` below is a widget, collides with nothing, and stays in the
+main import.
 
 `addListener` and `removeListener` require keeping the callback around, which
 is why a closure cannot be unsubscribed without storing it somewhere. `listen`

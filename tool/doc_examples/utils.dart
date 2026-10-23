@@ -16,6 +16,7 @@ const utilsTopic = DocManifest(
 const _body = DocEnvironment('void example() {', '}');
 const _support = '''
 import 'package:flutter/widgets.dart';
+import 'package:scopo/listenable.dart';
 import 'package:scopo/scopo.dart';
 
 class Counter extends ChangeNotifier {

@@ -88,6 +88,12 @@ flutter pub add scopo
 import 'package:scopo/scopo.dart';
 ```
 
+`listen` and `select` on a plain `Listenable` live in a second import,
+`package:scopo/listenable.dart`. They are extensions on the framework's own
+type, where other packages put methods with the same names, so a file that
+imports both packages gets only the ones it asks for; more in
+[utils](https://pub.dev/documentation/scopo/latest/topics/utils-topic.html).
+
 Start with
 [quickstart](https://github.com/vi-k/scopo/tree/main/example/quickstart): one
 `AsyncDataScope`, loading and ready states, and a button that recreates the

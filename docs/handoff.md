@@ -15,7 +15,20 @@
 
 1. Прочитай этот файл целиком, потом `docs/backlog.md`.
 2. Сверься: `git log --oneline -5`, `git status`.
-3. **Сейчас работы нет; у этой сессии в работе ничего.** 2026-10-23 выпущен
+3. **В работе: `listen`/`select` на `Listenable` уходят во второй импорт
+   `package:scopo/listenable.dart` (0.18.0, ломающая).** Решение владельца
+   2026-10-23, передано из сессии solo: «давай перенесём»; вариант «удалить
+   совсем» отвергнут. Причина — конфликт с `package:flutter_solo/listenable.dart`
+   в файле, импортирующем оба пакета; воспроизводит
+   `test/listenable_import_test.dart`. Работа — в копии
+   `.claude/worktrees/listenable-import`, ветка `worktree-listenable-import`,
+   закоммичена и отправлена в `origin`; в `main` не влита — ждёт слова
+   владельца. Гейт §6 на ветке зелёный (числа — в «Проверках»). Разбор —
+   `docs/records/2026-10-23[12]-listenable-import-design.md`. Публикации
+   не было и без отдельного слова не будет; версия в `pubspec.yaml` ещё 0.17.0,
+   её поднимает коммит выпуска.
+
+   2026-10-23 выпущен
    0.17.0: `4989d99` `Release 0.17.0`, тег `v0.17.0`, `main` и тег отправлены,
    CI на нём зелёный, pub.dev называет последней 0.17.0; по слову владельца
    «публикуй». В нём переход на `async_job ^0.3.0` вместе с его поверхностью
@@ -173,17 +186,15 @@ CI: `.github/workflows/ci.yml`, `gate` на полу, `ceiling` на stable
 
 ## Проверки
 
-Последний прогон — на исправлениях пятого ревью с поднятой версией, то есть
-на дереве выпуска 0.17.0 (2026-10-23): **746 тестов**, leak-трекер включён;
-демо **10**, quickstart **1**; четыре `analyze` — `No issues found!`; format —
-126 файлов, 0 changed; dartdoc — 0 warnings, 0 errors; переводы актуальны:
-**17**; `tool/check_doc_examples.dart` — 112 PASS, 8 SKIP, 0 FAIL. Тесты
-комплекта —
+Последний прогон — на ветке `worktree-listenable-import` (2026-10-23):
+**749 тестов**, leak-трекер включён; демо **10**, quickstart **1**; четыре
+`analyze` — `No issues found!`; format — 128 файлов, 0 changed; dartdoc —
+0 warnings, 0 errors; переводы актуальны: **17**;
+`tool/check_doc_examples.dart` — 112 PASS, 8 SKIP, 0 FAIL. Тесты комплекта —
 `python3 -m unittest discover -s tool/consumer_validation/tool_tests`, 28 OK;
-в гейт §6 они не входят. Публикационный dry-run — единственный warning
-о незакоммиченных файлах подъёма версии; сама публикация с чистого дерева
-прошла без предупреждений. `tool/` в архив не входит, `example/quickstart`
-входит.
+в гейт §6 они не входят. Публикационный dry-run на закоммиченной ветке —
+0 warnings; `lib/listenable.dart` в архиве. `tool/` в архив не входит,
+`example/quickstart` входит.
 
 Полный гейт — `AGENTS.md` §6, плюс `fvm flutter test` из `example/scopo_demo`.
 `pub publish --dry-run` считает изменённый публикуемый файл предупреждением.

@@ -1,6 +1,6 @@
 # scopo
 
-> Перевод `README.md` (blob `2201f09317c3c352cc8a1838eaea62aa08589e55`).
+> Перевод `README.md` (blob `5e413f743fac2b73ab4a93ad9cbd0dfca10dffad`).
 > Правится в том же коммите, что и оригинал; проверка — `sh docs/ru/check.sh`.
 
 [![pub version](https://img.shields.io/pub/v/scopo)](https://pub.dev/packages/scopo)
@@ -93,6 +93,12 @@ flutter pub add scopo
 ```dart
 import 'package:scopo/scopo.dart';
 ```
+
+`listen` и `select` на обычном `Listenable` лежат во втором импорте,
+`package:scopo/listenable.dart`. Это расширения на собственный тип
+фреймворка, куда другие пакеты ставят методы с теми же именами, поэтому файл,
+импортирующий оба пакета, получает только те, что попросил; подробнее —
+в [utils](https://pub.dev/documentation/scopo/latest/topics/utils-topic.html).
 
 Начните
 с [quickstart](https://github.com/vi-k/scopo/tree/main/example/quickstart):
