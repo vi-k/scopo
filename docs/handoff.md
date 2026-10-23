@@ -3,12 +3,13 @@
 > Обновлено: 2026-10-23. Файл поддерживается агентом и переписывается по ходу
 > работы — это снимок «здесь и сейчас», а не история и не список пожеланий
 > (он в `docs/backlog.md`). История — в `docs/records/`; историческая часть
-> самого этого файла вынесена пять раз: 2026-08-30
+> самого этого файла вынесена шесть раз: 2026-08-30
 > в `docs/records/2026-08-30[1]-handoff-history-log.md`, 2026-09-21
 > в `docs/records/2026-09-21[3]-handoff-archive.md`, 2026-09-22
 > в `docs/records/2026-09-22[9]-handoff-archive.md` и 2026-10-23
-> в `docs/records/2026-10-23[4]-handoff-archive.md`
-> и `docs/records/2026-10-23[6]-handoff-archive.md`.
+> в `docs/records/2026-10-23[4]-handoff-archive.md`,
+> `docs/records/2026-10-23[6]-handoff-archive.md`
+> и `docs/records/2026-10-23[11]-handoff-archive.md`.
 
 ## С чего начать после рестарта
 
