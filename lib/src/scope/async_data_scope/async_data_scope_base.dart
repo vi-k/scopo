@@ -112,6 +112,12 @@ abstract base class AsyncDataScopeBase<W extends AsyncDataScopeBase<W, T>,
   /// Releases the value [initData] produced; awaited.
   FutureOr<void> disposeData(T data);
 
+  /// Built while the scope is closing, and after its release has finished.
+  ///
+  /// Replaces the previous subtree before resources are released. Returning
+  /// `null` builds an empty [SizedBox].
+  Widget? buildOnClosing(BuildContext context) => null;
+
   /// Built while waiting for a `scopeKey` and for the first event.
   Widget? buildOnWaiting(BuildContext context) => null;
 
@@ -228,6 +234,9 @@ final class _AsyncDataScopeElement<W extends AsyncDataScopeBase<W, T>,
 
   @override
   FutureOr<void> disposeData(T data) => widget.disposeData(data);
+
+  @override
+  Widget? buildOnClosing() => widget.buildOnClosing(this);
 
   @override
   Widget buildOnState(AsyncScopeState state) => switch (state) {

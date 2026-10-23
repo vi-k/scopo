@@ -488,6 +488,14 @@ abstract base class AsyncScopeElementBase<W extends AsyncScopeCore<W, E>,
   /// callback would use the disposed notifier.
   bool _isDisposing = false;
 
+  /// One teardown per element, shared by close callers and tree removal.
+  Completer<void>? _closeCompleter;
+
+  /// The frame that replaces the old subtree, before any resources go away.
+  Completer<void>? _closingCompleter;
+  _ClosingFrameObserver? _closingFrameObserver;
+  late final _closingBranchKey = UniqueKey();
+
   /// Whether [_performAsyncDispose] has finished.
   ///
   /// Not the same question as [_isDisposing], and asked by whatever the
@@ -597,20 +605,19 @@ abstract base class AsyncScopeElementBase<W extends AsyncScopeCore<W, E>,
   /// Whether the asynchronous initialization has started.
   bool _didStartAsyncInit = false;
 
-  /// Whether the element leaving the tree is what begins the teardown.
+  /// Whether tree removal begins a teardown that has no explicit caller.
   ///
-  /// A `close()` in flight -- or one that is already over -- has a caller of
-  /// its own, and the failure of the walk is that caller's; anything else and
-  /// there is nobody, which is what the report in [dispose] is for.
-  ///
-  /// A getter rather than the flag itself, because the flag is not the whole
-  /// answer one layer down: the lite layer raises it only once its screenshot
-  /// barrier is over, and an element taken off the tree while a `close()`
-  /// waits for that barrier has a caller all the same.
-  bool get _startsTheTeardown => !_isDisposing;
+  /// The memo is installed before the closing barrier starts. `_isDisposing`
+  /// alone misses a caller waiting for a frame (or LiteScope's screenshot),
+  /// and would report that caller's failure a second time on tree removal.
+  bool get _startsTheTeardown => !_isDisposing && _closeCompleter == null;
 
   @override
   void dispose() {
+    // No closing build can follow removal. The descendants are already being
+    // unmounted in finalizeTree, and the asynchronous continuation runs after
+    // it, just as it does when the closing frame releases the barrier.
+    _completeClosingFrame();
     _widget = widget;
     // Both of these reach the application: `super.debugLabel` interpolates the
     // `tag`, and `timeoutCallbacks` is the point a family of somebody else's
@@ -1092,7 +1099,137 @@ abstract base class AsyncScopeElementBase<W extends AsyncScopeCore<W, E>,
     return _initCompleter.future;
   }
 
-  Future<void> _performAsyncDispose() async {
+  Future<void> _performAsyncDispose() {
+    // There is one disposal run per element, and every caller -- an explicit
+    // [close], a concurrent one, the implicit disposal on unmount -- must
+    // observe its outcome. Completing the shared completer *with the run
+    // itself* hands the same value, or the same error and stack trace, to all
+    // of them alike: a failure the first caller sees is never reported as a
+    // success to the next one.
+    if (_closeCompleter case final closeCompleter?) {
+      return closeCompleter.future;
+    }
+
+    // Installed before the run starts, so a caller arriving while the run is
+    // still synchronous joins it instead of starting a second one.
+    final closeCompleter = Completer<void>();
+    _closeCompleter = closeCompleter;
+    closeCompleter.complete(_runAsyncDispose());
+
+    return closeCompleter.future;
+  }
+
+  Future<void> _runAsyncDispose() async {
+    // Everything above [_disposeAsyncScope] is the run asking to be
+    // shown, not the run releasing anything -- and it is the half that can be
+    // refused by the framework rather than by this package. `markNeedsBuild()`
+    // on an element that is active while a build is running is refused
+    // outright ("setState() or markNeedsBuild() called during build"), and so
+    // is one made while the tree is locked; both are ordinary places for a
+    // caller to be -- `close()` from the build of a descendant, `close()` from
+    // the `dispose()` of a neighbouring `State`.
+    //
+    // Sealed into `_closeCompleter`, such a refusal was permanent: every later
+    // caller joined that failed future, the teardown on the way out of the
+    // tree among them, and the scope was then never disposed of at all --
+    // not a stage skipped but the whole of it, the `scopeKey`, the
+    // registration with the parent and the model included. A mistake of the
+    // caller's answered once is the most this can be, so the memo is dropped
+    // here and the next call runs the teardown afresh. The failure still
+    // reaches the caller that made it.
+    //
+    // Only the prefix is guarded. Once the release below has begun there is no
+    // running it again, and a caller joining it has to be told what it did.
+    try {
+      // Without a barrier the old synchronous prefix must stay synchronous:
+      // LiteScope can close in the microtask window before a free key arrives.
+      // Yielding here would let that initialization start before cancellation.
+      final preparation = _prepareClosing();
+      if (preparation is Future<void>) {
+        await preparation;
+      }
+      // ignore: avoid_catching_errors
+    } on Object {
+      _stopObservingClosingFrame();
+      // The closing branch goes with the memo: nothing is being released, and
+      // a scope still holding its resources must not keep building as closed.
+      _closingCompleter = null;
+      _closeCompleter = null;
+      rethrow;
+    }
+
+    await _disposeAsyncScope();
+  }
+
+  /// Prepares the closing branch; LiteScope uses its screenshot barrier here.
+  FutureOr<void> _prepareClosing() {
+    if (_closingCompleter case final closingCompleter?) {
+      // A pending notify-only rebuild would discard the closing widget and
+      // leave its old consumers mounted. This rebuild has to replace them.
+      _forceRebuild = true;
+      markNeedsBuild();
+
+      // A synchronous setup failure is terminal, but its ErrorWidget is not
+      // the closing branch. Keep the failed init phase (so setup never runs
+      // twice), and stop replaying its error before buildChild can replace it.
+      _initFailure = null;
+
+      // The app can pause after close() asked for a frame but before vsync.
+      // Observe only this barrier: after it is released there is no subtree
+      // left to replace, and no reason to keep the element in the binding.
+      final observer =
+          _closingFrameObserver = _ClosingFrameObserver(_ensureClosingFrame);
+      WidgetsBinding.instance.addObserver(observer);
+      _ensureClosingFrame();
+
+      return closingCompleter.future;
+    }
+  }
+
+  void _ensureClosingFrame() {
+    // As with ScreenshotReplacer, a warm-up frame needs no vsync. Leaving
+    // the current frame first also covers a pause delivered from a frame
+    // callback; recheck because removal or the normal frame may win the race.
+    scheduleMicrotask(() {
+      if (_closingCompleter case final closingCompleter?
+          when mounted &&
+              !closingCompleter.isCompleted &&
+              !WidgetsBinding.instance.framesEnabled) {
+        WidgetsBinding.instance.scheduleWarmUpFrame();
+      }
+    });
+  }
+
+  void _stopObservingClosingFrame() {
+    if (_closingFrameObserver case final observer?) {
+      WidgetsBinding.instance.removeObserver(observer);
+      _closingFrameObserver = null;
+    }
+  }
+
+  void _completeClosingFrame() {
+    _stopObservingClosingFrame();
+    if (_closingCompleter case final closingCompleter?
+        when !closingCompleter.isCompleted) {
+      closingCompleter.complete();
+    }
+  }
+
+  /// Closes the scope, unmounting its subtree before releasing resources.
+  ///
+  /// The closing branch stays on screen after release. The `scopeKey` is
+  /// released before this future completes, while the element is still mounted.
+  /// Repeated calls join one teardown with the same success or first failure.
+  @override
+  Future<void> close() {
+    if (mounted && _closeCompleter == null) {
+      _closingCompleter ??= Completer<void>();
+    }
+
+    return _performAsyncDispose();
+  }
+
+  Future<void> _disposeAsyncScope() async {
     _isDisposing = true;
 
     // First, and synchronously: everything below may take a while, and until
@@ -1515,8 +1652,30 @@ abstract base class AsyncScopeElementBase<W extends AsyncScopeCore<W, E>,
     }
   }
 
+  /// Builds the branch that replaces the subtree while closing.
+  ///
+  /// `null` builds an empty [SizedBox]. The branch remains after release.
+  Widget? buildOnClosing() => null;
+
   @override
-  Widget buildChild() => buildOnState(model.state);
+  Widget buildChild() {
+    if (_closingCompleter != null) {
+      // Register before calling user code: even a closing builder that throws
+      // must not strand the teardown. finalizeTree runs before this callback,
+      // so consumers and child scopes have left the old subtree by then.
+      WidgetsBinding.instance
+          .addPostFrameCallback((_) => _completeClosingFrame());
+      // Matching widget types and keys otherwise update the ready element in
+      // place. A distinct boundary makes its State.dispose run even when both
+      // builders return the same kind of widget, before its resources go away.
+      return KeyedSubtree(
+        key: _closingBranchKey,
+        child: buildOnClosing() ?? const SizedBox.shrink(),
+      );
+    }
+
+    return buildOnState(model.state);
+  }
 
   @override
   void debugFillProperties(DiagnosticPropertiesBuilder properties) {
@@ -1536,4 +1695,14 @@ abstract base class AsyncScopeElementBase<W extends AsyncScopeCore<W, E>,
       }
     }
   }
+}
+
+/// Watches only while an asynchronous closing frame is still owed.
+final class _ClosingFrameObserver with WidgetsBindingObserver {
+  final VoidCallback _ensureFrame;
+
+  _ClosingFrameObserver(this._ensureFrame);
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) => _ensureFrame();
 }

@@ -21,6 +21,10 @@
   nullable factory, compiled and then failed while the scope was built, on
   the assert `widget.create != null`; it is now a compile-time error. The
   field stays nullable for the `.value` constructors.
+* **Breaking:** `AsyncScopeContext` declares `close()`, so a class that
+  implements it by hand, a mock included, has to add one. `AsyncScopeBase`,
+  `AsyncDataScopeBase` and `AsyncControllerScopeBase` gain `buildOnClosing`: a
+  subclass with a member of that name renames it.
 * **Deprecated:** `ctx.wait` is `ctx.abandonable`, and the kernel drops the old
   name in its next release. The topics, the examples and the IDE templates use
   the new one.
@@ -31,6 +35,16 @@
   `JobAnswerer` is the other half of `JobObserver`: an observer you give a
   child job of your own replaces the scope's, and with it the child's
   unanswered errors are yours to take instead of going to the zone.
+* **New:** `AsyncScope`, `AsyncDataScope` and `AsyncControllerScope` can be
+  closed in place, with `close()` on the context their `of` returns. The next
+  frame replaces the subtree with `closingBuilder` — or `buildOnClosing` in a
+  subclass, an empty `SizedBox` without either — and only once the old subtree
+  is unmounted does the teardown begin. The future completes when it is over,
+  with its first failure, and the scope's `scopeKey` is released by then while
+  the scope itself stays on screen. Repeated calls, and the removal from the
+  tree, share one teardown and its outcome. Until now only `LiteScope` had
+  `close()`; taking the widget off the tree started the same teardown with
+  nothing to await and nothing left to show.
 * **Fix:** `FlutterError.reportError` gets only the errors nobody else can be
   handed, which is what the debug topic promised. A child job's failure used to
   go there at once, so a failure the body caught and recovered from — falling

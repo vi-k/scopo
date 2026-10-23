@@ -30,8 +30,9 @@ database, a socket, a player, a signed-in session. What scopo adds:
 - **`scopeKey` serialises two scopes over one resource**: a re-created scope
   waits for the previous holder to finish letting go, with a timeout of 3 s by
   default; after expiry both owners may overlap (see [scopeKey](#scopekey));
-- **`close()` keeps the last frame on screen** while an asynchronous teardown
-  runs, instead of tearing the subtree away mid-flight;
+- **`close()` shows a closing branch** while an asynchronous teardown runs, and
+  is awaited until the release is over, instead of the subtree vanishing with
+  the release still under way (see [Closing in place](#closing-in-place));
 - **every step is observable** through a typed observer — the failures
   included.
 
@@ -69,8 +70,9 @@ you nothing: `provider` is smaller, better known, and enough.
   a single value; `notifyDependents` rebuilds only those descendants, never the
   scope's own subtree. `setState` is the other half and is untouched: it
   rebuilds the state's own subtree and reaches no subscriber.
-- **Graceful closing**: `close()` freezes the subtree as a screenshot and shows
-  `buildOnClosing` while the asynchronous disposal is running.
+- **Graceful closing**: `close()` replaces the subtree with a closing branch
+  while the asynchronous disposal is running, and completes when it is over;
+  `LiteScope` can freeze the last frame under it as a screenshot.
 - **Eight families**: from a widget that only passes its own parameters down to
   a full scope with a dependency container — take the smallest that fits.
 - **Observable lifecycle**: a typed observer is told about every
@@ -105,7 +107,7 @@ here from the smallest up — the same order the topics are in — and the large
 | objects that already exist, but whose lifecycle the tree has to drive | `AsyncScope` |
 | a value built asynchronously | `AsyncDataScope` |
 | …and that value is a controller with an `init` and a `dispose` of its own | `AsyncControllerScope` |
-| a state object with the full asynchronous lifecycle and `close()` | `LiteScope` |
+| a state object with the full asynchronous lifecycle | `LiteScope` |
 | a container of dependencies **and** a state on top of it | `Scope` |
 
 ### ScopeWidgetBase
@@ -738,6 +740,44 @@ has to handle: the future completes normally and the `TimeoutException` is
 reported through `FlutterError.reportError`, unless an `onTimeout` callback is
 given.
 
+## Closing in place
+
+Taking a scope off the tree starts its teardown, and nothing waits for it: the
+widget is gone in that frame, the release runs on with nothing on screen to say
+so, and the code that removed it learns neither when it is over nor whether it
+failed. A Close button that shows *Closing* until the connection is really
+shut, and only then goes back, needs the other order — and `close()` gives it:
+
+```dart
+class CloseDatabaseButton extends StatelessWidget {
+  const CloseDatabaseButton({super.key, required this.onClosed});
+
+  final VoidCallback onClosed;
+
+  @override
+  Widget build(BuildContext context) => TextButton(
+        onPressed: () async {
+          await AsyncDataScope.of<Database>(context, listen: false).close();
+          onClosed();
+        },
+        child: const Text('Close'),
+      );
+}
+```
+
+The scope stays where it is. The next frame replaces its subtree with
+`closingBuilder` — or `buildOnClosing` in a subclass — and unmounts the old
+one, this button included, so whatever read the database is gone before
+`disposeData` runs. The future completes when the release is over, with its
+failure if it had one, and the scope's `scopeKey` is released by then: the next
+owner of the resource can start while the closing branch is still on screen.
+The callback runs after the button has left the tree, which is why it is a
+callback rather than the button's own `context`.
+
+`AsyncScope`, `AsyncDataScope`, `AsyncControllerScope` and `LiteScope` all have
+it; `LiteScope` can also keep the last frame on screen as a screenshot under
+its closing branch. The topics have the details, under `close()`.
+
 ## Observing and configuration
 
 The package says nothing until `ScopeConfig.observer` is assigned. A
@@ -914,7 +954,7 @@ which is where to read them alongside the source of a version you have pinned.
 | [AsyncScope](https://pub.dev/documentation/scopo/latest/topics/AsyncScope-topic.html) | `doc/async_scope.md` | the asynchronous lifecycle, `scopeKey`, the coordinator |
 | [AsyncDataScope](https://pub.dev/documentation/scopo/latest/topics/AsyncDataScope-topic.html) | `doc/async_data_scope.md` | the same, producing a value |
 | [AsyncControllerScope](https://pub.dev/documentation/scopo/latest/topics/AsyncControllerScope-topic.html) | `doc/async_controller_scope.md` | the same, where that value is a controller with a lifecycle of its own |
-| [LiteScope](https://pub.dev/documentation/scopo/latest/topics/LiteScope-topic.html) | `doc/lite_scope.md` | a state class with that lifecycle, and `close()` |
+| [LiteScope](https://pub.dev/documentation/scopo/latest/topics/LiteScope-topic.html) | `doc/lite_scope.md` | a state class with that lifecycle, and a `close()` with a screenshot |
 | [Scope](https://pub.dev/documentation/scopo/latest/topics/Scope-topic.html) | `doc/full_scope.md` | the full family: dependencies, state, four branches |
 | [debug](https://pub.dev/documentation/scopo/latest/topics/debug-topic.html) | `doc/debug.md` | the observer, timeouts, and the test setup |
 | [utils](https://pub.dev/documentation/scopo/latest/topics/utils-topic.html) | `doc/utils.md` | the helpers that come with the package |

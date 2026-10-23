@@ -100,6 +100,12 @@ abstract base class AsyncControllerScopeBase<
   /// Called once, at the start of the asynchronous phase.
   C createController(BuildContext context);
 
+  /// Built while the scope is closing, and after its release has finished.
+  ///
+  /// Replaces the previous subtree before resources are released. Returning
+  /// `null` builds an empty [SizedBox].
+  Widget? buildOnClosing(BuildContext context) => null;
+
   /// Built while waiting for a `scopeKey` and for the controller.
   ///
   /// Returning `null` falls back to [buildOnProgress].
@@ -213,6 +219,9 @@ final class _AsyncControllerScopeElement<
 
   @override
   C createController(BuildContext context) => widget.createController(context);
+
+  @override
+  Widget? buildOnClosing() => widget.buildOnClosing(this);
 
   @override
   Widget buildOnState(AsyncScopeState state) => switch (state) {

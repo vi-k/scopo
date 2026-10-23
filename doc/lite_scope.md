@@ -280,6 +280,12 @@ waits until the screenshot has replaced the live subtree and that subtree has
 been unmounted, so an ordinary child `State` can still use what the scope state
 owns in its own `dispose`.
 
+`AsyncScope`, `AsyncDataScope` and `AsyncControllerScope` have the same
+`close()`, without the screenshot: their closing branch replaces the subtree
+outright — see `close()` in the `AsyncScope` topic. The screenshot is what this
+family adds, the last frame kept under `buildOnClosing` instead of giving way
+to it.
+
 The screenshot is best-effort in a precise sense: it is installed only when the
 scope is actually ready and still mounted, because in any other state nothing
 would ever release the barrier and the future would hang. A subtree that is

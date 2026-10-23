@@ -40,6 +40,12 @@ final class AsyncDataScope<T extends Object?>
     Object? progress,
   ) errorBuilder;
 
+  /// Built while the scope is closing, and after its release has finished.
+  ///
+  /// Replaces the previous subtree before resources are released. When omitted,
+  /// the closing branch is an empty [SizedBox].
+  final Widget Function(BuildContext context)? closingBuilder;
+
   /// Built once the value is there, and receives it.
   final Widget Function(BuildContext context, T data) builder;
 
@@ -66,6 +72,7 @@ final class AsyncDataScope<T extends Object?>
     void Function(T? data)? onUnmount,
     required FutureOr<void> Function(T data) disposeData,
     this.waitingBuilder,
+    this.closingBuilder,
     required this.progressBuilder,
     required this.builder,
     required this.errorBuilder,
@@ -86,6 +93,9 @@ final class AsyncDataScope<T extends Object?>
 
   @override
   FutureOr<void> disposeData(T data) => _disposeData(data);
+
+  @override
+  Widget? buildOnClosing(BuildContext context) => closingBuilder?.call(context);
 
   @override
   Widget? buildOnWaiting(BuildContext context) => waitingBuilder?.call(context);

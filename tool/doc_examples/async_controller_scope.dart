@@ -16,6 +16,10 @@ const asyncControllerScope = DocManifest(
       '$_controller\n$_player}\nvoid example(BuildContext context) {',
       '}',
     ),
+    'close/await-asynccontrollerscope-of-': DocEnvironment(
+      '$_controller\nFuture<void> example(BuildContext context) async {',
+      '}',
+    ),
     // Two buildOnReady overrides in a row: the StreamBuilder, then the bridge.
     'following-what-the-controller-/buildOnReady': DocEnvironment(
       '$_controller\n$_player',

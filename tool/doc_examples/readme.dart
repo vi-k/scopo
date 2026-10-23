@@ -36,6 +36,7 @@ const readme = DocManifest(
       'Future<void> example(BuildContext context) async {',
       '}$_application',
     ),
+    'closing-in-place/CloseDatabaseButton': _library,
     'observing-and-configuration/main':
         DocEnvironment('$_dependencies\n$_state\n$_app', _application),
     'testing/late-recordingobserver-observe': DocEnvironment(

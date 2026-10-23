@@ -27,6 +27,8 @@ const asyncScope = DocManifest(
     'disposal-in-order/await-ctx-abandonable-cache-wa': _initializer,
     'disposal-in-order/await-ctx-join-database-migrat': _initializer,
     'disposal-in-order/ctx-ondispose-temporary-close-': _initializer,
+    'close/await-asyncscope-of-context-li': _asyncBody,
+    'close/asyncscope': _widget,
     'parents-and-children/waitForChildren': DocEnvironment.skip(
       'Signature sketch uses ellipses for timeout and onTimeout arguments.',
     ),

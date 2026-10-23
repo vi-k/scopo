@@ -116,6 +116,12 @@ abstract base class AsyncScopeBase<W extends AsyncScopeBase<W>>
   /// Awaited, and called only when the initialization succeeded.
   FutureOr<void> disposeScope();
 
+  /// Built while the scope is closing, and after its release has finished.
+  ///
+  /// Replaces the previous subtree before resources are released. Returning
+  /// `null` builds an empty [SizedBox].
+  Widget? buildOnClosing(BuildContext context) => null;
+
   /// Built while waiting for a `scopeKey` and for the first event.
   ///
   /// Returning `null` falls back to [buildOnProgress].
@@ -240,6 +246,9 @@ final class _AsyncScopeElement<W extends AsyncScopeBase<W>>
 
   @override
   FutureOr<void> disposeScope() => widget.disposeScope();
+
+  @override
+  Widget? buildOnClosing() => widget.buildOnClosing(this);
 
   @override
   Widget buildOnState(AsyncScopeState state) => switch (state) {

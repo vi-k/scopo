@@ -24,6 +24,12 @@ final class AsyncControllerScope<C extends ScopeController>
     StackTrace stackTrace,
   ) errorBuilder;
 
+  /// Built while the scope is closing, and after its release has finished.
+  ///
+  /// Replaces the previous subtree before resources are released. When omitted,
+  /// the closing branch is an empty [SizedBox].
+  final Widget Function(BuildContext context)? closingBuilder;
+
   /// Built once the controller is ready, and receives it.
   final Widget Function(BuildContext context, C controller) builder;
 
@@ -46,6 +52,7 @@ final class AsyncControllerScope<C extends ScopeController>
     super.pauseAfterInitialization,
     required C Function(BuildContext context) createController,
     this.waitingBuilder,
+    this.closingBuilder,
     required this.progressBuilder,
     required this.builder,
     required this.errorBuilder,
@@ -53,6 +60,9 @@ final class AsyncControllerScope<C extends ScopeController>
 
   @override
   C createController(BuildContext context) => _createController(context);
+
+  @override
+  Widget? buildOnClosing(BuildContext context) => closingBuilder?.call(context);
 
   @override
   Widget? buildOnWaiting(BuildContext context) => waitingBuilder?.call(context);

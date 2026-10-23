@@ -157,6 +157,23 @@ final position = AsyncControllerScopeBase.select<Player, PlayerController, int>(
 );
 ```
 
+## close()
+
+```dart
+await AsyncControllerScope.of<PlayerController>(
+  context,
+  listen: false,
+).close();
+```
+
+Closes the scope where it stands, and completes once the controller has been
+disposed of. The next frame replaces the subtree with `closingBuilder`, or
+`buildOnClosing` in a subclass — an empty `SizedBox` when there is neither —
+and unmounts what read the controller; only then does the controller hear
+`onUnmount()`, and its `dispose()` is awaited. The order, the repeated calls
+and the `scopeKey` released while the scope is still on screen are those of
+`close()` in the `AsyncScope` topic.
+
 ## Following what the controller hears
 
 The scope notifies its dependents when its own state changes — waiting, ready,

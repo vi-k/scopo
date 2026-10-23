@@ -1,6 +1,6 @@
 # scopo
 
-> Перевод `README.md` (blob `3de74664da82f3c7f94ad8ee59a060c1d2b15be1`).
+> Перевод `README.md` (blob `2201f09317c3c352cc8a1838eaea62aa08589e55`).
 > Правится в том же коммите, что и оригинал; проверка — `sh docs/ru/check.sh`.
 
 [![pub version](https://img.shields.io/pub/v/scopo)](https://pub.dev/packages/scopo)
@@ -34,8 +34,9 @@ scopo объединяет доступ к зависимостям с **вла�
   пересозданный скоуп ждёт, пока предыдущий владелец закончит отпускать,
   с таймаутом в три секунды по умолчанию; после истечения возможно
   одновременное владение (см. [scopeKey](#scopekey));
-- **`close()` удерживает на экране последний кадр**, пока идёт асинхронный
-  разбор, вместо того чтобы вырвать поддерево на полпути;
+- **`close()` показывает ветку закрытия**, пока идёт асинхронный разбор, и его
+  дожидаются до конца освобождения, вместо того чтобы поддерево исчезло, пока
+  освобождение ещё идёт (см. [Закрытие на месте](#закрытие-на-месте));
 - **каждый шаг наблюдаем** типизированным наблюдателем — отказы в том числе.
 
 Riverpod закрывает часть этого: `FutureProvider` и `AsyncValue` дают ветки
@@ -74,8 +75,9 @@ Riverpod закрывает часть этого: `FutureProvider` и `AsyncVal
   и никогда — собственное поддерево скоупа. `setState` — вторая половина, и он
   не тронут: перестраивает собственное поддерево состояния и до подписчиков
   не доходит.
-- **Аккуратное закрытие**: `close()` замораживает поддерево снимком
-  и показывает `buildOnClosing`, пока идёт асинхронная утилизация.
+- **Аккуратное закрытие**: `close()` заменяет поддерево веткой закрытия, пока
+  идёт асинхронная утилизация, и завершается, когда она закончена; `LiteScope`
+  может заморозить под ней последний кадр снимком.
 - **Восемь семейств**: от виджета, который только отдаёт вниз собственные
   параметры, до полного скоупа с контейнером зависимостей — берут самое
   маленькое из подходящих.
@@ -111,7 +113,7 @@ import 'package:scopo/scopo.dart';
 | объектами, которые уже есть, но их жизненным циклом должно править дерево | `AsyncScope` |
 | значением, которое создаётся асинхронно | `AsyncDataScope` |
 | …и это значение — контроллер с собственными `init` и `dispose` | `AsyncControllerScope` |
-| объектом состояния с полным асинхронным циклом и `close()` | `LiteScope` |
+| объектом состояния с полным асинхронным циклом | `LiteScope` |
 | контейнером зависимостей **и** состоянием поверх него | `Scope` |
 
 ### ScopeWidgetBase
@@ -750,6 +752,45 @@ await AsyncScopeCoordinator.waitForChildren(context);
 а `TimeoutException` уходит в `FlutterError.reportError`, если не задан колбэк
 `onTimeout`.
 
+## Закрытие на месте
+
+Снятие скоупа с дерева запускает его разбор, и никто этого разбора
+не дожидается: виджет исчезает в том же кадре, освобождение идёт дальше без
+всякого следа на экране, а код, который скоуп убрал, не узнаёт ни когда оно
+кончилось, ни удалось ли. Кнопке «Закрыть», которая показывает «Закрываемся»,
+пока соединение действительно не закрыто, и только потом уходит назад, нужен
+обратный порядок — его и даёт `close()`:
+
+```dart
+class CloseDatabaseButton extends StatelessWidget {
+  const CloseDatabaseButton({super.key, required this.onClosed});
+
+  final VoidCallback onClosed;
+
+  @override
+  Widget build(BuildContext context) => TextButton(
+        onPressed: () async {
+          await AsyncDataScope.of<Database>(context, listen: false).close();
+          onClosed();
+        },
+        child: const Text('Close'),
+      );
+}
+```
+
+Скоуп остаётся на месте. Следующий кадр заменяет его поддерево
+на `closingBuilder` — или `buildOnClosing` в подклассе — и размонтирует старое,
+вместе с этой кнопкой, так что всё, что читало базу, уходит раньше, чем
+запустится `disposeData`. Future завершается, когда освобождение закончено,
+с его отказом, если он был, и `scopeKey` скоупа к этому моменту уже отпущен:
+следующий владелец ресурса может стартовать, пока ветка закрытия ещё на экране.
+Колбэк вызывается, когда кнопка уже ушла с дерева, поэтому это колбэк,
+а не собственный `context` кнопки.
+
+Он есть у `AsyncScope`, `AsyncDataScope`, `AsyncControllerScope` и `LiteScope`;
+`LiteScope` вдобавок может оставить на экране последний кадр снимком под своей
+веткой закрытия. Подробности — в темах, в разделе `close()`.
+
 ## Наблюдение и настройка
 
 Пакет молчит, пока не присвоен `ScopeConfig.observer`. У `ScopeObserver`
@@ -927,7 +968,7 @@ Flutter, — потому и уехал. Добавьте пакет, попра
 | [AsyncScope](https://pub.dev/documentation/scopo/latest/topics/AsyncScope-topic.html) | `doc/async_scope.md` | асинхронного жизненного цикла, `scopeKey`, координатора |
 | [AsyncDataScope](https://pub.dev/documentation/scopo/latest/topics/AsyncDataScope-topic.html) | `doc/async_data_scope.md` | того же, но с производимым значением |
 | [AsyncControllerScope](https://pub.dev/documentation/scopo/latest/topics/AsyncControllerScope-topic.html) | `doc/async_controller_scope.md` | то же, где это значение — контроллер с собственным жизненным циклом |
-| [LiteScope](https://pub.dev/documentation/scopo/latest/topics/LiteScope-topic.html) | `doc/lite_scope.md` | класса состояния с этим циклом и `close()` |
+| [LiteScope](https://pub.dev/documentation/scopo/latest/topics/LiteScope-topic.html) | `doc/lite_scope.md` | класса состояния с этим циклом и `close()` со снимком |
 | [Scope](https://pub.dev/documentation/scopo/latest/topics/Scope-topic.html) | `doc/full_scope.md` | полного семейства: зависимости, состояние, четыре ветки |
 | [debug](https://pub.dev/documentation/scopo/latest/topics/debug-topic.html) | `doc/debug.md` | наблюдателя, таймаутов и настройки для тестов |
 | [utils](https://pub.dev/documentation/scopo/latest/topics/utils-topic.html) | `doc/utils.md` | хелперов, которые едут вместе с пакетом |

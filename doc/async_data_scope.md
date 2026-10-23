@@ -206,6 +206,19 @@ scope's own type first, the selected type last. The selector receives the
 context rather than the data, so it can reach `dataOrNull` or `hasError` as
 well.
 
+## close()
+
+```dart
+await AsyncDataScope.of<Database>(context, listen: false).close();
+```
+
+Closes the scope where it stands, and completes once the database is released.
+The next frame replaces the subtree with `closingBuilder` — an empty `SizedBox`
+without it — and unmounts what read the database; only then is the value handed
+to `disposeData`. The order, the repeated calls and the `scopeKey` released
+while the scope is still on screen are those of `close()` in the `AsyncScope`
+topic.
+
 ## What the value does not do
 
 Storing the value does not make it observable. `AsyncDataScope` notifies its

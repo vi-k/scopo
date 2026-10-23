@@ -1,6 +1,6 @@
 # AsyncControllerScope
 
-> Перевод `doc/async_controller_scope.md` (blob `69cb5c7b820c5985415ac1f00ea90c9155ffd7fc`).
+> Перевод `doc/async_controller_scope.md` (blob `586187c6e036768a188d61cd453f9a4fed8aa278`).
 > Правится в том же коммите, что и оригинал; проверка — `sh docs/ru/check.sh`.
 
 Скоуп, всё содержимое которого — контроллер: объект со своим жизненным циклом,
@@ -158,6 +158,23 @@ final position = AsyncControllerScopeBase.select<Player, PlayerController, int>(
   (scope) => scope.controller.position,
 );
 ```
+
+## close()
+
+```dart
+await AsyncControllerScope.of<PlayerController>(
+  context,
+  listen: false,
+).close();
+```
+
+Закрывает скоуп на месте и завершается, когда контроллер утилизирован.
+Следующий кадр заменяет поддерево на `closingBuilder` или `buildOnClosing`
+в подклассе — на пустой `SizedBox`, когда нет ни того, ни другого, —
+и размонтирует то, что читало контроллер; только после этого контроллер слышит
+`onUnmount()`, а его `dispose()` дожидаются. Порядок, повторные вызовы
+и `scopeKey`, отпущенный, пока скоуп ещё на экране, — те же, что у `close()`
+в теме `AsyncScope`.
 
 ## Как следить за тем, что слышит контроллер
 

@@ -127,7 +127,6 @@ abstract base class LiteScopeElementBase<
   var _autoSelfDependence = true;
   final _globalStateKey = GlobalKey<S>();
   S? _state;
-  Completer<void>? _closeCompleter;
   Completer<void>? _screenshotCompleter;
 
   /// Creates the element of a lite scope.
@@ -160,6 +159,7 @@ abstract base class LiteScopeElementBase<
   Widget wrapState(Widget child) => child;
 
   /// Builds a widget to display while the scope is closing.
+  @override
   Widget? buildOnClosing() => null;
 
   //
@@ -320,98 +320,33 @@ abstract base class LiteScopeElementBase<
 
   S _createState() => _state = createState().._scopeElement = this as E;
 
-  /// The same question, asked of the layer that has a second answer to it.
-  ///
-  /// `_isDisposing` goes up only after the screenshot barrier is over, and the
-  /// barrier takes frames -- the replacer needs a build, and the picture a
-  /// retry or two. An element taken off the tree in that window said "nobody
-  /// is waiting for this walk" while `close()` was waiting for exactly it, so
-  /// a failed teardown was announced twice: once to the caller of `close()`,
-  /// as an error on its future, and once more as a report for a caller that
-  /// was right there. The memo of the run is what makes the caller visible
-  /// from here, and it is put down before anything else happens.
   @override
-  bool get _startsTheTeardown =>
-      super._startsTheTeardown && _closeCompleter == null;
+  FutureOr<void> _prepareClosing() {
+    if (_screenshotCompleter case final screenshotCompleter?) {
+      // The barrier is released by the [ScreenshotReplacer] that
+      // [buildOnReady] mounts, and this is the rebuild that has to mount it.
+      // A [notifyDependents] left pending by the scope asks the next rebuild
+      // to skip the subtree, so `updateChild` would return the old child and
+      // throw away the widget [buildOnReady] just built -- the replacer would
+      // never be mounted, nothing would release the barrier, and a scope
+      // closed in place stays mounted, so the [dispose] fallback would not run
+      // either. `_forceRebuild` is what says the subtree has to be rebuilt
+      // anyway; `notifyClients` still runs, so the pending notification is not
+      // lost.
+      _forceRebuild = true;
+      markNeedsBuild();
 
-  @override
-  Future<void> _performAsyncDispose() {
-    // There is one disposal run per element, and every caller -- an explicit
-    // [close], a concurrent one, the implicit disposal on unmount -- must
-    // observe its outcome. Completing the shared completer *with the run
-    // itself* hands the same value, or the same error and stack trace, to all
-    // of them alike: a failure the first caller sees is never reported as a
-    // success to the next one.
-    if (_closeCompleter case final closeCompleter?) {
-      return closeCompleter.future;
+      return screenshotCompleter.future;
+    } else {
+      markNeedsBuild();
     }
-
-    // Installed before the run starts, so a caller arriving while the run is
-    // still synchronous joins it instead of starting a second one.
-    final closeCompleter = Completer<void>();
-    _closeCompleter = closeCompleter;
-    closeCompleter.complete(_runAsyncDispose());
-
-    return closeCompleter.future;
-  }
-
-  Future<void> _runAsyncDispose() async {
-    // Everything above [super._performAsyncDispose] is the run asking to be
-    // shown, not the run releasing anything -- and it is the half that can be
-    // refused by the framework rather than by this package. `markNeedsBuild()`
-    // on an element that is active while a build is running is refused
-    // outright ("setState() or markNeedsBuild() called during build"), and so
-    // is one made while the tree is locked; both are ordinary places for a
-    // caller to be -- `close()` from the build of a descendant, `close()` from
-    // the `dispose()` of a neighbouring `State`.
-    //
-    // Sealed into `_closeCompleter`, such a refusal was permanent: every later
-    // caller joined that failed future, the teardown on the way out of the
-    // tree among them, and the scope was then never disposed of at all --
-    // not a stage skipped but the whole of it, the `scopeKey`, the
-    // registration with the parent and the model included. A mistake of the
-    // caller's answered once is the most this can be, so the memo is dropped
-    // here and the next call runs the teardown afresh. The failure still
-    // reaches the caller that made it.
-    //
-    // Only the prefix is guarded. Once the release below has begun there is no
-    // running it again, and a caller joining it has to be told what it did.
-    try {
-      if (_screenshotCompleter case final screenshotCompleter?) {
-        // The barrier is released by the [ScreenshotReplacer] that
-        // [buildOnReady] mounts, and this is the rebuild that has to mount it.
-        // A [notifyDependents] left pending by the scope asks the next rebuild
-        // to skip the subtree, so `updateChild` would return the old child and
-        // throw away the widget [buildOnReady] just built -- the replacer would
-        // never be mounted, nothing would release the barrier, and a scope
-        // closed in place stays mounted, so the [dispose] fallback would not run
-        // either. `_forceRebuild` is what says the subtree has to be rebuilt
-        // anyway; `notifyClients` still runs, so the pending notification is not
-        // lost.
-        _forceRebuild = true;
-        markNeedsBuild();
-
-        await screenshotCompleter.future;
-      } else {
-        markNeedsBuild();
-      }
-      // ignore: avoid_catching_errors
-    } on Object {
-      // The one writer of this field is [_performAsyncDispose], and it writes
-      // it right before the call this body belongs to, so what stands here is
-      // this run's own memo.
-      _closeCompleter = null;
-
-      rethrow;
-    }
-
-    await super._performAsyncDispose();
   }
 
   /// Closes the scope before the disposal occurs.
   ///
   /// Allows displaying a scope closing screen, optionally replacing the
   /// internal widget with a screenshot.
+  @override
   Future<void> close() async {
     // The screenshot barrier is released by the [ScreenshotReplacer] that
     // [buildOnReady] mounts, and [buildOnState] only calls [buildOnReady] for

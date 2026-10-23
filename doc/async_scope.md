@@ -452,6 +452,52 @@ of the `Scope` family keeps the tree and its teardown — see the `Scope` topic.
 `AsyncControllerScope` closes the same hole from the other side: its controller
 is disposed of on **every** path, including the one where `init()` threw.
 
+## close()
+
+```dart
+await AsyncScope.of(context, listen: false).close();
+```
+
+Taking a scope off the tree starts the teardown above, but nothing waits for
+it: the widget is gone in that frame, and whoever removed it learns neither
+when the release is over nor how it went. `close()` runs the same teardown with
+the scope still in place, and completes when the sequence is over, with its
+first failure.
+
+The subtree goes first. The next frame builds the closing branch —
+`closingBuilder`, or `buildOnClosing` in a subclass, and an empty `SizedBox`
+when there is neither — and unmounts the old subtree in that frame, its
+consumers and child scopes with it. Only then does step 1 run, so a `dispose`
+below the scope can still use what the scope holds. The scope stays mounted in
+its closing branch after the future completes, and its `scopeKey` is released
+at step 7 without waiting for the tree: the next owner of the key starts while
+this one is still on screen.
+
+```dart
+AsyncScope(
+  initScope: (context, ctx) => connection.open(),
+  disposeScope: () => connection.close(),
+  closingBuilder: (context) => const Text('closing'),
+  progressBuilder: (context, progress) => const Text('connecting'),
+  errorBuilder: (context, error, stackTrace, progress) => Text('$error'),
+  builder: (context) => const HomeScreen(),
+);
+```
+
+`close()` works from every state. A scope still waiting for its `scopeKey`, or
+still initializing, is cancelled as it would be on removal; one whose
+initialization failed has nothing to release and completes right after its
+closing frame. The closing frame is asked for like any other, and when frames
+are off — an application in the background — a warm-up frame is scheduled
+instead of waiting for one. A scope taken off the tree before its closing frame
+goes straight on with the teardown.
+
+Calling `close()` twice does not restart anything: every call, and the removal
+from the tree, joins the one teardown and receives its outcome, the same
+failure with the same stack trace. A call the framework refuses — `close()`
+from the build of a descendant, where `markNeedsBuild` is not allowed — fails
+with that error and leaves the scope as it was; the next call starts afresh.
+
 ## Parents and children
 
 Every asynchronous scope registers with the nearest `AsyncScopeParent` above

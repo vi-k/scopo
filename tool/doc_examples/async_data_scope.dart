@@ -13,6 +13,10 @@ const asyncDataScope = DocManifest(
     'the-value-in-each-place/initdata-context-ctx-async': _arguments,
     'reading-it-from-the-subtree/final-database-asyncdatascope-': _widget,
     'reading-it-from-the-subtree/final-name-asyncdatascope-sele': _widget,
+    'close/await-asyncdatascope-of-databa': DocEnvironment(
+      'Future<void> example(BuildContext context) async {',
+      '}',
+    ),
   },
 );
 

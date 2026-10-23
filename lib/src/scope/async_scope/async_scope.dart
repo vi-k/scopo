@@ -39,6 +39,12 @@ final class AsyncScope extends AsyncScopeBase<AsyncScope> {
     Object? progress,
   ) errorBuilder;
 
+  /// Built while the scope is closing, and after its release has finished.
+  ///
+  /// Replaces the previous subtree before resources are released. When omitted,
+  /// the closing branch is an empty [SizedBox].
+  final Widget Function(BuildContext context)? closingBuilder;
+
   /// Built once the scope is ready.
   final Widget Function(BuildContext context) builder;
 
@@ -65,6 +71,7 @@ final class AsyncScope extends AsyncScopeBase<AsyncScope> {
     void Function()? onUnmount,
     required FutureOr<void> Function() disposeScope,
     this.waitingBuilder,
+    this.closingBuilder,
     required this.progressBuilder,
     required this.builder,
     required this.errorBuilder,
@@ -85,6 +92,9 @@ final class AsyncScope extends AsyncScopeBase<AsyncScope> {
 
   @override
   FutureOr<void> disposeScope() => _disposeScope();
+
+  @override
+  Widget? buildOnClosing(BuildContext context) => closingBuilder?.call(context);
 
   @override
   Widget? buildOnWaiting(BuildContext context) => waitingBuilder?.call(context);
