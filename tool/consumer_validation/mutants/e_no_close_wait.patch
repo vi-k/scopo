@@ -1,11 +1,11 @@
 --- a/lib/app.dart
 +++ b/lib/app.dart
-@@ -27,7 +27,7 @@
-     // The frame removes the scope and its ordinary resource user first.
-     await WidgetsBinding.instance.endOfFrame;
+@@ -41,7 +41,7 @@
+   /// resource user first, and completes once the resource is released. The
+   /// button that called it is gone by then, so home is this state's call.
+   Future<void> _close(BuildContext scopeContext) async {
+-    await AsyncDataScope.of<Resource>(scopeContext, listen: false).close();
++    AsyncDataScope.of<Resource>(scopeContext, listen: false).close();
      if (!mounted) return;
--    await AsyncScopeCoordinator.waitForChildren(context);
-+    AsyncScopeCoordinator.waitForChildren(context);
-     if (!mounted) return;
-     setState(() {
-       _id = null;
+     setState(() => _id = null);
+   }

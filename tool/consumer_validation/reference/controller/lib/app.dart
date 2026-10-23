@@ -66,7 +66,6 @@ final class _ResourceDeskState extends State<_ResourceDesk> {
   final _resourceSlot = Object();
   String? _selected;
   int _attempt = 0;
-  bool _closing = false;
 
   void _open() {
     setState(() {
@@ -86,18 +85,16 @@ final class _ResourceDeskState extends State<_ResourceDesk> {
     });
   }
 
-  Future<void> _close() async {
-    setState(() {
-      _closing = true;
-      _selected = null;
-    });
-    // Removing the scope unmounts its child before scopo starts release.
-    // Wait until that removal happened before snapshotting the registry.
-    await WidgetsBinding.instance.endOfFrame;
+  /// Closing in place: the scope shows `closingBuilder` in place of its child,
+  /// which goes first, and the future completes once the controller has been
+  /// disposed. Only then does the desk go home.
+  Future<void> _close(BuildContext scopeContext) async {
+    await AsyncControllerScope.of<_ResourceController>(
+      scopeContext,
+      listen: false,
+    ).close();
     if (!mounted) return;
-    await AsyncScopeCoordinator.waitForChildren(context);
-    if (!mounted) return;
-    setState(() => _closing = false);
+    setState(() => _selected = null);
   }
 
   Widget _button(String name, String caption, VoidCallback action) =>
@@ -120,9 +117,7 @@ final class _ResourceDeskState extends State<_ResourceDesk> {
   Widget build(BuildContext context) {
     final id = _selected;
     final Widget content;
-    if (_closing) {
-      content = const Text('Closing', key: ValueKey<String>('closing'));
-    } else if (id == null) {
+    if (id == null) {
       content = Column(
         key: const ValueKey<String>('home'),
         mainAxisSize: MainAxisSize.min,
@@ -133,6 +128,8 @@ final class _ResourceDeskState extends State<_ResourceDesk> {
         key: ValueKey<int>(_attempt),
         scopeKey: _resourceSlot,
         createController: (_) => _ResourceController(widget.backend, id),
+        closingBuilder: (_) =>
+            const Text('Closing', key: ValueKey<String>('closing')),
         waitingBuilder: (_) => _loading(id),
         progressBuilder: (_) => _loading(id),
         errorBuilder: (_, error, stackTrace) => Column(
@@ -145,13 +142,17 @@ final class _ResourceDeskState extends State<_ResourceDesk> {
             _button('leave', 'Leave', _leave),
           ],
         ),
-        builder: (_, controller) => Column(
+        builder: (scopeContext, controller) => Column(
           mainAxisSize: MainAxisSize.min,
           children: [
             ResourceChild(resource: controller.resource),
             _button('leave', 'Leave', _leave),
             _button('switch', 'Switch', _switch),
-            _button('close', 'Close', () => unawaited(_close())),
+            _button(
+              'close',
+              'Close',
+              () => unawaited(_close(scopeContext)),
+            ),
           ],
         ),
       );

@@ -1,6 +1,6 @@
 --- a/lib/app.dart
 +++ b/lib/app.dart
-@@ -44,7 +44,7 @@
+@@ -55,7 +55,7 @@
    Widget _loading(String id) => Column(
          mainAxisSize: MainAxisSize.min,
          children: [

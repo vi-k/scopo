@@ -34,21 +34,16 @@ final class _DeskState extends State<_Desk> {
   final Object _ownership = Object();
   String? _id;
   int _attempt = 0;
-  bool _closing = false;
 
   void _leave() => setState(() => _id = null);
 
-  Future<void> _close() async {
-    setState(() => _closing = true);
-    // The frame removes the scope and its ordinary resource user first.
-    await WidgetsBinding.instance.endOfFrame;
+  /// The scope swaps its subtree for `closingBuilder`, which unmounts the
+  /// resource user first, and completes once the resource is released. The
+  /// button that called it is gone by then, so home is this state's call.
+  Future<void> _close(BuildContext scopeContext) async {
+    await AsyncDataScope.of<Resource>(scopeContext, listen: false).close();
     if (!mounted) return;
-    await AsyncScopeCoordinator.waitForChildren(context);
-    if (!mounted) return;
-    setState(() {
-      _id = null;
-      _closing = false;
-    });
+    setState(() => _id = null);
   }
 
   Widget _button(String key, String text, VoidCallback action) => TextButton(
@@ -75,7 +70,7 @@ final class _DeskState extends State<_Desk> {
         ],
       );
 
-  Widget _ready(Resource resource) => Column(
+  Widget _ready(BuildContext context, Resource resource) => Column(
         mainAxisSize: MainAxisSize.min,
         children: [
           ResourceChild(resource: resource),
@@ -86,7 +81,7 @@ final class _DeskState extends State<_Desk> {
               _attempt++;
             });
           }),
-          _button('close', 'Close', _close),
+          _button('close', 'Close', () => _close(context)),
         ],
       );
 
@@ -95,40 +90,40 @@ final class _DeskState extends State<_Desk> {
     final id = _id;
     return Scaffold(
       body: Center(
-        child: _closing
-            ? const Text('Closing', key: ValueKey('closing'))
-            : id == null
-                ? Column(
-                    key: const ValueKey('home'),
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      _button('open', 'Open', () {
-                        setState(() {
-                          _id = 'a';
-                          _attempt++;
-                        });
-                      }),
-                    ],
-                  )
-                : AsyncDataScope<Resource>(
-                    key: ValueKey((id, _attempt)),
-                    scopeKey: _ownership,
-                    initData: (context, ctx) async {
-                      try {
-                        return await widget.backend.open(id);
-                      } on Object {
-                        // A failure after Leave ends as the cancellation
-                        // it followed; a current one shows the error.
-                        ctx.check();
-                        rethrow;
-                      }
-                    },
-                    disposeData: (resource) => resource.close(),
-                    progressBuilder: (context, progress) => _loading(id),
-                    errorBuilder: (context, error, stack, progress) =>
-                        _error(id, error),
-                    builder: (context, resource) => _ready(resource),
-                  ),
+        child: id == null
+            ? Column(
+                key: const ValueKey('home'),
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  _button('open', 'Open', () {
+                    setState(() {
+                      _id = 'a';
+                      _attempt++;
+                    });
+                  }),
+                ],
+              )
+            : AsyncDataScope<Resource>(
+                key: ValueKey((id, _attempt)),
+                scopeKey: _ownership,
+                initData: (context, ctx) async {
+                  try {
+                    return await widget.backend.open(id);
+                  } on Object {
+                    // A failure after Leave ends as the cancellation
+                    // it followed; a current one shows the error.
+                    ctx.check();
+                    rethrow;
+                  }
+                },
+                disposeData: (resource) => resource.close(),
+                closingBuilder: (context) =>
+                    const Text('Closing', key: ValueKey('closing')),
+                progressBuilder: (context, progress) => _loading(id),
+                errorBuilder: (context, error, stack, progress) =>
+                    _error(id, error),
+                builder: _ready,
+              ),
       ),
     );
   }

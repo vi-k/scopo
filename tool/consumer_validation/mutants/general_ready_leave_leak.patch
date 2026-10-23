@@ -1,14 +1,14 @@
 --- a/lib/app.dart
 +++ b/lib/app.dart
-@@ -35,6 +35,7 @@
+@@ -34,6 +34,7 @@
+   final Object _ownership = Object();
    String? _id;
    int _attempt = 0;
-   bool _closing = false;
 +  bool _leakReadyLeave = false;
  
    void _leave() => setState(() => _id = null);
  
-@@ -79,7 +80,10 @@
+@@ -74,7 +75,10 @@
          mainAxisSize: MainAxisSize.min,
          children: [
            ResourceChild(resource: resource),
@@ -20,14 +20,14 @@
            _button('switch', 'Switch', () {
              setState(() {
                _id = _id == 'a' ? 'b' : 'a';
-@@ -123,7 +127,9 @@
-                         rethrow;
-                       }
-                     },
--                    disposeData: (resource) => resource.close(),
-+                    disposeData: (resource) async {
-+                      if (!_leakReadyLeave) await resource.close();
-+                    },
-                     progressBuilder: (context, progress) => _loading(id),
-                     errorBuilder: (context, error, stack, progress) =>
-                         _error(id, error),
+@@ -116,7 +120,9 @@
+                     rethrow;
+                   }
+                 },
+-                disposeData: (resource) => resource.close(),
++                disposeData: (resource) async {
++                  if (!_leakReadyLeave) await resource.close();
++                },
+                 closingBuilder: (context) =>
+                     const Text('Closing', key: ValueKey('closing')),
+                 progressBuilder: (context, progress) => _loading(id),

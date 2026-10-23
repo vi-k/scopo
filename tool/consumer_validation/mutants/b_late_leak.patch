@@ -1,15 +1,15 @@
 --- a/lib/app.dart
 +++ b/lib/app.dart
-@@ -115,7 +115,11 @@
-                     scopeKey: _ownership,
-                     initData: (context, ctx) async {
-                       try {
--                        return await widget.backend.open(id);
-+                        final resource = await widget.backend.open(id);
-+                        if (!context.mounted) {
-+                          throw StateError('Lost late value');
-+                        }
-+                        return resource;
-                       } on Object {
-                         // A failure after Leave ends as the cancellation
-                         // it followed; a current one shows the error.
+@@ -108,7 +108,11 @@
+                 scopeKey: _ownership,
+                 initData: (context, ctx) async {
+                   try {
+-                    return await widget.backend.open(id);
++                    final resource = await widget.backend.open(id);
++                    if (!context.mounted) {
++                      throw StateError('Lost late value');
++                    }
++                    return resource;
+                   } on Object {
+                     // A failure after Leave ends as the cancellation
+                     // it followed; a current one shows the error.
