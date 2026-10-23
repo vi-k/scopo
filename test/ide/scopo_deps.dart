@@ -19,14 +19,22 @@ import 'package:flutter/material.dart';
 import 'package:scopo/scopo.dart';
 
 final class Database {
+  final Future<void> Function()? onClose;
+
+  Database({this.onClose});
+
   static Future<Database> open() async => Database();
   final bool isOpen = true;
-  Future<void> close() async {}
+  Future<void> close() async => await onClose?.call();
 }
 
 final class Session {
+  final Future<void> Function()? onClose;
+
+  Session({this.onClose});
+
   static Future<Session> connect() async => Session();
-  Future<void> close() async {}
+  Future<void> close() async => await onClose?.call();
 }
 
 final class AppDependencies implements ScopeDependencies {
@@ -84,8 +92,13 @@ final class AppDependencies implements ScopeDependencies {
   /// there — no question of whether a step ran.
   @override
   Future<void> dispose() async {
-    await session.close();
-    await database.close();
+    // `finally` closes the database even when closing the session throws;
+    // a failure of both leaves with the database's error.
+    try {
+      await session.close();
+    } finally {
+      await database.close();
+    }
   }
 }
 

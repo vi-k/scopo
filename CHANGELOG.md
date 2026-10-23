@@ -40,6 +40,12 @@
   an error of its own, and an app that declared that error a cancellation, no
   longer get a red line for it. `ScopeObserver.onError` still hears every
   failure, a child's handled one included — the child did fail.
+* **Fix:** the `scopo-deps` template closes the database even when closing the
+  session throws: its `dispose` now closes the database in a `finally`, where a
+  failed session close used to leave it open. In the demo app,
+  `HomeDependencies` stops listening to its BLoC once loading ends, so a reload
+  after the screen is ready no longer throws `Future already completed`, and
+  `CounterScope.countOf` rebuilds its reader when the count changes.
 
 ## 0.16.0
 

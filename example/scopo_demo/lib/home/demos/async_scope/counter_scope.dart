@@ -108,7 +108,13 @@ final class CounterScopeElement
     _model = CounterModel(
       debugSource: _debugSource,
       debugName: _debugName,
-    );
+    )..addListener(notifyDependents);
+  }
+
+  @override
+  void onUnmount() {
+    _model.removeListener(notifyDependents);
+    super.onUnmount();
   }
 
   @override
@@ -187,18 +193,13 @@ class _CounterView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return ListenableSelector<CounterModel, int>(
-      listenable: CounterScope.of(context),
-      selector: (model) => model.count,
-      builder: (context, model, count, _) {
-        return Center(
-          child: BlinkingBox(
-            blinkingColor:
-                Theme.of(context).colorScheme.primary.withValues(alpha: 0.2),
-            child: Text('$count'),
-          ),
-        );
-      },
+    final count = CounterScope.countOf(context);
+    return Center(
+      child: BlinkingBox(
+        blinkingColor:
+            Theme.of(context).colorScheme.primary.withValues(alpha: 0.2),
+        child: Text('$count'),
+      ),
     );
   }
 }

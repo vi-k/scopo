@@ -31,25 +31,25 @@ final class HomeDependencies
         }),
         concurrent('', [
           dep('bloc', (dep) async {
-            final completer = Completer<void>();
             bloc = FakeBloc()..add(FakeBlocLoad());
             dep.dispose = bloc.close;
-            bloc.stream.listen((state) {
-              switch (state) {
-                case FakeBlocInitial():
-                case FakeBlocInProgress():
-                  break;
-                case FakeBlocSuccess():
-                  completer.complete();
+            // This subscription belongs to initialization, not to the bloc's
+            // lifetime. `firstWhere` cancels it on either terminal state.
+            final state = await bloc.stream.firstWhere(
+              (state) => state is FakeBlocSuccess || state is FakeBlocError,
+            );
+            switch (state) {
+              case FakeBlocError(:final error, :final stackTrace):
                 // Closing it here as well would be closing it twice: the
                 // handle above already knows how, and a failed step is
                 // disposed of like any other -- what decides that is whether
                 // the initializer took anything, not how it ended.
-                case FakeBlocError(:final error, :final stackTrace):
-                  completer.completeError(error, stackTrace);
-              }
-            });
-            await completer.future;
+                Error.throwWithStackTrace(error, stackTrace);
+              case FakeBlocSuccess():
+              case FakeBlocInitial():
+              case FakeBlocInProgress():
+                break;
+            }
           }),
           dep('controller', (dep) async {
             fakeController = FakeController();
