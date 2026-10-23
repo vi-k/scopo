@@ -93,6 +93,13 @@
   `scopeKey` section shows the four `ScopeConfig` defaults to set to `null`
   for unbounded waits, and what that costs: a hung disposal then stops the
   teardown for good.
+* **Fix:** `ScopeObserver.onError` hears the state's own hooks. A failure of
+  `initStateAsync` or `onInitialized` in a `ScopeState` or a `LiteScopeState`
+  arrives once under `ScopePhase.initialization`, and a failure of the state's
+  `build` once under `ScopePhase.build`, with the original error and stack
+  trace. They still reach the zone or Flutter as before, and the teardown
+  still runs. The debug topic names the Flutter hooks the observer does not
+  hear.
 
 ## 0.16.0
 

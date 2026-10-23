@@ -21,6 +21,120 @@ void main() {
     ScopeConfig.observer = null;
   });
 
+  for (final full in [false, true]) {
+    final family = full ? 'ScopeState' : 'LiteScopeState';
+    for (final scenario in [
+      (_StateFailure.syncInit, 'synchronous initStateAsync', false),
+      (_StateFailure.asyncInit, 'asynchronous initStateAsync', false),
+      (_StateFailure.syncInitialized, 'onInitialized after sync init', true),
+      (_StateFailure.asyncInitialized, 'onInitialized after async init', false),
+      (_StateFailure.build, 'build', true),
+      (_StateFailure.nestedBuild, 'nested buildOnReady', true),
+    ]) {
+      final (failure, hook, reachesFlutter) = scenario;
+      testWidgets('$family reports $hook exactly once', (tester) async {
+        final probe = _StateFailureProbe(failure);
+        final errors = _ErrorObserver();
+        ScopeConfig.observer = ScopeCompositeObserver([observer, errors]);
+        final zoneErrors = <(Object, StackTrace)>[];
+        final flutterErrors = <FlutterErrorDetails>[];
+        final previousOnError = FlutterError.onError;
+        final finished = Completer<void>();
+        ScopeObservable? target;
+        Object? flutterError;
+        var errorWidgets = 0;
+
+        // Keep assertions outside both handlers: a failed expectation belongs
+        // to the test runner, not to either of the error channels under test.
+        FlutterError.onError = (details) {
+          flutterErrors.add(details);
+          previousOnError?.call(details);
+        };
+        unawaited(
+          runZonedGuarded(
+            () async {
+              try {
+                await tester.pumpWidget(
+                  Directionality(
+                    textDirection: TextDirection.ltr,
+                    child: full
+                        ? _FailingFullState(probe)
+                        : _FailingLiteState(probe),
+                  ),
+                );
+                await settle(
+                  tester,
+                  until: () =>
+                      zoneErrors.isNotEmpty || flutterErrors.isNotEmpty,
+                );
+                target = tester.element(
+                  find.byType(
+                    failure == _StateFailure.nestedBuild
+                        ? AsyncScope
+                        : full
+                            ? _FailingFullState
+                            : _FailingLiteState,
+                  ),
+                ) as ScopeObservable;
+                flutterError = tester.takeException();
+                errorWidgets = find.byType(ErrorWidget).evaluate().length;
+                await tester.pumpWidget(
+                  const Directionality(
+                    textDirection: TextDirection.ltr,
+                    child: SizedBox.shrink(),
+                  ),
+                );
+                await settle(
+                  tester,
+                  until: () => observer.events.contains(
+                    'disposed ${full ? '_FailingFullState' : '_FailingLiteState'}',
+                  ),
+                );
+              } finally {
+                FlutterError.onError = previousOnError;
+                finished.complete();
+              }
+            },
+            (error, stackTrace) => zoneErrors.add((error, stackTrace)),
+          ),
+        );
+        await finished.future;
+
+        expect(probe.lifecycle, [
+          'onUnmount',
+          'disposeStateAsync',
+          if (full) 'disposeDependencies',
+        ]);
+        expect(zoneErrors, hasLength(reachesFlutter ? 0 : 1));
+        expect(flutterErrors, hasLength(reachesFlutter ? 1 : 0));
+        expect(flutterError, reachesFlutter ? same(probe.error) : isNull);
+        final receivedStack =
+            reachesFlutter ? flutterErrors.single.stack : zoneErrors.single.$2;
+        expect(receivedStack.toString(), probe.stackTrace.toString());
+        if (!reachesFlutter) {
+          expect(zoneErrors.single.$1, same(probe.error));
+        }
+        expect(
+          errorWidgets,
+          failure == _StateFailure.build || failure == _StateFailure.nestedBuild
+              ? 1
+              : 0,
+        );
+        expect(errors.events.length, 1);
+        final event = errors.events.single;
+        expect(event.target, same(target));
+        expect(event.error, same(probe.error));
+        expect(event.stackTrace.toString(), probe.stackTrace.toString());
+        expect(
+          event.phase,
+          failure == _StateFailure.build || failure == _StateFailure.nestedBuild
+              ? ScopePhase.build
+              : ScopePhase.initialization,
+        );
+      });
+    }
+  }
+
   group('ScopeCompositeObserver', () {
     // `ScopeConfig.observer` holds one, and wanting two is ordinary. A
     // delegate written by hand is the one subclass that gets nothing from
@@ -1255,6 +1369,178 @@ void main() {
       ]);
     },
   );
+}
+
+enum _StateFailure {
+  syncInit,
+  asyncInit,
+  syncInitialized,
+  asyncInitialized,
+  build,
+  nestedBuild,
+}
+
+final class _StateFailureProbe {
+  final _StateFailure failure;
+  final error = StateError('state hook failed');
+  final stackTrace = StackTrace.fromString('state hook stack');
+  final lifecycle = <String>[];
+
+  _StateFailureProbe(this.failure);
+
+  Never fail() => Error.throwWithStackTrace(error, stackTrace);
+
+  FutureOr<void> initialize() {
+    if (failure == _StateFailure.syncInit) {
+      fail();
+    }
+    if (failure == _StateFailure.asyncInit) {
+      return Future<void>.microtask(fail);
+    }
+    if (failure == _StateFailure.asyncInitialized) {
+      return Future<void>.value();
+    }
+  }
+
+  void onInitialized() {
+    if (failure == _StateFailure.syncInitialized ||
+        failure == _StateFailure.asyncInitialized) {
+      fail();
+    }
+  }
+
+  Widget build() {
+    if (failure == _StateFailure.build) {
+      fail();
+    }
+    if (failure == _StateFailure.nestedBuild) {
+      return AsyncScope(
+        initScope: (context, ctx) async {},
+        disposeScope: () async {},
+        progressBuilder: (context, progress) => const SizedBox.shrink(),
+        errorBuilder: (context, error, stackTrace, progress) =>
+            const SizedBox.shrink(),
+        builder: (context) => fail(),
+      );
+    }
+    return const SizedBox.shrink();
+  }
+}
+
+final class _FailingLiteState
+    extends LiteScope<_FailingLiteState, _FailingLiteStateState> {
+  final _StateFailureProbe probe;
+
+  const _FailingLiteState(this.probe);
+
+  @override
+  Widget? buildOnWaiting(BuildContext context) => const SizedBox.shrink();
+
+  @override
+  _FailingLiteStateState createState() => _FailingLiteStateState();
+}
+
+final class _FailingLiteStateState
+    extends LiteScopeState<_FailingLiteState, _FailingLiteStateState> {
+  @override
+  FutureOr<void> initStateAsync() => params.probe.initialize();
+
+  @override
+  void onInitialized() => params.probe.onInitialized();
+
+  @override
+  Widget build(BuildContext context) => params.probe.build();
+
+  @override
+  void onUnmount() => params.probe.lifecycle.add('onUnmount');
+
+  @override
+  void disposeStateAsync() => params.probe.lifecycle.add('disposeStateAsync');
+}
+
+final class _FailingFullState extends Scope<_FailingFullState,
+    _StateFailureDependencies, _FailingFullStateState> {
+  final _StateFailureProbe probe;
+
+  const _FailingFullState(this.probe);
+
+  @override
+  Future<_StateFailureDependencies> initDependencies(
+    BuildContext context,
+    ScopeInitContext ctx,
+  ) async =>
+      _StateFailureDependencies(probe);
+
+  @override
+  Widget buildOnProgress(BuildContext context, Object? progress) =>
+      const SizedBox.shrink();
+
+  @override
+  Widget buildOnError(
+    BuildContext context,
+    Object error,
+    StackTrace stackTrace,
+    Object? progress,
+  ) =>
+      const SizedBox.shrink();
+
+  @override
+  _FailingFullStateState createState() => _FailingFullStateState();
+}
+
+final class _FailingFullStateState extends ScopeState<_FailingFullState,
+    _StateFailureDependencies, _FailingFullStateState> {
+  @override
+  FutureOr<void> initStateAsync() => params.probe.initialize();
+
+  @override
+  void onInitialized() => params.probe.onInitialized();
+
+  @override
+  Widget build(BuildContext context) => params.probe.build();
+
+  @override
+  void onUnmount() => params.probe.lifecycle.add('onUnmount');
+
+  @override
+  void disposeStateAsync() => params.probe.lifecycle.add('disposeStateAsync');
+}
+
+final class _StateFailureDependencies implements ScopeDependencies {
+  final _StateFailureProbe probe;
+
+  _StateFailureDependencies(this.probe);
+
+  @override
+  void onUnmount() {}
+
+  @override
+  void dispose() => probe.lifecycle.add('disposeDependencies');
+}
+
+final class _ErrorObserver extends ScopeObserver {
+  final events = <({
+    ScopeObservable target,
+    ScopePhase phase,
+    Object error,
+    StackTrace? stackTrace,
+  })>[];
+
+  @override
+  void onError(
+    ScopeObservable target,
+    ScopePhase phase,
+    Object error,
+    StackTrace? stackTrace,
+  ) =>
+      events.add(
+        (
+          target: target,
+          phase: phase,
+          error: error,
+          stackTrace: stackTrace,
+        ),
+      );
 }
 
 /// A minimal [LiteScope]: nothing to initialize asynchronously, and [child]

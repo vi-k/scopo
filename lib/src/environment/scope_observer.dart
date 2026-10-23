@@ -21,6 +21,9 @@ abstract interface class ScopeObservable {
 /// {@category debug}
 enum ScopePhase {
   /// An initialization, synchronous or asynchronous.
+  ///
+  /// Includes `initStateAsync` and `onInitialized` of `ScopeState` and
+  /// `LiteScopeState`.
   initialization,
 
   /// The cancellation of an initialization that was still running.
@@ -29,9 +32,10 @@ enum ScopePhase {
   /// A build of the scope's own subtree.
   ///
   /// The `buildOn*` branch a state-carrying family chose, or the `build` of a
-  /// `ScopeWidgetBase` or a `ScopeModel`. Flutter's build error boundary
-  /// answers such a failure with an `ErrorWidget` either way — that is what
-  /// the subtree shows; this is the same failure told to the observer.
+  /// `ScopeWidgetBase`, `ScopeModel`, `ScopeState` or `LiteScopeState`.
+  /// Flutter's build error boundary answers such a failure with an
+  /// `ErrorWidget` either way — that is what the subtree shows; this is the
+  /// same failure told to the observer.
   build,
 
   /// The synchronous half of a teardown, before the asynchronous one.

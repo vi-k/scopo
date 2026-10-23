@@ -264,9 +264,15 @@ branch.
 Flutter's build error boundary answers a failing build with an `ErrorWidget`.
 The report is added to that rather than put in its place — the `ErrorWidget`
 still appears, and the failure also arrives through the channel the rest of the
-lifecycle arrives through. Every build of every family passes one point, so the
-five `buildOn*` branches, `ScopeWidgetBase.build` and `ScopeModel.build` all
-report under this phase.
+lifecycle arrives through. The five `buildOn*` branches,
+`ScopeWidgetBase.build`, `ScopeModel.build` and the `build` of `ScopeState` and
+`LiteScopeState` all report under this phase.
+
+`ScopeState` and `LiteScopeState` also report failures of `initStateAsync` and
+`onInitialized` under `initialization`, with their owning scope as the target
+and the original zone or Flutter error path preserved. Ordinary Flutter hooks
+such as `initState`, `didChangeDependencies`, `didUpdateWidget`, `deactivate`
+and `activate` remain outside this observer channel.
 
 A widget that is not a scope does not: `ListenableSelector` and the views of
 `ScopeNotifier` build like any other widget, and `onError` needs a

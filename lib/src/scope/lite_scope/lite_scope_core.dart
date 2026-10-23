@@ -447,7 +447,36 @@ final class _LiteScopeCoreWidget<
   S createState() => _createState();
 
   @override
+  StatefulElement createElement() => _LiteScopeCoreElement<W, E, S>(this);
+
+  @override
   String toStringShort() => '$S';
+}
+
+/// Reports the state's own build, below the scope's `buildOn*` boundary.
+final class _LiteScopeCoreElement<
+    W extends LiteScopeCore<W, E, S>,
+    E extends LiteScopeElementBase<W, E, S>,
+    S extends LiteScopeCoreState<W, E, S>> extends StatefulElement {
+  _LiteScopeCoreElement(_LiteScopeCoreWidget<W, E, S> super.widget);
+
+  @override
+  Widget build() {
+    try {
+      return super.build();
+    } on Object catch (error, stackTrace) {
+      notifyObserver(
+        (observer) => observer.onError(
+          (state as S)._scopeElement,
+          ScopePhase.build,
+          error,
+          stackTrace,
+        ),
+      );
+      // Flutter still owns the error boundary and the ErrorWidget it builds.
+      rethrow;
+    }
+  }
 }
 
 /// The core state base class for [LiteScopeCore].
@@ -583,15 +612,13 @@ abstract base class LiteScopeCoreState<
   }
 
   Future<void> _performAsyncInit() async {
+    final FutureOr<void> result;
     try {
-      final result = initStateAsync();
+      result = initStateAsync();
       if (result is Future<void>) {
         await result;
-        _completeInit();
-      } else {
-        SchedulerBinding.instance.runOutsideFrame(_completeInit);
       }
-    } on Object {
+    } on Object catch (error, stackTrace) {
       // This future is discarded by `initState`, so nothing else ever settles
       // the completer: leaving it unsettled would park [_performAsyncDispose]
       // -- and the `close()` that waits for it -- forever. The error is
@@ -600,7 +627,23 @@ abstract base class LiteScopeCoreState<
       if (!_initCompleter.isCompleted) {
         _initCompleter.complete();
       }
+      notifyObserver(
+        (observer) => observer.onError(
+          _scopeElement,
+          ScopePhase.initialization,
+          error,
+          stackTrace,
+        ),
+      );
       rethrow;
+    }
+
+    // Completion has its own guard: onInitialized can run here or in a
+    // post-frame callback, and must be reported exactly once on either path.
+    if (result is Future<void>) {
+      _completeInit();
+    } else {
+      SchedulerBinding.instance.runOutsideFrame(_completeInit);
     }
   }
 
@@ -616,7 +659,19 @@ abstract base class LiteScopeCoreState<
     // hook set up -- but work started there is work started to be undone, and
     // that is worth knowing before writing an expensive [onInitialized].
     if (mounted) {
-      onInitialized();
+      try {
+        onInitialized();
+      } on Object catch (error, stackTrace) {
+        notifyObserver(
+          (observer) => observer.onError(
+            _scopeElement,
+            ScopePhase.initialization,
+            error,
+            stackTrace,
+          ),
+        );
+        rethrow;
+      }
       notifyDependents();
     }
   }

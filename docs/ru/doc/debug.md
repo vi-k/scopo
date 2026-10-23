@@ -1,6 +1,6 @@
 # debug
 
-> Перевод `doc/debug.md` (blob `f3047e679c24c14f0f93f2df68c9070519a93419`).
+> Перевод `doc/debug.md` (blob `ad164a95515e4297fc4f737e426e9b59298378dc`).
 > Правится в том же коммите, что и оригинал; проверка — `sh docs/ru/check.sh`.
 
 Наблюдатель и глобальные настройки пакета. Всё на этой странице статическое
@@ -263,9 +263,15 @@ scopo | AppDeps(#1a2b7) | initialize network/session…
 наблюдателя: на упавшую сборку граница ошибок Flutter отвечает `ErrorWidget`.
 Отчёт к этому добавляется, а не встаёт на его место — `ErrorWidget` по-прежнему
 появляется, а отказ вдобавок приходит тем же каналом, каким приходит весь
-остальной жизненный цикл. Сборка любого семейства проходит через одну точку,
-поэтому под этой фазой отчитываются и пять веток `buildOn*`,
-и `ScopeWidgetBase.build`, и `ScopeModel.build`.
+остальной жизненный цикл. Под этой фазой отчитываются пять веток `buildOn*`,
+`ScopeWidgetBase.build`, `ScopeModel.build` и `build` у `ScopeState`
+и `LiteScopeState`.
+
+`ScopeState` и `LiteScopeState` также сообщают о сбоях `initStateAsync`
+и `onInitialized` под фазой `initialization`, с владеющим скоупом в качестве
+цели и с сохранением прежнего пути ошибки в зону или Flutter. Обычные хуки
+Flutter — например, `initState`, `didChangeDependencies`, `didUpdateWidget`,
+`deactivate` и `activate` — остаются вне этого канала наблюдения.
 
 Виджет, который скоупом не является, — нет: `ListenableSelector`
 и представления `ScopeNotifier` собираются как любой другой виджет, а `onError`
