@@ -1,108 +1,32 @@
 import 'dart:convert';
 import 'dart:io';
 
-// Each document maps section/name keys to the context its verbatim blocks need.
-// Add another document here to extend coverage; unlisted blocks fail closed.
-final _documents = <String, Map<String, _Environment>>{
-  'doc/async_data_scope.md': {
-    'asyncdatascope/asyncdatascope-database': _widget,
-    'the-value-in-each-place/return-await-database-open':
-        const _Environment('Future<Database> example() async {', '}'),
-    'the-value-in-each-place/wrong-the-database-is-open-and': _arguments,
-    'the-value-in-each-place/right-whatever-ends-the-body-e': _arguments,
-    'the-value-in-each-place/initdata-context-ctx-async': _arguments,
-    'reading-it-from-the-subtree/final-database-asyncdatascope-': _widget,
-    'reading-it-from-the-subtree/final-name-asyncdatascope-sele': _widget,
-  },
-};
+import 'doc_examples/async_data_scope.dart';
+import 'doc_examples/contracts.dart';
+import 'doc_examples/manifest.dart';
 
-const _widget = _Environment('void example(BuildContext context) {', '}');
-const _arguments = _Environment(
-  'void example(BuildContext context) {\nAsyncDataScope<Database>(',
-  'progressBuilder: (context, progress) => Text("\$progress"),\n'
-      'errorBuilder: (context, error, stack, progress) => Text("\$error"),\n'
-      'builder: (context, database) => DatabaseView(database: database),\n);\n}',
-);
-// Contract probes are separate from the document's blocks, but use the same
-// environment and diagnostic matching. A negative probe holds a compile-time
-// refusal no widget test can hold; its positive twin differs only in the
-// argument under test, so the expected error cannot come from the scaffolding.
-const _refused = ['argument_type_not_assignable'];
-const _contracts = [
-  _Example(
-    'contracts/ScopeInitContext.progress(null)',
-    'ctx.progress(null);\n',
-    _Environment(
-      'void example(ScopeInitContext ctx) {',
-      '}',
-      expectedErrors: _refused,
-    ),
-  ),
-  _Example(
-    'contracts/ScopeModel(create: (context) => Profile())',
-    'ScopeModel<Profile>(\ncreate: (context) => Profile(),\n',
-    _scope,
-  ),
-  _Example(
-    'contracts/ScopeModel(create: null)',
-    'ScopeModel<Profile>(\ncreate: null,\n',
-    _Environment(_scopeBefore, _scopeAfter, expectedErrors: _refused),
-  ),
-  _Example(
-    'contracts/ScopeNotifier(create: (context) => Counter())',
-    'ScopeNotifier<Counter>(\ncreate: (context) => Counter(),\n',
-    _scope,
-  ),
-  _Example(
-    'contracts/ScopeNotifier(create: null)',
-    'ScopeNotifier<Counter>(\ncreate: null,\n',
-    _Environment(_scopeBefore, _scopeAfter, expectedErrors: _refused),
-  ),
+// One manifest per document, in its own file under doc_examples/. Add another
+// document here to extend coverage; unlisted blocks fail closed.
+const _documents = <DocManifest>[
+  asyncDataScope,
 ];
-const _scopeBefore = 'Widget example() {\nreturn ';
-const _scopeAfter = 'dispose: (model) {},\n'
-    'builder: (context) => const SizedBox(),\n);\n}';
-const _scope = _Environment(_scopeBefore, _scopeAfter);
-const _support = r'''
-import 'package:flutter/widgets.dart';
-import 'package:scopo/scopo.dart';
-
-class Database {
-  static Future<Database> open() async => Database();
-  Future<void> migrate() async {}
-  Future<void> close() async {}
-}
-
-class DatabaseView extends StatelessWidget {
-  const DatabaseView({super.key, required this.database});
-  final Database database;
-  @override
-  Widget build(BuildContext context) => Text('$database');
-}
-
-class Profile {
-  String get name => 'Ada';
-}
-
-class Counter extends ChangeNotifier {}
-''';
-
-final class _Environment {
-  final String before;
-  final String after;
-  final List<String> expectedErrors;
-
-  const _Environment(this.before, this.after, {this.expectedErrors = const []});
-
-  String wrap(String block) => '$_support\n$before\n$block$after\n';
-}
 
 final class _Example {
   final String key;
   final String source;
-  final _Environment environment;
+  final String support;
+  final DocEnvironment environment;
 
-  const _Example(this.key, this.source, this.environment);
+  const _Example(this.key, this.source, this.support, this.environment);
+}
+
+final class _Block {
+  final String section;
+  final int line;
+  final String source;
+  final List<String> keys;
+
+  const _Block(this.section, this.line, this.source, this.keys);
 }
 
 /// Checks all Dart blocks against the local package, without writing to it.
@@ -120,30 +44,57 @@ Future<void> main(List<String> arguments) async {
     }
     final root = File.fromUri(Platform.script).parent.parent.absolute;
     final examples = <_Example>[];
-    for (final document in _documents.entries) {
-      final blocks = _extract(File('${root.path}/${document.key}'));
-      final missing =
-          document.value.keys.toSet().difference(blocks.keys.toSet());
-      final extra = blocks.keys.toSet().difference(document.value.keys.toSet());
-      if (missing.isNotEmpty || extra.isNotEmpty) {
-        throw FormatException(
-          [
-            for (final key in missing) '${document.key}: missing key $key',
-            for (final key in extra) '${document.key}: unlisted key $key',
-          ].join('\n'),
-        );
+    final problems = <String>[];
+    for (final document in _documents) {
+      final blocks = _extract(File('${root.path}/${document.path}'));
+      final owners = <String, List<_Block>>{};
+      for (final block in blocks) {
+        for (final key in block.keys) {
+          owners.putIfAbsent(key, () => []).add(block);
+        }
       }
-      for (final entry in document.value.entries) {
-        examples.add(
-          _Example(
-            '${document.key}:${entry.key}',
-            blocks[entry.key]!,
-            entry.value,
-          ),
-        );
+      final listed = <_Block, String>{};
+      for (final entry in document.blocks.entries) {
+        final hits = owners[entry.key] ?? const [];
+        if (hits.isEmpty) {
+          problems.add('${document.path}: missing key ${entry.key}');
+        } else if (hits.length > 1) {
+          problems.add('${document.path}: key ${entry.key} is declared by '
+              'the blocks at lines ${hits.map((b) => b.line).join(', ')}');
+        } else if (listed[hits.single] case final other?) {
+          problems.add('${document.path}: the block at line '
+              '${hits.single.line} is listed twice, as $other '
+              'and as ${entry.key}');
+        } else {
+          listed[hits.single] = entry.key;
+          examples.add(
+            _Example(
+              '${document.path}:${entry.key}',
+              hits.single.source,
+              document.support,
+              entry.value,
+            ),
+          );
+        }
+      }
+      for (final block in blocks) {
+        if (listed.containsKey(block)) continue;
+        final unique = [
+          for (final key in block.keys)
+            if (owners[key]!.length == 1) key,
+        ];
+        problems.add('${document.path}: the block at line ${block.line} '
+            'is unlisted; ${unique.isEmpty ? 'it has no unique key, '
+                'declared: ${block.keys.join(', ')}' : 'its keys: '
+                '${unique.join(', ')}'}');
       }
     }
-    examples.addAll(_contracts);
+    if (problems.isNotEmpty) throw FormatException(problems.join('\n'));
+    for (final probe in contracts) {
+      examples.add(
+        _Example(probe.key, probe.source, contractSupport, probe.environment),
+      );
+    }
 
     final parent = arguments.isEmpty
         ? Directory.systemTemp
@@ -169,8 +120,14 @@ dependencies:
     final byFile = <String, _Example>{};
     for (var i = 0; i < examples.length; i++) {
       final example = examples[i];
+      if (example.environment.skipReason case final reason?) {
+        stdout.writeln('SKIP ${example.key}: $reason');
+        continue;
+      }
       final file = File('${sources.path}/example_$i.dart');
-      await file.writeAsString(example.environment.wrap(example.source));
+      await file.writeAsString(
+        example.environment.wrap(example.support, example.source),
+      );
       byFile[file.absolute.path] = example;
     }
 
@@ -252,9 +209,9 @@ String _flutterExecutable() {
 // Like doc_blocks.py: a section slug plus each declaration, or the first
 // line's slug for a body fragment. The introduction belongs to the H1 slug.
 // Fence contents are sliced from the original string, never trimmed/reflowed.
-Map<String, String> _extract(File document) {
+List<_Block> _extract(File document) {
   final text = document.readAsStringSync();
-  final blocks = <String, String>{};
+  final blocks = <_Block>[];
   final declarations = RegExp(
     '^(?:(?:final|abstract|sealed|base|interface) )*'
     r'(?:class|enum|mixin|extension|typedef)\s+(\w+)'
@@ -265,8 +222,11 @@ Map<String, String> _extract(File document) {
   String? fence;
   var isDart = false;
   var start = 0;
+  var startLine = 0;
   var offset = 0;
+  var lineNumber = 0;
   for (final line in const LineSplitter().convert(text)) {
+    lineNumber++;
     final end = text.indexOf('\n', offset);
     final next = end == -1 ? text.length : end + 1;
     if (fence != null) {
@@ -275,15 +235,15 @@ Map<String, String> _extract(File document) {
           final block = text.substring(start, offset);
           final names = declarations
               .allMatches(block)
-              .map((match) => match.group(1) ?? match.group(2)!);
-          for (final name
-              in names.isEmpty ? [_slug(block.split('\n').first)] : names) {
-            final key = '$section/$name';
-            if (blocks.containsKey(key)) {
-              throw FormatException('${document.path}: duplicate key $key');
-            }
-            blocks[key] = block;
-          }
+              .map((match) => match.group(1) ?? match.group(2)!)
+              .toSet();
+          blocks.add(
+            _Block(section, startLine, block, [
+              for (final name
+                  in names.isEmpty ? [_slug(block.split('\n').first)] : names)
+                '$section/$name',
+            ]),
+          );
         }
         fence = null;
       }
@@ -298,6 +258,7 @@ Map<String, String> _extract(File document) {
         fence = opening.group(1);
         isDart = opening.group(2) == 'dart';
         start = next;
+        startLine = lineNumber + 1;
       }
     }
     offset = next;
