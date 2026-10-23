@@ -1,0 +1,16 @@
+{
+  "done": true,
+  "commands_actually_run": true,
+  "sandbox_refusals": "",
+  "files_changed": [
+    "lib/app.dart",
+    "test/app_test.dart",
+    "FRICTION.md"
+  ],
+  "tests_command": "fvm flutter test",
+  "tests_result": "00:13 +15: All tests passed!",
+  "analyze_result": "No issues found! (ran in 1.0s)",
+  "mutation_kills_test": true,
+  "not_done": "",
+  "notes": "Выбрано AsyncDataScope<Resource>: семейство владеет асинхронно полученным значением; scopeKey сериализует замену, координатор позволяет дождаться освобождения. Читал README → quickstart/lib/main.dart → doc/async_data_scope.md → doc/async_scope.md → API waitForChildren → API AsyncDataScope → doc/debug.md, Timeouts → API initCancellationTimeout → раздел о checkpoints в async_scope.md. В FRICTION.md четыре записи; больше всего времени заняла F02 — ограничение локального initCancellationTimeout. Добавлены 12 widget-тестов; обе мутации обнаружены, файл восстановлен копией. Backend не изменён; Flutter 3.27.0 сохранён."
+}

@@ -25,6 +25,8 @@ analyzer:
     # Packages of the consumer-validation kit: their `scopo` dependency is a
     # path that `prepare.sh` fills in, so here it does not resolve.
     - tool/consumer_validation/**
+    # An executor's code kept as evidence of a run, outside its package.
+    - docs/consumer-validation/**
 
   language:
     strict-casts: true

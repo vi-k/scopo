@@ -1,0 +1,14 @@
+PASS d leave ready then immediate reopen waits for previous release
+PASS b leave opening then immediate reopen keeps late owner isolated
+PASS d repeated switch back serializes both owners
+PASS e close then reopen acquires again
+PASS a loading data and ordinary leave
+PASS b leave while opening closes late resource
+PASS c visible error retry reacquires same id
+PASS d replacement waits for old close before new open
+PASS e close shows closing awaits release and removes child first
+PASS a general root unmount releases ready resource
+PASS b general unmount before late acquisition
+PASS c error leave and a reopen start a fresh owner
+Artifacts: /Users/user/.claude/jobs/715c8327/tmp/r7/kit/.review-tmp/acceptance-32zr7zed
+All tests passed!

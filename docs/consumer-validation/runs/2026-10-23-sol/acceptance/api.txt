@@ -1,0 +1,40 @@
+Application: /Users/user/.claude/jobs/715c8327/tmp/r7/app
+API index: /Users/user/.claude/jobs/715c8327/tmp/r7/vendor/api/index.json
+Dart files scanned: 2
+Confirmed scopo syntax (indexed types, explicit type members, and known constructor argument labels)
+| Public name | Coverage | Prose references | Application occurrences |
+| --- | --- | --- | --- |
+| AsyncDataScope | prose | README.md, doc/async_controller_scope.md, doc/async_data_scope.md, doc/async_scope.md, doc/base.md, doc/debug.md, doc/full_scope.md | lib/app.dart:82 |
+| AsyncScopeCoordinator | prose | README.md, doc/async_scope.md, doc/debug.md, doc/lite_scope.md | lib/app.dart:9, lib/app.dart:57 |
+| ScopeConfig | prose | README.md, doc/async_scope.md, doc/debug.md, doc/full_scope.md, doc/scope_widget.md | lib/app.dart:8 |
+| ScopeTimeout | prose | doc/debug.md | lib/app.dart:59, lib/app.dart:86, lib/app.dart:87, lib/app.dart:88 |
+| builder | prose | README.md, doc/async_controller_scope.md, doc/async_data_scope.md, doc/async_scope.md, doc/base.md, doc/full_scope.md, doc/lite_scope.md, doc/scope_model.md, doc/scope_notifier.md, doc/utils.md | lib/app.dart:112 |
+| defaultInitCancellationTimeout | prose | doc/async_scope.md, doc/debug.md, doc/full_scope.md | lib/app.dart:8 |
+| disposeData | prose | README.md, doc/async_data_scope.md, doc/async_scope.md | lib/app.dart:99 |
+| errorBuilder | API-only | — | lib/app.dart:102 |
+| initData | prose | README.md, doc/async_data_scope.md | lib/app.dart:89 |
+| none | prose | README.md, doc/async_controller_scope.md, doc/async_scope.md, doc/debug.md | lib/app.dart:59, lib/app.dart:86, lib/app.dart:87, lib/app.dart:88 |
+| progressBuilder | prose | doc/async_data_scope.md | lib/app.dart:101 |
+| waitForChildren | prose | README.md, doc/async_scope.md, doc/debug.md, doc/lite_scope.md | lib/app.dart:57 |
+| waitingBuilder | API-only | — | lib/app.dart:100 |
+Total public names: 310; confirmed syntax names: 13; prose: 11; API-only: 2
+Ambiguous lexical candidates (not counted as confirmed scopo use)
+| Public name candidate | Coverage | Prose references | Application occurrences |
+| --- | --- | --- | --- |
+| build | prose | README.md, doc/async_data_scope.md, doc/base.md, doc/debug.md, doc/full_scope.md, doc/lite_scope.md, doc/scope_model.md, doc/scope_notifier.md, doc/scope_widget.md, doc/utils.md | lib/app.dart:125 |
+| child | prose | README.md, doc/async_controller_scope.md, doc/async_data_scope.md, doc/async_scope.md, doc/base.md, doc/debug.md, doc/full_scope.md, doc/lite_scope.md, doc/scope_model.md, doc/scope_widget.md, doc/utils.md | lib/app.dart:10, lib/app.dart:68, lib/app.dart:128 |
+| close | prose | README.md, doc/async_data_scope.md, doc/async_scope.md, doc/debug.md, doc/full_scope.md, doc/lite_scope.md, doc/utils.md | lib/app.dart:99 |
+| createState | prose | README.md, doc/full_scope.md, doc/lite_scope.md | lib/app.dart:26 |
+| disposeScopeTimeout | prose | doc/async_controller_scope.md, doc/async_scope.md, doc/debug.md, doc/full_scope.md | lib/app.dart:87 |
+| error | prose | README.md, doc/async_controller_scope.md, doc/async_data_scope.md, doc/async_scope.md, doc/base.md, doc/debug.md, doc/full_scope.md, doc/scope_model.md, doc/scope_notifier.md, doc/scope_widget.md | lib/app.dart:102 |
+| mounted | prose | README.md, doc/async_controller_scope.md, doc/async_scope.md, doc/base.md, doc/full_scope.md, doc/lite_scope.md, doc/scope_model.md | lib/app.dart:56, lib/app.dart:61 |
+| name | prose | README.md, doc/async_controller_scope.md, doc/async_scope.md, doc/base.md, doc/debug.md, doc/full_scope.md, doc/scope_model.md, doc/scope_widget.md | lib/app.dart:64, lib/app.dart:66 |
+| operator == | prose | doc/base.md, doc/debug.md, doc/scope_notifier.md | lib/app.dart:47 |
+| progress | prose | README.md, doc/async_controller_scope.md, doc/async_data_scope.md, doc/async_scope.md, doc/debug.md, doc/full_scope.md, doc/lite_scope.md, doc/utils.md | lib/app.dart:101, lib/app.dart:102 |
+| scopeKey | prose | README.md, doc/async_controller_scope.md, doc/async_data_scope.md, doc/async_scope.md, doc/base.md, doc/debug.md, doc/full_scope.md, doc/lite_scope.md | lib/app.dart:84 |
+| scopeKeyTimeout | prose | doc/async_scope.md, doc/debug.md | lib/app.dart:86 |
+| stackTrace | prose | doc/async_scope.md, doc/debug.md, doc/full_scope.md | lib/app.dart:102 |
+| waitForChildrenTimeout | prose | README.md, doc/async_scope.md, doc/debug.md, doc/full_scope.md, doc/lite_scope.md | lib/app.dart:88 |
+| widget | prose | README.md, doc/async_controller_scope.md, doc/async_data_scope.md, doc/async_scope.md, doc/base.md, doc/debug.md, doc/full_scope.md, doc/lite_scope.md, doc/scope_model.md, doc/scope_notifier.md, doc/scope_widget.md, doc/utils.md | lib/app.dart:91 |
+ambiguous lexical names: 15; all lexical candidate names: 28; names with no lexical match: 282
+Limitations: syntax evidence, not Dart symbol resolution or runtime use. Type-name shadowing can cause false confidence. Instance receivers, subclass hooks and extension calls are not resolved; short members and operators stay ambiguous unless explicitly tied to an indexed type or constructor. A name can have both confirmed and ambiguous occurrences, so those distinct-name totals can overlap. Comments and strings (including interpolation expressions) are excluded. Prose means README.md and doc/*.md outside fenced/indented code; a mention does not prove explanation quality. Generated, backend and test files are excluded. This reports distinct names, not overloads or runtime coverage.
