@@ -1,0 +1,19 @@
+--- a/lib/app.dart
++++ b/lib/app.dart
+@@ -15,7 +15,7 @@
+ }
+ 
+ final class _DeskState extends State<_Desk> {
+-  final Object _ownership = Object();
++  Object _ownership = Object();
+   String? _id;
+   int _attempt = 0;
+   bool _closing = false;
+@@ -88,6 +88,7 @@
+                     children: [
+                       _button('open', 'Open', () {
+                         setState(() {
++                          _ownership = Object();
+                           _id = 'a';
+                           _attempt++;
+                         });

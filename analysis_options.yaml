@@ -22,6 +22,9 @@ analyzer:
     - windows/**
     - macos/**
     - linux/**
+    # Packages of the consumer-validation kit: their `scopo` dependency is a
+    # path that `prepare.sh` fills in, so here it does not resolve.
+    - tool/consumer_validation/**
 
   language:
     strict-casts: true

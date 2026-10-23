@@ -1,0 +1,11 @@
+--- a/lib/app.dart
++++ b/lib/app.dart
+@@ -52,7 +52,7 @@
+   Widget _error(String id, Object error) => Column(
+         mainAxisSize: MainAxisSize.min,
+         children: [
+-          Text('Open failed $id', key: const ValueKey('error')),
++          const SizedBox.shrink(),
+           Text('$error'),
+           _button('retry', 'Retry', () => setState(() => _attempt++)),
+           _button('leave', 'Leave', _leave),

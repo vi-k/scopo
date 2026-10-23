@@ -1,0 +1,14 @@
+name: resource_exercise
+publish_to: none
+environment:
+  sdk: ^3.6.0
+dependencies:
+  flutter:
+    sdk: flutter
+  scopo:
+    path: /Users/user/.claude/jobs/715c8327/tmp/r7/vendor/scopo
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+flutter:
+  uses-material-design: true

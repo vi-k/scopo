@@ -1,0 +1,15 @@
+--- a/lib/app.dart
++++ b/lib/app.dart
+@@ -97,7 +97,11 @@
+                 : AsyncDataScope<Resource>(
+                     key: ValueKey((id, _attempt)),
+                     scopeKey: _ownership,
+-                    initData: (context, ctx) => widget.backend.open(id),
++                    initData: (context, ctx) async {
++                      final resource = await widget.backend.open(id);
++                      if (!context.mounted) throw StateError('Lost late value');
++                      return resource;
++                    },
+                     disposeData: (resource) => resource.close(),
+                     progressBuilder: (context, progress) => _loading(id),
+                     errorBuilder: (context, error, stack, progress) =>
