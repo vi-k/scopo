@@ -2,8 +2,10 @@
 
 > **Состояние на 2026-10-23:** ревью принято, все пять зондов я перезапустил,
 > и все воспроизвелись; механизм каждой из семи находок сверен с кодом (раздел
-> «Приёмка» в конце). Ни одна находка и ни одна работа «Пути до 10» ещё
-> не в работе.
+> «Приёмка» в конце). Все семь находок закрыты коммитом `ba2a1b6`, R1–R7
+> «Пути до 10» сделаны: код — `gpt-6.1-sol:high` четырьмя заданиями, моя часть
+> R3 и приёмка мутациями — я; вердикты — в конце каждой находки. R8 (внешний
+> опыт) не берётся.
 > **Что это:** пятое независимое полное ревью scopo, на `d351546`, после
 > исправлений по `2026-10-23[7]-astra-project-review.md`, `close()`
 > у асинхронных семейств и комплекта проверки потреблением. Сделано
@@ -414,6 +416,23 @@ OBSERVED: parallel=true; two failing leaves, one FlutterError: root/second: Bad 
 [журнал](/Users/user/.claude/jobs/715c8327/tmp/review4/out-astra/logs/auto-deps-probes.log).
 Исправление — **R2**.
 
+**Вердикт: исправлено правкой обещания, а не кода.** Волна по этому ревью,
+`ba2a1b6`, R2. Поведение контейнера оставлено, как его закрепляет
+`test/scope_dependency_partial_test.dart`; ревьюер и сам называет его
+намеренным. `doc/full_scope.md` и `doc/debug.md` теперь разделяют два случая:
+сбои собственных шагов разбора скоупа, включая написанный руками
+`ScopeDependencies.dispose`, достаются вызывающему `close()`,
+а `ScopeAutoDependencies.dispose` сообщает об упавшем дереве одним
+`FlutterError`, не пробрасывает его, и успешный `await close()` поэтому
+не доказывает, что освобождён каждый узел. Сбой каждого листа остаётся
+в `flattenDependenciesWithErrors()` и доходит
+до `ScopeConfig.observer.onError` — это я сверил
+с `scope_dependency_mixin.dart` до того, как принять текст. Интеграционные
+тесты полного `Scope.close()`, которые просил R2, — новый
+`test/scope_auto_dependency_close_test.dart`: последовательная и параллельная
+группа с одним и двумя падающими диспозерами и написанный руками контейнер, чей
+сбой `close()` пробрасывает.
+
 ### 2. P2 — отклонённый `LiteScope.close()` оставляет запрос на уничтожение рабочего поддерева
 
 **Координаты:** `LiteScopeElementBase.close`, `_prepareClosing`, `buildOnReady`
@@ -446,6 +465,17 @@ No accepted close has begun
 семейств проверяют сохранение ready-ветки после отказа, а соответствующего
 теста `LiteScope` нет.
 
+**Вердикт: исправлено.** Волна по этому ревью, `ba2a1b6`, R5.
+В `LiteScopeElementBase._prepareClosing` `markNeedsBuild()` обёрнут
+в try/finally с флагом `prepared`: если вызов бросил, попытка обнуляет свой
+`_screenshotCompleter`, и обычная пересборка снова строит готовое поддерево.
+Тесты: в `test/lite_scope_test.dart` отказ с последующей пересборкой
+и допустимый `close()` после отказа, освобождающий ресурсы один раз; полный
+`Scope`, который наследует механизм, проверяет новый
+`test/scope_refused_close_test.dart`. Без правки тесты красные (`+3 -3`), с ней
+зелёные. Зонд ревьюера на исправленном дереве печатает
+`ready=1; closing=0; releases=0; state.mounted=true`.
+
 ### 3. P2 — отвергнутый контроллер всё равно попадает под `onUnmount` второго скоупа
 
 **Координаты:** `AsyncControllerScopeElementBase.initDataAsync` и `onUnmount`
@@ -470,6 +500,15 @@ P2 здесь относится к побочному ущербу после �
 
 [Зонд и журнал — те же, что у находки 2](/Users/user/.claude/jobs/715c8327/tmp/review4/out-astra/lifecycle-probes/test/lifecycle_test.dart).
 Исправление — **R4**.
+
+**Вердикт: исправлено.** Волна по этому ревью, `ba2a1b6`, R4.
+В `AsyncControllerScopeElementBase.initDataAsync` контроллер сначала ложится
+в локальную переменную, assert `_controllerIsUnused` проверяет его, и только
+потом он записывается в `_controller`; отвергнутый экземпляр в `onUnmount`
+второго скоупа больше не попадает. Два теста
+в `test/async_controller_scope_test.dart` — удаление и закрытие отвергнутого
+скоупа — без правки красные, с ней зелёные. Зонд ревьюера на исправленном
+дереве печатает `original.mounted=true; onUnmount=0`.
 
 ### 4. P2 — инструкция о синхронном `initDependencies` не компилируется
 
@@ -500,6 +539,17 @@ A value of type 'AppDependencies' can't be returned from the method 'initDepende
 в `docs/records/2026-10-23[2]-astra-project-review.md` и находке 4
 в `docs/records/2026-10-23[5]-sol-project-review.md`. Исправление — **R1**.
 
+**Вердикт: исправлено правкой обещания, а не кода, с уточнением к находке.**
+Волна по этому ревью, `ba2a1b6`, R1. Сигнатура `initDependencies` оставлена:
+`doc/full_scope.md` показывает синхронный контейнер, возвращённый
+из переопределения с `async`, и этот блок теперь собирает стенд
+`tool/doc_examples/full_scope.dart` (112 PASS, 8 SKIP вместо 110 и 8).
+Объяснение `ScopeAutoDependencies` говорит, что `Scope.of` возвращает
+состояние, а поддерево получает контейнер через его `dependencies`. Уточнение
+касается `doc/debug.md`: фраза стоит в заметке о переходе с `logger_builder`,
+поэтому она не перечисляет оставшиеся зависимости, как предлагал R1, а говорит
+только то, что заметке нужно, — пакет больше не зависит от `logger_builder`.
+
 ### 5. P2 — авария раннера считается успешным обнаружением мутанта
 
 **Координаты:** `tool/consumer_validation/tools/run_mutants.py`, `main`,
@@ -527,6 +577,15 @@ Classifier exit: 0; SDK was stubbed, no Flutter command ran.
 [вывод](/Users/user/.claude/jobs/715c8327/tmp/review4/out-astra/consumer-review/mutant-crash-full-probe.txt).
 Исправление — **R6**.
 
+**Вердикт: исправлено.** Волна по этому ревью, `ba2a1b6`, R6. Комплект,
+не пакет: в архив он не входит, и строки в `CHANGELOG.md` у правки нет.
+`run_acceptance.py` пишет `result.json` с пятью списками — passed, failed,
+skipped, incomplete, infrastructure_errors — и печатает путь к нему;
+`run_mutants.py` даёт `KILLED` только завершённому провалу нужного сценария,
+а начатый и не кончившийся тест, пропуск и аварию — `INVALID`. Регрессии —
+`tool/consumer_validation/tool_tests/test_results.py`; со старым
+`run_mutants.py` они дают `FAILED (failures=6)`.
+
 ### 6. P2 — полный проверяющий скрипт ждёт структуру, которую `prepare.sh` не создаёт
 
 **Координаты:** `tool/consumer_validation/tools/verify.py`, проверки
@@ -552,6 +611,15 @@ Verification: FAIL G-kit-status, G-source-status, G-source-dirty, G-vendor-compa
 [Вывод зонда](/Users/user/.claude/jobs/715c8327/tmp/review4/out-astra/consumer-review/verify-layout-probe.txt).
 Исправление — **R7**.
 
+**Вердикт: исправлено.** Волна по этому ревью, `ba2a1b6`, R7. `prepare.sh`
+пишет `manifest.json` — коммит источника и SHA-256 содержимого `vendor/scopo`
+и `kit`, — и проверка G в `verify.py` сверяется с ним (`G-manifest`) вместо
+`../scopo-src` и git-репозитория в `kit`. Проверка собственного rollout
+проектировщика отделена: режим E идёт только с `--rollout`, без него SKIP.
+Регрессии — `tool/consumer_validation/tool_tests/test_manifest.py`; со старым
+`verify.py` они дают `FAILED (failures=6)`. Полная подготовка с нуля
+и `verify.py` дали PASS, а изменённый `LICENSE` в vendor сделал G красной.
+
 ### 7. P2 — ссылка на рабочий обход ограничения ticker ломается после генерации dartdoc
 
 **Координаты:** `doc/full_scope.md`, описание `State.dispose` и ссылка
@@ -574,6 +642,23 @@ Dartdoc при этом сообщил ноль предупреждений и 
 6 в `docs/records/2026-10-23[7]-astra-project-review.md` сохраняет силу в части
 поведения; неполна доступность предложенного обхода из опубликованной темы
 `Scope`.
+
+**Вердикт: исправлено, с уточнением к находке.** Волна по этому ревью,
+`ba2a1b6`, R3. Ссылка ведёт на опубликованную тему,
+`https://pub.dev/documentation/scopo/latest/topics/LiteScope-topic.html#the-state`;
+в сгенерированном `LiteScope-topic.html` якорь `the-state` есть, это я проверил
+отдельной генерацией. Сторож стоит не там, где предлагал R3: проверка
+сгенерированных страниц потребовала бы полной генерации в гейте, и вместо неё
+`tool/check_doc_examples.dart` теперь отклоняет любую относительную
+Markdown-ссылку в `doc/*.md` — ровно тот класс ссылок, который dartdoc
+не переписывает. Существование якорей на pub.dev он не проверяет. Без правки
+ссылки проверка печатает
+`FAIL doc/full_scope.md:453: relative Markdown link: lite_scope.md#the-state`.
+Остальное из R3 сделал я: §8 `docs/architecture.md` описывает общий барьер
+`_closingCompleter` в `AsyncScopeElementBase` и скриншотный барьер `LiteScope`
+вместе с его сбросом при отказе, а §6 `AGENTS.md` — подготовку свежего клона:
+`fvm use 3.27.0` в корне и `fvm flutter pub get` в трёх примерах. Инструкцию я
+прогнал на свежем клоне: Flutter 3.27.0, дерево чистое.
 
 ## Что в проекте сделано хорошо и что стоит сохранить
 
