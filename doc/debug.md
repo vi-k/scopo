@@ -41,8 +41,9 @@ final class CrashReporter extends ScopeObserver {
 }
 ```
 
-`ScopeObserver` is a `base class`, so a subclass of your own is declared `base`
-or `final` — `final` unless you mean it to be extended further.
+`ScopeObserver` is an ordinary class: a subclass needs no class modifier, and a
+test double can implement it. Extend it for an ordinary observer so that new
+empty hooks are inherited.
 
 `ScopeConfig.observer` holds one observer, and wanting two is ordinary — the
 one above beside `ScopePrintObserver` while you are working. That is

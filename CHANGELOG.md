@@ -46,6 +46,17 @@
   `HomeDependencies` stops listening to its BLoC once loading ends, so a reload
   after the screen is ready no longer throws `Future already completed`, and
   `CounterScope.countOf` rebuilds its reader when the count changes.
+* **Fix:** the `LiteScope` recipe that holds the branch back with
+  `isInitialized` now reaches the ready screen: completion notifies the
+  scope's dependents but does not rebuild the state's own `build`, so the
+  recipe calls `setState` from `onInitialized()`. The topics also stop
+  contradicting the code: a late result of an abandoned initialization is
+  handed to `disposeScope` even after the teardown has finished, the first
+  teardown failure of a scope taken off the tree goes to
+  `FlutterError.reportError`, `ScopeObserver` is an ordinary class rather than
+  a `base class`, and a controller under `controllerDep` keeps `mounted` true
+  until its initializer finishes, so it checks the `ScopeInitContext` instead.
+  The README now credits `get_it` with managing ownership over time.
 
 ## 0.16.0
 

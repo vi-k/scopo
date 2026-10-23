@@ -118,25 +118,52 @@ has finished, and so do the ones any change asks for in the meantime.
 
 That makes `isInitialized` part of writing the state rather than a detail: a
 `late` field assigned after an `await` and read straight from `build` throws a
-`LateInitializationError` on that first build. Either hold the branch back
-yourself —
+`LateInitializationError` on that first build. Hold the branch back yourself
+and rebuild it from `onInitialized()`:
 
 ```dart
-@override
-Widget build(BuildContext context) {
-  if (!isInitialized) {
-    return const Center(child: CircularProgressIndicator.adaptive());
+final class TitleScope extends LiteScope<TitleScope, TitleScopeState> {
+  final Future<String> Function() loadTitle;
+
+  const TitleScope({super.key, required this.loadTitle});
+
+  @override
+  Widget buildOnWaiting(BuildContext context) => const SizedBox.shrink();
+
+  @override
+  TitleScopeState createState() => TitleScopeState();
+}
+
+final class TitleScopeState
+    extends LiteScopeState<TitleScope, TitleScopeState> {
+  late String _title;
+
+  @override
+  Future<void> initStateAsync() async => _title = await params.loadTitle();
+
+  @override
+  void onInitialized() => setState(() {});
+
+  @override
+  Widget build(BuildContext context) {
+    if (!isInitialized) {
+      return const Center(child: CircularProgressIndicator.adaptive());
+    }
+    return Text(_title);
   }
-  …
 }
 ```
 
-— or give the field a value it can be read with before the initialization
-replaces it. `onInitialized()` is the other half: it runs once
-`initStateAsync()` has finished, and only while the state is still on the tree,
-so it is where a first `notifyDependents()` or an animation belongs. Put
-whatever has to be ready *before* anything is shown into `initScope()` on the
-widget instead, which is the phase that does hold the ready branch back.
+Completion calls `onInitialized()` and notifies subscribed descendants; it does
+not rebuild this state's own `build`. The `setState` above schedules that
+rebuild, so the screen can show the loaded title. `onInitialized()` runs only
+while the state is still on the tree.
+
+Alternatively, give the field a value it can be read with before the
+initialization replaces it; call `setState` when the state's own screen needs
+to show the change. Put whatever has to be ready *before* anything is shown
+into `initScope()` on the widget instead, which is the phase that does hold the
+ready branch back.
 
 `buildOnWaiting` covers the gap before either of them has produced anything —
 the frames spent waiting for a `scopeKey` and for the first event. Returning

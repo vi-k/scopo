@@ -172,8 +172,12 @@ Four builders describe the tree, and all of them return a `ScopeDependency`:
 - `controllerDep(name, create)` — a single dependency backed by a
   `ScopeController`: `create` builds it, and its `performUnmount` /
   `performDispose` are wired to the handle before `performInit` is awaited, so
-  the usual `dep` teardown promises hold for it too. The same controller class
-  that owns an `AsyncControllerScope` fits here unchanged — see
+  the usual `dep` teardown promises hold for it too. Unlike
+  `AsyncControllerScope`, removal during initialization leaves `mounted` true
+  until the running initializer finishes. Pass the `ScopeInitContext` received
+  by the container's `init` into a controller that needs to stop work after
+  cancellation, and call `ctx.check()` after awaits; `mounted` alone does not
+  signal cancellation here. See
   [AsyncControllerScope](https://pub.dev/documentation/scopo/latest/topics/AsyncControllerScope-topic.html).
 - `sequential(name, [...])` — a `ScopeDependencyGroup` whose children are
   initialized one after another, and torn down in reverse order — both
@@ -461,12 +465,11 @@ of it is awaited:
    let through.
 
 Every step is guarded on its own, and so are the two halves of steps 1 and 4–5:
-a failure in one is never a reason to skip what comes behind it. Only one
-failure can be passed on, though — that is all a throw carries — and it is the
-first one, handed over once the whole teardown is over. Every failure behind it
-is reported through `FlutterError.reportError` instead. So a state whose
-`onUnmount` threw and whose container threw behind it says both things: the
-state's failure through the throw, the container's through a report.
+a failure in one is never a reason to skip what comes behind it. The first
+failure is handed to whoever called `close()` once the whole teardown is over.
+For a scope taken off the tree, it is reported through
+`FlutterError.reportError` instead. Every failure behind it is reported through
+`FlutterError.reportError` too.
 
 `close()` starts that same teardown while the scope is still on screen: the
 ready subtree is frozen into a screenshot, `buildOnClosing` is shown on top of

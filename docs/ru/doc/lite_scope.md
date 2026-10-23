@@ -1,6 +1,6 @@
 # LiteScope
 
-> Перевод `doc/lite_scope.md` (blob `276340cd762b8640626c46b69630e2b1111c5fb0`).
+> Перевод `doc/lite_scope.md` (blob `c7d9005ff6d5188174050130cd319a6fd2596dab`).
 > Правится в том же коммите, что и оригинал; проверка — `sh docs/ru/check.sh`.
 
 Класс состояния, за которым стоит весь жизненный цикл скоупа, но перед которым
@@ -121,24 +121,52 @@ Future<void> disposeStateAsync() => _connection.close();   // может зан�
 
 Отсюда `isInitialized` — часть того, как пишут состояние, а не мелочь:
 `late`-поле, присвоенное после `await` и прочитанное прямо из `build`, даёт
-`LateInitializationError` на этом первом билде. Либо придержите ветку сами —
+`LateInitializationError` на этом первом билде. Придержите ветку сами
+и перестройте её из `onInitialized()`:
 
 ```dart
-@override
-Widget build(BuildContext context) {
-  if (!isInitialized) {
-    return const Center(child: CircularProgressIndicator.adaptive());
+final class TitleScope extends LiteScope<TitleScope, TitleScopeState> {
+  final Future<String> Function() loadTitle;
+
+  const TitleScope({super.key, required this.loadTitle});
+
+  @override
+  Widget buildOnWaiting(BuildContext context) => const SizedBox.shrink();
+
+  @override
+  TitleScopeState createState() => TitleScopeState();
+}
+
+final class TitleScopeState
+    extends LiteScopeState<TitleScope, TitleScopeState> {
+  late String _title;
+
+  @override
+  Future<void> initStateAsync() async => _title = await params.loadTitle();
+
+  @override
+  void onInitialized() => setState(() {});
+
+  @override
+  Widget build(BuildContext context) {
+    if (!isInitialized) {
+      return const Center(child: CircularProgressIndicator.adaptive());
+    }
+    return Text(_title);
   }
-  …
 }
 ```
 
-— либо дайте полю значение, с которым его можно прочитать до того, как
-инициализация его заменит. `onInitialized()` — вторая половина: он выполняется,
-когда `initStateAsync()` закончился, и только пока состояние ещё на дереве, —
-там место первому `notifyDependents()` или запуску анимации. А то, что обязано
-быть готово **прежде** чем что-то покажут, кладут в `initScope()` на виджете:
-это та фаза, которая готовую ветку действительно придерживает.
+Завершение вызывает `onInitialized()` и уведомляет подписанных потомков;
+собственный `build` состояния оно не перестраивает. Вызов `setState` выше
+планирует эту пересборку, чтобы экран показал загруженный заголовок.
+`onInitialized()` выполняется, только пока состояние ещё на дереве.
+
+Другой вариант — дать полю значение, с которым его можно прочитать до того, как
+инициализация его заменит; вызовите `setState`, когда собственный экран
+состояния должен показать изменение. А то, что обязано быть готово **прежде**
+чем что-то покажут, кладут в `initScope()` на виджете: это та фаза, которая
+готовую ветку действительно придерживает.
 
 `buildOnWaiting` закрывает промежуток до того, как хоть одна из них что-то
 выдала, — кадры ожидания `scopeKey` и первого события. Вернуть из него `null`

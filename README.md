@@ -10,11 +10,10 @@ order — after its child scopes are gone.
 
 ## Why another one
 
-`provider`, `riverpod` and `get_it` answer one question: how a value reaches
-the widget that needs it. scopo answers a different one — **how a value is
-owned over time**: when it is built, what the screen shows while it is being
-built, what happens if the widget leaves before it is ready, and in what order
-things are let go on the way out.
+scopo combines dependency access with **ownership over time**: when a value is
+built, what the screen shows while it is being built, what happens if the
+widget leaves before it is ready, and in what order things are let go on the
+way out.
 
 That is worth a package only when the objects have a lifecycle of their own — a
 database, a socket, a player, a signed-in session. What scopo adds:
@@ -40,6 +39,13 @@ What it does not give is *waiting* — `onDispose` is a synchronous callback, so
 "release the database only once every scope that used it has finished letting
 go" has nowhere to go. Disposal there follows the provider graph and its
 listeners; here it follows the widget tree.
+
+[get_it](https://flutter-it.dev/documentation/get_it/scopes) already manages
+ownership over time: scopes, asynchronous initialization, an awaited `popScope`
+and disposal in reverse registration order. scopo makes a part of the widget
+tree the owner, with loading and error branches, waiting for child scopes
+before disposal, `scopeKey` to coordinate successive owners, and `close()` to
+show the closing screen while teardown runs.
 
 **When not to take scopo.** If your dependencies are built synchronously and
 released by a single `dispose()`, everything above costs you something and buys
@@ -321,12 +327,20 @@ final class PlayerController extends ScopeController {
 `AsyncControllerScope<C>` is the same thing with a `createController` callback
 instead of a subclass.
 
-The same `PlayerController` also fits inside a dependency tree unchanged —
+A `PlayerController` can also live inside a dependency tree —
 `controllerDep('player', () => player = PlayerController(api: apiClient))` next
 to `dep` in a `ScopeAutoDependencies` — see the topic
 [Scope](https://pub.dev/documentation/scopo/latest/topics/Scope-topic.html) —
 when what a screen needs is one branch of a larger tree rather than a scope of
 its own.
+
+During `controllerDep` initialization, `mounted` stays `true` until the running
+initializer finishes, even if its scope has left the tree;
+`AsyncControllerScope` unmounts its controller immediately. A controller that
+uses `if (!mounted) return` after an `await` therefore needs a different
+cancellation check here: pass the `ScopeInitContext` received by the
+container's `init` into the controller and call `ctx.check()` after awaits,
+before starting more work.
 
 **In depth:** the topic
 [AsyncControllerScope](https://pub.dev/documentation/scopo/latest/topics/AsyncControllerScope-topic.html).
@@ -792,10 +806,9 @@ anywhere; `mounted` too, if what you build reads it.
 Two things stay closed on purpose. The scope widgets and their states, because
 a mock of one could never be found: `of` looks the element up by exact type, so
 the double would sit in the tree unseen. And the state unions
-(`AsyncScopeState`, `ScopeInitState`, `ScopeDependencyState`), because `sealed`
-is what makes a `switch` over them exhaustive — and there is nothing to mock
-there anyway: every leaf has a public constructor, so a test builds the state
-it wants.
+(`AsyncScopeState`, `ScopeDependencyState`), because `sealed` is what makes a
+`switch` over them exhaustive — and there is nothing to mock there anyway:
+every leaf has a public constructor, so a test builds the state it wants.
 
 **In depth:** the topic
 [debug](https://pub.dev/documentation/scopo/latest/topics/debug-topic.html).

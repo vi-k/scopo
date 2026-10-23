@@ -472,9 +472,10 @@ abstract base class LiteScopeCoreState<
   /// That makes [isInitialized] part of writing a state rather than a detail:
   /// a `late` field assigned after an `await` and read straight from [build]
   /// raises a `LateInitializationError` on that first build. Hold the branch
-  /// back with [isInitialized], or give the field a value it can be read with
-  /// until this replaces it. [onInitialized] is where the first
-  /// [notifyDependents] belongs.
+  /// back with [isInitialized] and call [setState] from [onInitialized] to
+  /// rebuild it, or give the field a value it can be read with until this
+  /// replaces it. Completion notifies subscribed descendants, but does not
+  /// rebuild this state's own [build].
   ///
   /// What has to be ready *before* anything is shown goes in `initScope()` on
   /// the scope widget, which is the phase that does hold the ready branch

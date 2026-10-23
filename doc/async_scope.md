@@ -207,7 +207,7 @@ awaited:
    asks `ctx` anything is never told. When the limit expires the initialization
    is left where it stands, the expiry is reported, and the teardown goes on.
    What the body holds stays held — and if it finishes later, what it produced
-   is handed to `disposeScope`, unless the teardown has by then run to its end.
+   is handed to `disposeScope` even if the teardown has already finished.
    Cleanup registered with the job does not need that hook and still runs.
 4. **The initialization is awaited** if it could not be cancelled.
 5. **The child scopes are awaited**, bounded by `waitForChildrenTimeout`
@@ -225,11 +225,10 @@ awaited:
    lets the next scope waiting on that key through.
 
 Every step is guarded on its own: a failure in one is never a reason to skip
-the ones behind it. Only one failure can be passed on, though — that is all a
-throw carries — and it is the first one, handed over once the whole sequence is
-over: to whoever called `close()`, or, for a scope taken off the tree, to the
-zone the teardown ran in. Every failure behind it is reported through
-`FlutterError.reportError` instead.
+the ones behind it. The first failure is handed to whoever called `close()`
+once the whole sequence is over. For a scope taken off the tree, it is reported
+through `FlutterError.reportError` instead. Every failure behind it is reported
+through `FlutterError.reportError` too.
 
 The order is what makes the family worth using: a parent never disposes of
 something while a child is still using it, and a re-created scope never

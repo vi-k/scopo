@@ -55,8 +55,9 @@ enum ScopePhase {
 /// throws is reported through [FlutterError.reportError] and does not reach
 /// the scope.
 ///
-/// This is a `base class`, so an observer of your own is declared `base`,
-/// `final` or `sealed` — `final` unless you mean it to be extended further.
+/// This is an ordinary class: a subclass needs no class modifier, and a test
+/// double can implement it. Extend it for an ordinary observer so that new
+/// empty hooks are inherited.
 ///
 /// {@category debug}
 class ScopeObserver {
@@ -214,9 +215,9 @@ class ScopeObserver {
 /// ```
 ///
 /// **Written here rather than left to be written by hand**, and that is the
-/// point of it. [ScopeObserver] is a `base class` whose hooks are empty, so a
-/// subclass keeps compiling when a new hook is added — which is what
-/// protects an ordinary observer from a new version. A delegate is the one
+/// point of it. [ScopeObserver] has empty hooks, so a subclass keeps compiling
+/// when a new hook is added — which is what protects an ordinary observer
+/// from a new version. A delegate is the one
 /// subclass that gets nothing from it: the new hook arrives with the empty
 /// implementation of the base, and every observer behind the delegate stops
 /// hearing that event without a word from anywhere. This one is written with
