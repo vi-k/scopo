@@ -23,14 +23,46 @@ const _arguments = _Environment(
       'errorBuilder: (context, error, stack, progress) => Text("\$error"),\n'
       'builder: (context, database) => DatabaseView(database: database),\n);\n}',
 );
-// This contract probe is separate from the document's blocks, but uses the
-// same environment and diagnostic matching as an intentional negative example.
-const _negativeKey = 'contracts/ScopeInitContext.progress(null)';
-const _negative = _Environment(
-  'void example(ScopeInitContext ctx) {',
-  '}',
-  expectedErrors: ['argument_type_not_assignable'],
-);
+// Contract probes are separate from the document's blocks, but use the same
+// environment and diagnostic matching. A negative probe holds a compile-time
+// refusal no widget test can hold; its positive twin differs only in the
+// argument under test, so the expected error cannot come from the scaffolding.
+const _refused = ['argument_type_not_assignable'];
+const _contracts = [
+  _Example(
+    'contracts/ScopeInitContext.progress(null)',
+    'ctx.progress(null);\n',
+    _Environment(
+      'void example(ScopeInitContext ctx) {',
+      '}',
+      expectedErrors: _refused,
+    ),
+  ),
+  _Example(
+    'contracts/ScopeModel(create: (context) => Profile())',
+    'ScopeModel<Profile>(\ncreate: (context) => Profile(),\n',
+    _scope,
+  ),
+  _Example(
+    'contracts/ScopeModel(create: null)',
+    'ScopeModel<Profile>(\ncreate: null,\n',
+    _Environment(_scopeBefore, _scopeAfter, expectedErrors: _refused),
+  ),
+  _Example(
+    'contracts/ScopeNotifier(create: (context) => Counter())',
+    'ScopeNotifier<Counter>(\ncreate: (context) => Counter(),\n',
+    _scope,
+  ),
+  _Example(
+    'contracts/ScopeNotifier(create: null)',
+    'ScopeNotifier<Counter>(\ncreate: null,\n',
+    _Environment(_scopeBefore, _scopeAfter, expectedErrors: _refused),
+  ),
+];
+const _scopeBefore = 'Widget example() {\nreturn ';
+const _scopeAfter = 'dispose: (model) {},\n'
+    'builder: (context) => const SizedBox(),\n);\n}';
+const _scope = _Environment(_scopeBefore, _scopeAfter);
 const _support = r'''
 import 'package:flutter/widgets.dart';
 import 'package:scopo/scopo.dart';
@@ -51,6 +83,8 @@ class DatabaseView extends StatelessWidget {
 class Profile {
   String get name => 'Ada';
 }
+
+class Counter extends ChangeNotifier {}
 ''';
 
 final class _Environment {
@@ -109,8 +143,7 @@ Future<void> main(List<String> arguments) async {
         );
       }
     }
-    examples
-        .add(const _Example(_negativeKey, 'ctx.progress(null);\n', _negative));
+    examples.addAll(_contracts);
 
     final parent = arguments.isEmpty
         ? Directory.systemTemp

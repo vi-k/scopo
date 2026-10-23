@@ -170,7 +170,7 @@ fvm dart format --set-exit-if-changed lib test
 fvm dart doc --dry-run               # 0 warnings, 0 errors
 fvm dart pub publish --dry-run       # 0 warnings
 sh docs/ru/check.sh                  # переводы отвечают оригиналам
-fvm dart run tool/check_doc_examples.dart  # блоки doc/ собираются
+fvm dart run tool/check_doc_examples.dart  # блоки doc/ и зонды контрактов
 ```
 
 Перед мержем в `main` проходят все одиннадцать. Утверждать «работает» без

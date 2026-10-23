@@ -162,9 +162,10 @@ CI: `.github/workflows/ci.yml`, `gate` на полу, `ceiling` на stable
 Последний прогон на `aa9044e` с подготовкой выпуска (2026-10-23): **611
 тестов**, leak-трекер включён; демо **9**, quickstart **1**; четыре `analyze` —
 `No issues found!`; format — 119 файлов, 0 changed; dartdoc — 0 warnings, 0
-errors; переводы актуальны: **17**; `tool/check_doc_examples.dart` — 8 PASS.
-Публикационный dry-run — единственный warning о незакоммиченном `pubspec.yaml`
-из пункта 3; `tool/` в архив не входит, `example/quickstart` входит.
+errors; переводы актуальны: **17**; `tool/check_doc_examples.dart` — 12 PASS (7
+блоков темы и 5 контрактных зондов). Публикационный dry-run — единственный
+warning о незакоммиченном `pubspec.yaml` из пункта 3; `tool/` в архив
+не входит, `example/quickstart` входит.
 
 Полный гейт — `AGENTS.md` §6, плюс `fvm flutter test` из `example/scopo_demo`.
 `pub publish --dry-run` считает изменённый публикуемый файл предупреждением.

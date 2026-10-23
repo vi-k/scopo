@@ -544,7 +544,11 @@ Nullable-поле фабрики нужно для `.value`, но его nullabl
 `required M Function(BuildContext context) this.create`, поле осталось nullable
 для `.value`. Зонд находки на прежнем коде даёт `No issues found!`, на новом —
 два `argument_type_not_assignable`. В `test/scope_notifier_test.dart` два
-теста, в CHANGELOG — строка **Breaking:**.
+теста, в CHANGELOG — строка **Breaking:**. Тесты держат только поведение:
+запрет компиляции виджет-тест не удержит. Его держит
+`tool/check_doc_examples.dart` — по зонду `create: null` на каждую семью,
+каждый с положительным двойником, где вместо `null` настоящая фабрика;
+с возвращённым nullable-параметром оба зонда краснеют.
 
 ## Что в проекте сделано хорошо и что стоит сохранить
 
