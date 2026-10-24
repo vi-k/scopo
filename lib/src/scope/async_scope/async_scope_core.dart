@@ -1280,7 +1280,7 @@ abstract base class AsyncScopeElementBase<W extends AsyncScopeCore<W, E>,
     // this is where its route is decided: the first leaves through the throw
     // -- to `FlutterError` when the tree took the scope away, to the caller of
     // `close()` otherwise -- and the rest through the report below. Told
-    // before the report, as it always was.
+    // before any report of it, as it always was.
     void take(ScopePhase phase, Object error, StackTrace stackTrace) {
       final first = failure == null;
       final route = !first || _treeBeganTheTeardown

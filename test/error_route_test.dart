@@ -386,6 +386,7 @@ void main() {
         tester,
         until: () => audit.seenIn(SeenIn.flutterError).contains(preparation),
       );
+      expect(audit.seenIn(SeenIn.flutterError), contains(preparation));
 
       audit.verify(observer.routes);
       expect(
@@ -441,6 +442,7 @@ void main() {
             ),
       );
       await settle(tester, until: () => caught != null);
+      expect(caught, isNotNull);
 
       audit.verify(observer.routes);
       expect(caught, same(unmount));
@@ -499,12 +501,76 @@ void main() {
             caught != null &&
             audit.seenIn(SeenIn.flutterError).contains(disposal),
       );
+      expect(caught, isNotNull);
+      expect(audit.seenIn(SeenIn.flutterError), contains(disposal));
 
       audit.verify(observer.routes);
       expect(observer.routes.single.$2, ScopePhase.disposal);
       expect(observer.routes.single.$3, ScopeErrorRoute.flutterError);
       expect(caught, same(disposal));
     });
+
+    // The other way round: `close()` began the teardown and the tree took the
+    // element away afterwards. The teardown stays the caller's, so its first
+    // failure goes to the `close()` future and nowhere else -- which is why
+    // the route is read from what `dispose()` saw, and not from whether the
+    // element is still mounted when the stage fails.
+    for (final inDisposeScope in [false, true]) {
+      final when = inDisposeScope
+          ? 'while close() is inside disposeScope'
+          : 'before the closing frame';
+
+      testWidgets('the tree takes a closing scope away $when: caller',
+          (tester) async {
+        final gate = Completer<void>();
+        var entered = false;
+        final disposal = StateError('disposeScope failed');
+        late AsyncScopeContext<AsyncScope> scope;
+
+        await tester.pumpWidget(
+          _app(
+            _asyncScope(
+              disposeScope: () async {
+                entered = true;
+                await gate.future;
+                throw disposal;
+              },
+              builder: (context) {
+                scope = AsyncScope.of(context, listen: false);
+                return const SizedBox.shrink();
+              },
+            ),
+          ),
+        );
+        await tester.pumpAndSettle();
+        audit.install();
+
+        Object? caught;
+        unawaited(
+          scope.close().then<void>(
+                (_) {},
+                onError: (Object error) => caught = error,
+              ),
+        );
+        if (inDisposeScope) {
+          await settle(tester, until: () => entered);
+          expect(entered, isTrue);
+        }
+        // The closing frame has not been drawn yet on the first variant: the
+        // removal is what releases it.
+        expect(entered, inDisposeScope);
+        await tester.pumpWidget(_app(const SizedBox.shrink()));
+        gate.complete();
+        await settle(tester, until: () => caught != null);
+        expect(caught, isNotNull);
+
+        audit.verify(observer.routes);
+        expect(observer.routes.single.$2, ScopePhase.disposal);
+        expect(observer.routes.single.$3, ScopeErrorRoute.caller);
+        expect(caught, same(disposal));
+        expect(audit.seenIn(SeenIn.flutterError), isEmpty);
+      });
+    }
   });
 
   group('FlutterError, for a late release', () {
