@@ -487,11 +487,13 @@ abstract class ScopeAutoDependencies<T extends ScopeAutoDependencies<T, C>,
     }
 
     void reportFailure(Object error, StackTrace stackTrace) {
-      // Unless it is a cancellation, which stops at the observer as it does
-      // on every other road out of this package: "a cancellation is a decision
-      // somebody made, not a failure, and none of them reaches the zone". It
-      // arrives wrapped in a [ScopeDependencyException] when the walk was the
-      // package's own, which is why this road went on missing it while
+      // A cancellation stops at the observer here, as it does on every other
+      // road out of this package: "a cancellation is a decision somebody
+      // made, not a failure, and none of them reaches the zone". It is told
+      // apart first, because both the route below and the report after it
+      // depend on the answer. It arrives wrapped in a
+      // [ScopeDependencyException] when the walk was the package's own,
+      // which is why this road went on missing it while
       // `ctx.onDispose` learned the rule -- a consumer who moved the same
       // teardown from one hook to the other got the red line and the failing
       // widget test back.
@@ -522,6 +524,8 @@ abstract class ScopeAutoDependencies<T extends ScopeAutoDependencies<T, C>,
         );
       }
 
+      // A cancellation is not a failure, so nothing reports it: the observer,
+      // told above with `ScopeErrorRoute.cancellation`, is as far as it goes.
       if (isCancellation) {
         return;
       }

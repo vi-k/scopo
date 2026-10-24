@@ -76,13 +76,17 @@ enum ScopeErrorRoute {
   /// Flutter's build error boundary.
   ///
   /// A teardown failure nobody is left to be handed, a late release, a failed
-  /// build, a synchronous `init()` hook that threw.
+  /// build, a synchronous `init()` hook that threw — and `onInitialized` of a
+  /// state whose `initStateAsync` returned synchronously inside a build, which
+  /// runs after the frame and throws into the scheduler.
   flutterError,
 
   /// An uncaught error of the zone the scope runs in.
   ///
-  /// `initStateAsync` and `onInitialized` of a state, and an `AsyncScope`
-  /// that failed before its initialization started.
+  /// `initStateAsync` of a state; `onInitialized` of a state whose
+  /// `initStateAsync` returned a `Future`, or returned synchronously outside
+  /// a build; and an `AsyncScope` that failed before its initialization
+  /// started.
   zone,
 
   /// Thrown to whoever called — today that is `close()`, and what its caller
