@@ -639,6 +639,7 @@ abstract base class AsyncScopeElementBase<W extends AsyncScopeCore<W, E>,
         (observer) => observer.onError(
           this,
           ScopePhase.preparationForDisposal,
+          ScopeErrorRoute.flutterError,
           error,
           stackTrace,
         ),
@@ -1038,10 +1039,13 @@ abstract base class AsyncScopeElementBase<W extends AsyncScopeCore<W, E>,
     } on Object catch (error, stackTrace) {
       // `_initSucceeded` stays false: nothing was initialized, so nothing is
       // disposed of either.
+      // The zone: this future is discarded, and the `rethrow` at the end of
+      // this block lands in it.
       notifyObserver(
         (observer) => observer.onError(
           this,
           ScopePhase.initialization,
+          ScopeErrorRoute.zone,
           error,
           stackTrace,
         ),
@@ -1262,6 +1266,14 @@ abstract base class AsyncScopeElementBase<W extends AsyncScopeCore<W, E>,
     // the only other way there is. Left to the log line above each call, as
     // it was, the second and third failures reached nobody at all: that log
     // is off by default.
+    //
+    // Where a failure goes is decided here, after the stage has already told
+    // the observer about it: the first leaves through the throw -- to
+    // `FlutterError` when the tree took the scope away, to the caller of
+    // `close()` otherwise -- and the rest through the report below. So the
+    // stages pass a provisional `ScopeErrorRoute.observer` for now; task 2 of
+    // `2026-10-24[4]-observer-error-route-plan.md` moves their `onError`
+    // behind this decision.
     void take(Object error, StackTrace stackTrace) {
       if (failure == null) {
         failure = AsyncError(error, stackTrace);
@@ -1278,8 +1290,14 @@ abstract base class AsyncScopeElementBase<W extends AsyncScopeCore<W, E>,
         // ignore: avoid_catching_errors
       } on Object catch (error, stackTrace) {
         notifyObserver(
-          (observer) =>
-              observer.onError(this, ScopePhase.unmount, error, stackTrace),
+          (observer) => observer.onError(
+            this,
+            ScopePhase.unmount,
+            // Provisional, see [take].
+            ScopeErrorRoute.observer,
+            error,
+            stackTrace,
+          ),
         );
         take(error, stackTrace);
       }
@@ -1292,6 +1310,8 @@ abstract base class AsyncScopeElementBase<W extends AsyncScopeCore<W, E>,
           (observer) => observer.onError(
             this,
             ScopePhase.preparationForDisposal,
+            // Provisional, see [take].
+            ScopeErrorRoute.observer,
             error,
             stackTrace,
           ),
@@ -1353,8 +1373,14 @@ abstract base class AsyncScopeElementBase<W extends AsyncScopeCore<W, E>,
         // ignore: avoid_catching_errors
       } on Object catch (error, stackTrace) {
         notifyObserver(
-          (observer) =>
-              observer.onError(this, ScopePhase.disposal, error, stackTrace),
+          (observer) => observer.onError(
+            this,
+            ScopePhase.disposal,
+            // Provisional, see [take].
+            ScopeErrorRoute.observer,
+            error,
+            stackTrace,
+          ),
         );
         take(error, stackTrace);
       } finally {
@@ -1491,6 +1517,7 @@ abstract base class AsyncScopeElementBase<W extends AsyncScopeCore<W, E>,
           (observer) => observer.onError(
             this,
             ScopePhase.abandonedWait,
+            ScopeErrorRoute.flutterError,
             error,
             stackTrace,
           ),
@@ -1593,6 +1620,7 @@ abstract base class AsyncScopeElementBase<W extends AsyncScopeCore<W, E>,
           (observer) => observer.onError(
             this,
             ScopePhase.initializationCancellation,
+            ScopeErrorRoute.flutterError,
             error,
             stackTrace,
           ),

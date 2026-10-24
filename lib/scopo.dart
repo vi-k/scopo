@@ -30,6 +30,7 @@ export 'src/environment/scope_config.dart'
     show
         ScopeCompositeObserver,
         ScopeConfig,
+        ScopeErrorRoute,
         ScopeObservable,
         ScopeObserver,
         ScopePhase,

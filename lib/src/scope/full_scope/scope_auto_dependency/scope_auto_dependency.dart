@@ -87,6 +87,11 @@ abstract class ScopeAutoDependencies<T extends ScopeAutoDependencies<T, C>,
         (observer) => observer.onError(
           this,
           ScopePhase.disposal,
+          // Provisional. Whether this step reaches `FlutterError` is decided
+          // at the end of the walk today, and only for the failure that
+          // leaves it; task 3 of `2026-10-24[4]-observer-error-route-plan.md`
+          // reports every step here and routes it accordingly.
+          ScopeErrorRoute.observer,
           // Named the way the failure that travels the walk is named: the
           // observer is told which dependency failed, and `onError` has no
           // path of its own to tell it with.
@@ -288,8 +293,13 @@ abstract class ScopeAutoDependencies<T extends ScopeAutoDependencies<T, C>,
           // would replace it with itself. The disposal below reports its own
           // failures the same way and for the same reason.
           notifyObserver(
-            (observer) =>
-                observer.onError(this, ScopePhase.unmount, error, stackTrace),
+            (observer) => observer.onError(
+              this,
+              ScopePhase.unmount,
+              ScopeErrorRoute.flutterError,
+              error,
+              stackTrace,
+            ),
           );
           FlutterError.reportError(
             FlutterErrorDetails(
@@ -386,6 +396,7 @@ abstract class ScopeAutoDependencies<T extends ScopeAutoDependencies<T, C>,
           (observer) => observer.onError(
             this,
             ScopePhase.abandonedWait,
+            ScopeErrorRoute.flutterError,
             error,
             stackTrace,
           ),
@@ -476,6 +487,17 @@ abstract class ScopeAutoDependencies<T extends ScopeAutoDependencies<T, C>,
     }
 
     void reportFailure(Object error, StackTrace stackTrace) {
+      // Unless it is a cancellation, which stops at the observer as it does
+      // on every other road out of this package: "a cancellation is a decision
+      // somebody made, not a failure, and none of them reaches the zone". It
+      // arrives wrapped in a [ScopeDependencyException] when the walk was the
+      // package's own, which is why this road went on missing it while
+      // `ctx.onDispose` learned the rule -- a consumer who moved the same
+      // teardown from one hook to the other got the red line and the failing
+      // widget test back.
+      final carried = error is ScopeDependencyException ? error.error : error;
+      final isCancellation = carried is Cancelled;
+
       // The observer half only for a root of the caller's own making, on the
       // same terms as the exit below: a root of the package's own making has
       // announced this failure from inside the walk, where it happened and
@@ -485,6 +507,11 @@ abstract class ScopeAutoDependencies<T extends ScopeAutoDependencies<T, C>,
           (observer) => observer.onError(
             this,
             ScopePhase.disposal,
+            // Decided above, before the observer is told: the report below is
+            // skipped for exactly the cancellations.
+            isCancellation
+                ? ScopeErrorRoute.cancellation
+                : ScopeErrorRoute.flutterError,
             // Named, the way the two other senders of this hook name theirs:
             // the observer is told which dependency failed, and `onError` has
             // no path of its own to tell it with. A foreign root is one step,
@@ -495,16 +522,7 @@ abstract class ScopeAutoDependencies<T extends ScopeAutoDependencies<T, C>,
         );
       }
 
-      // Unless it is a cancellation, which stops at the observer as it does
-      // on every other road out of this package: "a cancellation is a decision
-      // somebody made, not a failure, and none of them reaches the zone". It
-      // arrives wrapped in a [ScopeDependencyException] when the walk was the
-      // package's own, which is why this road went on missing it while
-      // `ctx.onDispose` learned the rule -- a consumer who moved the same
-      // teardown from one hook to the other got the red line and the failing
-      // widget test back.
-      final carried = error is ScopeDependencyException ? error.error : error;
-      if (carried is Cancelled) {
+      if (isCancellation) {
         return;
       }
 

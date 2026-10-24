@@ -1,6 +1,6 @@
 # debug
 
-> Перевод `doc/debug.md` (blob `b365fa2c6d4686502ad870cdc94264ed09b8b47e`).
+> Перевод `doc/debug.md` (blob `6f018bd732c0ec209efc549387153f5c570ea3f5`).
 > Правится в том же коммите, что и оригинал; проверка — `sh docs/ru/check.sh`.
 
 Наблюдатель и глобальные настройки пакета. Всё на этой странице статическое
@@ -33,6 +33,7 @@ final class CrashReporter extends ScopeObserver {
   void onError(
     ScopeObservable target,
     ScopePhase phase,
+    ScopeErrorRoute route,
     Object error,
     StackTrace? stackTrace,
   ) =>

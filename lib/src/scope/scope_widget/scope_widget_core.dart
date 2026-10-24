@@ -244,8 +244,13 @@ abstract base class ScopeWidgetElementBase<W extends ScopeWidgetCore<W, E>,
           // makes, in the words of `_reportFailure`: reported, and the
           // teardown goes on.
           notifyObserver(
-            (observer) =>
-                observer.onError(this, ScopePhase.unmount, error, stackTrace),
+            (observer) => observer.onError(
+              this,
+              ScopePhase.unmount,
+              ScopeErrorRoute.flutterError,
+              error,
+              stackTrace,
+            ),
           );
           _reportFailure(error, stackTrace, 'while unmounting the scope');
         } finally {
@@ -276,8 +281,13 @@ abstract base class ScopeWidgetElementBase<W extends ScopeWidgetCore<W, E>,
       // ignore: avoid_catching_errors
     } on Object catch (error, stackTrace) {
       notifyObserver(
-        (observer) =>
-            observer.onError(this, ScopePhase.disposal, error, stackTrace),
+        (observer) => observer.onError(
+          this,
+          ScopePhase.disposal,
+          ScopeErrorRoute.flutterError,
+          error,
+          stackTrace,
+        ),
       );
       _reportFailure(error, stackTrace, 'while disposing of the scope');
     }
@@ -668,10 +678,12 @@ abstract base class ScopeWidgetElementBase<W extends ScopeWidgetCore<W, E>,
         // would double this -- except that its phase is started only for an
         // `init()` that returned (`_didInit` in `performRebuild`), so a hook
         // that threw leaves it never started and with nothing to say.
+        // The boundary reports it to `FlutterError` on the way out.
         notifyObserver(
           (observer) => observer.onError(
             this,
             ScopePhase.initialization,
+            ScopeErrorRoute.flutterError,
             error,
             stackTrace,
           ),
@@ -734,8 +746,13 @@ abstract base class ScopeWidgetElementBase<W extends ScopeWidgetCore<W, E>,
       // this is what the observer hears -- the same split that put a report
       // on the `init()` hook higher up this method.
       notifyObserver(
-        (observer) =>
-            observer.onError(this, ScopePhase.build, error, stackTrace),
+        (observer) => observer.onError(
+          this,
+          ScopePhase.build,
+          ScopeErrorRoute.flutterError,
+          error,
+          stackTrace,
+        ),
       );
 
       rethrow;

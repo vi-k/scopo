@@ -121,8 +121,13 @@ abstract base class ScopeDependencyGroup with ScopeDependencyMixin {
           // dropped here without a word -- not to the caller, not to the
           // observer, not to `FlutterError`.
           notifyObserver(
-            (observer) =>
-                observer.onError(this, ScopePhase.unmount, error, stackTrace),
+            (observer) => observer.onError(
+              this,
+              ScopePhase.unmount,
+              ScopeErrorRoute.flutterError,
+              error,
+              stackTrace,
+            ),
           );
           _reportFailure(
             error,
@@ -181,6 +186,7 @@ abstract base class ScopeDependencyGroup with ScopeDependencyMixin {
       (observer) => observer.onError(
         this,
         ScopePhase.initialization,
+        ScopeErrorRoute.flutterError,
         error,
         stackTrace,
       ),

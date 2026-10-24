@@ -412,6 +412,7 @@ final class _LiteScopeCoreElement<
         (observer) => observer.onError(
           (state as S)._scopeElement,
           ScopePhase.build,
+          ScopeErrorRoute.flutterError,
           error,
           stackTrace,
         ),
@@ -579,6 +580,7 @@ abstract base class LiteScopeCoreState<
         (observer) => observer.onError(
           _scopeElement,
           ScopePhase.initialization,
+          ScopeErrorRoute.zone,
           error,
           stackTrace,
         ),
@@ -589,13 +591,29 @@ abstract base class LiteScopeCoreState<
     // Completion has its own guard: onInitialized can run here or in a
     // post-frame callback, and must be reported exactly once on either path.
     if (result is Future<void>) {
-      _completeInit();
+      _completeInit(ScopeErrorRoute.zone);
     } else {
-      SchedulerBinding.instance.runOutsideFrame(_completeInit);
+      // Where a failing [onInitialized] goes depends on which of the two
+      // `runOutsideFrame` picks, and only the callback can tell: run at once,
+      // it throws into this method and so into the zone, like the branch
+      // above; run after the frame, it throws into the scheduler, which
+      // reports it to `FlutterError`. The flag is still set when the action
+      // runs at once, and cleared by the time a post-frame callback does.
+      var runsNow = true;
+      SchedulerBinding.instance.runOutsideFrame(
+        () => _completeInit(
+          runsNow ? ScopeErrorRoute.zone : ScopeErrorRoute.flutterError,
+        ),
+      );
+      runsNow = false;
     }
   }
 
-  void _completeInit() {
+  /// Settles the initialization and calls [onInitialized].
+  ///
+  /// [route] is where a failure of [onInitialized] goes once it is re-thrown,
+  /// which only the caller knows.
+  void _completeInit(ScopeErrorRoute route) {
     _initSucceeded = true;
     _initCompleter.complete();
 
@@ -614,6 +632,7 @@ abstract base class LiteScopeCoreState<
           (observer) => observer.onError(
             _scopeElement,
             ScopePhase.initialization,
+            route,
             error,
             stackTrace,
           ),

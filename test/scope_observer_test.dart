@@ -1240,6 +1240,7 @@ void main() {
     ScopePrintObserver(output: lines.add).onError(
       scope,
       ScopePhase.initialization,
+      ScopeErrorRoute.observer,
       StateError('no network'),
       stackTrace,
     );
@@ -1256,6 +1257,7 @@ void main() {
     ScopePrintObserver(output: lines.add).onError(
       scope,
       ScopePhase.disposal,
+      ScopeErrorRoute.flutterError,
       StateError('dispose failed'),
       null,
     );
@@ -1265,18 +1267,44 @@ void main() {
     expect(lines, [expected]);
   });
 
+  // The line is a log read by a person, and where else the failure went is a
+  // question for a crash reporter: the route leaves it as it was.
+  test('the print observer writes the same line whatever the route', () {
+    final lines = <String>[];
+    const scope = _FakeObservable('CounterScope(#4e0b7)');
+    final error = StateError('boom');
+    final observer = ScopePrintObserver(output: lines.add);
+
+    for (final route in ScopeErrorRoute.values) {
+      observer.onError(scope, ScopePhase.disposal, route, error, null);
+    }
+
+    expect(lines, [
+      for (final _ in ScopeErrorRoute.values)
+        'scopo | CounterScope(#4e0b7) | disposal failed: Bad state: boom',
+    ]);
+  });
+
   test('the print observer spells out every failed phase in English', () {
     final lines = <String>[];
     const scope = _FakeObservable('CounterScope(#4e0b7)');
     final error = StateError('boom');
 
+    const route = ScopeErrorRoute.flutterError;
+
     ScopePrintObserver(output: lines.add)
-      ..onError(scope, ScopePhase.initialization, error, null)
-      ..onError(scope, ScopePhase.initializationCancellation, error, null)
-      ..onError(scope, ScopePhase.preparationForDisposal, error, null)
-      ..onError(scope, ScopePhase.unmount, error, null)
-      ..onError(scope, ScopePhase.disposal, error, null)
-      ..onError(scope, ScopePhase.abandonedWait, error, null);
+      ..onError(scope, ScopePhase.initialization, route, error, null)
+      ..onError(
+        scope,
+        ScopePhase.initializationCancellation,
+        route,
+        error,
+        null,
+      )
+      ..onError(scope, ScopePhase.preparationForDisposal, route, error, null)
+      ..onError(scope, ScopePhase.unmount, route, error, null)
+      ..onError(scope, ScopePhase.disposal, route, error, null)
+      ..onError(scope, ScopePhase.abandonedWait, route, error, null);
 
     const cancellationFailed =
         'scopo | CounterScope(#4e0b7) | initialization cancellation failed: '
@@ -1530,6 +1558,7 @@ final class _ErrorObserver extends ScopeObserver {
   void onError(
     ScopeObservable target,
     ScopePhase phase,
+    ScopeErrorRoute route,
     Object error,
     StackTrace? stackTrace,
   ) =>

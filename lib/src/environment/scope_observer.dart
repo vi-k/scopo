@@ -51,6 +51,48 @@ enum ScopePhase {
   abandonedWait,
 }
 
+/// Where a failure reaching [ScopeObserver.onError] goes besides the observer.
+///
+/// An application with ordinary crash reporting listens in two places: at
+/// `FlutterError.onError` and the zone, and at its own observer. Some failures
+/// reach both, and some reach the observer alone. The route says which, at
+/// the moment of the call, and it is final: an observer that forwards to a
+/// crash reporter forwards [observer] and leaves the rest to whoever else
+/// already has them.
+///
+/// More values may be added later, so a `switch` over this enum wants a
+/// `default` branch.
+///
+/// {@category debug}
+enum ScopeErrorRoute {
+  /// Nowhere else. Without an observer the failure is seen only in the state
+  /// of the scope — the `buildOnError` branch, or the state of a dependency.
+  ///
+  /// The failure of an initialization body, `initDependencies` included, and
+  /// of a child job the body caught.
+  observer,
+
+  /// [FlutterError.reportError], either from the package itself or from
+  /// Flutter's build error boundary.
+  ///
+  /// A teardown failure nobody is left to be handed, a late release, a failed
+  /// build, a synchronous `init()` hook that threw.
+  flutterError,
+
+  /// An uncaught error of the zone the scope runs in.
+  ///
+  /// `initStateAsync` and `onInitialized` of a state, and an `AsyncScope`
+  /// that failed before its initialization started.
+  zone,
+
+  /// Thrown to whoever called — today that is `close()`, and what its caller
+  /// does with the failure is up to them.
+  caller,
+
+  /// Not a failure: a cancellation, which nobody reports.
+  cancellation,
+}
+
 /// Hooks called as scopes and their dependencies live and die.
 ///
 /// Assign one to [ScopeConfig.observer]. Every hook is empty, so a subclass
@@ -176,9 +218,14 @@ class ScopeObserver {
   /// structural family (no phase of its own) that one event is the scope's
   /// whole recording, since the teardown pair belongs to a scope that
   /// announced [onInit].
+  ///
+  /// [route] says where else the failure goes, and is final when this is
+  /// called: forward [ScopeErrorRoute.observer] to a crash reporter and
+  /// nothing else, and every failure is reported once.
   void onError(
     ScopeObservable target,
     ScopePhase phase,
+    ScopeErrorRoute route,
     Object error,
     StackTrace? stackTrace,
   ) {}
@@ -299,10 +346,11 @@ final class ScopeCompositeObserver extends ScopeObserver {
   void onError(
     ScopeObservable target,
     ScopePhase phase,
+    ScopeErrorRoute route,
     Object error,
     StackTrace? stackTrace,
   ) =>
-      _each((o) => o.onError(target, phase, error, stackTrace));
+      _each((o) => o.onError(target, phase, route, error, stackTrace));
 
   @override
   void onTimeout(
@@ -374,10 +422,14 @@ final class ScopePrintObserver extends ScopeObserver {
   @override
   void onDisposed(ScopeObservable target) => _write(target, 'disposed');
 
+  // The route is not printed: this is a log of what happened, read by a
+  // person, and where else the failure went is a question for a crash
+  // reporter, not for the line.
   @override
   void onError(
     ScopeObservable target,
     ScopePhase phase,
+    ScopeErrorRoute route,
     Object error,
     StackTrace? stackTrace,
   ) {

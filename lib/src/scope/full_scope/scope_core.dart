@@ -219,6 +219,7 @@ abstract base class ScopeElementBase<
         (observer) => observer.onError(
           this,
           ScopePhase.initializationCancellation,
+          ScopeErrorRoute.flutterError,
           error,
           stackTrace,
         ),
@@ -279,8 +280,13 @@ abstract base class ScopeElementBase<
         // leaves through the throw, and this one would otherwise reach the
         // observer through neither.
         notifyObserver(
-          (observer) =>
-              observer.onError(this, ScopePhase.unmount, error, stackTrace),
+          (observer) => observer.onError(
+            this,
+            ScopePhase.unmount,
+            ScopeErrorRoute.flutterError,
+            error,
+            stackTrace,
+          ),
         );
         _reportFailure(error, stackTrace, 'while unmounting the dependencies');
       }
@@ -344,8 +350,13 @@ abstract base class ScopeElementBase<
       } else {
         // Both channels, for the reason given in the half above.
         notifyObserver(
-          (observer) =>
-              observer.onError(this, ScopePhase.disposal, error, stackTrace),
+          (observer) => observer.onError(
+            this,
+            ScopePhase.disposal,
+            ScopeErrorRoute.flutterError,
+            error,
+            stackTrace,
+          ),
         );
         _reportFailure(
           error,

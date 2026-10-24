@@ -225,8 +225,13 @@ abstract base class AsyncControllerScopeElementBase<
       // `onTimeout`, so without this an observer heard about a release that
       // ran too long and nothing at all about one that failed.
       notifyObserver(
-        (observer) =>
-            observer.onError(this, ScopePhase.disposal, error, stackTrace),
+        (observer) => observer.onError(
+          this,
+          ScopePhase.disposal,
+          ScopeErrorRoute.flutterError,
+          error,
+          stackTrace,
+        ),
       );
       FlutterError.reportError(
         FlutterErrorDetails(

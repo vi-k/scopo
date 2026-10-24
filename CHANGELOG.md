@@ -1,3 +1,17 @@
+## 0.19.0
+
+* **Breaking:** `ScopeObserver.onError` takes the route of the failure after
+  its phase: `onError(target, phase, route, error, stackTrace)`. The new enum
+  `ScopeErrorRoute` says where the failure goes besides the observer —
+  `observer` (nowhere else), `flutterError`, `zone`, `caller` or
+  `cancellation` — and is final when the hook is called. An observer that
+  forwarded every `onError` to a crash reporter got a second report of each
+  failure the package or Flutter also hands to `FlutterError.onError` or the
+  zone; forwarding only `ScopeErrorRoute.observer` reports each failure once.
+  An observer that overrides `onError` adds the parameter.
+  `ScopeCompositeObserver` passes the route on unchanged, and
+  `ScopePrintObserver` prints the same line as before.
+
 ## 0.18.0
 
 * **Breaking:** `listen` and `select` on a `Listenable` moved out of

@@ -638,6 +638,7 @@ mixin ScopeDependencyMixin implements ScopeDependency, ScopeObservable {
       (observer) => observer.onError(
         this,
         ScopePhase.initializationCancellation,
+        ScopeErrorRoute.flutterError,
         named,
         stackTrace,
       ),

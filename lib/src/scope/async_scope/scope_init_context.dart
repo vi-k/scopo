@@ -190,10 +190,22 @@ final class _ScopeInitObserver extends JobObserver with JobAnswerer {
   }
 
   /// Tells the scope observer, and remembers having told it.
+  ///
+  /// The route is provisional. It is right for the failure of the body, which
+  /// `_settleFailure` announces and nothing else reports; for the errors the
+  /// kernel hands over it is not known here yet, since whether
+  /// [onUnanswered] follows is decided by the kernel. Task 5 of
+  /// `2026-10-24[4]-observer-error-route-plan.md` passes the route in.
   void _announce(Object error, StackTrace stackTrace, ScopePhase phase) {
     if (!_announced.add(error)) return;
     notifyObserver(
-      (observer) => observer.onError(_scope, phase, error, stackTrace),
+      (observer) => observer.onError(
+        _scope,
+        phase,
+        ScopeErrorRoute.observer,
+        error,
+        stackTrace,
+      ),
     );
   }
 

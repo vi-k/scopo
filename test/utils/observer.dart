@@ -12,6 +12,16 @@ import 'package:scopo/scopo.dart';
 String _label(ScopeObservable target) =>
     target.debugLabel.replaceFirst(RegExp(r'\(#[0-9a-f]+\)$'), '');
 
+/// [_label], or a placeholder when the label itself throws.
+String _safeLabel(ScopeObservable target) {
+  try {
+    return _label(target);
+    // ignore: avoid_catching_errors
+  } on Object {
+    return '<label failed>';
+  }
+}
+
 /// Records what the package reports, in order, as plain strings.
 ///
 /// Strings, not objects: a test that compares the whole list at once catches
@@ -24,6 +34,14 @@ final class RecordingObserver extends ScopeObserver {
   /// The error of every [onTimeout], in order — the half the line for it
   /// leaves out.
   final timeouts = <TimeoutException>[];
+
+  /// Every [onError], in order, with the route the package gave it.
+  ///
+  /// Beside [events] rather than in it: hundreds of expectations compare the
+  /// line of an error as it stands, and the route is what a test of routes
+  /// reads. The error is the object itself, so `RouteAudit.verify` can find
+  /// it again among what reached `FlutterError` and the zone.
+  final routes = <(String, ScopePhase, ScopeErrorRoute, Object)>[];
 
   /// Whether [onTrace] is recorded too.
   final bool trace;
@@ -65,14 +83,21 @@ final class RecordingObserver extends ScopeObserver {
   void onDisposed(ScopeObservable target) =>
       events.add('disposed ${_label(target)}');
 
+  // The route first, and under a label that cannot fail: a scope whose `tag`
+  // cannot name itself is one of the failures recorded here, and its label
+  // throws. The line in [events] still asks for the label the ordinary way,
+  // so such a throw is what it always was -- an observer that failed.
   @override
   void onError(
     ScopeObservable target,
     ScopePhase phase,
+    ScopeErrorRoute route,
     Object error,
     StackTrace? stackTrace,
-  ) =>
-      events.add('error ${_label(target)} ${phase.name} $error');
+  ) {
+    routes.add((_safeLabel(target), phase, route, error));
+    events.add('error ${_label(target)} ${phase.name} $error');
+  }
 
   // The error goes beside the line rather than into it: it repeats `what` in
   // prose and carries names with hashes in them, and every expectation over

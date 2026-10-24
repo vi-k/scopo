@@ -30,6 +30,7 @@ final class CrashReporter extends ScopeObserver {
   void onError(
     ScopeObservable target,
     ScopePhase phase,
+    ScopeErrorRoute route,
     Object error,
     StackTrace? stackTrace,
   ) =>
