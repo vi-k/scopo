@@ -1,7 +1,9 @@
 # Маршрут ошибки в `ScopeObserver.onError` — план работ
 
 > **Состояние на 2026-10-24:** план написан, ждёт просмотра владельцем. Код
-> не менялся.
+> не менялся. Задача 4 переписана по вопросу владельца «сейчас можно легко
+> перевыпустить. я единственный пользователь. нужно ли тогда новое имя?»:
+> признак ответа — параметр самого `JobObserver.onError`, а не новый хук.
 > **Что это:** задачи по дизайну `2026-10-24[3]-observer-error-route-design.md`
 > для scopo и для ядра `async_job` (репозиторий `solo`), с тестами и порядком.
 > **Связанные записи:** `2026-10-24[2]-observer-error-route-request.md`,
@@ -18,9 +20,9 @@
 Каждое место вызова передаёт маршрут, известный в момент вызова. Три места,
 где он сегодня неизвестен, перестраиваются: стадии разборки `AsyncScope`
 (трудность 2), обход разборки контейнера (5a) и наблюдатель задачи
-инициализации (трудность 1, с новым хуком ядра).
+инициализации (трудность 1, с новым параметром `onError` ядра).
 
-**Стек:** Dart 3.6 / Flutter 3.27.0 через fvm; `async_job` 0.3.0 → 0.3.1.
+**Стек:** Dart 3.6 / Flutter 3.27.0 через fvm; `async_job` 0.3.0 → 0.4.0.
 
 **Спека:** `docs/records/2026-10-24[3]-observer-error-route-design.md`.
 
@@ -32,12 +34,13 @@
   ScopeErrorRoute route, Object error, StackTrace? stackTrace)`.
 - Выпуск scopo 0.19.0, в `CHANGELOG.md` — **Breaking** о сигнатуре и по строке
   о каждом пути, где маршрут или второй канал меняется.
-- Ядро меняется **без ломки** (моё решение, см. задачу 4): `solo`
-  и `flutter_solo` не перевыпускаются.
+- Ядро меняется **с ломкой**: `JobObserver.onError` получает параметр.
+  Выпуски снизу вверх: `async_job` 0.4.0, `solo`, `flutter_solo`, затем
+  scopo 0.19.0. Каждый — отдельная связка по отдельному слову владельца
+  (`AGENTS.md` §5 обоих репозиториев).
 - Работа идёт в ветке `worktree-observer-route-request`. В `main` она
-  вливается только после выпуска `async_job` 0.3.1: CI scopo берёт ядро
-  с pub.dev. Публикация `async_job` и scopo — отдельные связки, только
-  по отдельному слову владельца (`AGENTS.md` §5 обоих репозиториев).
+  вливается только после выпуска `async_job` 0.4.0: CI scopo берёт ядро
+  с pub.dev.
 - `AGENTS.md` §8: сначала падающий тест; правки `lib/` — со строкой
   в `CHANGELOG.md`; публичный документ — с зеркалом в `docs/ru/` в том же
   коммите.
@@ -197,66 +200,65 @@ final class RouteAudit {
   набор зелёный.
 - [ ] **Шаг 5:** коммит `fix: report every failed disposal step of a container`.
 
-### Задача 4: ядро — признак ответа в наблюдателе (`solo`, `async_job`)
+### Задача 4: ядро — признак ответа в `onError` (`solo`, `async_job`)
 
 Работа в репозитории `~/development/my/solo` по его `AGENTS.md`: своя
 рабочая копия, свои записи (`docs/records/2026-10/`, имя без `[N]`), свой
-гейт, свой handoff. Публикации нет.
+гейт, свой handoff, свои оверрайды между выпусками. Публикации нет.
 
-**Форма (моё решение, не ломает):** в `JobObserver` новый хук
+**Форма:** признак — параметр самого хука, нового имени нет:
 
 ```dart
-/// [onError], told whether the job asks for an answer to this error right
-/// after this call: [JobAnswerer.onUnanswered] or the zone.
-void onErrorAnswered(
+/// ... [answered] is `true` when the job asks for an answer to this error
+/// right after this call: [JobAnswerer.onUnanswered], or the zone.
+void onError(
   Job<Object?> job,
   Object error,
   StackTrace stackTrace, {
   required bool answered,
-}) =>
-    onError(job, error, stackTrace);
+}) {}
 ```
 
-Ядро зовёт только его; по умолчанию он зовёт `onError`, поэтому наблюдатели,
-написанные под 0.3.0, не замечают разницы. `_AllObservers` пересылает
-`onErrorAnswered` каждому. `answered: true` — на пути `notifyError`
-у ошибки, которую `_handleUnanswered` сейчас отдаст в ответ (не отмена,
-не названная `Job.isCancellationError` у отменённой задачи); `false` —
-у отмен и на пути `notifyObserver` (исход задачи; ответ, если будет, придёт
-позже через `_reportUnobserved`). Фильтр `Job.isCancellationError`
-спрашивается по-прежнему один раз на ошибку: решение считается один раз
-и отдаётся и хуку, и ответу.
+`answered: true` — на пути `notifyError` у ошибки, которую
+`_handleUnanswered` сейчас отдаст в ответ (не отмена, не названная
+`Job.isCancellationError` у отменённой задачи); `false` — у отмен и на пути
+`notifyObserver` (исход задачи; ответ, если будет, придёт позже через
+`_reportUnobserved`). Фильтр `Job.isCancellationError` спрашивается
+по-прежнему один раз на ошибку: решение считается один раз и отдаётся
+и хуку, и ответу. `JobObserver.all` пересылает признак.
 
 **Файлы:** `packages/async_job/lib/src/observer.dart`,
 `packages/async_job/lib/src/job_base.dart` (`notifyObserver`, `notifyError`,
-`_handleUnanswered`), тесты ядра рядом с тестами `onUnanswered`,
-`packages/async_job/CHANGELOG.md` (0.3.1), страница
-`doc/error-rules.md` («Where each error goes») и её русское зеркало,
-запись дизайна в `docs/records/2026-10/`.
+`_handleUnanswered`), все переопределения `onError(Job…)` в `packages/`
+(два в `solo/lib/src/solo.dart`, остальные в тестах и в `doc/errors.md`
+обоих пакетов с зеркалами; всего 69), `CHANGELOG.md` `async_job` (0.4.0,
+**Breaking**), `solo` и `flutter_solo` (подъём ядра), страница
+`doc/error-rules.md` («Where each error goes») и её русское зеркало, запись
+дизайна в `docs/records/2026-10/`.
 
 - [ ] **Шаг 1:** запись дизайна в `solo` со ссылкой на эту запись scopo.
 - [ ] **Шаг 2: падающие тесты:** ошибка `ctx.onDispose` — `answered: true`;
   сбой тела дочерней задачи — `false`; `Cancelled` из колбэка — `false`;
   ошибка отменённой задачи, которую называет `isCancellationError`, —
   `false`, и фильтр спрошен ровно один раз; `ParallelWaitError` из очистки —
-  по вызову на ошибку со своим признаком; наблюдатель, переопределивший
-  только `onError`, слышит всё то же, что в 0.3.0; `JobObserver.all`
-  пересылает признак.
-- [ ] **Шаг 3:** реализация.
+  по вызову на ошибку со своим признаком; `JobObserver.all` пересылает
+  признак.
+- [ ] **Шаг 3:** реализация и правка всех переопределений.
 - [ ] **Шаг 4:** гейт `solo` по его `AGENTS.md` для `async_job`, `solo`
-  и `flutter_solo` против дерева — зелёный.
-- [ ] **Шаг 5:** коммит в `solo`, handoff `solo`. Публикацию 0.3.1
-  не запускать; сказать владельцу, что связка готова.
+  и `flutter_solo` против дерева (оверрайды на месте) — зелёный.
+- [ ] **Шаг 5:** коммит в `solo`, handoff `solo`. Публикацию не запускать;
+  сказать владельцу, что готова цепочка `async_job` → `solo` →
+  `flutter_solo`.
 
 ### Задача 5: scopo — маршрут в наблюдателе задачи инициализации (1a)
 
 **Файлы:** `lib/src/scope/async_scope/scope_init_context.dart`
-(`_ScopeInitObserver`), `pubspec.yaml` (`async_job: ^0.3.1`),
+(`_ScopeInitObserver`), `pubspec.yaml` (`async_job: ^0.4.0`),
 `pubspec_overrides.yaml` в корне (путь на `../solo/packages/async_job`,
 только на время работы, в `.gitignore`; снимается перед мержем),
 `test/error_route_test.dart`, `test/async_job_migration_test.dart`.
 
-**Интерфейсы:** потребляет `JobObserver.onErrorAnswered` задачи 4.
+**Интерфейсы:** потребляет `JobObserver.onError(..., {required bool answered})` задачи 4.
 
 - [ ] **Шаг 1: падающие тесты:**
   - ошибка `ctx.onDispose` / стека очистки — `flutterError`, `verify`
@@ -270,7 +272,7 @@ void onErrorAnswered(
   - сбой тела, чей исход отобрала отмена (`onUnanswered` объявляет сам) —
     `flutterError`.
 - [ ] **Шаг 2:** прогон — падают.
-- [ ] **Шаг 3:** `_ScopeInitObserver` переопределяет `onErrorAnswered`:
+- [ ] **Шаг 3:** `_ScopeInitObserver.onError` читает `answered`:
   отмены — `cancellation`; `answered` — `flutterError`; иначе `observer`.
   `_announce` получает маршрут и помнит, объявлена ли ошибка наблюдателю
   с `observer` при живом наблюдателе (`ScopeConfig.observer != null`);
@@ -310,7 +312,7 @@ void onErrorAnswered(
   `fvm flutter test` из `example/scopo_demo`; числа — в `docs/handoff.md`.
 - [ ] **Шаг 2:** предмержевое ревью ветки свежим ревьюером; отчёт —
   запись `docs/records/` (`report`).
-- [ ] **Шаг 3:** после выпуска `async_job` 0.3.1 (по слову владельца): снять
+- [ ] **Шаг 3:** после выпуска `async_job` 0.4.0 (по слову владельца): снять
   `pubspec_overrides.yaml`, `pub get`, гейт ещё раз, влить ветку в `main`.
 - [ ] **Шаг 4:** сообщить `sprint_57`: имена, правило «слать при `observer`»,
   пути, где поведение поменялось. Шапки трёх записей — на «сделано».
