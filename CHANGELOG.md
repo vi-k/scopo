@@ -22,9 +22,12 @@
   at. A teardown with N failed steps now gives N reports, each named with the
   path of its step, and the failure that leaves the walk is not reported a
   second time. A step that fails with `Cancelled` says
-  `ScopeErrorRoute.cancellation` and is not reported. A tree disposed of by
-  hand through `root.dispose()` reports its failed steps the same way, and
-  still throws the first of them to the caller.
+  `ScopeErrorRoute.cancellation` and is not reported. A walk driven by hand
+  through `root.dispose()` reports its failed steps the same way, the first
+  one included, and that one is still thrown to whoever drove the walk: its
+  route is `ScopeErrorRoute.flutterError`, because whether a failure goes on
+  to a caller is not known at the step. The package has already reported it,
+  so whoever drives the walk need not report what `root.dispose()` throws.
 
 ## 0.18.0
 

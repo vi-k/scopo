@@ -899,6 +899,116 @@ void main() {
       expect(audit.seenIn(SeenIn.flutterError), isEmpty);
     });
   });
+
+  // The tree of a container is public, and a walk over it can be driven by
+  // hand through `root.dispose()`. The steps report the same way: whether the
+  // first failure goes on to a caller is not known at the step, for the same
+  // reason the walk does not know which failure will leave it. So that one
+  // reaches two channels, and the route says `flutterError` -- described
+  // rather than fixed: the package has reported it, and whoever drove the
+  // walk has nothing left to report.
+  group('FlutterError, for a container walk driven by hand', () {
+    test('every failed step: flutterError, the first thrown to the driver too',
+        () async {
+      final dependencies = _Steps(
+        (deps) => deps.sequential('', [
+          _failingDep(deps, 'first'),
+          _failingDep(deps, 'second'),
+        ]),
+      );
+      await runScopeInit((ctx) => dependencies.init(null, ctx));
+      audit.install();
+
+      Object? caught;
+      await dependencies.root.dispose((_) {}).then<void>(
+            (_) {},
+            onError: (Object error) => caught = error,
+          );
+
+      audit.verify(observer.routes);
+      expect(
+        [for (final (_, phase, route, _) in observer.routes) (phase, route)],
+        [
+          (ScopePhase.disposal, ScopeErrorRoute.flutterError),
+          (ScopePhase.disposal, ScopeErrorRoute.flutterError),
+        ],
+      );
+      expect(audit.seenIn(SeenIn.flutterError), hasLength(2));
+      // The first failure of the walk, in walk order -- the teardown runs the
+      // construction backwards, so that is `second`.
+      expect(caught, isA<ScopeDependencyException>());
+      final first = observer.routes.first.$4 as ScopeDependencyException;
+      expect(
+        (caught! as ScopeDependencyException).error,
+        same(first.error),
+      );
+    });
+
+    // The container joins the walk already running and is handed its
+    // failure, which that walk's step has reported before the container's
+    // disposal began. Forgetting the reported steps as a disposal starts
+    // would report it a second time.
+    test('a container that joins a walk driven by hand: one report', () async {
+      final parked = Completer<void>();
+      final dependencies = _Steps(
+        (deps) => deps.sequential('', [
+          deps.dep('parked', (handle) {
+            handle.dispose = () => parked.future;
+          }),
+          _failingDep(deps, 'failing'),
+        ]),
+      );
+      await runScopeInit((ctx) => dependencies.init(null, ctx));
+      audit.install();
+
+      unawaited(dependencies.root.dispose((_) {}).onError((_, __) {}));
+      await pumpEventQueue();
+      final disposal = dependencies.dispose();
+      parked.complete();
+      await disposal;
+
+      audit.verify(observer.routes);
+      expect(observer.routes.single.$3, ScopeErrorRoute.flutterError);
+      expect(audit.seenIn(SeenIn.flutterError), hasLength(1));
+    });
+
+    // A reported step outlives the walk that reported it when no disposal of
+    // the container comes after. The next tree must not inherit it: a failure
+    // that never passes through a step, with the same error inside, would be
+    // taken for one that had already been reported, and dropped.
+    test('a step reported by hand does not hide a failure of the next tree',
+        () async {
+      const boom = _Boom();
+      var built = 0;
+      final dependencies = _Steps(
+        (deps) => built++ == 0
+            ? deps.sequential('', [
+                deps.dep('leaf', (handle) {
+                  handle.dispose = () => throw boom;
+                }),
+              ])
+            : deps.sequential('', [const _RefusingForeign(boom)]),
+      );
+      await runScopeInit((ctx) => dependencies.init(null, ctx));
+      audit.install();
+
+      await dependencies.root.dispose((_) {}).onError((_, __) {});
+      expect(audit.seenIn(SeenIn.flutterError), hasLength(1));
+
+      await runScopeInit((ctx) => dependencies.init(null, ctx));
+      expect(built, 2, reason: 'the second init() builds a new tree');
+      await dependencies.dispose();
+      audit.uninstall();
+
+      expect(
+        audit.seenIn(SeenIn.flutterError),
+        hasLength(2),
+        reason: 'the group of the new tree fails before it reaches any '
+            'child, so no step reports it: the container is the only one '
+            'that does',
+      );
+    });
+  });
 }
 
 Widget _app(Widget child) =>
@@ -1244,6 +1354,50 @@ ScopeDependency _failingDep(_Steps deps, String name) =>
     deps.dep(name, (handle) {
       handle.dispose = () => throw StateError('$name cannot let go');
     });
+
+/// A failure that is the same object every time it is thrown.
+final class _Boom implements Exception {
+  const _Boom();
+}
+
+/// A dependency of somebody else's making that cannot say whether it needs
+/// disposing of: asking it throws [failure], which fails the group above it
+/// before that group reaches any child.
+final class _RefusingForeign implements ScopeDependency {
+  final Exception failure;
+
+  const _RefusingForeign(this.failure);
+
+  @override
+  String get name => 'refusing';
+
+  @override
+  int get count => 1;
+
+  @override
+  ScopeDependencyState get state => const ScopeDependencyInitialized();
+
+  @override
+  bool get disposalRequired => throw failure;
+
+  @override
+  Future<void> init(ScopeInitContext ctx, void Function(String path) onStep) {
+    onStep(name);
+    return Future<void>.value();
+  }
+
+  @override
+  void onUnmount() {}
+
+  @override
+  Future<void> dispose(void Function(String path) onStep) async {}
+
+  @override
+  String get wrappedName => '"$name"';
+
+  @override
+  String stateToString() => '$state';
+}
 
 /// A dependency of somebody else's making whose `dispose` throws [failure].
 final class _ForeignRoot implements ScopeDependency {

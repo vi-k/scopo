@@ -529,7 +529,14 @@ void main() {
       await runScopeInit((ctx) => dependencies.init(null, ctx));
       observer.events.clear();
 
+      final reported = <Object>[];
+      final previous = FlutterError.onError;
+      FlutterError.onError = (details) => reported.add(details.exception);
+
       await dependencies.root.dispose((_) {}).onError((_, __) {});
+
+      // Back before the expectations, for the reason the tests below give.
+      FlutterError.onError = previous;
 
       expect(observer.events, [
         'disposal step _FailingDisposer storage/cache',
@@ -537,6 +544,12 @@ void main() {
         'disposal step _FailingDisposer storage/db',
         'disposal progress _FailingDisposer storage/db',
       ]);
+      expect(
+        reported.single,
+        isA<ScopeDependencyException>(),
+        reason: 'the failed step is reported where it fails, however the '
+            'walk was started',
+      );
     });
 
     // M1 of the sixth review, where two independent passes arrived at the

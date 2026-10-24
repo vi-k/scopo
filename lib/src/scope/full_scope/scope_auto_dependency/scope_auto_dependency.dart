@@ -150,6 +150,9 @@ abstract class ScopeAutoDependencies<T extends ScopeAutoDependencies<T, C>,
   /// Cleared when a disposal of the container ends, and not when it starts: a
   /// walk of the tree driven by hand through [root] may have reported a step
   /// already, and the container that joins that walk is handed its failure.
+  /// Cleared as well when a new tree replaces the old one, which a walk by
+  /// hand with no disposal of the container after it would otherwise leave
+  /// holding what it reported.
   final Set<Object> _reportedSteps = Set.identity();
 
   /// [error] without the one [ScopeDependencyException] around it, if any.
@@ -194,6 +197,14 @@ abstract class ScopeAutoDependencies<T extends ScopeAutoDependencies<T, C>,
 
   ScopeDependency _rebuildAfterDisposal(C context) {
     _isRerun = true;
+    // A walk driven by hand through [root] leaves what its steps reported
+    // here, with no disposal of the container to clear it, and the next tree
+    // must not inherit it: a failure of that tree with the same error inside
+    // -- one that never passes through a step -- would be taken for one that
+    // had been reported, and dropped. No walk of the old tree can still be
+    // running for a disposal of the container to join: the old tree is only
+    // replaced once its walk has reached its end.
+    _reportedSteps.clear();
 
     return buildDependencies(context);
   }
@@ -570,9 +581,13 @@ abstract class ScopeAutoDependencies<T extends ScopeAutoDependencies<T, C>,
       }
 
       // The observer half only for a root of the caller's own making, on the
-      // same terms as the exit below: a root of the package's own making has
-      // announced this failure from inside the walk, where it happened and
-      // beside the entry it ends.
+      // same terms as the exit below. A root of the package's own making
+      // announces the failures of its steps from inside the walk, where they
+      // happen and beside the entries they end -- and those were looked up
+      // above. What is left from such a root is a failure of a group that
+      // fell over before it reached any child, which no step announced; the
+      // observer is not told of it here either, and only the report below
+      // goes out.
       if (dependencies is! ScopeDependencyMixin) {
         notifyObserver(
           (observer) => observer.onError(
