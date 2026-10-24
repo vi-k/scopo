@@ -83,22 +83,7 @@ abstract class ScopeAutoDependencies<T extends ScopeAutoDependencies<T, C>,
       ),
       onDisposalStepEnded: (path) =>
           notifyObserver((observer) => observer.onDisposalProgress(this, path)),
-      onDisposalStepFailed: (path, error, stackTrace) => notifyObserver(
-        (observer) => observer.onError(
-          this,
-          ScopePhase.disposal,
-          // Provisional. Whether this step reaches `FlutterError` is decided
-          // at the end of the walk today, and only for the failure that
-          // leaves it; task 3 of `2026-10-24[4]-observer-error-route-plan.md`
-          // reports every step here and routes it accordingly.
-          ScopeErrorRoute.observer,
-          // Named the way the failure that travels the walk is named: the
-          // observer is told which dependency failed, and `onError` has no
-          // path of its own to tell it with.
-          ScopeDependencyException(path, error, stackTrace),
-          stackTrace,
-        ),
-      ),
+      onDisposalStepFailed: _reportFailedStep,
       // The root of a container is where a path stops growing: whatever it is
       // handed is already spelled the way the whole tree spells it.
       pathOf: (path) => path,
@@ -106,6 +91,80 @@ abstract class ScopeAutoDependencies<T extends ScopeAutoDependencies<T, C>,
 
     return tree;
   }
+
+  /// Announces a failed step of the disposal walk, and reports it.
+  ///
+  /// Reported here, where the step fails, and not at the end of the walk:
+  /// the walk goes on past a failed step and lets out one failure at most, so
+  /// every step behind the first used to reach the observer and stop there,
+  /// while the neighbouring teardowns of this package report every failure
+  /// that has no caller left to be raised at. Each step is now reported once,
+  /// and the observer is told so in the route.
+  ///
+  /// A cancellation is not a failure, and goes no further than the observer,
+  /// as it does on every other road out of this package.
+  void _reportFailedStep(String path, Object error, StackTrace stackTrace) {
+    final carried = _carried(error);
+    final isCancellation = carried is Cancelled;
+    // Named the way the failure that travels the walk is named: the observer
+    // and the report are told which dependency failed, and `onError` has no
+    // path of its own to tell it with.
+    final named = ScopeDependencyException(path, error, stackTrace);
+
+    notifyObserver(
+      (observer) => observer.onError(
+        this,
+        ScopePhase.disposal,
+        isCancellation
+            ? ScopeErrorRoute.cancellation
+            : ScopeErrorRoute.flutterError,
+        named,
+        stackTrace,
+      ),
+    );
+
+    if (isCancellation) {
+      return;
+    }
+
+    // Before the report, so that whatever the report does, [_runDispose]
+    // still knows this failure has had its report.
+    _reportedSteps.add(carried);
+    FlutterError.reportError(
+      FlutterErrorDetails(
+        exception: named,
+        stack: stackTrace,
+        library: 'scopo',
+        context: ErrorDescription('while disposing of $T'),
+      ),
+    );
+  }
+
+  /// The failures [_reportFailedStep] has reported, by [_carried].
+  ///
+  /// The failure that leaves the walk is one of them, and it reaches
+  /// [_runDispose] as a different object: every node on the way up names it
+  /// afresh, in a new [ScopeDependencyException] with its own segment added.
+  /// Telling it apart by identity would report it twice.
+  ///
+  /// Cleared when a disposal of the container ends, and not when it starts: a
+  /// walk of the tree driven by hand through [root] may have reported a step
+  /// already, and the container that joins that walk is handed its failure.
+  final Set<Object> _reportedSteps = Set.identity();
+
+  /// [error] without the one [ScopeDependencyException] around it, if any.
+  ///
+  /// What a step and the walk agree on. A step hands over what was thrown;
+  /// the node above names it on the way out -- wrapping a bare failure,
+  /// re-prefixing one that came named, which keeps the error inside and adds
+  /// no layer -- and every node above that renames it again the same way. So
+  /// the failure that leaves the walk carries, one layer down, exactly what
+  /// its step carries one layer down, however many layers a dependency of
+  /// somebody else's making put round what it threw. Unwrapping more than
+  /// that on one side only would tell a cancellation apart differently on
+  /// the two.
+  static Object _carried(Object error) =>
+      error is ScopeDependencyException ? error.error : error;
 
   /// Whether the disposal of [root] ran to its end.
   ///
@@ -497,8 +556,18 @@ abstract class ScopeAutoDependencies<T extends ScopeAutoDependencies<T, C>,
       // `ctx.onDispose` learned the rule -- a consumer who moved the same
       // teardown from one hook to the other got the red line and the failing
       // widget test back.
-      final carried = error is ScopeDependencyException ? error.error : error;
+      final carried = _carried(error);
       final isCancellation = carried is Cancelled;
+
+      // Reported already, and announced, by the step it failed in: the walk
+      // goes on past a failed step and lets out the first failure it saw,
+      // under a name the nodes on the way up have built afresh -- which is
+      // why what it carries is what is looked up. A failure that never
+      // passed through a step -- one a group raised before reaching any child
+      // -- is not found here and is reported below.
+      if (_reportedSteps.contains(carried)) {
+        return;
+      }
 
       // The observer half only for a root of the caller's own making, on the
       // same terms as the exit below: a root of the package's own making has
@@ -567,6 +636,10 @@ abstract class ScopeAutoDependencies<T extends ScopeAutoDependencies<T, C>,
       // above and past the `onDisposed` below: the entry had been announced,
       // and nothing ever closed it.
       reportFailure(error, stackTrace);
+    } finally {
+      // The failures of this walk have been looked up, and nothing after it
+      // will ask about them.
+      _reportedSteps.clear();
     }
 
     notifyObserver((observer) => observer.onDisposed(this));

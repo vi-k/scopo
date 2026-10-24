@@ -11,6 +11,20 @@
   An observer that overrides `onError` adds the parameter.
   `ScopeCompositeObserver` passes the route on unchanged, and
   `ScopePrintObserver` prints the same line as before.
+* **Behaviour change:** every failed disposal step of a
+  `ScopeAutoDependencies` tree is reported to `FlutterError`, where it fails,
+  and its `onError` says `ScopeErrorRoute.flutterError`. It used to be one
+  report per tree: the walk goes on past a failed step and lets out only the
+  first failure, so a tree with two disposers that threw gave one report, and
+  the second failure reached the observer and the state of the tree and no
+  further — while `ScopeDependencyGroup.onUnmount` and the teardown stages of
+  `AsyncScope` already reported each failure with no caller left to be raised
+  at. A teardown with N failed steps now gives N reports, each named with the
+  path of its step, and the failure that leaves the walk is not reported a
+  second time. A step that fails with `Cancelled` says
+  `ScopeErrorRoute.cancellation` and is not reported. A tree disposed of by
+  hand through `root.dispose()` reports its failed steps the same way, and
+  still throws the first of them to the caller.
 
 ## 0.18.0
 

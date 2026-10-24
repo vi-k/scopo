@@ -11,7 +11,7 @@ void main() {
     for (final count in [1, 2]) {
       testWidgets(
         '${parallel ? "concurrent" : "sequential"} close succeeds with '
-        '$count failing disposers and reports one tree failure',
+        '$count failing disposers and reports every failed step',
         (tester) async {
           final deps = _Dependencies(parallel, count);
           final observer = _Errors();
@@ -49,11 +49,20 @@ void main() {
 
           expect(completed, isTrue);
           expect(closeError, isNull);
-          expect(reports, hasLength(1));
-          expect(reports.single.exception, isA<ScopeDependencyException>());
-          final report = reports.single.exception as ScopeDependencyException;
-          expect(report.name, startsWith('root/'));
-          expect(deps.failures, contains(same(report.error)));
+          // One report per failed step, each where it failed, and not one
+          // more for the failure that leaves the walk.
+          expect(reports, hasLength(count));
+          final named = [
+            for (final report in reports)
+              report.exception as ScopeDependencyException,
+          ];
+          for (final report in named) {
+            expect(report.name, startsWith('root/'));
+          }
+          expect(
+            named.map((report) => report.error),
+            unorderedEquals(deps.failures),
+          );
           final entries = deps.flattenDependenciesWithErrors().toList();
           expect(entries, hasLength(count));
           expect(

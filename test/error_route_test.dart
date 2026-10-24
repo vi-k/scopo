@@ -16,11 +16,11 @@ const _short = Duration(milliseconds: 50);
 // where the error really went: `RouteAudit.verify` fails the test when an
 // error said to go to `FlutterError` was not reported there exactly once, or
 // one said to go nowhere else turned up anyway. One test per place the route
-// is known at the moment of the call. The teardown stages of `AsyncScope` did
-// not know it, and are tested in their own group below; the two other places
-// where it is not known -- the disposal walk of a container and the observer
-// of the initialization job -- are rebuilt, and tested, by the tasks of
-// `2026-10-24[4]-observer-error-route-plan.md` that follow.
+// is known at the moment of the call. The teardown stages of `AsyncScope` and
+// the disposal walk of a container did not know it, and are tested in their
+// own groups below; the one other place where it is not known -- the observer
+// of the initialization job -- is rebuilt, and tested, by a task of
+// `2026-10-24[4]-observer-error-route-plan.md` that follows.
 void main() {
   late RecordingObserver observer;
   late RouteAudit audit;
@@ -737,6 +737,168 @@ void main() {
       expect(observer.routes.single.$3, ScopeErrorRoute.cancellation);
     });
   });
+
+  // Every failed step of a container's own tree is reported where it fails,
+  // the failure that goes on to leave the walk included -- and that one is
+  // not reported a second time when it gets there. `verify` holds each route
+  // to one report; the count of all reports is what shows that the one that
+  // left the walk was not reported again under its new name.
+  group('FlutterError, for every failed step of a container', () {
+    /// Disposes of [dependencies] and returns what each step announced.
+    Future<List<(ScopePhase, ScopeErrorRoute, String)>> disposeOf(
+      _Steps dependencies,
+    ) async {
+      await runScopeInit((ctx) => dependencies.init(null, ctx));
+      audit.install();
+
+      await dependencies.dispose();
+
+      audit.verify(observer.routes);
+      return [
+        for (final (_, phase, route, error) in observer.routes)
+          (phase, route, '$error'),
+      ];
+    }
+
+    test('two failed leaves of sequential: flutterError each', () async {
+      final routes = await disposeOf(
+        _Steps(
+          (deps) => deps.sequential('', [
+            _failingDep(deps, 'first'),
+            _failingDep(deps, 'second'),
+          ]),
+        ),
+      );
+
+      // Reverse order: the teardown runs the construction backwards.
+      expect(routes, [
+        (
+          ScopePhase.disposal,
+          ScopeErrorRoute.flutterError,
+          'second: Bad state: second cannot let go',
+        ),
+        (
+          ScopePhase.disposal,
+          ScopeErrorRoute.flutterError,
+          'first: Bad state: first cannot let go',
+        ),
+      ]);
+      expect(audit.seenIn(SeenIn.flutterError), hasLength(2));
+    });
+
+    test('two failed leaves of concurrent: flutterError each', () async {
+      final routes = await disposeOf(
+        _Steps(
+          (deps) => deps.concurrent('', [
+            _failingDep(deps, 'left'),
+            _failingDep(deps, 'right'),
+          ]),
+        ),
+      );
+
+      expect(
+        routes,
+        unorderedEquals([
+          (
+            ScopePhase.disposal,
+            ScopeErrorRoute.flutterError,
+            'left: Bad state: left cannot let go',
+          ),
+          (
+            ScopePhase.disposal,
+            ScopeErrorRoute.flutterError,
+            'right: Bad state: right cannot let go',
+          ),
+        ]),
+      );
+      expect(audit.seenIn(SeenIn.flutterError), hasLength(2));
+    });
+
+    test('a failed leaf in a nested group and one beside it: flutterError each',
+        () async {
+      final routes = await disposeOf(
+        _Steps(
+          (deps) => deps.sequential('', [
+            _failingDep(deps, 'outer'),
+            deps.sequential('inner', [_failingDep(deps, 'leaf')]),
+          ]),
+        ),
+      );
+
+      expect(routes, [
+        (
+          ScopePhase.disposal,
+          ScopeErrorRoute.flutterError,
+          'inner/leaf: Bad state: leaf cannot let go',
+        ),
+        (
+          ScopePhase.disposal,
+          ScopeErrorRoute.flutterError,
+          'outer: Bad state: outer cannot let go',
+        ),
+      ]);
+      expect(audit.seenIn(SeenIn.flutterError), hasLength(2));
+    });
+
+    test('a leaf whose release is cancelled: cancellation', () async {
+      final routes = await disposeOf(
+        _Steps(
+          (deps) => deps.sequential('', [
+            deps.dep('gone', (handle) {
+              handle.dispose = () => throw const Cancelled();
+            }),
+          ]),
+        ),
+      );
+
+      expect(routes.single.$1, ScopePhase.disposal);
+      expect(routes.single.$2, ScopeErrorRoute.cancellation);
+      expect(audit.seenIn(SeenIn.flutterError), isEmpty);
+    });
+
+    // A child of somebody else's making may throw a failure that is already
+    // named, and may name it twice. The group above re-prefixes it on the
+    // way out, a new object around the same inside, so the failure that
+    // leaves the walk is not the one the step reported -- and twice named,
+    // it reaches the end of the walk two layers deep. The audit unwraps one
+    // layer and cannot see a second report under the new name; the count
+    // of all reports is what does.
+    ScopeDependencyException named(String name, Object error) =>
+        ScopeDependencyException(name, error, StackTrace.current);
+
+    for (final (how, failure) in [
+      ('named once', named('deep', StateError('cannot let go'))),
+      (
+        'named twice',
+        named('deep', named('deeper', StateError('cannot let go'))),
+      ),
+    ]) {
+      test('a foreign child that throws a failure $how: one report', () async {
+        final routes = await disposeOf(
+          _Steps((deps) => deps.sequential('', [_ForeignRoot(failure)])),
+        );
+
+        expect(routes.single.$1, ScopePhase.disposal);
+        expect(routes.single.$2, ScopeErrorRoute.flutterError);
+        expect(audit.seenIn(SeenIn.flutterError), hasLength(1));
+      });
+    }
+
+    test('a foreign child that throws a named cancellation: cancellation',
+        () async {
+      final routes = await disposeOf(
+        _Steps(
+          (deps) => deps.sequential('', [
+            _ForeignRoot(named('deep', const Cancelled())),
+          ]),
+        ),
+      );
+
+      expect(routes.single.$1, ScopePhase.disposal);
+      expect(routes.single.$2, ScopeErrorRoute.cancellation);
+      expect(audit.seenIn(SeenIn.flutterError), isEmpty);
+    });
+  });
 }
 
 Widget _app(Widget child) =>
@@ -1066,6 +1228,22 @@ final class _ForeignRooted extends ScopeAutoDependencies<_ForeignRooted, void> {
   @override
   ScopeDependency buildDependencies(void context) => _ForeignRoot(failure);
 }
+
+/// A container whose tree each test builds for itself.
+final class _Steps extends ScopeAutoDependencies<_Steps, void> {
+  final ScopeDependency Function(_Steps deps) build;
+
+  _Steps(this.build);
+
+  @override
+  ScopeDependency buildDependencies(void context) => build(this);
+}
+
+/// A dependency of [deps] called [name] whose release throws.
+ScopeDependency _failingDep(_Steps deps, String name) =>
+    deps.dep(name, (handle) {
+      handle.dispose = () => throw StateError('$name cannot let go');
+    });
 
 /// A dependency of somebody else's making whose `dispose` throws [failure].
 final class _ForeignRoot implements ScopeDependency {

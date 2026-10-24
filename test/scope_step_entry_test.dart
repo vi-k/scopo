@@ -582,9 +582,9 @@ void main() {
       expect(
         reported.single,
         isA<ScopeDependencyException>(),
-        reason: 'the container reports the walk it drove, whatever the '
-            'observer heard -- the group above the child names it on the way '
-            'up, and that is what reaches here',
+        reason: 'the container reports the failed step where it fails, under '
+            'the name the observer was given, and not a second time when the '
+            'group above lets it out of the walk under a name of its own',
       );
     });
 
