@@ -33,11 +33,14 @@
    наблюдателю, уходит ли ошибка ещё во `FlutterError` или в зону.
    Владелец 2026-10-24: «влей в main и начинай с дизайна». Заявка —
    `docs/records/2026-10-24[2]-observer-error-route-request.md`, черновик
-   дизайна с картой маршрутов и четырьмя вопросами владельцу —
-   `docs/records/2026-10-24[3]-observer-error-route-design.md`. Код
-   не менялся; до ответов владельца на вопросы в конце дизайна план
-   и код не начинать. Работа идёт в ветке `worktree-observer-route-request`
-   (копия `.claude/worktrees/observer-route-request`).
+   дизайна с картой маршрутов —
+   `docs/records/2026-10-24[3]-observer-error-route-design.md`; владелец
+   принял его «везде по рекомендации». План —
+   `docs/records/2026-10-24[4]-observer-error-route-plan.md`, ждёт просмотра
+   владельцем и выбора способа исполнения; код до этого не начинать. Работа
+   идёт в ветке `worktree-observer-route-request` (копия
+   `.claude/worktrees/observer-route-request`); в `main` код вливается только
+   после выпуска `async_job` 0.3.1, документы — сразу.
 
    Другой кандидат — стримовая семья из `docs/backlog.md`, требует дизайна
    и слова владельца («Что дальше» ниже).
