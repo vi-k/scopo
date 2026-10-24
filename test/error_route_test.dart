@@ -16,10 +16,11 @@ const _short = Duration(milliseconds: 50);
 // where the error really went: `RouteAudit.verify` fails the test when an
 // error said to go to `FlutterError` was not reported there exactly once, or
 // one said to go nowhere else turned up anyway. One test per place the route
-// is known at the moment of the call; the three places where it is not -- the
-// teardown stages of `AsyncScope`, the disposal walk of a container and the
-// observer of the initialization job -- are rebuilt, and tested, by the tasks
-// of `2026-10-24[4]-observer-error-route-plan.md` that follow.
+// is known at the moment of the call. The teardown stages of `AsyncScope` did
+// not know it, and are tested in their own group below; the two other places
+// where it is not known -- the disposal walk of a container and the observer
+// of the initialization job -- are rebuilt, and tested, by the tasks of
+// `2026-10-24[4]-observer-error-route-plan.md` that follow.
 void main() {
   late RecordingObserver observer;
   late RouteAudit audit;
@@ -295,7 +296,7 @@ void main() {
   group('FlutterError, for the second failure of a teardown', () {
     // The first leaves through the throw, the second through a report. Only
     // the second is asked about here: the first goes on to the stage of the
-    // teardown that catches it, and those stages are rebuilt by task 2.
+    // teardown that catches it, and the group on those stages asks about it.
     testWidgets('Scope.onUnmount', (tester) async {
       await tester.pumpWidget(
         _app(const _Full(failStateUnmount: true, failDepsUnmount: true)),
@@ -344,6 +345,165 @@ void main() {
       audit.verify(observer.routes);
       expect(observer.routes.single.$2, ScopePhase.unmount);
       expect(observer.routes.single.$3, ScopeErrorRoute.flutterError);
+    });
+  });
+
+  group('the teardown stages of AsyncScope', () {
+    // The tree took the scope away, so the first failure has nobody to be
+    // handed to: it leaves through the throw into a future `dispose()`
+    // reports, and the second through a report of its own. Both end up in
+    // `FlutterError`.
+    testWidgets('two failed stages on the way off the tree: flutterError',
+        (tester) async {
+      final childGate = Completer<void>();
+      addTearDown(() {
+        if (!childGate.isCompleted) childGate.complete();
+      });
+      final preparation = StateError('onWaitForChildrenTimeout failed');
+      final disposal = StateError('disposeScope failed');
+
+      // The child holds its teardown open, so the parent's wait for it runs
+      // out and the hook that hears of it throws.
+      await tester.pumpWidget(
+        _app(
+          _asyncScope(
+            tag: 'parent',
+            waitForChildrenTimeout: _short,
+            onWaitForChildrenTimeout: () => throw preparation,
+            disposeScope: () => throw disposal,
+            builder: (context) => _asyncScope(
+              tag: 'child',
+              disposeScope: () => childGate.future,
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+      audit.install();
+
+      await takeDown(tester, 'AsyncScope(parent)');
+      await settle(
+        tester,
+        until: () => audit.seenIn(SeenIn.flutterError).contains(preparation),
+      );
+
+      audit.verify(observer.routes);
+      expect(
+        [
+          for (final (_, phase, route, error) in observer.routes)
+            (phase, route, error),
+        ],
+        [
+          (
+            ScopePhase.preparationForDisposal,
+            ScopeErrorRoute.flutterError,
+            preparation,
+          ),
+          (ScopePhase.disposal, ScopeErrorRoute.flutterError, disposal),
+        ],
+      );
+
+      childGate.complete();
+      await settle(
+        tester,
+        until: () => observer.events.contains('disposed AsyncScope(child)'),
+      );
+    });
+
+    // `close()` has a caller to hand the first failure to, and the second
+    // can only be reported.
+    testWidgets('two failed stages of close(): caller, then flutterError',
+        (tester) async {
+      final unmount = StateError('onUnmount failed');
+      final disposal = StateError('disposeScope failed');
+      late AsyncScopeContext<AsyncScope> scope;
+
+      await tester.pumpWidget(
+        _app(
+          _asyncScope(
+            onUnmount: () => throw unmount,
+            disposeScope: () => throw disposal,
+            builder: (context) {
+              scope = AsyncScope.of(context, listen: false);
+              return const SizedBox.shrink();
+            },
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+      audit.install();
+
+      Object? caught;
+      unawaited(
+        scope.close().then<void>(
+              (_) {},
+              onError: (Object error) => caught = error,
+            ),
+      );
+      await settle(tester, until: () => caught != null);
+
+      audit.verify(observer.routes);
+      expect(caught, same(unmount));
+      expect(
+        [
+          for (final (_, phase, route, error) in observer.routes)
+            (phase, route, error),
+        ],
+        [
+          (ScopePhase.unmount, ScopeErrorRoute.caller, unmount),
+          (ScopePhase.disposal, ScopeErrorRoute.flutterError, disposal),
+        ],
+      );
+
+      await tester.pumpWidget(_app(const SizedBox.shrink()));
+    });
+
+    // Described rather than fixed: the teardown is the tree's, so its first
+    // failure is reported, and the `close()` that joined it is handed the
+    // same failure as well.
+    testWidgets('close() joining a teardown the tree began: flutterError',
+        (tester) async {
+      final gate = Completer<void>();
+      final disposal = StateError('disposeScope failed');
+      late AsyncScopeContext<AsyncScope> scope;
+
+      await tester.pumpWidget(
+        _app(
+          _asyncScope(
+            disposeScope: () async {
+              await gate.future;
+              throw disposal;
+            },
+            builder: (context) {
+              scope = AsyncScope.of(context, listen: false);
+              return const SizedBox.shrink();
+            },
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+      audit.install();
+
+      await tester.pumpWidget(_app(const SizedBox.shrink()));
+      Object? caught;
+      unawaited(
+        scope.close().then<void>(
+              (_) {},
+              onError: (Object error) => caught = error,
+            ),
+      );
+      gate.complete();
+      await settle(
+        tester,
+        until: () =>
+            caught != null &&
+            audit.seenIn(SeenIn.flutterError).contains(disposal),
+      );
+
+      audit.verify(observer.routes);
+      expect(observer.routes.single.$2, ScopePhase.disposal);
+      expect(observer.routes.single.$3, ScopeErrorRoute.flutterError);
+      expect(caught, same(disposal));
     });
   });
 
@@ -520,8 +680,11 @@ AsyncScope _asyncScope({
   Object? tag,
   Object? scopeKey,
   Future<void> Function(BuildContext context, ScopeInitContext ctx)? initScope,
+  void Function()? onUnmount,
   FutureOr<void> Function()? disposeScope,
   Duration? disposeScopeTimeout,
+  Duration? waitForChildrenTimeout,
+  void Function()? onWaitForChildrenTimeout,
   Duration? initCancellationTimeout,
   void Function()? onInitCancellationTimeout,
   WidgetBuilder? builder,
@@ -530,9 +693,12 @@ AsyncScope _asyncScope({
       tag: tag,
       scopeKey: scopeKey,
       disposeScopeTimeout: disposeScopeTimeout,
+      waitForChildrenTimeout: waitForChildrenTimeout,
+      onWaitForChildrenTimeout: onWaitForChildrenTimeout,
       initCancellationTimeout: initCancellationTimeout,
       onInitCancellationTimeout: onInitCancellationTimeout,
       initScope: initScope ?? (context, ctx) async {},
+      onUnmount: onUnmount,
       disposeScope: disposeScope ?? () {},
       progressBuilder: (context, progress) => const SizedBox.shrink(),
       errorBuilder: (context, error, stackTrace, progress) =>

@@ -612,6 +612,15 @@ abstract base class AsyncScopeElementBase<W extends AsyncScopeCore<W, E>,
   /// and would report that caller's failure a second time on tree removal.
   bool get _startsTheTeardown => !_isDisposing && _closeCompleter == null;
 
+  /// Whether the teardown under way is the one tree removal began.
+  ///
+  /// [_startsTheTeardown] as [dispose] read it, before the teardown started:
+  /// by the time a stage fails the getter has long since turned `false`. It
+  /// says where the first failure of the teardown goes -- into the future
+  /// [dispose] reports to `FlutterError` when this is `true`, to the caller of
+  /// `close()` when it is not -- and so which route the observer is told.
+  bool _treeBeganTheTeardown = false;
+
   @override
   void dispose() {
     // No closing build can follow removal. The descendants are already being
@@ -651,7 +660,7 @@ abstract base class AsyncScopeElementBase<W extends AsyncScopeCore<W, E>,
       );
     }
 
-    final startsTheTeardown = _startsTheTeardown;
+    final startsTheTeardown = _treeBeganTheTeardown = _startsTheTeardown;
 
     // ignore: discarded_futures
     final disposal = _performAsyncDispose();
@@ -1267,15 +1276,20 @@ abstract base class AsyncScopeElementBase<W extends AsyncScopeCore<W, E>,
     // it was, the second and third failures reached nobody at all: that log
     // is off by default.
     //
-    // Where a failure goes is decided here, after the stage has already told
-    // the observer about it: the first leaves through the throw -- to
-    // `FlutterError` when the tree took the scope away, to the caller of
-    // `close()` otherwise -- and the rest through the report below. So the
-    // stages pass a provisional `ScopeErrorRoute.observer` for now; task 2 of
-    // `2026-10-24[4]-observer-error-route-plan.md` moves their `onError`
-    // behind this decision.
-    void take(Object error, StackTrace stackTrace) {
-      if (failure == null) {
+    // The observer hears of the failure here rather than in the stage, because
+    // this is where its route is decided: the first leaves through the throw
+    // -- to `FlutterError` when the tree took the scope away, to the caller of
+    // `close()` otherwise -- and the rest through the report below. Told
+    // before the report, as it always was.
+    void take(ScopePhase phase, Object error, StackTrace stackTrace) {
+      final first = failure == null;
+      final route = !first || _treeBeganTheTeardown
+          ? ScopeErrorRoute.flutterError
+          : ScopeErrorRoute.caller;
+      notifyObserver(
+        (observer) => observer.onError(this, phase, route, error, stackTrace),
+      );
+      if (first) {
         failure = AsyncError(error, stackTrace);
       } else {
         _reportFailure(error, stackTrace, 'while disposing of the scope');
@@ -1289,34 +1303,14 @@ abstract base class AsyncScopeElementBase<W extends AsyncScopeCore<W, E>,
         unmountScope();
         // ignore: avoid_catching_errors
       } on Object catch (error, stackTrace) {
-        notifyObserver(
-          (observer) => observer.onError(
-            this,
-            ScopePhase.unmount,
-            // Provisional, see [take].
-            ScopeErrorRoute.observer,
-            error,
-            stackTrace,
-          ),
-        );
-        take(error, stackTrace);
+        take(ScopePhase.unmount, error, stackTrace);
       }
 
       try {
         await _prepareForDisposal();
         // ignore: avoid_catching_errors
       } on Object catch (error, stackTrace) {
-        notifyObserver(
-          (observer) => observer.onError(
-            this,
-            ScopePhase.preparationForDisposal,
-            // Provisional, see [take].
-            ScopeErrorRoute.observer,
-            error,
-            stackTrace,
-          ),
-        );
-        take(error, stackTrace);
+        take(ScopePhase.preparationForDisposal, error, stackTrace);
       }
 
       // Outside the `if` below, and outside the `try` after it, so that the
@@ -1372,17 +1366,7 @@ abstract base class AsyncScopeElementBase<W extends AsyncScopeCore<W, E>,
         }
         // ignore: avoid_catching_errors
       } on Object catch (error, stackTrace) {
-        notifyObserver(
-          (observer) => observer.onError(
-            this,
-            ScopePhase.disposal,
-            // Provisional, see [take].
-            ScopeErrorRoute.observer,
-            error,
-            stackTrace,
-          ),
-        );
-        take(error, stackTrace);
+        take(ScopePhase.disposal, error, stackTrace);
       } finally {
         // After the `onError` above, and never instead of it: "disposed of"
         // here means the scope is gone, not that everything it held was
