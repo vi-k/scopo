@@ -339,7 +339,12 @@ abstract base class AsyncScopeElementBase<W extends AsyncScopeCore<W, E>,
     StackTrace stackTrace,
     _ScopeInitObserver observer,
   ) {
-    observer._announce(error, stackTrace, ScopePhase.initialization);
+    observer._announce(
+      error,
+      stackTrace,
+      ScopePhase.initialization,
+      ScopeErrorRoute.observer,
+    );
 
     // No guard for "the scope is already ready" here, and that is a property
     // of the form rather than an omission: the ready state is settled *after*

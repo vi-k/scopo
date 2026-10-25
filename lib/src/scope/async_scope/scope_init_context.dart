@@ -125,6 +125,15 @@ final class _ScopeInitObserver extends JobObserver with JobAnswerer {
   // Identity, not equality: two failures that compare equal are still two.
   final _announced = Set<Object>.identity();
 
+  // What the scope observer was told goes nowhere else, while there was an
+  // observer to tell. The route is final when it is announced, so an answer
+  // the kernel asks for afterwards -- for a child failure nobody read, told
+  // as [JobErrorAnswer.later] -- does not send the same error to
+  // `FlutterError` after all: a crash reporter that forwards
+  // [ScopeErrorRoute.observer] has it already. Without an observer nobody has
+  // heard it, and the red line is all there is.
+  final _observerOnly = Set<Object>.identity();
+
   _ScopeInitObserver(this._scope);
 
   // The two channels split where the kernel splits its own two hooks. This
@@ -135,8 +144,24 @@ final class _ScopeInitObserver extends JobObserver with JobAnswerer {
   // in [onUnanswered]: the outcomes somebody read, the children a body
   // caught and the errors the app's `Job.isCancellationError` calls
   // cancellations are all settled there before it asks.
+  //
+  // [answer] is the kernel saying what it does with the error next, and the
+  // route follows from it. [JobErrorAnswer.answered]: it asks [onUnanswered]
+  // -- right away for cleanup, callbacks and late work, at the end for the
+  // body of a job already cancelled -- so the route is `FlutterError`.
+  // [JobErrorAnswer.cancellation]: nobody reports it, the app's
+  // `Job.isCancellationError` included. [JobErrorAnswer.later]: the outcome
+  // may still be read, so this call is the only one that may tell the
+  // observer, and an answer that comes afterwards is kept out of
+  // `FlutterError` -- see [_observerOnly]. [JobErrorAnswer.never]: nothing
+  // else will hear it.
   @override
-  void onError(Job<Object?> job, Object error, StackTrace stackTrace) {
+  void onError(
+    Job<Object?> job,
+    Object error,
+    StackTrace stackTrace, {
+    required JobErrorAnswer answer,
+  }) {
     if (job is ScopeInitJob<Object?> &&
         (identical(job, _rootJob) || job._failureCarriedByOwner) &&
         identical(job._bodyError, error) &&
@@ -163,7 +188,17 @@ final class _ScopeInitObserver extends JobObserver with JobAnswerer {
       _ when job.isCancelled => ScopePhase.initializationCancellation,
       _ => ScopePhase.initialization,
     };
-    _announce(error, stackTrace, phase);
+    // No `default`: a value the kernel adds has to be given its route here
+    // before the package builds.
+    final route = error is Cancelled
+        ? ScopeErrorRoute.cancellation
+        : switch (answer) {
+            JobErrorAnswer.cancellation => ScopeErrorRoute.cancellation,
+            JobErrorAnswer.answered => ScopeErrorRoute.flutterError,
+            JobErrorAnswer.later => ScopeErrorRoute.observer,
+            JobErrorAnswer.never => ScopeErrorRoute.observer,
+          };
+    _announce(error, stackTrace, phase, route);
   }
 
   // The kernel asks here once nothing else will carry an error: no outcome
@@ -175,10 +210,18 @@ final class _ScopeInitObserver extends JobObserver with JobAnswerer {
   // `FlutterError` takes the place of the zone, which is where `super` would
   // send it. The scope observer has normally heard the error in `onError`
   // already; the one exception is the body failure [onError] stood aside
-  // for, whose outcome a cancellation took over during the cleanup.
+  // for, whose outcome a cancellation took over during the cleanup, and that
+  // one is told here with the route it takes. An error the observer was told
+  // goes nowhere else stays there.
   @override
   void onUnanswered(Job<Object?> job, Object error, StackTrace stackTrace) {
-    _announce(error, stackTrace, ScopePhase.initializationCancellation);
+    _announce(
+      error,
+      stackTrace,
+      ScopePhase.initializationCancellation,
+      ScopeErrorRoute.flutterError,
+    );
+    if (_observerOnly.contains(error)) return;
 
     FlutterError.reportError(
       FlutterErrorDetails(
@@ -191,21 +234,21 @@ final class _ScopeInitObserver extends JobObserver with JobAnswerer {
 
   /// Tells the scope observer, and remembers having told it.
   ///
-  /// The route is provisional. It is right for the failure of the body, which
-  /// `_settleFailure` announces and nothing else reports; for the errors the
-  /// kernel hands over it is not known here yet, since whether
-  /// [onUnanswered] follows is decided by the kernel. Task 5 of
-  /// `2026-10-24[4]-observer-error-route-plan.md` passes the route in.
-  void _announce(Object error, StackTrace stackTrace, ScopePhase phase) {
+  /// [route] is final: an error told as [ScopeErrorRoute.observer] while
+  /// there is an observer is remembered in [_observerOnly], and
+  /// [onUnanswered] keeps it out of `FlutterError`.
+  void _announce(
+    Object error,
+    StackTrace stackTrace,
+    ScopePhase phase,
+    ScopeErrorRoute route,
+  ) {
     if (!_announced.add(error)) return;
+    if (route == ScopeErrorRoute.observer && ScopeConfig.observer != null) {
+      _observerOnly.add(error);
+    }
     notifyObserver(
-      (observer) => observer.onError(
-        _scope,
-        phase,
-        ScopeErrorRoute.observer,
-        error,
-        stackTrace,
-      ),
+      (observer) => observer.onError(_scope, phase, route, error, stackTrace),
     );
   }
 

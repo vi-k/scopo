@@ -16,11 +16,9 @@ const _short = Duration(milliseconds: 50);
 // where the error really went: `RouteAudit.verify` fails the test when an
 // error said to go to `FlutterError` was not reported there exactly once, or
 // one said to go nowhere else turned up anyway. One test per place the route
-// is known at the moment of the call. The teardown stages of `AsyncScope` and
-// the disposal walk of a container did not know it, and are tested in their
-// own groups below; the one other place where it is not known -- the observer
-// of the initialization job -- is rebuilt, and tested, by a task of
-// `2026-10-24[4]-observer-error-route-plan.md` that follows.
+// is known at the moment of the call. The teardown stages of `AsyncScope`,
+// the disposal walk of a container and the observer of the initialization job
+// did not know it, and are tested in their own groups below.
 void main() {
   late RecordingObserver observer;
   late RouteAudit audit;
@@ -1008,6 +1006,458 @@ void main() {
             'that does',
       );
     });
+  });
+
+  // The kernel hands this observer errors of two roads. One asks for an
+  // answer at once -- cleanup, callbacks, late work -- and says so through
+  // `answered`; the other is the failure of a child, whose answer, if any,
+  // comes once nobody has read the outcome. For that one the route is
+  // `observer`, and it stays final: an answer that comes later does not send
+  // it to `FlutterError` after all while an observer is there to have heard
+  // it. That is 1a of `2026-10-24[3]-observer-error-route-design.md`.
+  group('the observer of the initialization job', () {
+    /// The routes announced for [error], by identity.
+    List<(String, ScopePhase, ScopeErrorRoute, Object)> routesOf(
+      Object error,
+    ) =>
+        [
+          for (final entry in observer.routes)
+            if (identical(entry.$4, error)) entry,
+        ];
+
+    testWidgets('a ctx.onDispose that throws: flutterError', (tester) async {
+      final failure = StateError('cleanup failed');
+      audit.install();
+
+      await tester.pumpWidget(
+        _app(
+          _asyncScope(
+            initScope: (context, ctx) async =>
+                ctx.onDispose(() => throw failure),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      audit.verify(observer.routes);
+      expect(routesOf(failure).single.$2, ScopePhase.initialization);
+      expect(routesOf(failure).single.$3, ScopeErrorRoute.flutterError);
+
+      await takeDown(tester, 'AsyncScope');
+    });
+
+    testWidgets(
+        'a ParallelWaitError from the cleanup stack: a route for each error '
+        'inside', (tester) async {
+      final first = StateError('first release failed');
+      final second = StateError('second release failed');
+      const cancelled = Cancelled('a release gave up');
+      audit.install();
+
+      await tester.pumpWidget(
+        _app(
+          _asyncScope(
+            initScope: (context, ctx) async => ctx.onDispose(
+              () => [
+                Future<void>.error(first),
+                Future<void>.error(second),
+                Future<void>.error(cancelled),
+              ].wait,
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      audit.verify(observer.routes);
+      expect(routesOf(first).single.$3, ScopeErrorRoute.flutterError);
+      expect(routesOf(second).single.$3, ScopeErrorRoute.flutterError);
+      expect(routesOf(cancelled).single.$3, ScopeErrorRoute.cancellation);
+      expect(
+        observer.routes,
+        hasLength(3),
+        reason: 'the envelope itself is not an error of its own',
+      );
+
+      await takeDown(tester, 'AsyncScope');
+    });
+
+    testWidgets('a Cancelled thrown by a callback: cancellation',
+        (tester) async {
+      audit.install();
+
+      await tester.pumpWidget(
+        _app(
+          _asyncScope(
+            initScope: (context, ctx) async =>
+                ctx.onDispose(() => throw const Cancelled('from a disposer')),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      audit.verify(observer.routes);
+      expect(observer.routes.single.$4, isA<Cancelled>());
+      expect(observer.routes.single.$3, ScopeErrorRoute.cancellation);
+
+      await takeDown(tester, 'AsyncScope');
+    });
+
+    testWidgets('a child failure the body caught: observer', (tester) async {
+      const failure = _Boom();
+      audit.install();
+
+      await tester.pumpWidget(
+        _app(
+          _asyncScope(
+            initScope: (context, ctx) async {
+              try {
+                await ctx.run(Job.deferred<void>((_) async => throw failure));
+              } on _Boom {
+                // Handled: the scope goes on without it.
+              }
+            },
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      audit.verify(observer.routes);
+      expect(routesOf(failure).single.$2, ScopePhase.initialization);
+      expect(routesOf(failure).single.$3, ScopeErrorRoute.observer);
+      expect(audit.seenIn(SeenIn.flutterError), isEmpty);
+
+      await takeDown(tester, 'AsyncScope');
+    });
+
+    testWidgets(
+        'a child failure nobody read, with an observer: observer, and '
+        'nothing in FlutterError', (tester) async {
+      final failure = StateError('child failed, and nobody looked');
+      audit.install();
+
+      await tester.pumpWidget(
+        _app(
+          _asyncScope(
+            initScope: (context, ctx) async =>
+                ctx.start(Job.deferred<void>((_) async => throw failure)),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      audit.verify(observer.routes);
+      expect(routesOf(failure).single.$2, ScopePhase.initialization);
+      expect(routesOf(failure).single.$3, ScopeErrorRoute.observer);
+      expect(
+        audit.seenIn(SeenIn.flutterError),
+        isEmpty,
+        reason: 'the observer was told the route is final, and a crash '
+            'reporter that forwards `observer` has it already',
+      );
+
+      await takeDown(tester, 'AsyncScope');
+    });
+
+    testWidgets(
+        'a child failure nobody read, without an observer: one report in '
+        'FlutterError', (tester) async {
+      ScopeConfig.observer = null;
+      final failure = StateError('child failed, and nobody looked');
+      audit.install();
+
+      await tester.pumpWidget(
+        _app(
+          _asyncScope(
+            initScope: (context, ctx) async =>
+                ctx.start(Job.deferred<void>((_) async => throw failure)),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+      audit.uninstall();
+
+      expect(
+        audit.seenIn(SeenIn.flutterError),
+        [same(failure)],
+        reason: 'with nobody to have heard it, the red line is all there is',
+      );
+
+      await tester.pumpWidget(_app(const SizedBox.shrink()));
+      await tester.pumpAndSettle();
+    });
+
+    testWidgets(
+        'a body failure whose outcome a cancellation took over: '
+        'flutterError', (tester) async {
+      final failure = StateError('body failed');
+      final cleanup = Completer<void>();
+      audit.install();
+
+      await tester.pumpWidget(
+        _app(
+          _asyncScope(
+            initScope: (context, ctx) async {
+              ctx.onDispose(() => cleanup.future);
+              throw failure;
+            },
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+      expect(
+        observer.routes,
+        isEmpty,
+        reason: 'the outcome is still due to carry the failure to the screen',
+      );
+
+      await tester.pumpWidget(_app(const SizedBox.shrink()));
+      cleanup.complete();
+      await settle(
+        tester,
+        until: () => observer.events.contains('disposed AsyncScope'),
+      );
+
+      audit.verify(observer.routes);
+      expect(
+        routesOf(failure).single.$2,
+        ScopePhase.initializationCancellation,
+      );
+      expect(routesOf(failure).single.$3, ScopeErrorRoute.flutterError);
+    });
+
+    testWidgets('a late disposeScope of AsyncScope (ctx.onDiscard)',
+        (tester) async {
+      final gate = Completer<void>();
+      final failure = StateError('the late release failed');
+      await tester.pumpWidget(
+        _app(
+          _asyncScope(
+            initScope: (context, ctx) => gate.future,
+            disposeScope: () => throw failure,
+          ),
+        ),
+      );
+      await tester.pump();
+      audit.install();
+
+      await takeDown(tester, 'AsyncScope');
+      gate.complete();
+      await settle(tester, until: () => observer.routes.isNotEmpty);
+
+      audit.verify(observer.routes);
+      expect(routesOf(failure).single.$3, ScopeErrorRoute.flutterError);
+    });
+
+    testWidgets('a late releaseLateData of AsyncDataScope', (tester) async {
+      final gate = Completer<void>();
+      final failure = StateError('the late data release failed');
+      await tester.pumpWidget(
+        _app(
+          AsyncDataScope<String>(
+            initData: (context, ctx) async {
+              await gate.future;
+              return 'data';
+            },
+            disposeData: (data) => throw failure,
+            progressBuilder: (context, progress) => const SizedBox.shrink(),
+            errorBuilder: (context, error, stackTrace, progress) =>
+                const SizedBox.shrink(),
+            builder: (context, data) => const SizedBox.shrink(),
+          ),
+        ),
+      );
+      await tester.pump();
+      audit.install();
+
+      await tester.pumpWidget(_app(const SizedBox.shrink()));
+      await settle(
+        tester,
+        until: () => observer.events.any(
+          (event) => event.startsWith('disposed AsyncDataScope'),
+        ),
+      );
+      gate.complete();
+      await settle(tester, until: () => observer.routes.isNotEmpty);
+
+      audit.verify(observer.routes);
+      expect(routesOf(failure).single.$3, ScopeErrorRoute.flutterError);
+    });
+
+    testWidgets('a ctx.onCancel callback that throws: flutterError',
+        (tester) async {
+      final failure = StateError('the cancellation callback failed');
+      await tester.pumpWidget(
+        _app(
+          _asyncScope(
+            initScope: (context, ctx) async {
+              ctx.onCancel(() => throw failure);
+              await ctx.abandonable(() => Completer<void>().future);
+            },
+          ),
+        ),
+      );
+      await tester.pump();
+      audit.install();
+
+      await takeDown(tester, 'AsyncScope');
+
+      audit.verify(observer.routes);
+      expect(
+        routesOf(failure).single.$2,
+        ScopePhase.initializationCancellation,
+      );
+      expect(routesOf(failure).single.$3, ScopeErrorRoute.flutterError);
+    });
+
+    testWidgets('a whenFinished callback that throws: flutterError',
+        (tester) async {
+      final failure = StateError('the finish callback failed');
+      audit.install();
+
+      await tester.pumpWidget(
+        _app(
+          _asyncScope(
+            initScope: (context, ctx) async =>
+                ctx.job.whenFinished((_) => throw failure),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      audit.verify(observer.routes);
+      expect(routesOf(failure).single.$3, ScopeErrorRoute.flutterError);
+
+      await takeDown(tester, 'AsyncScope');
+    });
+
+    testWidgets('a late failure of ctx.abandonable: flutterError',
+        (tester) async {
+      final gate = Completer<void>();
+      final failure = StateError('the abandoned action failed');
+      await tester.pumpWidget(
+        _app(
+          _asyncScope(
+            initScope: (context, ctx) => ctx.abandonable(() async {
+              await gate.future;
+              throw failure;
+            }),
+          ),
+        ),
+      );
+      await tester.pump();
+      audit.install();
+
+      await takeDown(tester, 'AsyncScope');
+      gate.complete();
+      await settle(tester, until: () => observer.routes.isNotEmpty);
+
+      audit.verify(observer.routes);
+      expect(routesOf(failure).single.$2, ScopePhase.abandonedWait);
+      expect(routesOf(failure).single.$3, ScopeErrorRoute.flutterError);
+    });
+
+    testWidgets('a failure of ctx.unattended work: flutterError',
+        (tester) async {
+      final gate = Completer<void>();
+      final failure = StateError('the unattended work failed');
+      await tester.pumpWidget(
+        _app(
+          _asyncScope(
+            initScope: (context, ctx) async => ctx.unattended(() async {
+              await gate.future;
+              throw failure;
+            }),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+      audit.install();
+
+      gate.complete();
+      await settle(tester, until: () => observer.routes.isNotEmpty);
+
+      audit.verify(observer.routes);
+      expect(routesOf(failure).single.$2, ScopePhase.abandonedWait);
+      expect(routesOf(failure).single.$3, ScopeErrorRoute.flutterError);
+
+      await takeDown(tester, 'AsyncScope');
+    });
+
+    // `Job.isCancellationError` is the app's own word on what a cancellation
+    // is, and the kernel asks it before `onError` once the job has accepted
+    // one. Each case runs with the filter and without it, so the route is
+    // seen to follow the filter rather than the place.
+    for (final filtered in [true, false]) {
+      final expected = filtered
+          ? ScopeErrorRoute.cancellation
+          : ScopeErrorRoute.flutterError;
+      final how = filtered ? 'with the filter' : 'without the filter';
+
+      testWidgets(
+          'a ctx.onDispose of a cancelled job that throws, $how: '
+          '${expected.name}', (tester) async {
+        if (filtered) {
+          Job.isCancellationError = (error) => error is _Boom;
+          addTearDown(() => Job.isCancellationError = null);
+        }
+        await tester.pumpWidget(
+          _app(
+            _asyncScope(
+              initScope: (context, ctx) async {
+                ctx.onDispose(() => throw const _Boom());
+                await ctx.abandonable(() => Completer<void>().future);
+              },
+            ),
+          ),
+        );
+        await tester.pump();
+        audit.install();
+
+        await takeDown(tester, 'AsyncScope');
+
+        audit.verify(observer.routes);
+        expect(
+          routesOf(const _Boom()).single.$2,
+          ScopePhase.initializationCancellation,
+        );
+        expect(routesOf(const _Boom()).single.$3, expected);
+      });
+
+      testWidgets(
+          'a body that fails after its cancellation, $how: ${expected.name}',
+          (tester) async {
+        if (filtered) {
+          Job.isCancellationError = (error) => error is _Boom;
+          addTearDown(() => Job.isCancellationError = null);
+        }
+        await tester.pumpWidget(
+          _app(
+            _asyncScope(
+              initScope: (context, ctx) async {
+                final stop = Completer<void>();
+                ctx.onCancel(stop.complete);
+                await ctx.join(() async {
+                  await stop.future;
+                  throw const _Boom();
+                });
+              },
+            ),
+          ),
+        );
+        await tester.pump();
+        audit.install();
+
+        await takeDown(tester, 'AsyncScope');
+
+        audit.verify(observer.routes);
+        expect(
+          routesOf(const _Boom()).single.$2,
+          ScopePhase.initializationCancellation,
+        );
+        expect(routesOf(const _Boom()).single.$3, expected);
+      });
+    }
   });
 }
 

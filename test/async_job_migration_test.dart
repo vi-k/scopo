@@ -420,9 +420,12 @@ void main() {
 
     // Now the cover: the tree goes while the cleanup is parked, so the outcome
     // of the parent becomes a cancellation, and the failure has nobody left
-    // to reach. The kernel says so once, and that is the red line. The
-    // observer has heard it already, and saying it there again is what the
-    // wave of 2026-09-07 existed to stop.
+    // to reach. The kernel says so once -- and that used to be the red line.
+    // Under 1a of `2026-10-24[3]-observer-error-route-design.md` it is not:
+    // the observer heard the child's failure with `ScopeErrorRoute.observer`,
+    // that route is final, and an application whose crash reporter forwards
+    // `observer` has the one report already. The observer has heard it, and
+    // saying it there again is what the wave of 2026-09-07 existed to stop.
     collect();
     await tester.pumpWidget(_wrap(const SizedBox.shrink()));
     cleanup.complete();
@@ -435,9 +438,14 @@ void main() {
       reason: 'one cause, one line in the observer',
     );
     expect(
+      observer.routes,
+      [ScopeErrorRoute.observer],
+      reason: 'and that line is the one a crash reporter forwards',
+    );
+    expect(
       reported.where((e) => identical(e, failure)),
-      hasLength(1),
-      reason: 'and one in the crash reporter of an application',
+      isEmpty,
+      reason: 'so FlutterError does not have it a second time (1a)',
     );
     expect(
       observer.phases,
@@ -1041,8 +1049,16 @@ void main() {
     });
   }
 
-  testWidgets('a settled body failure keeps its first report and phase',
-      (tester) async {
+  // The same object twice: the body throws it, and later the work it handed
+  // over throws it again. The red line for the second throw used to be
+  // pinned here. Under 1a of `2026-10-24[3]-observer-error-route-design.md`
+  // the observer was told this object with `ScopeErrorRoute.observer` when
+  // the body settled, that route is final, and the late rethrow of an object
+  // already announced so stays out of `FlutterError` while an observer is
+  // there to have heard it.
+  testWidgets(
+      'with an observer, the late unattended rethrow of an already-announced '
+      'object stays out of FlutterError', (tester) async {
     final observer = _Errors();
     ScopeConfig.observer = observer;
     final failure = StateError('body and background failed');
@@ -1074,18 +1090,25 @@ void main() {
     expect(find.text('failed'), findsOneWidget);
     expect(observer.errors, [same(failure)]);
     expect(observer.phases, [ScopePhase.initialization]);
+    expect(observer.routes, [ScopeErrorRoute.observer]);
     expect(tester.takeException(), isNull);
 
     background.complete();
     await tester.pumpAndSettle();
-    expect(tester.takeException(), same(failure));
+    expect(
+      tester.takeException(),
+      isNull,
+      reason: 'the observer was told this object goes nowhere else (1a)',
+    );
     await tester.pumpWidget(_wrap(const SizedBox.shrink()));
     await tester.pumpAndSettle();
 
     // The late action is unanswered, but its error was already heard when
-    // the body settled. The observer keeps the first phase for that object.
+    // the body settled. The observer keeps the first phase and route for that
+    // object.
     expect(observer.errors, [same(failure)]);
     expect(observer.phases, [ScopePhase.initialization]);
+    expect(observer.routes, [ScopeErrorRoute.observer]);
     expect(tester.takeException(), isNull);
   });
 
@@ -1131,6 +1154,17 @@ void main() {
       // made through the filter, and the kernel is the one that asks it.
       expect(observer.errors, [isA<_Stopped>()]);
       expect(observer.phases, [ScopePhase.initializationCancellation]);
+      // The kernel asks the filter before `onError` for the body of a job
+      // that has accepted a cancellation, so the route is final either way.
+      expect(
+        observer.routes,
+        [
+          if (filtered)
+            ScopeErrorRoute.cancellation
+          else
+            ScopeErrorRoute.flutterError,
+        ],
+      );
       expect(tester.takeException(), filtered ? isNull : isA<_Stopped>());
     });
   }
@@ -1303,6 +1337,7 @@ final class _Answering extends JobObserver with JobAnswerer {
 final class _Errors extends ScopeObserver {
   final errors = <Object>[];
   final phases = <ScopePhase>[];
+  final routes = <ScopeErrorRoute>[];
 
   @override
   void onError(
@@ -1314,6 +1349,7 @@ final class _Errors extends ScopeObserver {
   ) {
     errors.add(error);
     phases.add(phase);
+    routes.add(route);
   }
 }
 

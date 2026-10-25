@@ -37,3 +37,6 @@ build/
 
 # Written by `fvm use`: points the IDE at the pinned SDK by a local path.
 .vscode/settings.json
+
+# Local dependency overrides: a path to an unpublished sibling, never committed.
+pubspec_overrides.yaml
