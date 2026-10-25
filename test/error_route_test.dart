@@ -1091,6 +1091,54 @@ void main() {
             'step of the first tree',
       );
     });
+
+    // What a disposal of the container looked up ends with it. A foreign child
+    // that threw may still hold, so the tree is walked again by the next
+    // disposal of the same container -- no new tree, nothing else to clear
+    // what the first one reported. That walk fails before it reaches any
+    // child, with the very object a step of the first one reported: it is a
+    // failure nobody has reported yet, and it must not be taken for the old
+    // one.
+    test('a step reported by one disposal does not hide a failure of the next',
+        () async {
+      const boom = _Boom();
+      // Reported named, one layer down: by the step, and by the container.
+      bool carriesBoom(Object e) =>
+          e is ScopeDependencyException && identical(e.error, boom);
+      final holding = _HoldingForeign(boom);
+      final dependencies = _Steps(
+        (deps) => deps.sequential('', [
+          holding,
+          deps.dep('leaf', (handle) {
+            handle.dispose = () => throw boom;
+          }),
+        ]),
+      );
+      await runScopeInit((ctx) => dependencies.init(null, ctx));
+      audit.install();
+
+      await dependencies.dispose();
+      expect(
+        audit.seenIn(SeenIn.flutterError).where(carriesBoom),
+        hasLength(1),
+        reason: 'the step of the leaf reports it',
+      );
+
+      await dependencies.dispose();
+      audit.uninstall();
+
+      expect(
+        holding.asked,
+        2,
+        reason: 'the second disposal walks the same tree again',
+      );
+      expect(
+        audit.seenIn(SeenIn.flutterError).where(carriesBoom),
+        hasLength(2),
+        reason: 'the group fails before it reaches any child, so no step '
+            'reports it: the container is the only one that does',
+      );
+    });
   });
 
   // The kernel hands this observer errors of two roads. One asks for an
@@ -1247,6 +1295,76 @@ void main() {
 
     // `JobErrorAnswer.never`: the kernel will not ask about it, and it is no
     // cancellation, so the observer is the only one to hear it.
+    // Two failures, one object: a `const` exception is the same object at
+    // every throw. The first is a child the body caught, told as `observer`;
+    // the second is a cleanup failure the kernel answers for at once.
+    // Identity cannot tell them apart, and a duplicate is better than a loss,
+    // so the second reaches `FlutterError`. The observer has heard the object
+    // already and is not told again: its one route says `observer` while
+    // `FlutterError` has the object as well -- the leftover the docs list.
+    testWidgets(
+        'a cleanup failure that shares an object with a caught child failure '
+        'reaches FlutterError', (tester) async {
+      audit.install();
+
+      await tester.pumpWidget(
+        _app(
+          _asyncScope(
+            initScope: (context, ctx) async {
+              try {
+                await ctx.run(
+                  Job.deferred<void>((_) async => throw const _Boom()),
+                );
+              } on _Boom {
+                // Handled: the scope goes on without it.
+              }
+              ctx.onDispose(() => throw const _Boom());
+            },
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+      audit.uninstall();
+
+      expect(routesOf(const _Boom()).single.$3, ScopeErrorRoute.observer);
+      expect(
+        audit.seenIn(SeenIn.flutterError),
+        [same(const _Boom())],
+        reason: 'the cleanup failure is reported, once',
+      );
+
+      await takeDown(tester, 'AsyncScope');
+    });
+
+    // An observer that throws has heard nothing, and a failure it was meant
+    // to be the only one to hear would then reach nobody.
+    testWidgets(
+        'a child failure nobody read, with an observer that throws: '
+        'FlutterError', (tester) async {
+      ScopeConfig.observer = _ThrowingObserver();
+      final failure = StateError('child failed, and the observer is down');
+      audit.install();
+
+      await tester.pumpWidget(
+        _app(
+          _asyncScope(
+            initScope: (context, ctx) async =>
+                ctx.start(Job.deferred<void>((_) async => throw failure)),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+      audit.uninstall();
+
+      expect(
+        audit.seenIn(SeenIn.flutterError).where((e) => identical(e, failure)),
+        hasLength(1),
+      );
+
+      await tester.pumpWidget(_app(const SizedBox.shrink()));
+      await tester.pumpAndSettle();
+    });
+
     testWidgets('a child whose failure is ignored: observer', (tester) async {
       final failure = StateError('child failed, and nobody minds');
       audit.install();
@@ -2060,6 +2178,19 @@ ScopeDependency _failingDep(_Steps deps, String name) =>
       handle.dispose = () => throw StateError('$name cannot let go');
     });
 
+/// An observer whose crash reporter is not up yet.
+final class _ThrowingObserver extends ScopeObserver {
+  @override
+  void onError(
+    ScopeObservable target,
+    ScopePhase phase,
+    ScopeErrorRoute route,
+    Object error,
+    StackTrace? stackTrace,
+  ) =>
+      throw StateError('crash reporter is down');
+}
+
 /// A failure that is the same object every time it is thrown.
 final class _Boom implements Exception {
   const _Boom();
@@ -2096,6 +2227,51 @@ final class _RefusingForeign implements ScopeDependency {
 
   @override
   Future<void> dispose(void Function(String path) onStep) async {}
+
+  @override
+  String get wrappedName => '"$name"';
+
+  @override
+  String stateToString() => '$state';
+}
+
+/// A dependency of somebody else's making that may still hold after its
+/// `dispose` threw, and that cannot say so a second time: the first ask of
+/// [disposalRequired] says `true`, the next throws [failure], which fails the
+/// group above it before that group reaches any child.
+final class _HoldingForeign implements ScopeDependency {
+  final Exception failure;
+
+  /// How many times [disposalRequired] was asked.
+  int asked = 0;
+
+  _HoldingForeign(this.failure);
+
+  @override
+  String get name => 'holding';
+
+  @override
+  int get count => 1;
+
+  @override
+  ScopeDependencyState get state => const ScopeDependencyInitialized();
+
+  @override
+  bool get disposalRequired => ++asked == 1 || (throw failure);
+
+  @override
+  Future<void> init(ScopeInitContext ctx, void Function(String path) onStep) {
+    onStep(name);
+    return Future<void>.value();
+  }
+
+  @override
+  void onUnmount() {}
+
+  @override
+  Future<void> dispose(void Function(String path) onStep) async {
+    throw StateError('holding cannot let go');
+  }
 
   @override
   String get wrappedName => '"$name"';

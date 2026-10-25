@@ -165,6 +165,14 @@ final class _ScopeInitObserver extends JobObserver with JobAnswerer {
     StackTrace stackTrace, {
     required JobErrorAnswer answer,
   }) {
+    // The object is remembered as heard by the observer alone, but the kernel
+    // is about to ask about it again: a cleanup failure, a callback, late
+    // work. That may be the same failure thrown again or a second failure
+    // that shares a `const` object, and identity cannot tell which. A
+    // duplicate report is better than a lost one, so the ask is answered.
+    // Before the stand-aside below: the body may have thrown this very object.
+    if (answer == JobErrorAnswer.answered) _observerOnly.remove(error);
+
     if (job is ScopeInitJob<Object?> &&
         (identical(job, _rootJob) || job._failureCarriedByOwner) &&
         identical(job._bodyError, error) &&
@@ -241,9 +249,11 @@ final class _ScopeInitObserver extends JobObserver with JobAnswerer {
 
   /// Tells the scope observer, and remembers having told it.
   ///
-  /// [route] is final: an error told as [ScopeErrorRoute.observer] while
-  /// there is an observer is remembered in [_observerOnly], and
-  /// [onUnanswered] keeps it out of `FlutterError`.
+  /// [route] is final: an error the observer heard as
+  /// [ScopeErrorRoute.observer] is remembered in [_observerOnly], and
+  /// [onUnanswered] keeps it out of `FlutterError`. Heard, not only sent: an
+  /// observer whose hook threw, or whose call was refused as recursive, has
+  /// heard nothing, and the error is reported as if there were none.
   void _announce(
     Object error,
     StackTrace stackTrace,
@@ -251,12 +261,10 @@ final class _ScopeInitObserver extends JobObserver with JobAnswerer {
     ScopeErrorRoute route,
   ) {
     if (!_announced.add(error)) return;
-    if (route == ScopeErrorRoute.observer && ScopeConfig.observer != null) {
-      _observerOnly.add(error);
-    }
-    notifyObserver(
+    final heard = notifyObserver(
       (observer) => observer.onError(_scope, phase, route, error, stackTrace),
     );
+    if (heard && route == ScopeErrorRoute.observer) _observerOnly.add(error);
   }
 
   @override

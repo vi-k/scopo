@@ -1050,15 +1050,17 @@ void main() {
   }
 
   // The same object twice: the body throws it, and later the work it handed
-  // over throws it again. The red line for the second throw used to be
-  // pinned here. Under 1a of `2026-10-24[3]-observer-error-route-design.md`
-  // the observer was told this object with `ScopeErrorRoute.observer` when
-  // the body settled, that route is final, and the late rethrow of an object
-  // already announced so stays out of `FlutterError` while an observer is
-  // there to have heard it.
+  // over throws it again. Identity cannot tell this rethrow from a second,
+  // separate failure that shares a `const` object, and losing that one is
+  // worse than reporting this one twice: so the late throw, which the kernel
+  // answers for at once, reaches `FlutterError` although the observer was
+  // told the object with `ScopeErrorRoute.observer` when the body settled.
+  // The observer is not told it a second time -- it has heard the object --
+  // and that is the leftover of 1a in
+  // `2026-10-24[3]-observer-error-route-design.md`.
   testWidgets(
       'with an observer, the late unattended rethrow of an already-announced '
-      'object stays out of FlutterError', (tester) async {
+      'object still reaches FlutterError', (tester) async {
     final observer = _Errors();
     ScopeConfig.observer = observer;
     final failure = StateError('body and background failed');
@@ -1097,8 +1099,8 @@ void main() {
     await tester.pumpAndSettle();
     expect(
       tester.takeException(),
-      isNull,
-      reason: 'the observer was told this object goes nowhere else (1a)',
+      same(failure),
+      reason: 'a duplicate is better than a loss',
     );
     await tester.pumpWidget(_wrap(const SizedBox.shrink()));
     await tester.pumpAndSettle();

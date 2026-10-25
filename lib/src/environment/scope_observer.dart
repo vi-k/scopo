@@ -65,11 +65,17 @@ enum ScopePhase {
 ///
 /// {@category debug}
 enum ScopeErrorRoute {
-  /// Nowhere else. Without an observer the failure is seen only in the state
-  /// of the scope — the `buildOnError` branch, or the state of a dependency.
+  /// Nowhere else, while there is an observer to hear it.
   ///
   /// The failure of an initialization body, `initDependencies` included, and
-  /// of a child job the body caught.
+  /// of a child job the body caught: without an observer it is seen only in
+  /// the state of the scope — the `buildOnError` branch, or the state of a
+  /// dependency.
+  ///
+  /// So does the failure of a child job that nobody read, and of one whose
+  /// failure was ignored. Without an observer, or with one whose hook threw,
+  /// the one nobody read goes to [FlutterError.reportError] instead; the
+  /// ignored one goes nowhere.
   observer,
 
   /// [FlutterError.reportError], either from the package itself or from
@@ -92,9 +98,8 @@ enum ScopeErrorRoute {
   /// An uncaught error of the zone the scope runs in.
   ///
   /// `initStateAsync` of a state; `onInitialized` of a state whose
-  /// `initStateAsync` returned a `Future`, or returned synchronously outside
-  /// a build; and an `AsyncScope` that failed before its initialization
-  /// started.
+  /// `initStateAsync` returned a `Future`; and an `AsyncScope` that failed
+  /// before its initialization started.
   zone,
 
   /// Thrown to whoever called — today that is `close()`, and what its caller

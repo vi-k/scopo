@@ -532,6 +532,9 @@ void main() {
       final reported = <Object>[];
       final previous = FlutterError.onError;
       FlutterError.onError = (details) => reported.add(details.exception);
+      // Given back in a tear-down too, so a walk that throws past the handler
+      // below does not leave the recorder to the tests after this one.
+      addTearDown(() => FlutterError.onError = previous);
 
       await dependencies.root.dispose((_) {}).onError((_, __) {});
 

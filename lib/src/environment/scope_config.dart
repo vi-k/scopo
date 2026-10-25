@@ -182,10 +182,13 @@ void reportTimeout(TimeoutException error, StackTrace stackTrace) {
 /// caller goes on. An observer that produces an event of its own — one that
 /// builds a scope from a hook — would otherwise recurse without end, so the
 /// second entry is refused and reported, once per refused call.
-void notifyObserver(void Function(ScopeObserver observer) call) {
+///
+/// Returns whether the observer heard the call: `false` without an observer,
+/// for a refused call and for a hook that threw.
+bool notifyObserver(void Function(ScopeObserver observer) call) {
   final observer = ScopeConfig.observer;
   if (observer == null) {
-    return;
+    return false;
   }
 
   if (ScopeConfig._notifying) {
@@ -200,12 +203,13 @@ void notifyObserver(void Function(ScopeObserver observer) call) {
       ),
     );
 
-    return;
+    return false;
   }
 
   ScopeConfig._notifying = true;
   try {
     call(observer);
+    return true;
     // ignore: avoid_catching_errors
   } on Object catch (error, stackTrace) {
     FlutterError.reportError(
@@ -216,6 +220,7 @@ void notifyObserver(void Function(ScopeObserver observer) call) {
         context: ErrorDescription('while notifying a scope observer'),
       ),
     );
+    return false;
   } finally {
     ScopeConfig._notifying = false;
   }
