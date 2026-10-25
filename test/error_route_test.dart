@@ -838,6 +838,23 @@ void main() {
       expect(audit.seenIn(SeenIn.flutterError), hasLength(2));
     });
 
+    // Pins what `doc/debug.md` says of a failed step: the report names it.
+    test('the report of a failed step names the step', () async {
+      await disposeOf(
+        _Steps(
+          (deps) => deps.sequential('', [
+            deps.sequential('inner', [_failingDep(deps, 'leaf')]),
+          ]),
+        ),
+      );
+
+      final report = audit.seenIn(SeenIn.flutterError).single;
+      expect(report, isA<ScopeDependencyException>());
+      final named = report as ScopeDependencyException;
+      expect(named.name, 'inner/leaf');
+      expect('${named.error}', 'Bad state: leaf cannot let go');
+    });
+
     test('a leaf whose release is cancelled: cancellation', () async {
       final routes = await disposeOf(
         _Steps(
@@ -1255,6 +1272,134 @@ void main() {
       );
       expect(routesOf(failure).single.$3, ScopeErrorRoute.flutterError);
     });
+
+    // Pins leftover (d) of the routes list in `doc/debug.md`.
+    testWidgets(
+        'a child failure nobody read, with an empty composite observer: '
+        'nothing in FlutterError', (tester) async {
+      ScopeConfig.observer = const ScopeCompositeObserver([]);
+      final failure = StateError('child failed, and nobody looked');
+      var thrown = false;
+      audit.install();
+
+      await tester.pumpWidget(
+        _app(
+          _asyncScope(
+            initScope: (context, ctx) async => ctx.start(
+              Job.deferred<void>((_) async {
+                thrown = true;
+                throw failure;
+              }),
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+      await tester.pumpWidget(_app(const SizedBox.shrink()));
+      await tester.pumpAndSettle();
+      audit.uninstall();
+
+      expect(thrown, isTrue);
+      expect(
+        audit.seenIn(SeenIn.flutterError),
+        isEmpty,
+        reason: 'an observer is set, so the route said `observer` -- to an '
+            'observer that hands it to nobody',
+      );
+    });
+
+    // Pins leftover (b) of the routes list in `doc/debug.md`.
+    testWidgets(
+        'a body failure the filter names, covered by a cancellation: no '
+        'onError at all', (tester) async {
+      Job.isCancellationError = (error) => error is _Boom;
+      addTearDown(() => Job.isCancellationError = null);
+      final cleanup = Completer<void>();
+      audit.install();
+
+      await audit.runGuarded(() async {
+        await tester.pumpWidget(
+          _app(
+            _asyncScope(
+              initScope: (context, ctx) async {
+                ctx.onDispose(() => cleanup.future);
+                throw const _Boom();
+              },
+            ),
+          ),
+        );
+        await tester.pumpAndSettle();
+        await tester.pumpWidget(_app(const SizedBox.shrink()));
+        cleanup.complete();
+        await settle(
+          tester,
+          until: () => observer.events.contains('disposed AsyncScope'),
+        );
+      });
+      // Nothing more is due once the teardown is over: give it a fair chance
+      // all the same, and look again.
+      await settle(tester, until: () => false, rounds: 5);
+      audit.uninstall();
+
+      expect(observer.events, contains('disposed AsyncScope'));
+      expect(observer.events, contains('cancelled AsyncScope'));
+      expect(observer.routes, isEmpty);
+      expect(audit.seenIn(SeenIn.flutterError), isEmpty);
+      expect(audit.seenIn(SeenIn.zone), isEmpty);
+    });
+
+    // Pins leftover (a) of the routes list in `doc/debug.md`: with the late
+    // `ignoreFailure()` the route says `flutterError` and no report comes.
+    for (final ignored in [false, true]) {
+      final how = ignored
+          ? 'ignored late: no report after all'
+          : 'not ignored: one report';
+
+      testWidgets('the body of a cancelled child fails, $how', (tester) async {
+        final failure = StateError('child failed after its cancellation');
+        final cleanup = Completer<void>();
+        late DeferredJob<void> child;
+        await tester.pumpWidget(
+          _app(
+            _asyncScope(
+              initScope: (context, ctx) async {
+                child = Job.deferred<void>((inner) async {
+                  final stop = Completer<void>();
+                  inner
+                    ..onCancel(stop.complete)
+                    ..onDispose(() => cleanup.future);
+                  await stop.future;
+                  throw failure;
+                });
+                ctx.start(child);
+              },
+            ),
+          ),
+        );
+        await tester.pumpAndSettle();
+        audit.install();
+
+        await tester.pumpWidget(_app(const SizedBox.shrink()));
+        await settle(tester, until: () => routesOf(failure).isNotEmpty);
+        expect(child.isFinished, isFalse);
+        if (ignored) child.ignoreFailure();
+        cleanup.complete();
+        await settle(
+          tester,
+          until: () => observer.events.contains('disposed AsyncScope'),
+        );
+        await settle(tester, until: () => false, rounds: 5);
+        audit.uninstall();
+
+        expect(child.isFinished, isTrue);
+        expect(routesOf(failure).single.$3, ScopeErrorRoute.flutterError);
+        if (ignored) {
+          expect(audit.seenIn(SeenIn.flutterError), isEmpty);
+        } else {
+          audit.verify(observer.routes);
+        }
+      });
+    }
 
     testWidgets('a late disposeScope of AsyncScope (ctx.onDiscard)',
         (tester) async {
