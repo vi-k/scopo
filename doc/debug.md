@@ -410,10 +410,10 @@ not tell the whole story:
   look behind it. An empty `ScopeCompositeObserver` keeps the failure out the
   same way, and then nobody has it. With `ScopeConfig.observer` at `null` the
   failure is reported, and so it is when the `onError` of the observer throws:
-  that observer has heard nothing. A `ScopeCompositeObserver` has always heard,
-  though: it catches what an observer inside it throws and reports that, so the
-  failure stays out, and if the one that threw was the crash reporter, nobody
-  has it.
+  that observer has heard nothing. A `ScopeCompositeObserver` one of whose
+  observers throws has heard nothing either: the failure is reported, and an
+  observer in it that did hear it and also listens at `FlutterError.onError`
+  gets it twice.
 
 ### What `onTimeout` covers
 

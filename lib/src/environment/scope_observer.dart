@@ -299,11 +299,15 @@ class ScopeObserver {
 /// hearing that event without a word from anywhere. This one is written with
 /// the class it forwards, and grows with it.
 ///
-/// An observer that throws does not stop the ones after it. The package calls
-/// an observer from a build, an initialization or a teardown, and a failure
-/// there is reported through [FlutterError.reportError] and gone past — the
-/// same trade [ScopeConfig.observer] itself makes, applied one level down so
-/// that one bad listener is not the whole recording.
+/// An observer that throws does not stop the ones after it: every observer is
+/// asked, and then the first failure is thrown on to whoever called the
+/// composite, the way a single observer that throws would have done. The
+/// package catches it there and reports it through
+/// [FlutterError.reportError], and the event counts as unheard — a failure
+/// meant only for the observer goes to [FlutterError] as well, rather than
+/// nowhere. A second failure in the same call is reported here, since only
+/// one can be thrown. Called by hand, outside the package, the composite
+/// throws what its first failing observer threw.
 ///
 /// {@category debug}
 final class ScopeCompositeObserver extends ScopeObserver {
@@ -313,13 +317,19 @@ final class ScopeCompositeObserver extends ScopeObserver {
   /// Creates an observer that forwards to each of [observers].
   const ScopeCompositeObserver(this.observers);
 
-  /// Runs [call] on every observer, guarded one at a time.
+  /// Runs [call] on every observer, guarded one at a time, and throws the
+  /// first failure once they have all been asked.
   void _each(void Function(ScopeObserver observer) call) {
+    (Object, StackTrace)? first;
     for (final observer in observers) {
       try {
         call(observer);
         // ignore: avoid_catching_errors
       } on Object catch (error, stackTrace) {
+        if (first == null) {
+          first = (error, stackTrace);
+          continue;
+        }
         FlutterError.reportError(
           FlutterErrorDetails(
             exception: error,
@@ -331,6 +341,9 @@ final class ScopeCompositeObserver extends ScopeObserver {
           ),
         );
       }
+    }
+    if (first case (final error, final stackTrace)) {
+      Error.throwWithStackTrace(error, stackTrace);
     }
   }
 

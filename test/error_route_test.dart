@@ -1529,13 +1529,13 @@ void main() {
       );
     });
 
-    // Pins "an observer is there even when it does nothing" in the routes
-    // list of `doc/debug.md`: a composite has heard what an observer inside it
-    // throws, so the failure it was meant to keep is kept out of
-    // `FlutterError`, and the only report is the one of the throwing observer.
+    // A composite is no more heard than the observers inside it: one of them
+    // threw -- the crash reporter, say -- so the failure is reported as it is
+    // behind a single observer that throws, and the observer that did hear it
+    // may have it twice. A duplicate is better than a loss.
     testWidgets(
         'a child failure nobody read, with a composite whose member throws: '
-        'the member failure only', (tester) async {
+        'FlutterError', (tester) async {
       final inside = RecordingObserver();
       ScopeConfig.observer = ScopeCompositeObserver([
         inside,
@@ -1560,13 +1560,14 @@ void main() {
         ScopeErrorRoute.observer,
       );
       final reported = audit.seenIn(SeenIn.flutterError);
-      expect(reported, hasLength(1));
-      expect(reported.single, isA<StateError>());
       expect(
-        (reported.single as StateError).message,
-        'crash reporter is down',
+        reported.where(
+          (e) => e is StateError && e.message == 'crash reporter is down',
+        ),
+        hasLength(1),
+        reason: 'the member failure is reported once',
       );
-      expect(reported.where((e) => identical(e, failure)), isEmpty);
+      expect(reported.where((e) => identical(e, failure)), hasLength(1));
 
       await tester.pumpWidget(_app(const SizedBox.shrink()));
       await tester.pumpAndSettle();

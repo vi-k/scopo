@@ -188,6 +188,34 @@ void main() {
       expect(behind.events, ['ready target']);
       expect(reported.single, isA<StateError>());
     });
+
+    // Every observer behind the composite is asked, each failure is reported
+    // once, and the call itself has not been heard: the composite gives the
+    // first failure back, the way a single observer that throws does.
+    test('a member that throws makes the composite unheard', () {
+      final reported = <Object>[];
+      final previousOnError = FlutterError.onError;
+      FlutterError.onError = (details) => reported.add(details.exception);
+      addTearDown(() => FlutterError.onError = previousOnError);
+
+      final behind = RecordingObserver();
+
+      ScopeConfig.observer = ScopeCompositeObserver([
+        const _ThrowingOnReadyObserver(),
+        behind,
+        const _ThrowingOnReadyObserver(),
+      ]);
+
+      final target = _Target();
+      final heard = notifyObserver((observer) => observer.onReady(target));
+
+      FlutterError.onError = previousOnError;
+
+      expect(heard, isFalse);
+      expect(behind.events, ['ready target']);
+      expect(reported, hasLength(2), reason: 'each failure once');
+      expect(reported, everyElement(isA<StateError>()));
+    });
   });
 
   testWidgets(

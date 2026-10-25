@@ -44,9 +44,9 @@
   identity cannot tell the same failure from a second one, and a duplicate
   report is better than a lost one. Any observer counts, an empty
   `ScopeCompositeObserver` included, but one whose `onError` throws has heard
-  nothing, and the failure is reported to `FlutterError`. A
-  `ScopeCompositeObserver` always has heard: it catches what an observer inside
-  it throws and reports that instead. Without an observer the failure is
+  nothing, and the failure is reported to `FlutterError` — a
+  `ScopeCompositeObserver` with an observer inside it that throws included.
+  Without an observer the failure is
   reported to `FlutterError` as before: nobody else has heard it. The other
   errors of the initialization job are reported as before, and
   their route follows what the kernel says it does next: those it answers for —
@@ -54,6 +54,19 @@
   `whenFinished` callbacks, of late `ctx.abandonable` actions and
   `ctx.unattended` work, and a failure of the body after its cancellation — say
   `ScopeErrorRoute.flutterError`.
+* **Behaviour change:** `ScopeCompositeObserver` no longer keeps to itself what
+  an observer inside it throws. It still asks every observer, then throws the
+  first failure on, the way a single observer that throws does: the package
+  catches it and reports it through `FlutterError.reportError` as it always
+  has, and the event counts as unheard. A second failure of the same event is
+  reported by the composite, since only one can be thrown. It used to report
+  each failure itself and return as if heard, so a failure of a child job
+  nobody read was kept out of `FlutterError` even when the observer that threw
+  was the crash reporter, and nobody had it. That failure now reaches
+  `FlutterError`, and an observer in the composite that did hear it and also
+  listens at `FlutterError.onError` gets it twice: a duplicate report is better
+  than a lost one. A composite called by hand throws what its first failing
+  observer threw.
 * `ScopeErrorRoute.cancellation` is what a cancellation says when it reaches
   `onError`: a `Cancelled` thrown by a cleanup or a callback of the
   initialization job or by a disposal step of a dependency tree, and an error
