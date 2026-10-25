@@ -1139,6 +1139,40 @@ void main() {
             'reports it: the container is the only one that does',
       );
     });
+
+    // Pins "a group that fails behind another failure" in the routes list of
+    // `doc/debug.md`.
+    test('a group that fails behind another failure: only the first is told',
+        () async {
+      const boom = _Boom();
+      final dependencies = _Steps(
+        (deps) => deps.sequential('', [
+          deps.sequential('inner', [_RefusingForeign(Exception('refused'))]),
+          deps.dep('leaf', (handle) {
+            handle.dispose = () => throw boom;
+          }),
+        ]),
+      );
+      await runScopeInit((ctx) => dependencies.init(null, ctx));
+      audit.install();
+
+      await dependencies.dispose().onError((_, __) {});
+      audit.uninstall();
+
+      expect(observer.routes, hasLength(1), reason: 'the step of the leaf');
+      expect(observer.routes.single.$3, ScopeErrorRoute.flutterError);
+      bool carriesBoom(Object e) =>
+          e is ScopeDependencyException && identical(e.error, boom);
+      expect(audit.seenIn(SeenIn.flutterError), hasLength(1));
+      expect(audit.seenIn(SeenIn.flutterError).single, predicate(carriesBoom));
+      expect(
+        dependencies.flattenDependenciesWithErrors().map((i) => i.dependency),
+        contains(
+          isA<ScopeDependency>().having((d) => d.name, 'name', 'inner'),
+        ),
+        reason: 'the failure of the group is kept in the state of the tree',
+      );
+    });
   });
 
   // The kernel hands this observer errors of two roads. One asks for an
@@ -1293,8 +1327,6 @@ void main() {
       await takeDown(tester, 'AsyncScope');
     });
 
-    // `JobErrorAnswer.never`: the kernel will not ask about it, and it is no
-    // cancellation, so the observer is the only one to hear it.
     // Two failures, one object: a `const` exception is the same object at
     // every throw. The first is a child the body caught, told as `observer`;
     // the second is a cleanup failure the kernel answers for at once.
@@ -1365,6 +1397,8 @@ void main() {
       await tester.pumpAndSettle();
     });
 
+    // `JobErrorAnswer.never`: the kernel will not ask about it, and it is no
+    // cancellation, so the observer is the only one to hear it.
     testWidgets('a child whose failure is ignored: observer', (tester) async {
       final failure = StateError('child failed, and nobody minds');
       audit.install();
@@ -1492,6 +1526,95 @@ void main() {
         isEmpty,
         reason: 'an observer is set, so the route said `observer` -- to an '
             'observer that hands it to nobody',
+      );
+    });
+
+    // Pins "an observer is there even when it does nothing" in the routes
+    // list of `doc/debug.md`: a composite has heard what an observer inside it
+    // throws, so the failure it was meant to keep is kept out of
+    // `FlutterError`, and the only report is the one of the throwing observer.
+    testWidgets(
+        'a child failure nobody read, with a composite whose member throws: '
+        'the member failure only', (tester) async {
+      final inside = RecordingObserver();
+      ScopeConfig.observer = ScopeCompositeObserver([
+        inside,
+        _ThrowingObserver(),
+      ]);
+      final failure = StateError('child failed, and the reporter is down');
+      audit.install();
+
+      await tester.pumpWidget(
+        _app(
+          _asyncScope(
+            initScope: (context, ctx) async =>
+                ctx.start(Job.deferred<void>((_) async => throw failure)),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+      audit.uninstall();
+
+      expect(
+        inside.routes.where((r) => identical(r.$4, failure)).single.$3,
+        ScopeErrorRoute.observer,
+      );
+      final reported = audit.seenIn(SeenIn.flutterError);
+      expect(reported, hasLength(1));
+      expect(reported.single, isA<StateError>());
+      expect(
+        (reported.single as StateError).message,
+        'crash reporter is down',
+      );
+      expect(reported.where((e) => identical(e, failure)), isEmpty);
+
+      await tester.pumpWidget(_app(const SizedBox.shrink()));
+      await tester.pumpAndSettle();
+    });
+
+    // Pins "one object that fails twice" in the routes list of
+    // `doc/debug.md`: a child failure kept out of `FlutterError` is read by
+    // the body after the scope was taken off the tree, and that reaches it.
+    testWidgets(
+        'a child failure the body reads after the cancellation: observer, '
+        'and FlutterError as well', (tester) async {
+      final failure = StateError('child failed, and was read late');
+      final gate = Completer<void>();
+      audit.install();
+
+      await tester.pumpWidget(
+        _app(
+          _asyncScope(
+            initScope: (context, ctx) async {
+              final child = Job.deferred<void>((_) async => throw failure);
+              ctx.start(child);
+              await gate.future;
+              await child.value;
+            },
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+      expect(routesOf(failure).single.$3, ScopeErrorRoute.observer);
+      expect(
+        audit.seenIn(SeenIn.flutterError),
+        isEmpty,
+        reason: 'kept out while the scope stands',
+      );
+
+      await tester.pumpWidget(_app(const SizedBox.shrink()));
+      await tester.pump();
+      gate.complete();
+      await settle(
+        tester,
+        until: () => observer.events.contains('disposed AsyncScope'),
+      );
+      audit.uninstall();
+
+      expect(routesOf(failure).single.$3, ScopeErrorRoute.observer);
+      expect(
+        audit.seenIn(SeenIn.flutterError).where((e) => identical(e, failure)),
+        hasLength(1),
       );
     });
 
