@@ -10,47 +10,55 @@
   zone; forwarding only `ScopeErrorRoute.observer` reports each failure once.
   An observer that overrides `onError` adds the parameter.
   `ScopeCompositeObserver` passes the route on unchanged, and
-  `ScopePrintObserver` prints the same line as before.
-* **Behaviour change:** every failed disposal step of a
-  `ScopeAutoDependencies` tree is reported to `FlutterError`, where it fails,
-  and its `onError` says `ScopeErrorRoute.flutterError`. It used to be one
-  report per tree: the walk goes on past a failed step and lets out only the
-  first failure, so a tree with two disposers that threw gave one report, and
-  the second failure reached the observer and the state of the tree and no
-  further — while `ScopeDependencyGroup.onUnmount` and the teardown stages of
-  `AsyncScope` already reported each failure with no caller left to be raised
-  at. A teardown with N failed steps now gives N reports, each named with the
-  path of its step, and the failure that leaves the walk is not reported a
-  second time. A step that fails with `Cancelled` says
-  `ScopeErrorRoute.cancellation` and is not reported. A walk driven by hand
-  through `root.dispose()` reports its failed steps the same way, the first
-  one included, and that one is still thrown to whoever drove the walk: its
-  route is `ScopeErrorRoute.flutterError`, because whether a failure goes on
-  to a caller is not known at the step. The package has already reported it,
-  so whoever drives the walk need not report what `root.dispose()` throws.
+  `ScopePrintObserver` prints the same line as before. The `debug` topic has
+  the table of routes, and the few cases where a route does not tell the whole
+  story.
+* **Behaviour change:** every failed disposal step of a `ScopeAutoDependencies`
+  tree is reported to `FlutterError`, where it fails, and its `onError` says
+  `ScopeErrorRoute.flutterError`. It used to be one report per tree: the walk
+  goes on past a failed step and lets out only the first failure, so a tree
+  with two disposers that threw gave one report, and the second failure reached
+  the observer and the state of the tree and no further — while
+  `ScopeDependencyGroup.onUnmount` and the teardown stages of `AsyncScope`
+  already reported each failure with no caller left to be raised at. A teardown
+  with N failed steps now gives N reports, each named with the path of its
+  step, and the failure that leaves the walk is not reported a second time. A
+  step that fails with `Cancelled` says `ScopeErrorRoute.cancellation` and is
+  not reported. A walk driven by hand through `root.dispose()` reports its
+  failed steps the same way, the first one included, and that one is still
+  thrown to whoever drove the walk: its route is
+  `ScopeErrorRoute.flutterError`, because whether a failure goes on to a caller
+  is not known at the step. The package has already reported it, so whoever
+  drives the walk need not report what `root.dispose()` throws.
 * **Behaviour change:** while `ScopeConfig.observer` is set, a failure of a
   child job of an initialization that nobody read no longer goes to
   `FlutterError`: the observer has it, with `ScopeErrorRoute.observer`, and
   that route is final. The kernel asks for an answer to such a failure only
-  once the child has ended unread, after the observer has been told, and
-  scopo answered it with a `FlutterError` report, so the failure reached
-  both. scopo's answer now leaves out a failure the observer was told goes
-  nowhere else. The same holds for an object the observer was told
-  with `ScopeErrorRoute.observer` and that is thrown again later, by
-  `ctx.unattended` work for instance. Without an observer it is reported to
-  `FlutterError` as before: nobody else has heard it. The route of every
-  other error of the initialization job follows what the kernel says it does
-  next: the errors it answers for — those of `ctx.onDispose` and the rest of
-  its cleanup stack, of `ctx.onCancel` and `whenFinished` callbacks, of late
+  once the child has ended unread, after the observer has been told, and scopo
+  used to answer with a `FlutterError` report, so the failure reached both.
+  scopo's answer now leaves out a failure the observer was told goes nowhere
+  else, and so it does for an object the observer was told with
+  `ScopeErrorRoute.observer` that is thrown again later, by `ctx.unattended`
+  work for instance. Any observer counts, an empty `ScopeCompositeObserver`
+  included. Without an observer the failure is reported to `FlutterError` as
+  before: nobody else has heard it. The other errors of the initialization job
+  are reported as before, and their route follows what the kernel says it does
+  next: those it answers for — of `ctx.onDispose` and the rest of its cleanup
+  stack, of `ctx.onCancel` and `whenFinished` callbacks, of late
   `ctx.abandonable` actions and `ctx.unattended` work, and a failure of the
-  body after its cancellation — say `ScopeErrorRoute.flutterError` and are
-  reported as before; a `Cancelled`, and an error `Job.isCancellationError`
-  names on a cancelled job, says `ScopeErrorRoute.cancellation` and is not
-  reported.
-* **Breaking:** requires `async_job` ^0.4.0, whose `JobObserver.onError`
-  says, through `JobErrorAnswer`, what the job does with the error next.
-  scopo re-exports `JobObserver`, so a `JobObserver` that overrides `onError`
-  adds `{required JobErrorAnswer answer}`. `JobErrorAnswer` is exported from
+  body after its cancellation — say `ScopeErrorRoute.flutterError`.
+* `ScopeErrorRoute.cancellation` is what a cancellation says when it reaches
+  `onError`: a `Cancelled` thrown by a cleanup or a callback of the
+  initialization job or by a disposal step of a dependency tree, and an error
+  that `Job.isCancellationError` names on a cancelled job. None of them goes
+  anywhere else, and a crash reporter that forwards `ScopeErrorRoute.observer`
+  alone leaves them out. A body that gives itself up with `Cancelled` has
+  failed like any other: it says `ScopeErrorRoute.observer` and shows in
+  `buildOnError`.
+* **Breaking:** requires `async_job` ^0.4.0, whose `JobObserver.onError` says,
+  through `JobErrorAnswer`, what the job does with the error next. scopo
+  re-exports `JobObserver`, so a `JobObserver` that overrides `onError` adds
+  `{required JobErrorAnswer answer}`. `JobErrorAnswer` is exported from
   `package:scopo`.
 
 ## 0.18.0

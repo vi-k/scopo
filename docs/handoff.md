@@ -74,6 +74,12 @@
    `ScopeCompositeObserver` тоже уводит сбой ребёнка из `FlutterError`.
    Оба описываются в задаче 6 как остаток, не чинятся.
 
+   Смежная находка задачи 6, до этой работы было так же: `Cancelled`,
+   брошенный `disposeScope` у `AsyncScope`, идёт дорогой разборки (`take`
+   в `async_scope_core.dart`) — маршрут `flutterError` и отчёт во
+   `FlutterError`, хотя `Cancelled` из `dep.dispose` и `ctx.onDispose`
+   отчёта не даёт. Вопрос владельцу: считать ли его отменой.
+
    Владелец 2026-10-25: признак в хуки solo не передавать; у
    `root.dispose()`, ведомого руками, первый сбой уходит и во `FlutterError`
    (маршрут `flutterError`), и ведущему — описать как остаток, как

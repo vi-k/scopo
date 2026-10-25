@@ -181,7 +181,11 @@ fail, and the scope is ready all the same. `FlutterError.reportError` gets only
 what nobody else is left to be handed. An error your app has declared a
 cancellation through `Job.isCancellationError` is not one of those while the
 initialization is being cancelled: an operation that stops at its token with an
-error of its own is heard by the observer and leaves the console alone.
+error of its own is heard by the observer and leaves the console alone. The one
+exception is a body that failed while a cleanup it registered was still
+running, and whose outcome the cancellation then took over: the observer does
+not hear that failure either — see the `debug` topic, section `onError` and
+`ScopeErrorRoute`.
 
 ## Disposal, in order
 

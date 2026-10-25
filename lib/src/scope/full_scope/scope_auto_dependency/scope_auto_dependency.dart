@@ -102,7 +102,7 @@ abstract class ScopeAutoDependencies<T extends ScopeAutoDependencies<T, C>,
   /// and the observer is told so in the route.
   ///
   /// A cancellation is not a failure, and goes no further than the observer,
-  /// as it does on every other road out of this package.
+  /// as it does from `dep.dispose` and `ctx.onDispose`.
   void _reportFailedStep(String path, Object error, StackTrace stackTrace) {
     final carried = _carried(error);
     final isCancellation = carried is Cancelled;
@@ -557,11 +557,11 @@ abstract class ScopeAutoDependencies<T extends ScopeAutoDependencies<T, C>,
     }
 
     void reportFailure(Object error, StackTrace stackTrace) {
-      // A cancellation stops at the observer here, as it does on every other
-      // road out of this package: "a cancellation is a decision somebody
-      // made, not a failure, and none of them reaches the zone". It is told
-      // apart first, because both the route below and the report after it
-      // depend on the answer. It arrives wrapped in a
+      // A cancellation stops at the observer here, as it does from
+      // `ctx.onDispose` and the disposers of `dep`: "a cancellation is a
+      // decision somebody made, not a failure, and none of them reaches the
+      // zone". It is told apart first, because both the route below and the
+      // report after it depend on the answer. It arrives wrapped in a
       // [ScopeDependencyException] when the walk was the package's own,
       // which is why this road went on missing it while
       // `ctx.onDispose` learned the rule -- a consumer who moved the same

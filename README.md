@@ -825,6 +825,46 @@ look into. Only the report goes: the wait still gives up on time, the scope
 still goes on, and the observer still hears the expiry with the very
 `TimeoutException` the report would have carried.
 
+### Reporting each failure once
+
+An observer is the natural place to send failures to a crash reporter, and an
+observer that sends every `onError` there reports many of them twice. A failure
+nobody is left to be handed — a teardown that failed after the scope left the
+tree, a build that threw — is also reported through `FlutterError.reportError`,
+and an application that reports crashes usually listens at
+`FlutterError.onError` as well. Other failures reach the observer and nothing
+else: an initialization that failed is on the screen through its error branch,
+and the observer is the only one told. Dropping the failures that look like
+repeats loses those.
+
+`onError` says which is which in its `route`, a `ScopeErrorRoute` that names
+where else the failure goes — `observer` (nowhere else), `flutterError`,
+`zone`, `caller` (the code that called `close()`) or `cancellation` (no failure
+at all) — and is final when the hook is called. Forward `observer` and nothing
+else:
+
+```dart
+final class CrashReporter extends ScopeObserver {
+  const CrashReporter();
+
+  @override
+  void onError(
+    ScopeObservable target,
+    ScopePhase phase,
+    ScopeErrorRoute route,
+    Object error,
+    StackTrace? stackTrace,
+  ) {
+    if (route != ScopeErrorRoute.observer) return;
+
+    crashlytics.recordError(error, stackTrace, reason: phase.name);
+  }
+}
+```
+
+The `debug` topic has the table of routes, and the few cases where a route does
+not tell the whole story.
+
 ## Testing
 
 The same observer that prints in an app records in a test, which turns the

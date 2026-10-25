@@ -39,6 +39,7 @@ const readme = DocManifest(
     'closing-in-place/CloseDatabaseButton': _library,
     'observing-and-configuration/main':
         DocEnvironment('$_dependencies\n$_state\n$_app', _application),
+    'observing-and-configuration/CrashReporter': _library,
     'testing/late-recordingobserver-observe': DocEnvironment(
       // The test runner supplies these registration callbacks.
       'void example(void Function(void Function()) setUp, '
@@ -156,4 +157,10 @@ class SharedPreferences {
 }
 
 class RecordingObserver extends ScopeObserver {}
+
+final crashlytics = Crashlytics();
+class Crashlytics {
+  void recordError(Object error, StackTrace? stackTrace,
+      {required String reason}) {}
+}
 ''';

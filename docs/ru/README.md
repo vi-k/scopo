@@ -1,6 +1,6 @@
 # scopo
 
-> Перевод `README.md` (blob `5e413f743fac2b73ab4a93ad9cbd0dfca10dffad`).
+> Перевод `README.md` (blob `9c0b532ad9ae6b0ac551529b259523d4f54b4646`).
 > Правится в том же коммите, что и оригинал; проверка — `sh docs/ru/check.sh`.
 
 [![pub version](https://img.shields.io/pub/v/scopo)](https://pub.dev/packages/scopo)
@@ -837,6 +837,46 @@ void main() {
 и падением, которое надо разбирать. Уходит только отчёт: ожидание по-прежнему
 сдаётся вовремя, скоуп по-прежнему идёт дальше, а наблюдатель по-прежнему
 слышит истечение — с той самой `TimeoutException`, которую нёс бы отчёт.
+
+### Сообщать о каждом отказе один раз
+
+Наблюдатель — естественное место, откуда слать отказы в трекер падений,
+и наблюдатель, который шлёт туда каждый `onError`, о многих из них сообщает
+дважды. Об отказе, который отдать больше некому, — о разборе, упавшем после
+того, как скоуп ушёл с дерева, о сборке, которая бросила, — сообщается ещё
+и через `FlutterError.reportError`, а приложение, которое собирает падения,
+обычно слушает и `FlutterError.onError`. Другие отказы доходят до наблюдателя
+и больше никуда: упавшую инициализацию видно на экране через её ветку ошибки,
+а сказано о ней только наблюдателю. Если отбрасывать отказы, похожие
+на повторы, пропадут именно они.
+
+`onError` говорит, где какой, в своём `route` — `ScopeErrorRoute`, который
+называет, куда ещё уходит отказ: `observer` (больше никуда), `flutterError`,
+`zone`, `caller` (код, вызвавший `close()`) или `cancellation` (это вовсе
+не отказ), — и к вызову хука маршрут окончателен. Передавайте дальше `observer`
+и больше ничего:
+
+```dart
+final class CrashReporter extends ScopeObserver {
+  const CrashReporter();
+
+  @override
+  void onError(
+    ScopeObservable target,
+    ScopePhase phase,
+    ScopeErrorRoute route,
+    Object error,
+    StackTrace? stackTrace,
+  ) {
+    if (route != ScopeErrorRoute.observer) return;
+
+    crashlytics.recordError(error, stackTrace, reason: phase.name);
+  }
+}
+```
+
+В теме `debug` — таблица маршрутов и те немногие случаи, где маршрут говорит
+не всё.
 
 ## Тестирование
 

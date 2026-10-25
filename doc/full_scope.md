@@ -484,12 +484,15 @@ once the whole teardown is over. For a scope taken off the tree, it is reported
 through `FlutterError.reportError` instead. Subsequent failures of those steps
 are reported through `FlutterError.reportError` too.
 
-`ScopeAutoDependencies.dispose` handles tree failures itself: it reports the
-failure raised by the root walk through `FlutterError.reportError` and does not
-rethrow it. Even when two leaves fail, that is one report for the failed tree.
-A successful `await close()` does not mean that every automatic dependency was
-released successfully. All leaf failures remain available in
-`flattenDependenciesWithErrors()` and through `ScopeConfig.observer.onError`.
+`ScopeAutoDependencies.dispose` handles tree failures itself and does not
+rethrow them: each failed disposal step is reported through
+`FlutterError.reportError` where it fails, once, so two leaves that fail give
+two reports. A step that fails with `Cancelled` is not reported. A successful
+`await close()` does not mean that every automatic dependency was released
+successfully. Every failed step remains available in
+`flattenDependenciesWithErrors()` and through `ScopeConfig.observer.onError`. A
+group that fails before it reaches any child is no step: it is reported, and
+the observer is not told of it.
 
 `close()` starts that same teardown while the scope is still on screen: the
 ready subtree is frozen into a screenshot, `buildOnClosing` is shown on top of

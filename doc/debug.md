@@ -33,14 +33,25 @@ final class CrashReporter extends ScopeObserver {
     ScopeErrorRoute route,
     Object error,
     StackTrace? stackTrace,
-  ) =>
-      crashlytics.recordError(
-        error,
-        stackTrace,
-        reason: '${target.debugLabel}: ${phase.name}',
-      );
+  ) {
+    // Any other route: somebody else has the failure, or it is no failure.
+    if (route != ScopeErrorRoute.observer) return;
+
+    crashlytics.recordError(
+      error,
+      stackTrace,
+      reason: '${target.debugLabel}: ${phase.name}',
+    );
+  }
 }
 ```
+
+It forwards only what `route` says goes nowhere else. The rest is somebody
+else's: `FlutterError.onError` or the zone has it, and the crash reporting of
+an application usually listens there already, or the code that called `close()`
+is handed it. Forwarding that as well would report it twice. What says
+`cancellation` is no failure at all. See "`onError` and `ScopeErrorRoute`"
+below.
 
 `ScopeObserver` is an ordinary class: a subclass needs no class modifier, and a
 test double can implement it. Extend it for an ordinary observer so that new
@@ -85,7 +96,7 @@ fails" below.
 | `onDisposalStepStarted(target, path)` | one step of it has begun |
 | `onDisposalProgress(target, path)` | one step of it is done |
 | `onDisposed(target)` | a teardown has finished |
-| `onError(target, phase, error, stackTrace)` | something failed |
+| `onError(target, phase, route, error, stackTrace)` | something failed |
 | `onTimeout(target, what, error, stackTrace)` | a bounded wait expired |
 | `onTrace(target, message)` | a step of the machinery below the lifecycle |
 
@@ -294,17 +305,89 @@ of them, over a list it has already cleared, so a throw there would cost every
 scope behind this one the teardown it is owed. Both channels still carry the
 failure; neither of them is the throw.
 
-`ScopeAutoDependencies.dispose` handles tree failures itself and does not
-rethrow them: `FlutterError.reportError` gets one report for the failed tree,
-even if several leaves failed. A successful `await close()` therefore does not
-prove that every automatic dependency was released successfully. All leaf
-failures are available in `flattenDependenciesWithErrors()` and through
-`onError`.
+`ScopeAutoDependencies.dispose` does not rethrow a failure of its tree. Each
+failed disposal step is reported through `FlutterError.reportError` where it
+fails, once, and its `onError` carries the failure named with the path of the
+step and says `ScopeErrorRoute.flutterError` — so a tree where two leaves
+failed gives two reports. A step that fails with `Cancelled` says
+`ScopeErrorRoute.cancellation` and is not reported. A successful
+`await close()` therefore does not prove that every automatic dependency was
+released successfully. Every failed step is available in
+`flattenDependenciesWithErrors()` and through `onError`. A group that fails
+before it reaches any child is no step: it is reported, and the observer is not
+told of it.
 
-An error reaching `onError` is never the only way it is reported: a scope also
-hands its initialization failures to `buildOnError`, and the failures nobody
-else can be handed go to `FlutterError.reportError`. Leaving
-`ScopeConfig.observer` at `null` therefore hides no error completely.
+### `onError` and `ScopeErrorRoute`
+
+An observer that sends every `onError` to a crash reporter reports many
+failures twice. A failure nobody is left to be handed — a teardown that failed
+after the scope left the tree, a build that threw — is also reported through
+`FlutterError.reportError`, and the crash reporting of an application usually
+listens at `FlutterError.onError` as well. `route` says where else the failure
+goes, and it is known by the time `onError` is called:
+
+| `ScopeErrorRoute` | who else has the failure | for instance |
+| --- | --- | --- |
+| `observer` | nobody: the observer is the only one told | an `initScope` that threw, a `Cancelled` included, or an `initDependencies` that threw; a failure of a child job that the body caught, or that nobody read |
+| `flutterError` | `FlutterError.onError`, through a report of the package or of Flutter's build error boundary | a build or a synchronous `init()` that threw; a teardown failure with no caller left; a late release; a failed cleanup, callback or late work of the initialization job |
+| `zone` | the zone the scope runs in, as an uncaught error | an `initStateAsync` of a `LiteScopeState` or a `ScopeState` that threw; an `AsyncScope` that failed before its initialization started |
+| `caller` | the code that called `close()`: its `Future` completes with the failure | the first failure of a teardown that `close()` began |
+| `cancellation` | nobody, since it is not a failure | a `Cancelled` thrown by a cleanup or a callback of the initialization job, or by a disposal step of a dependency tree; an error that `Job.isCancellationError` names on a cancelled job |
+
+So a crash reporter forwards `ScopeErrorRoute.observer` and nothing else, as
+`CrashReporter` above does, and each failure is reported once. `caller` is your
+own code: whatever called `close()` is handed the failure, and reports it if it
+wants to. The enum can grow too, and a `switch` over it wants a `default`
+branch.
+
+Leaving `ScopeConfig.observer` at `null` hides no failure completely. An
+initialization that failed still shows in `buildOnError`, and a failure of a
+child job that nobody read, which goes to the observer alone while there is
+one, is reported through `FlutterError.reportError` instead.
+
+The route is final when `onError` is called, and in seven cases it still does
+not tell the whole story:
+
+- **a `close()` that joins a teardown the tree began.** A scope taken off the
+  tree has begun its teardown, so the first failure of that teardown says
+  `flutterError` and is reported. A `close()` called on the scope after that
+  shares the teardown, and the `Future` it returns completes with the same
+  failure. Code that reports what its `close()` throws reports that one a
+  second time;
+- **a dependency tree disposed of by hand.** `root.dispose()` on the tree of a
+  `ScopeAutoDependencies` walks it the way the container does: every failed
+  step is reported and says `flutterError`, the first one included — and
+  `root.dispose()` also throws that first one to you. It has been reported
+  already, so the code that drives the walk need not report what it throws;
+- **a `Cancelled` thrown by `disposeScope`.** It says `flutterError` and is
+  reported, as any other failure of that stage is. A crash reporter that
+  listens at `FlutterError.onError` receives it as a failure;
+- **`ignoreFailure()` called late on a cancelled child.** A child job whose
+  body fails after the child was cancelled says `flutterError`, and the report
+  comes once the child has ended. A `child.ignoreFailure()` your code calls in
+  between — after the failure, before the child ends — takes that report away.
+  The failure then reaches the observer alone, under a route that says
+  otherwise, and a crash reporter that forwards `observer` never sees it;
+- **a failure your app calls a cancellation, raised before the cancellation.**
+  When the body of an initialization fails while a cleanup it registered is
+  still running, and the scope is taken off the tree before that cleanup ends,
+  the cancellation takes over the outcome: the failure then says
+  `flutterError`, with `ScopePhase.initializationCancellation`, and is
+  reported. If `Job.isCancellationError` names that failure, `onError` is not
+  called for it at all, not even with `cancellation`. An observer that counts
+  what failed does not see it;
+- **two failures that end alike, and two routes.** A body failure covered by
+  the cancellation, as above, says `flutterError`. A failure of a child job
+  that the body let out, covered by the cancellation the same way, says
+  `observer`, with `ScopePhase.initialization`: the observer heard it from the
+  child before anything was settled, was told that it goes nowhere else, and it
+  is not reported. Forwarded by route, each is reported once — but a log or a
+  test that expects both in `FlutterError.onError` finds only the first there;
+- **an observer is there even when it does nothing.** A failure of a child job
+  that nobody read says `observer` and is kept out of `FlutterError` whenever
+  `ScopeConfig.observer` is set: the package does not look behind it. An empty
+  `ScopeCompositeObserver` keeps the failure out the same way, and then nobody
+  has it. With `ScopeConfig.observer` at `null` the failure is reported.
 
 ### What `onTimeout` covers
 

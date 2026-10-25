@@ -174,8 +174,12 @@ final class _ScopeInitObserver extends JobObserver with JobAnswerer {
       // tells the observer then. Any other job's outcome is settled by
       // nobody here, so a child of the caller's own is told at once. A
       // cancellation arriving while the cleanup unwinds can take the outcome
-      // over, and then the failure has nobody -- which is exactly when the
-      // kernel hands it to [onUnanswered], where it is told after all.
+      // over, and then the failure has nobody -- which is when the kernel
+      // hands it to [onUnanswered], where it is told after all. Unless the
+      // app's `Job.isCancellationError` names it: then the kernel asks
+      // nobody, this hook is not called again, and the scope observer never
+      // hears of the failure at all. A gap left as it is, and described in the
+      // debug topic.
       return;
     }
 

@@ -79,6 +79,14 @@ enum ScopeErrorRoute {
   /// build, a synchronous `init()` hook that threw — and `onInitialized` of a
   /// state whose `initStateAsync` returned synchronously inside a build, which
   /// runs after the frame and throws into the scheduler.
+  ///
+  /// A failed disposal step of a `ScopeAutoDependencies` tree says this,
+  /// unless it failed with a cancellation, and so it does when the application
+  /// walks that tree by hand through `root.dispose()`: the first failure
+  /// included, although `root.dispose()` also throws that one to its caller.
+  /// Whether a failure goes on to a caller is not known at the step. The
+  /// package has reported it, so whoever drives the walk need not report what
+  /// `root.dispose()` throws.
   flutterError,
 
   /// An uncaught error of the zone the scope runs in.
@@ -91,6 +99,13 @@ enum ScopeErrorRoute {
 
   /// Thrown to whoever called — today that is `close()`, and what its caller
   /// does with the failure is up to them.
+  ///
+  /// Not said for every failure a caller is handed. `root.dispose()` of a
+  /// `ScopeAutoDependencies` tree, driven by hand, throws its first failure
+  /// while that failure says [flutterError] and has been reported already. And
+  /// a `close()` that joins a teardown the scope began when it left the tree
+  /// is handed the first failure of that teardown, which says [flutterError]
+  /// too.
   caller,
 
   /// Not a failure: a cancellation, which nobody reports.
