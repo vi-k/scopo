@@ -1009,9 +1009,10 @@ void main() {
   });
 
   // The kernel hands this observer errors of two roads. One asks for an
-  // answer at once -- cleanup, callbacks, late work -- and says so through
-  // `answered`; the other is the failure of a child, whose answer, if any,
-  // comes once nobody has read the outcome. For that one the route is
+  // answer at once -- cleanup, callbacks, late work -- and says so with
+  // `JobErrorAnswer.answered`; the other is the failure of a child, told with
+  // `JobErrorAnswer.later`, whose answer, if any, comes once nobody has read
+  // the outcome. For that one the route is
   // `observer`, and it stays final: an answer that comes later does not send
   // it to `FlutterError` after all while an observer is there to have heard
   // it. That is 1a of `2026-10-24[3]-observer-error-route-design.md`.
@@ -1155,6 +1156,35 @@ void main() {
         reason: 'the observer was told the route is final, and a crash '
             'reporter that forwards `observer` has it already',
       );
+
+      await takeDown(tester, 'AsyncScope');
+    });
+
+    // `JobErrorAnswer.never`: the kernel will not ask about it, and it is no
+    // cancellation, so the observer is the only one to hear it.
+    testWidgets('a child whose failure is ignored: observer', (tester) async {
+      final failure = StateError('child failed, and nobody minds');
+      audit.install();
+
+      await tester.pumpWidget(
+        _app(
+          _asyncScope(
+            initScope: (context, ctx) async {
+              final child = Job.deferred<void>((_) async {
+                await Future<void>.value();
+                throw failure;
+              });
+              ctx.start(child);
+              child.ignoreFailure();
+            },
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      audit.verify(observer.routes);
+      expect(routesOf(failure).single.$3, ScopeErrorRoute.observer);
+      expect(audit.seenIn(SeenIn.flutterError), isEmpty);
 
       await takeDown(tester, 'AsyncScope');
     });

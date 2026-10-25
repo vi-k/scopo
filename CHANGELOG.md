@@ -31,10 +31,11 @@
 * **Behaviour change:** while `ScopeConfig.observer` is set, a failure of a
   child job of an initialization that nobody read no longer goes to
   `FlutterError`: the observer has it, with `ScopeErrorRoute.observer`, and
-  that route is final. The kernel used to ask for an answer to such a failure
-  only once the child had ended unread — after the observer had already been
-  told — so the route could not be known when `onError` was called, and the
-  failure reached both. The same holds for an object the observer was told
+  that route is final. The kernel asks for an answer to such a failure only
+  once the child has ended unread, after the observer has been told, and
+  scopo answered it with a `FlutterError` report, so the failure reached
+  both. scopo's answer now leaves out a failure the observer was told goes
+  nowhere else. The same holds for an object the observer was told
   with `ScopeErrorRoute.observer` and that is thrown again later, by
   `ctx.unattended` work for instance. Without an observer it is reported to
   `FlutterError` as before: nobody else has heard it. The route of every
@@ -46,8 +47,11 @@
   reported as before; a `Cancelled`, and an error `Job.isCancellationError`
   names on a cancelled job, says `ScopeErrorRoute.cancellation` and is not
   reported.
-* Requires `async_job` ^0.4.0, whose `JobObserver.onError` says, through
-  `JobErrorAnswer`, what the job does with the error next.
+* **Breaking:** requires `async_job` ^0.4.0, whose `JobObserver.onError`
+  says, through `JobErrorAnswer`, what the job does with the error next.
+  scopo re-exports `JobObserver`, so a `JobObserver` that overrides `onError`
+  adds `{required JobErrorAnswer answer}`. `JobErrorAnswer` is exported from
+  `package:scopo`.
 
 ## 0.18.0
 

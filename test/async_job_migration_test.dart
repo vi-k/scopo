@@ -1169,8 +1169,9 @@ void main() {
     });
   }
 
-  // The three names below come from `package:scopo` alone: a consumer reads
-  // these outcomes and writes these observers without importing the kernel.
+  // The names below come from `package:scopo` alone: a consumer reads these
+  // outcomes and writes these observers -- `onError` with its
+  // `JobErrorAnswer` included -- without importing the kernel.
   testWidgets('a child that timed out is named in what the screen receives',
       (tester) async {
     Object? shownError;
@@ -1284,8 +1285,10 @@ void main() {
     await tester.pumpAndSettle();
 
     // Nobody reads the child, so its failure is unanswered -- and its own
-    // observer, not the scope's, is the one the kernel asks.
+    // observer, not the scope's, is the one the kernel asks. It heard the
+    // failure first, while the outcome could still be read.
     expect(find.text('ready'), findsOneWidget);
+    expect(own.answers, [JobErrorAnswer.later]);
     expect(own.unanswered, [failure]);
     expect(observer.errors, isEmpty);
     expect(tester.takeException(), isNull);
@@ -1327,7 +1330,17 @@ final class _Stopped implements Exception {
 }
 
 final class _Answering extends JobObserver with JobAnswerer {
+  final answers = <JobErrorAnswer>[];
   final unanswered = <Object>[];
+
+  @override
+  void onError(
+    Job<Object?> job,
+    Object error,
+    StackTrace stackTrace, {
+    required JobErrorAnswer answer,
+  }) =>
+      answers.add(answer);
 
   @override
   void onUnanswered(Job<Object?> job, Object error, StackTrace stackTrace) =>

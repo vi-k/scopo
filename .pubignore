@@ -70,3 +70,6 @@ build/
 # FVM Version Cache
 .fvm/
 .fvmrc
+
+# Local dependency overrides: a path to an unpublished sibling, never shipped.
+pubspec_overrides.yaml

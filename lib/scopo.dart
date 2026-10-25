@@ -15,6 +15,7 @@ export 'package:async_job/async_job.dart'
         Job,
         JobAnswerer,
         JobContext,
+        JobErrorAnswer,
         JobObserver,
         ManualCancelReason,
         Outcome,

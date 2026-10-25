@@ -148,7 +148,10 @@ final class _ScopeInitObserver extends JobObserver with JobAnswerer {
   // [answer] is the kernel saying what it does with the error next, and the
   // route follows from it. [JobErrorAnswer.answered]: it asks [onUnanswered]
   // -- right away for cleanup, callbacks and late work, at the end for the
-  // body of a job already cancelled -- so the route is `FlutterError`.
+  // body of a job already cancelled -- so the route is `FlutterError`. The
+  // one leftover is the kernel's to set: for the body of a cancelled job, a
+  // `Job.ignoreFailure()` called after this hook takes that answer away, and
+  // then the route says `FlutterError` and no report comes.
   // [JobErrorAnswer.cancellation]: nobody reports it, the app's
   // `Job.isCancellationError` included. [JobErrorAnswer.later]: the outcome
   // may still be read, so this call is the only one that may tell the
