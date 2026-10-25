@@ -48,9 +48,11 @@
    Задача 3 (5a, каждый шаг разборки контейнера во `FlutterError`):
    `a9d01c4`, `98c39c8`. Задача 4 (ядро) сделана в solo: ветка
    `observer-answer`, копия
-   `~/development/my/solo/.claude/worktrees/observer-answer`, не влита
-   и не отправлена; после решения владельца 2026-10-25 там перечисление
-   `JobErrorAnswer { answered, cancellation, later, never }` и
+   `~/development/my/solo/.claude/worktrees/observer-answer` (на неё ведут
+   overrides scopo); по слову владельца 2026-10-25 влита в `main` solo
+   и отправлена, подготовка 0.4.0 там же — `877fc84c`, запись solo
+   `2026-10-25-release-prep-report.md`; после решения владельца там
+   перечисление `JobErrorAnswer { answered, cancellation, later, never }` и
    `JobObserver.onError(..., {required JobErrorAnswer answer})` (см. шапку
    `docs/records/2026-10-24[3]-observer-error-route-design.md`), коммиты
    до `12904bdb`. Задача 5 (маршрут в `_ScopeInitObserver`): `4080432`,
