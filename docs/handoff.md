@@ -48,6 +48,12 @@
 - Ломающая правка, включая переименование и новый вариант публичного enum,
   требует минимум минорного бампа у 0.x. Перед переименованием скажи это
   владельцу. Публикация — только отдельная связка по `AGENTS.md` §5.
+- `listen`/`select` на `Listenable` живут во втором импорте,
+  `package:scopo/listenable.dart`, а не в главном (0.18.0, «давай перенесём»;
+  «удалить совсем» отвергнуто): в главном они конфликтуют
+  с `package:flutter_solo/listenable.dart`. Держит
+  `test/listenable_import_test.dart`, разбор —
+  `docs/records/2026-10-23[12]-listenable-import-design.md`.
 - Смена владеющего конструктора на `.value` у `ScopeModel`/`ScopeNotifier`
   запрещена ассертом. `State.dispose` у `LiteScopeState`/`ScopeState` закрыт
   от переопределения; синхронный разбор — в `onUnmount`.
@@ -87,6 +93,9 @@
 
 ## Действующие границы и грабли
 
+- Ядро после `onError` наблюдателя шлёт ошибку ещё и в зону, поэтому
+  `_ScopeInitObserver` — `JobAnswerer`; без этого сбой доходит дважды, и видно
+  это только прогоном.
 - Ожидание `_initCompleter.future` не получило отдельного лимита по решению
   владельца: очередь за `scopeKey` будит `entry.cancel`, а инициализацию
   состояния снаружи ограничивает `disposeScopeTimeout`.
@@ -178,6 +187,9 @@ found!`; format — 130 файлов, 0 changed; dartdoc — 0 warnings, 0 error
 форма A (хуки принимают ошибку) остаётся возможным продолжением:
 `docs/records/2026-09-07[1]-timeout-diagnostics-design.md`. Остатки маршрута
 ошибки (пункт 3 выше) — кандидаты, если владелец захочет их закрыть.
+Мелкое, отложено: тесты местами ещё оборачивают в `await runZonedGuarded`;
+`test/scope_step_entry_test.dart:219` шумит в консоль; в ядре нет теста на один
+объект ошибки дважды с разными вердиктами фильтра.
 
 Перед публикацией читать `AGENTS.md` §5 целиком. Авторизация macOS —
 `~/Library/Application Support/dart/pub-credentials.json`; `pub logout` удаляет
