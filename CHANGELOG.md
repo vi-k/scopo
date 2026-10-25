@@ -37,16 +37,23 @@
   once the child has ended unread, after the observer has been told, and scopo
   used to answer with a `FlutterError` report, so the failure reached both.
   scopo's answer now leaves out a failure the observer was told goes nowhere
-  else, and so it does for an object the observer was told with
-  `ScopeErrorRoute.observer` that is thrown again later, by `ctx.unattended`
-  work for instance. Any observer counts, an empty `ScopeCompositeObserver`
-  included. Without an observer the failure is reported to `FlutterError` as
-  before: nobody else has heard it. The other errors of the initialization job
-  are reported as before, and their route follows what the kernel says it does
-  next: those it answers for — of `ctx.onDispose` and the rest of its cleanup
-  stack, of `ctx.onCancel` and `whenFinished` callbacks, of late
-  `ctx.abandonable` actions and `ctx.unattended` work, and a failure of the
-  body after its cancellation — say `ScopeErrorRoute.flutterError`.
+  else. An object the observer was told with `ScopeErrorRoute.observer` that is
+  thrown again later — by `ctx.unattended` work, say, or as a `const` exception
+  a cleanup throws, or by the body that reads the child after its cancellation
+  — still reaches `FlutterError`, and the observer is not told of it again:
+  identity cannot tell the same failure from a second one, and a duplicate
+  report is better than a lost one. Any observer counts, an empty
+  `ScopeCompositeObserver` included, but one whose `onError` throws has heard
+  nothing, and the failure is reported to `FlutterError`. A
+  `ScopeCompositeObserver` always has heard: it catches what an observer inside
+  it throws and reports that instead. Without an observer the failure is
+  reported to `FlutterError` as before: nobody else has heard it. The other
+  errors of the initialization job are reported as before, and
+  their route follows what the kernel says it does next: those it answers for —
+  of `ctx.onDispose` and the rest of its cleanup stack, of `ctx.onCancel` and
+  `whenFinished` callbacks, of late `ctx.abandonable` actions and
+  `ctx.unattended` work, and a failure of the body after its cancellation — say
+  `ScopeErrorRoute.flutterError`.
 * `ScopeErrorRoute.cancellation` is what a cancellation says when it reaches
   `onError`: a `Cancelled` thrown by a cleanup or a callback of the
   initialization job or by a disposal step of a dependency tree, and an error

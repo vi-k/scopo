@@ -314,8 +314,9 @@ failed gives two reports. A step that fails with `Cancelled` says
 `await close()` therefore does not prove that every automatic dependency was
 released successfully. Every failed step is available in
 `flattenDependenciesWithErrors()` and through `onError`. A group that fails
-before it reaches any child is no step: it is reported, and the observer is not
-told of it.
+before it reaches any child is no step, and the observer is not told of it. It
+is reported when it is the first failure of the walk; behind another failure it
+is kept only in the state of the tree, in `flattenDependenciesWithErrors()`.
 
 ### `onError` and `ScopeErrorRoute`
 
@@ -345,7 +346,7 @@ initialization that failed still shows in `buildOnError`, and a failure of a
 child job that nobody read, which goes to the observer alone while there is
 one, is reported through `FlutterError.reportError` instead.
 
-The route is final when `onError` is called, and in seven cases it still does
+The route is final when `onError` is called, and in nine cases it still does
 not tell the whole story:
 
 - **a `close()` that joins a teardown the tree began.** A scope taken off the
@@ -359,9 +360,17 @@ not tell the whole story:
   step is reported and says `flutterError`, the first one included — and
   `root.dispose()` also throws that first one to you. It has been reported
   already, so the code that drives the walk need not report what it throws;
-- **a `Cancelled` thrown by `disposeScope`.** It says `flutterError` and is
-  reported, as any other failure of that stage is. A crash reporter that
-  listens at `FlutterError.onError` receives it as a failure;
+- **a group that fails behind another failure.** A group of a dependency tree
+  that fails before it reaches any child is no step: no step reports it, and
+  the observer is not told of it. When it is the first failure of the walk, the
+  container reports it as the failure that leaves the walk. When another
+  failure came first, that one leaves the walk, and the failure of the group is
+  kept only in the state of the tree: `flattenDependenciesWithErrors()` has it,
+  and neither `onError` nor `FlutterError.onError` does;
+- **a `Cancelled` thrown by a teardown hook of a scope**, such as
+  `disposeScope` or `onUnmount`. It says `flutterError` and is reported, as any
+  other failure of that stage is. A crash reporter that listens at
+  `FlutterError.onError` receives it as a failure;
 - **`ignoreFailure()` called late on a cancelled child.** A child job whose
   body fails after the child was cancelled says `flutterError`, and the report
   comes once the child has ended. A `child.ignoreFailure()` your code calls in
@@ -381,13 +390,30 @@ not tell the whole story:
   that the body let out, covered by the cancellation the same way, says
   `observer`, with `ScopePhase.initialization`: the observer heard it from the
   child before anything was settled, was told that it goes nowhere else, and it
-  is not reported. Forwarded by route, each is reported once — but a log or a
+  is not reported, unless the body takes it up again after its cancellation
+  (the next case). Forwarded by route, each is reported once — but a log or a
   test that expects both in `FlutterError.onError` finds only the first there;
+- **one object that fails twice.** The package tells failures apart by
+  identity, so a `const` exception — `throw const NetworkUnavailable()` — or a
+  cached error thrown again is one failure to it, however many times it is
+  thrown. The observer hears it once, with the first route. When a failure of a
+  child job said `observer` and the same object then fails a cleanup, a
+  callback or late work of the initialization job, or the body itself after the
+  scope was taken off the tree — reading the child, or throwing again what it
+  caught — whether it is the same failure thrown again or a second one, it is
+  reported through `FlutterError.reportError` as well, and the observer is not
+  told again. A duplicate is better than a loss: a crash reporter that forwards
+  `observer` and listens at `FlutterError.onError` gets that failure from both;
 - **an observer is there even when it does nothing.** A failure of a child job
   that nobody read says `observer` and is kept out of `FlutterError` whenever
-  `ScopeConfig.observer` is set: the package does not look behind it. An empty
-  `ScopeCompositeObserver` keeps the failure out the same way, and then nobody
-  has it. With `ScopeConfig.observer` at `null` the failure is reported.
+  `ScopeConfig.observer` is set, short of the case above: the package does not
+  look behind it. An empty `ScopeCompositeObserver` keeps the failure out the
+  same way, and then nobody has it. With `ScopeConfig.observer` at `null` the
+  failure is reported, and so it is when the `onError` of the observer throws:
+  that observer has heard nothing. A `ScopeCompositeObserver` has always heard,
+  though: it catches what an observer inside it throws and reports that, so the
+  failure stays out, and if the one that threw was the crash reporter, nobody
+  has it.
 
 ### What `onTimeout` covers
 
