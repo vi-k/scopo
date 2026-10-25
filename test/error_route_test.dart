@@ -143,6 +143,22 @@ void main() {
       });
     }
 
+    testWidgets('an initStateAsync of a ScopeState that throws: zone',
+        (tester) async {
+      audit.install();
+
+      await audit.runGuarded(() async {
+        await tester.pumpWidget(_app(const _Full(failInitState: true)));
+        await tester.pumpAndSettle();
+      });
+
+      audit.verify(observer.routes);
+      expect(observer.routes.single.$2, ScopePhase.initialization);
+      expect(observer.routes.single.$3, ScopeErrorRoute.zone);
+
+      await takeDown(tester, '_Full');
+    });
+
     // Reached right after the awaited `initStateAsync`, inside the discarded
     // future the initialization runs on.
     testWidgets('an onInitialized that throws after an awaited init: zone',
@@ -234,6 +250,28 @@ void main() {
       expect(observer.routes.single.$3, ScopeErrorRoute.observer);
 
       await takeDown(tester, '_Full');
+    });
+
+    // A body that gives itself up with `Cancelled` fails like any other: the
+    // cancellation route is for callbacks, cleanups and container steps.
+    testWidgets('an initScope that throws Cancelled: observer', (tester) async {
+      audit.install();
+
+      await tester.pumpWidget(
+        _app(
+          _asyncScope(
+            initScope: (context, ctx) async =>
+                throw const Cancelled('no session'),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      audit.verify(observer.routes);
+      expect(observer.routes.single.$2, ScopePhase.initialization);
+      expect(observer.routes.single.$3, ScopeErrorRoute.observer);
+
+      await takeDown(tester, 'AsyncScope');
     });
   });
 
@@ -569,6 +607,29 @@ void main() {
         expect(audit.seenIn(SeenIn.flutterError), isEmpty);
       });
     }
+
+    // Pins documented current behaviour, not an intended one: a `Cancelled`
+    // thrown by `disposeScope` is not told apart from any other failure of
+    // the stage, so the tree's teardown reports it.
+    testWidgets('a disposeScope that throws Cancelled: flutterError',
+        (tester) async {
+      await tester.pumpWidget(
+        _app(_asyncScope(disposeScope: () => throw const Cancelled('gone'))),
+      );
+      await tester.pumpAndSettle();
+      audit.install();
+
+      await takeDown(tester, 'AsyncScope');
+      await settle(
+        tester,
+        until: () => audit.seenIn(SeenIn.flutterError).isNotEmpty,
+      );
+
+      audit.verify(observer.routes);
+      expect(observer.routes.single.$2, ScopePhase.disposal);
+      expect(observer.routes.single.$3, ScopeErrorRoute.flutterError);
+      expect(observer.routes.single.$4, isA<Cancelled>());
+    });
   });
 
   group('FlutterError, for a late release', () {
@@ -838,7 +899,8 @@ void main() {
       expect(audit.seenIn(SeenIn.flutterError), hasLength(2));
     });
 
-    // Pins what `doc/debug.md` says of a failed step: the report names it.
+    // Pins what the `CHANGELOG.md` entry on every failed disposal step says:
+    // N reports, each named with the path of its step.
     test('the report of a failed step names the step', () async {
       await disposeOf(
         _Steps(
@@ -1021,6 +1083,12 @@ void main() {
         reason: 'the group of the new tree fails before it reaches any '
             'child, so no step reports it: the container is the only one '
             'that does',
+      );
+      expect(
+        observer.routes,
+        hasLength(1),
+        reason: 'nor is the observer told of it: the one route it has is the '
+            'step of the first tree',
       );
     });
   });
@@ -1273,7 +1341,8 @@ void main() {
       expect(routesOf(failure).single.$3, ScopeErrorRoute.flutterError);
     });
 
-    // Pins leftover (d) of the routes list in `doc/debug.md`.
+    // Pins "an observer is there even when it does nothing" in the routes
+    // list of `doc/debug.md`.
     testWidgets(
         'a child failure nobody read, with an empty composite observer: '
         'nothing in FlutterError', (tester) async {
@@ -1308,7 +1377,8 @@ void main() {
       );
     });
 
-    // Pins leftover (b) of the routes list in `doc/debug.md`.
+    // Pins "a failure your app calls a cancellation, raised before the
+    // cancellation" in the routes list of `doc/debug.md`.
     testWidgets(
         'a body failure the filter names, covered by a cancellation: no '
         'onError at all', (tester) async {
@@ -1348,8 +1418,9 @@ void main() {
       expect(audit.seenIn(SeenIn.zone), isEmpty);
     });
 
-    // Pins leftover (a) of the routes list in `doc/debug.md`: with the late
-    // `ignoreFailure()` the route says `flutterError` and no report comes.
+    // Pins "`ignoreFailure()` called late on a cancelled child" in the routes
+    // list of `doc/debug.md`: with the late `ignoreFailure()` the route says
+    // `flutterError` and no report comes.
     for (final ignored in [false, true]) {
       final how = ignored
           ? 'ignored late: no report after all'
@@ -1764,6 +1835,7 @@ final class _Full extends Scope<_Full, _Deps, _FullState> {
   /// Parks `initDependencies` on this, so the teardown gives up on it.
   final Completer<void>? gate;
   final bool failInit;
+  final bool failInitState;
   final bool failStateUnmount;
   final bool failStateDispose;
   final bool failDepsUnmount;
@@ -1772,6 +1844,7 @@ final class _Full extends Scope<_Full, _Deps, _FullState> {
   const _Full({
     this.gate,
     this.failInit = false,
+    this.failInitState = false,
     this.failStateUnmount = false,
     this.failStateDispose = false,
     this.failDepsUnmount = false,
@@ -1832,6 +1905,13 @@ final class _Deps implements ScopeDependencies {
 }
 
 final class _FullState extends ScopeState<_Full, _Deps, _FullState> {
+  @override
+  FutureOr<void> initStateAsync() {
+    if (params.failInitState) {
+      throw StateError('scope state init');
+    }
+  }
+
   @override
   void onUnmount() {
     if (params.failStateUnmount) {
