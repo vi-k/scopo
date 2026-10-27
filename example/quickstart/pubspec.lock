@@ -13,10 +13,10 @@ packages:
     dependency: transitive
     description:
       name: async_job
-      sha256: a71e876e9222d253f593f715d5531deb34bd6585fdaf0efa1e32beea5820950d
+      sha256: ff612a2b3241ec0903f5ea4bc333424f9d6025390742f1062a7d234f0b723692
       url: "https://pub.dev"
     source: hosted
-    version: "0.4.0"
+    version: "0.5.0"
   boolean_selector:
     dependency: transitive
     description:
@@ -129,7 +129,7 @@ packages:
       path: "../.."
       relative: true
     source: path
-    version: "0.19.0"
+    version: "0.20.0"
   sky_engine:
     dependency: transitive
     description: flutter

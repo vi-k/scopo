@@ -1,3 +1,15 @@
+## 0.20.0
+
+* **Breaking:** requires `async_job` ^0.5.0, whose `JobContext` gains
+  `child(body, key:, describe:, timeout:)`: an unstarted child that the engine
+  of the job accepts, for `ctx.run`, `ctx.start` or `ctx.runAll`.
+  `ScopeInitContext` inherits it. In an initialization the child is a
+  `Job.deferred`, so its body receives a `JobContext`, not a
+  `ScopeInitContext`, and has no `progress`. A class that implements
+  `ScopeInitContext` itself adds `child`, and an extension on
+  `ScopeInitContext` or `JobContext` with a member named `child` is shadowed
+  without a warning. The whole list is in the kernel's changelog.
+
 ## 0.19.0
 
 * **Breaking:** `ScopeObserver.onError` takes the route of the failure after
