@@ -30,8 +30,7 @@ final class App extends Scope<App, AppDependencies, AppState> {
   Future<AppDependencies> initDependencies(
     BuildContext context,
     ScopeInitContext ctx,
-  ) =>
-      init(context, ctx);
+  ) => init(context, ctx);
 
   /// Provides access the scope params, i.e. to the widget [App].
   static App paramsOf(BuildContext context, {bool listen = true}) =>
@@ -40,8 +39,7 @@ final class App extends Scope<App, AppDependencies, AppState> {
   static V selectParam<V extends Object?>(
     BuildContext context,
     V Function(App widget) selector,
-  ) =>
-      Scope.selectParam<App, AppDependencies, AppState, V>(context, selector);
+  ) => Scope.selectParam<App, AppDependencies, AppState, V>(context, selector);
 
   static AppState? maybeOf(BuildContext context) =>
       Scope.maybeOf<App, AppDependencies, AppState>(context);
@@ -53,8 +51,7 @@ final class App extends Scope<App, AppDependencies, AppState> {
   static V select<V extends Object?>(
     BuildContext context,
     V Function(AppState state) selector,
-  ) =>
-      Scope.select<App, AppDependencies, AppState, V>(context, selector);
+  ) => Scope.select<App, AppDependencies, AppState, V>(context, selector);
 
   Widget _wrap({
     ThemeMode mode = ThemeMode.system,
@@ -75,10 +72,7 @@ final class App extends Scope<App, AppDependencies, AppState> {
   }
 
   @override
-  Widget buildOnProgress(
-    BuildContext context,
-    covariant String? progress,
-  ) =>
+  Widget buildOnProgress(BuildContext context, covariant String? progress) =>
       _wrap(child: progressBuilder(context, progress));
 
   @override
@@ -87,35 +81,33 @@ final class App extends Scope<App, AppDependencies, AppState> {
     Object error,
     StackTrace stackTrace,
     covariant String? progress,
-  ) =>
-      _wrap(child: AppError(error, stackTrace));
+  ) => _wrap(child: AppError(error, stackTrace));
 
   @override
   Widget wrapState(
     BuildContext context,
     AppDependencies dependencies,
     Widget child,
-  ) =>
-      ThemeManager(
-        keyValueService: dependencies.keyValueStorage('theme.'),
-        builder: (context) {
-          final themeModel = ThemeManager.of(context);
+  ) => ThemeManager(
+    keyValueService: dependencies.keyValueStorage('theme.'),
+    builder: (context) {
+      final themeModel = ThemeManager.of(context);
 
-          return Directionality(
-            textDirection: TextDirection.ltr,
-            child: CounterScope(
-              tag: 'global counter for $NavigationNodeDemo',
-              title: 'Global counter above $MaterialApp',
-              child: _wrap(
-                mode: themeModel.mode,
-                light: themeModel.lightTheme,
-                dark: themeModel.darkTheme,
-                child: child,
-              ),
-            ),
-          );
-        },
+      return Directionality(
+        textDirection: TextDirection.ltr,
+        child: CounterScope(
+          tag: 'global counter for $NavigationNodeDemo',
+          title: 'Global counter above $MaterialApp',
+          child: _wrap(
+            mode: themeModel.mode,
+            light: themeModel.lightTheme,
+            dark: themeModel.darkTheme,
+            child: child,
+          ),
+        ),
       );
+    },
+  );
 
   @override
   AppState createState() => AppState();

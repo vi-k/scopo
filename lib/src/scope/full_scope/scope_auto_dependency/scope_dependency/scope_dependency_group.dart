@@ -129,11 +129,7 @@ abstract base class ScopeDependencyGroup with ScopeDependencyMixin {
               stackTrace,
             ),
           );
-          _reportFailure(
-            error,
-            stackTrace,
-            'while unmounting a dependency',
-          );
+          _reportFailure(error, stackTrace, 'while unmounting a dependency');
         }
       }
     }
@@ -322,8 +318,9 @@ final class _ScopeDependencySequential extends ScopeDependencyGroup {
     ScopeInitContext ctx,
     void Function(String path) onStep,
   ) async {
-    final dependencies = _dependencies //
-        .where((d) => d.initializationRequired);
+    final dependencies =
+        _dependencies //
+            .where((d) => d.initializationRequired);
     for (final dependency in dependencies) {
       // Between the children, which is where a cancelled walk used to stop by
       // itself: a generator ended at its next `yield`, and a `yield` stood
@@ -384,8 +381,9 @@ final class _ScopeDependencyConcurrent extends ScopeDependencyGroup {
     // Each arm owns its cancellation. Cancelling a job that held all the arms
     // would also replace the group's failure with a Cancelled outcome.
     try {
-      for (final dependency
-          in _dependencies.where((dep) => dep.initializationRequired)) {
+      for (final dependency in _dependencies.where(
+        (dep) => dep.initializationRequired,
+      )) {
         final job = ScopeInitJob<void>(
           (ctx) => dependency.init(ctx, (path) => onStep(_path(path))),
           // So that an error the kernel raises about this arm names the

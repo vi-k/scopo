@@ -77,10 +77,17 @@ final class AccessEntry {
   }
 
   @override
-  String toString() => '$_reportName'
-      ' ${isCompleted ? 'completed' : //
-          isWaiting ? 'waiting' : //
-              isCancelled ? 'cancelled' : 'not completed'}';
+  String toString() =>
+      '$_reportName'
+      ' ${isCompleted
+          ? 'completed'
+          : //
+            isWaiting
+          ? 'waiting'
+          : //
+            isCancelled
+          ? 'cancelled'
+          : 'not completed'}';
 }
 
 final class _AccessQueue {
@@ -123,7 +130,8 @@ final class _AccessQueue {
         // inside the microtasks between the two moments used to be reported
         // as `[holder completed]` -- a line contradicting itself in the one
         // place that names the holder.
-        () => "${entry._reportName} couldn't wait to get access to [$key]:"
+        () =>
+            "${entry._reportName} couldn't wait to get access to [$key]:"
             ' ${previous.where((e) => !e._completer.isCompleted).toList()}',
       );
     }
@@ -214,7 +222,8 @@ final class ChildRegistry {
         // child finishing in the microtasks between the two moments used to
         // leave the report empty: `couldn't wait for the children to
         // complete: []`, the one line able to name the culprit, blank.
-        () => "couldn't wait for the children to complete:"
+        () =>
+            "couldn't wait for the children to complete:"
             ' ${awaited.where((e) => !e._completer.isCompleted).toList()}',
       );
     }
@@ -267,7 +276,8 @@ final class ChildEntry {
   }
 
   @override
-  String toString() => '$_reportName'
+  String toString() =>
+      '$_reportName'
       ' ${_completer.isCompleted ? 'completed' : 'not completed'}';
 }
 
@@ -322,7 +332,8 @@ Future<void> _boundedByRootZone(
         // and the throw left a root-zone callback, where neither this
         // package nor the application has anything to catch it with. The
         // expiry is the news here; the name is the detail.
-        expiry = 'a wait expired, and the report of it could not be built: '
+        expiry =
+            'a wait expired, and the report of it could not be built: '
             '$error';
       } finally {
         expired.complete();

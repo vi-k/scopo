@@ -25,28 +25,27 @@ void main() {
       final disposed = <_Counter>[];
 
       Widget buildTree() => Directionality(
-            textDirection: TextDirection.ltr,
-            child: ScopeNotifier<_Counter>(
-              create: (context) {
-                createCount++;
+        textDirection: TextDirection.ltr,
+        child: ScopeNotifier<_Counter>(
+          create: (context) {
+            createCount++;
 
-                return counter;
-              },
-              dispose: (model) {
-                disposed.add(model);
-                model.dispose();
-              },
-              builder: (context) => Builder(
-                builder: (context) {
-                  final model =
-                      ScopeNotifier.of<_Counter>(context, listen: true);
-                  provided.add(model);
+            return counter;
+          },
+          dispose: (model) {
+            disposed.add(model);
+            model.dispose();
+          },
+          builder: (context) => Builder(
+            builder: (context) {
+              final model = ScopeNotifier.of<_Counter>(context, listen: true);
+              provided.add(model);
 
-                  return Text('value: ${model.value}');
-                },
-              ),
-            ),
-          );
+              return Text('value: ${model.value}');
+            },
+          ),
+        ),
+      );
 
       await tester.pumpWidget(buildTree());
 
@@ -187,20 +186,21 @@ void main() {
     // Owning a subscription is about the object that holds the listener list,
     // and `==` does not answer that: two equal models are still two lists.
     // The listener used to stay on the one the scope had left.
-    testWidgets('moves the subscription to an equal but different model',
-        (tester) async {
+    testWidgets('moves the subscription to an equal but different model', (
+      tester,
+    ) async {
       final first = _NamedCounter('same');
       final second = _NamedCounter('same');
       addTearDown(first.dispose);
       addTearDown(second.dispose);
 
       Widget build(_NamedCounter model) => Directionality(
-            textDirection: TextDirection.ltr,
-            child: ScopeNotifier<_NamedCounter>.value(
-              value: model,
-              builder: (context) => const _NamedCounterView(),
-            ),
-          );
+        textDirection: TextDirection.ltr,
+        child: ScopeNotifier<_NamedCounter>.value(
+          value: model,
+          builder: (context) => const _NamedCounterView(),
+        ),
+      );
 
       await tester.pumpWidget(build(first));
       expect(find.text('named: 0'), findsOneWidget);
@@ -233,18 +233,18 @@ void main() {
         final external = _NamedCounter('given');
 
         Widget build({required bool owning}) => Directionality(
-              textDirection: TextDirection.ltr,
-              child: owning
-                  ? ScopeNotifier<_NamedCounter>(
-                      create: (context) => _NamedCounter('owned'),
-                      dispose: (model) => model.dispose(),
-                      builder: (context) => const _NamedCounterView(),
-                    )
-                  : ScopeNotifier<_NamedCounter>.value(
-                      value: external,
-                      builder: (context) => const _NamedCounterView(),
-                    ),
-            );
+          textDirection: TextDirection.ltr,
+          child: owning
+              ? ScopeNotifier<_NamedCounter>(
+                  create: (context) => _NamedCounter('owned'),
+                  dispose: (model) => model.dispose(),
+                  builder: (context) => const _NamedCounterView(),
+                )
+              : ScopeNotifier<_NamedCounter>.value(
+                  value: external,
+                  builder: (context) => const _NamedCounterView(),
+                ),
+        );
 
         await tester.pumpWidget(build(owning: true));
         await tester.pumpAndSettle();
@@ -354,11 +354,11 @@ void main() {
       addTearDown(second.dispose);
 
       Widget app(ValueNotifier<int> value) => MaterialApp(
-            home: ScopeNotifier<ValueNotifier<int>>.value(
-              value: value,
-              builder: (context) => const _ValueView(),
-            ),
-          );
+        home: ScopeNotifier<ValueNotifier<int>>.value(
+          value: value,
+          builder: (context) => const _ValueView(),
+        ),
+      );
 
       await tester.pumpWidget(app(first));
       expect(find.text('0'), findsOneWidget);
@@ -426,13 +426,15 @@ void main() {
       expect(
         tester.takeException(),
         isNull,
-        reason: 'a notification made during the build is a thing user code '
+        reason:
+            'a notification made during the build is a thing user code '
             'does; it must not break the frame',
       );
       expect(
         find.byType(_CounterValueView),
         findsOneWidget,
-        reason: 'the subtree the builder returned has to be mounted -- the '
+        reason:
+            'the subtree the builder returned has to be mounted -- the '
             'notify-only path is about *later* rebuilds, and there is no '
             'earlier build whose child could be kept instead',
       );
@@ -458,19 +460,19 @@ void main() {
       var notifyOnBuild = false;
 
       Widget build(String tag) => Directionality(
-            textDirection: TextDirection.ltr,
-            child: ScopeNotifier<_Counter>.value(
-              tag: tag,
-              value: counter,
-              builder: (context) {
-                if (notifyOnBuild) {
-                  counter.increment();
-                }
+        textDirection: TextDirection.ltr,
+        child: ScopeNotifier<_Counter>.value(
+          tag: tag,
+          value: counter,
+          builder: (context) {
+            if (notifyOnBuild) {
+              counter.increment();
+            }
 
-                return const _CounterValueView();
-              },
-            ),
-          );
+            return const _CounterValueView();
+          },
+        ),
+      );
 
       await tester.pumpWidget(build('first'));
       expect(find.text('value: 0'), findsOneWidget);
@@ -484,7 +486,8 @@ void main() {
       expect(
         _CounterValueView.buildCount,
         greaterThan(buildsBefore),
-        reason: 'the dependent has to be rebuilt by the notification: the '
+        reason:
+            'the dependent has to be rebuilt by the notification: the '
             'walk itself reuses the const child and leaves it alone',
       );
       expect(
@@ -599,13 +602,15 @@ void main() {
     expect(
       reported,
       isNotEmpty,
-      reason: 'adding a listener to a disposed notifier is refused, and this '
+      reason:
+          'adding a listener to a disposed notifier is refused, and this '
           'test is about what the scope does after that',
     );
     expect(
       live.listened,
       isFalse,
-      reason: 'nothing was ever added for this element, so nothing is left '
+      reason:
+          'nothing was ever added for this element, so nothing is left '
           'behind on a notifier that outlives it',
     );
   });
@@ -700,14 +705,14 @@ final class _Host extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Directionality(
-        textDirection: TextDirection.ltr,
-        child: ScopeNotifier<_Counter>.value(
-          value: counter,
-          builder: (context) =>
-              child ??
-              const Column(children: [_CounterValueView(), _ConstantView()]),
-        ),
-      );
+    textDirection: TextDirection.ltr,
+    child: ScopeNotifier<_Counter>.value(
+      value: counter,
+      builder: (context) =>
+          child ??
+          const Column(children: [_CounterValueView(), _ConstantView()]),
+    ),
+  );
 }
 
 final class _CounterValueView extends StatelessWidget {

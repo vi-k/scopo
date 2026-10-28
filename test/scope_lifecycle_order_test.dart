@@ -40,8 +40,9 @@ void main() {
       );
     });
 
-    testWidgets('runs before the initialization of a data scope too',
-        (tester) async {
+    testWidgets('runs before the initialization of a data scope too', (
+      tester,
+    ) async {
       final order = <String>[];
 
       await tester.pumpWidget(
@@ -105,27 +106,26 @@ void main() {
   group('the synchronous teardown', () {
     setUp(_order.clear);
 
-    testWidgets('runs before the asynchronous one when the scope is removed',
-        (tester) async {
+    testWidgets('runs before the asynchronous one when the scope is removed', (
+      tester,
+    ) async {
       await tester.pumpWidget(const _DepHost());
       await tester.pumpAndSettle();
 
       await tester.pumpWidget(const SizedBox.shrink());
       await settle(tester, until: () => _order.contains('dep.dispose'));
 
-      expect(
-        _order,
-        [
-          'state.onUnmount',
-          'dep.unmount',
-          'state.disposeStateAsync',
-          'dep.dispose',
-        ],
-      );
+      expect(_order, [
+        'state.onUnmount',
+        'dep.unmount',
+        'state.disposeStateAsync',
+        'dep.dispose',
+      ]);
     });
 
-    testWidgets('runs before the asynchronous one when the scope is closed',
-        (tester) async {
+    testWidgets('runs before the asynchronous one when the scope is closed', (
+      tester,
+    ) async {
       await tester.pumpWidget(const _DepHost());
       await tester.pumpAndSettle();
 
@@ -144,8 +144,9 @@ void main() {
       );
     });
 
-    testWidgets('runs once, even when a close is followed by a removal',
-        (tester) async {
+    testWidgets('runs once, even when a close is followed by a removal', (
+      tester,
+    ) async {
       await tester.pumpWidget(const _DepHost());
       await tester.pumpAndSettle();
 
@@ -155,42 +156,35 @@ void main() {
       await tester.pumpWidget(const SizedBox.shrink());
       await settle(tester, until: () => false);
 
-      expect(
-        _order.where((step) => step == 'state.onUnmount'),
-        hasLength(1),
-      );
-      expect(
-        _order.where((step) => step == 'dep.unmount'),
-        hasLength(1),
-      );
+      expect(_order.where((step) => step == 'state.onUnmount'), hasLength(1));
+      expect(_order.where((step) => step == 'dep.unmount'), hasLength(1));
     });
 
     // The two halves of a `Scope` initialize separately -- the container
     // through `initDependencies`, the state through its own `initScope` --
     // and a failure of each leaves a different amount of the teardown behind.
     // The `full_scope` topic states both as a table; these two pin it.
-    testWidgets('drops the state entirely when initDependencies failed',
-        (tester) async {
+    testWidgets('drops the state entirely when initDependencies failed', (
+      tester,
+    ) async {
       _Deps.failing = true;
       addTearDown(() => _Deps.failing = false);
 
-      await runZonedGuarded(
-        () async {
-          await tester.pumpWidget(const _DepHost());
-          await tester.pumpAndSettle();
-          tester.takeException();
+      await runZonedGuarded(() async {
+        await tester.pumpWidget(const _DepHost());
+        await tester.pumpAndSettle();
+        tester.takeException();
 
-          await tester.pumpWidget(const SizedBox.shrink());
-          await settle(tester, until: () => _order.contains('dep.dispose'));
-          tester.takeException();
-        },
-        (_, __) {},
-      );
+        await tester.pumpWidget(const SizedBox.shrink());
+        await settle(tester, until: () => _order.contains('dep.dispose'));
+        tester.takeException();
+      }, (_, __) {});
 
       expect(
         _order,
         ['dep.unmount', 'dep.dispose'],
-        reason: 'the ready branch was never built, so `createState()` never '
+        reason:
+            'the ready branch was never built, so `createState()` never '
             'ran and there is no state for `onUnmount`/`disposeScope` to run '
             'on -- while the dependencies, which did exist, are still given '
             'back, by the container tearing itself down from inside its own '
@@ -199,13 +193,13 @@ void main() {
     });
 
     testWidgets(
-        'disposes of a state whose initStateAsync failed in the same order as '
-        'one that succeeded', (tester) async {
-      _DepState.failing = true;
-      addTearDown(() => _DepState.failing = false);
+      'disposes of a state whose initStateAsync failed in the same order as '
+      'one that succeeded',
+      (tester) async {
+        _DepState.failing = true;
+        addTearDown(() => _DepState.failing = false);
 
-      await runZonedGuarded(
-        () async {
+        await runZonedGuarded(() async {
           await tester.pumpWidget(const _DepHost());
           await tester.pumpAndSettle();
           tester.takeException();
@@ -213,26 +207,26 @@ void main() {
           await tester.pumpWidget(const SizedBox.shrink());
           await settle(tester, until: () => _order.contains('dep.dispose'));
           tester.takeException();
-        },
-        (_, __) {},
-      );
+        }, (_, __) {});
 
-      expect(
-        _order,
-        [
-          'state.onUnmount',
-          'dep.unmount',
-          'state.disposeStateAsync',
-          'dep.dispose',
-        ],
-        reason: 'the same order as the ready path above, and that is the '
-            'point: the state exists, its initializer ran and may have taken '
-            'something before it threw, so both halves of its teardown run. '
-            'They used to be told apart -- the asynchronous half was skipped '
-            'for a state whose initialization failed -- and what that skipped '
-            'was whatever the initializer had already acquired',
-      );
-    });
+        expect(
+          _order,
+          [
+            'state.onUnmount',
+            'dep.unmount',
+            'state.disposeStateAsync',
+            'dep.dispose',
+          ],
+          reason:
+              'the same order as the ready path above, and that is the point: '
+              'the state exists, its initializer ran and may have taken '
+              'something before it threw, so both halves of its teardown run. '
+              'They used to be told apart -- the asynchronous half was skipped '
+              'for a state whose initialization failed -- and what that '
+              'skipped was whatever the initializer had already acquired',
+        );
+      },
+    );
 
     testWidgets('of an AsyncScope still precedes its disposal', (tester) async {
       await tester.pumpWidget(
@@ -266,19 +260,16 @@ final class _DepHost extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => const Directionality(
-        textDirection: TextDirection.ltr,
-        child: _DepScope(),
-      );
+    textDirection: TextDirection.ltr,
+    child: _DepScope(),
+  );
 }
 
 final class _DepScope extends Scope<_DepScope, _Deps, _DepState> {
   const _DepScope();
 
   @override
-  Future<_Deps> initDependencies(
-    BuildContext context,
-    ScopeInitContext ctx,
-  ) =>
+  Future<_Deps> initDependencies(BuildContext context, ScopeInitContext ctx) =>
       _Deps().init(context, ctx);
 
   @override
@@ -291,8 +282,7 @@ final class _DepScope extends Scope<_DepScope, _Deps, _DepState> {
     Object error,
     StackTrace stackTrace,
     Object? progress,
-  ) =>
-      const SizedBox.shrink();
+  ) => const SizedBox.shrink();
 
   @override
   _DepState createState() => _DepState();
@@ -305,15 +295,15 @@ final class _Deps extends ScopeAutoDependencies<_Deps, BuildContext> {
 
   @override
   ScopeDependency buildDependencies(BuildContext context) => sequential('', [
-        dep('a', (dep) {
-          dep
-            ..unmount = (() => _order.add('dep.unmount'))
-            ..dispose = (() => _order.add('dep.dispose'));
-          if (failing) {
-            throw StateError('dependency a failed');
-          }
-        }),
-      ]);
+    dep('a', (dep) {
+      dep
+        ..unmount = (() => _order.add('dep.unmount'))
+        ..dispose = (() => _order.add('dep.dispose'));
+      if (failing) {
+        throw StateError('dependency a failed');
+      }
+    }),
+  ]);
 }
 
 final class _DepState extends ScopeState<_DepScope, _Deps, _DepState> {

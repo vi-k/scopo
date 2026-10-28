@@ -9,8 +9,7 @@ import 'utils/settle.dart';
 void main() {
   for (final (name, build) in _asyncFamilies) {
     for (final afterDisposal in [false, true]) {
-      testWidgets(
-          '$name diagnostics after unmount '
+      testWidgets('$name diagnostics after unmount '
           '${afterDisposal ? 'after' : 'during'} disposal', (tester) async {
         final disposal = _Disposal();
         final scope = build(disposal);
@@ -76,26 +75,27 @@ void main() {
       addTearDown(notifier.dispose);
       final Widget scope = switch (name) {
         'ScopeWidget' => const _WidgetScope(),
-        'AsyncScopeCoordinator' =>
-          const AsyncScopeCoordinator(child: SizedBox.shrink()),
+        'AsyncScopeCoordinator' => const AsyncScopeCoordinator(
+          child: SizedBox.shrink(),
+        ),
         'ScopeModel' => ScopeModel<String>(
-            create: (_) => 'owned model',
-            dispose: (_) {},
-            builder: (_) => const SizedBox.shrink(),
-          ),
+          create: (_) => 'owned model',
+          dispose: (_) {},
+          builder: (_) => const SizedBox.shrink(),
+        ),
         'ScopeModel.value' => ScopeModel<String>.value(
-            value: 'borrowed model',
-            builder: (_) => const SizedBox.shrink(),
-          ),
+          value: 'borrowed model',
+          builder: (_) => const SizedBox.shrink(),
+        ),
         'ScopeNotifier' => ScopeNotifier<ValueNotifier<int>>(
-            create: (_) => ValueNotifier<int>(42),
-            dispose: (model) => model.dispose(),
-            builder: (_) => const SizedBox.shrink(),
-          ),
+          create: (_) => ValueNotifier<int>(42),
+          dispose: (model) => model.dispose(),
+          builder: (_) => const SizedBox.shrink(),
+        ),
         'ScopeNotifier.value' => ScopeNotifier<ValueNotifier<int>>.value(
-            value: notifier,
-            builder: (_) => const SizedBox.shrink(),
-          ),
+          value: notifier,
+          builder: (_) => const SizedBox.shrink(),
+        ),
         _ => throw StateError('Unknown family: $name'),
       };
       await tester.pumpWidget(scope);
@@ -114,8 +114,9 @@ void main() {
     });
   }
 
-  testWidgets('missing create explains the scope, condition and remedy',
-      (tester) async {
+  testWidgets('missing create explains the scope, condition and remedy', (
+    tester,
+  ) async {
     await tester.pumpWidget(const _MissingCreateScope());
     final error = tester.takeException();
     await tester.pumpWidget(const SizedBox.shrink());
@@ -154,37 +155,37 @@ final List<(String, Widget Function(_Disposal))> _asyncFamilies = [
   (
     'AsyncScope',
     (disposal) => AsyncScope(
-          scopeKey: 'diagnostics-key',
-          pauseAfterInitialization: Duration.zero,
-          initScope: (_, __) async {},
-          disposeScope: disposal.dispose,
-          progressBuilder: (_, __) => const SizedBox.shrink(),
-          errorBuilder: (_, error, __, ___) => ErrorWidget(error),
-          builder: (_) => const SizedBox.shrink(),
-        ),
+      scopeKey: 'diagnostics-key',
+      pauseAfterInitialization: Duration.zero,
+      initScope: (_, __) async {},
+      disposeScope: disposal.dispose,
+      progressBuilder: (_, __) => const SizedBox.shrink(),
+      errorBuilder: (_, error, __, ___) => ErrorWidget(error),
+      builder: (_) => const SizedBox.shrink(),
+    ),
   ),
   (
     'AsyncDataScope',
     (disposal) => AsyncDataScope<String>(
-          scopeKey: 'diagnostics-key',
-          pauseAfterInitialization: Duration.zero,
-          initData: (_, __) async => 'diagnostic data',
-          disposeData: (_) => disposal.dispose(),
-          progressBuilder: (_, __) => const SizedBox.shrink(),
-          errorBuilder: (_, error, __, ___) => ErrorWidget(error),
-          builder: (_, __) => const SizedBox.shrink(),
-        ),
+      scopeKey: 'diagnostics-key',
+      pauseAfterInitialization: Duration.zero,
+      initData: (_, __) async => 'diagnostic data',
+      disposeData: (_) => disposal.dispose(),
+      progressBuilder: (_, __) => const SizedBox.shrink(),
+      errorBuilder: (_, error, __, ___) => ErrorWidget(error),
+      builder: (_, __) => const SizedBox.shrink(),
+    ),
   ),
   (
     'AsyncControllerScope',
     (disposal) => AsyncControllerScope<_Controller>(
-          scopeKey: 'diagnostics-key',
-          pauseAfterInitialization: Duration.zero,
-          createController: (_) => _Controller(disposal),
-          progressBuilder: (_) => const SizedBox.shrink(),
-          errorBuilder: (_, error, __) => ErrorWidget(error),
-          builder: (_, __) => const SizedBox.shrink(),
-        ),
+      scopeKey: 'diagnostics-key',
+      pauseAfterInitialization: Duration.zero,
+      createController: (_) => _Controller(disposal),
+      progressBuilder: (_) => const SizedBox.shrink(),
+      errorBuilder: (_, error, __) => ErrorWidget(error),
+      builder: (_, __) => const SizedBox.shrink(),
+    ),
   ),
   ('LiteScope', _LiteFixture.new),
   ('Scope', _ScopeFixture.new),
@@ -203,10 +204,10 @@ final class _LiteFixture extends LiteScope<_LiteFixture, _LiteFixtureState> {
   final _Disposal disposal;
 
   const _LiteFixture(this.disposal)
-      : super(
-          scopeKey: 'diagnostics-key',
-          pauseAfterInitialization: Duration.zero,
-        );
+    : super(
+        scopeKey: 'diagnostics-key',
+        pauseAfterInitialization: Duration.zero,
+      );
 
   @override
   Widget buildOnWaiting(BuildContext context) => const SizedBox.shrink();
@@ -229,17 +230,16 @@ final class _ScopeFixture
   final _Disposal disposal;
 
   const _ScopeFixture(this.disposal)
-      : super(
-          scopeKey: 'diagnostics-key',
-          pauseAfterInitialization: Duration.zero,
-        );
+    : super(
+        scopeKey: 'diagnostics-key',
+        pauseAfterInitialization: Duration.zero,
+      );
 
   @override
   Future<_Dependencies> initDependencies(
     BuildContext context,
     ScopeInitContext ctx,
-  ) async =>
-      _Dependencies();
+  ) async => _Dependencies();
 
   @override
   Widget buildOnProgress(BuildContext context, Object? progress) =>
@@ -251,8 +251,7 @@ final class _ScopeFixture
     Object error,
     StackTrace stackTrace,
     Object? progress,
-  ) =>
-      ErrorWidget(error);
+  ) => ErrorWidget(error);
 
   @override
   _ScopeFixtureState createState() => _ScopeFixtureState();

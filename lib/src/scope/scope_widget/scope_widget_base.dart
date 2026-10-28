@@ -33,18 +33,16 @@ abstract base class ScopeWidgetBase<W extends ScopeWidgetBase<W>>
   static W of<W extends ScopeWidgetBase<W>>(
     BuildContext context, {
     required bool listen,
-  }) =>
-      ScopeContext.of<W, ScopeContext<W>>(context, listen: listen).widget;
+  }) => ScopeContext.of<W, ScopeContext<W>>(context, listen: listen).widget;
 
   /// Subscribes to one parameter of the scope widget and returns it.
   static V select<W extends ScopeWidgetBase<W>, V extends Object?>(
     BuildContext context,
     V Function(W widget) selector,
-  ) =>
-      ScopeContext.select<W, ScopeContext<W>, V>(
-        context,
-        (context) => selector(context.widget),
-      );
+  ) => ScopeContext.select<W, ScopeContext<W>, V>(
+    context,
+    (context) => selector(context.widget),
+  );
 }
 
 final class _ScopeWidgetElement<W extends ScopeWidgetBase<W>>
@@ -85,6 +83,5 @@ final class ScopeWidgetAccess<W extends ScopeWidgetBase<W>> {
   V select<V extends Object?>(
     BuildContext context,
     V Function(W widget) selector,
-  ) =>
-      ScopeWidgetBase.select<W, V>(context, selector);
+  ) => ScopeWidgetBase.select<W, V>(context, selector);
 }

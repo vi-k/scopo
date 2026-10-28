@@ -11,9 +11,9 @@ class AsyncControllerExample1 extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Center(
-        child: ProfileScope(
-          debugSource: AsyncControllerExample1,
-          debugName: '1.${++_num}',
-        ),
-      );
+    child: ProfileScope(
+      debugSource: AsyncControllerExample1,
+      debugName: '1.${++_num}',
+    ),
+  );
 }

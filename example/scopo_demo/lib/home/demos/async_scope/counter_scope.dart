@@ -12,10 +12,7 @@ final class CounterModel with ChangeNotifier {
   final Object debugSource;
   final String debugName;
 
-  CounterModel({
-    required this.debugSource,
-    required this.debugName,
-  });
+  CounterModel({required this.debugSource, required this.debugName});
 
   int? _count;
   int get count => _count ?? (throw StateError('Not initialized'));
@@ -105,10 +102,8 @@ final class CounterScopeElement
     super.init();
     _debugSource = widget.debugSource;
     _debugName = widget.debugName;
-    _model = CounterModel(
-      debugSource: _debugSource,
-      debugName: _debugName,
-    )..addListener(notifyDependents);
+    _model = CounterModel(debugSource: _debugSource, debugName: _debugName)
+      ..addListener(notifyDependents);
   }
 
   @override
@@ -150,8 +145,9 @@ final class CounterScopeElement
   Widget buildOnReady() {
     Widget body = Center(
       child: BlinkingBox(
-        blinkingColor:
-            Theme.of(this).colorScheme.primary.withValues(alpha: 0.2),
+        blinkingColor: Theme.of(
+          this,
+        ).colorScheme.primary.withValues(alpha: 0.2),
         child: const Column(
           mainAxisSize: MainAxisSize.min,
           children: [
@@ -177,10 +173,7 @@ final class CounterScopeElement
     if (widget.title case final title?) {
       body = Column(
         mainAxisSize: MainAxisSize.min,
-        children: [
-          Text(title),
-          body,
-        ],
+        children: [Text(title), body],
       );
     }
 
@@ -196,8 +189,9 @@ class _CounterView extends StatelessWidget {
     final count = CounterScope.countOf(context);
     return Center(
       child: BlinkingBox(
-        blinkingColor:
-            Theme.of(context).colorScheme.primary.withValues(alpha: 0.2),
+        blinkingColor: Theme.of(
+          context,
+        ).colorScheme.primary.withValues(alpha: 0.2),
         child: Text('$count'),
       ),
     );

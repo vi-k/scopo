@@ -2,7 +2,9 @@ part of '../scope.dart';
 
 /// {@category AsyncControllerScope}
 abstract base class AsyncControllerScopeBase<
-        W extends AsyncControllerScopeBase<W, C>, C extends ScopeController>
+  W extends AsyncControllerScopeBase<W, C>,
+  C extends ScopeController
+>
     extends AsyncControllerScopeCore<W, _AsyncControllerScopeElement<W, C>, C> {
   /// Serializes this scope with the others that share the key.
   ///
@@ -146,10 +148,9 @@ abstract base class AsyncControllerScopeBase<
 
   /// The nearest scope [W] above [context], or `null`.
   static AsyncControllerScopeContext<W, C>? maybeOf<
-          W extends AsyncControllerScopeBase<W, C>, C extends ScopeController>(
-    BuildContext context, {
-    required bool listen,
-  }) =>
+    W extends AsyncControllerScopeBase<W, C>,
+    C extends ScopeController
+  >(BuildContext context, {required bool listen}) =>
       ScopeContext.maybeOf<W, AsyncControllerScopeContext<W, C>>(
         context,
         listen: listen,
@@ -158,32 +159,39 @@ abstract base class AsyncControllerScopeBase<
   /// The nearest scope [W] above [context].
   ///
   /// Throws when there is none.
-  static AsyncControllerScopeContext<W, C>
-      of<W extends AsyncControllerScopeBase<W, C>, C extends ScopeController>(
-    BuildContext context, {
-    required bool listen,
-  }) =>
-          ScopeContext.of<W, AsyncControllerScopeContext<W, C>>(
-            context,
-            listen: listen,
-          );
+  static AsyncControllerScopeContext<W, C> of<
+    W extends AsyncControllerScopeBase<W, C>,
+    C extends ScopeController
+  >(BuildContext context, {required bool listen}) =>
+      ScopeContext.of<W, AsyncControllerScopeContext<W, C>>(
+        context,
+        listen: listen,
+      );
 
   /// Subscribes to one value of the scope and returns it.
-  static V select<W extends AsyncControllerScopeBase<W, C>,
-          C extends ScopeController, V extends Object?>(
+  static V select<
+    W extends AsyncControllerScopeBase<W, C>,
+    C extends ScopeController,
+    V extends Object?
+  >(
     BuildContext context,
     V Function(AsyncControllerScopeContext<W, C> context) selector,
-  ) =>
-      ScopeContext.select<W, AsyncControllerScopeContext<W, C>, V>(
-        context,
-        selector,
-      );
+  ) => ScopeContext.select<W, AsyncControllerScopeContext<W, C>, V>(
+    context,
+    selector,
+  );
 }
 
 final class _AsyncControllerScopeElement<
-        W extends AsyncControllerScopeBase<W, C>, C extends ScopeController>
-    extends AsyncControllerScopeElementBase<W,
-        _AsyncControllerScopeElement<W, C>, C> {
+  W extends AsyncControllerScopeBase<W, C>,
+  C extends ScopeController
+>
+    extends
+        AsyncControllerScopeElementBase<
+          W,
+          _AsyncControllerScopeElement<W, C>,
+          C
+        > {
   _AsyncControllerScopeElement(super.widget);
 
   @override
@@ -198,12 +206,13 @@ final class _AsyncControllerScopeElement<
     void Function()? initCancellation,
     void Function()? disposeScope,
     void Function()? waitForChildren,
-  }) get timeoutCallbacks => (
-        scopeKey: widget.onScopeKeyTimeout,
-        initCancellation: widget.onInitCancellationTimeout,
-        disposeScope: widget.onDisposeScopeTimeout,
-        waitForChildren: widget.onWaitForChildrenTimeout,
-      );
+  })
+  get timeoutCallbacks => (
+    scopeKey: widget.onScopeKeyTimeout,
+    initCancellation: widget.onInitCancellationTimeout,
+    disposeScope: widget.onDisposeScopeTimeout,
+    waitForChildren: widget.onWaitForChildrenTimeout,
+  );
 
   @override
   Duration? get initCancellationTimeout => widget.initCancellationTimeout;
@@ -225,15 +234,18 @@ final class _AsyncControllerScopeElement<
 
   @override
   Widget buildOnState(AsyncScopeState state) => switch (state) {
-        AsyncScopeWaiting() =>
-          widget.buildOnWaiting(this) ?? widget.buildOnProgress(this),
-        // A controller reports no progress: its initialization only
-        // finishes.
-        AsyncScopeProgress() => widget.buildOnProgress(this),
-        AsyncScopeReady() => widget.buildOnReady(this, data),
-        AsyncScopeError(:final error, :final stackTrace) =>
-          widget.buildOnError(this, error, stackTrace),
-      };
+    AsyncScopeWaiting() =>
+      widget.buildOnWaiting(this) ?? widget.buildOnProgress(this),
+    // A controller reports no progress: its initialization only
+    // finishes.
+    AsyncScopeProgress() => widget.buildOnProgress(this),
+    AsyncScopeReady() => widget.buildOnReady(this, data),
+    AsyncScopeError(:final error, :final stackTrace) => widget.buildOnError(
+      this,
+      error,
+      stackTrace,
+    ),
+  };
 }
 
 /// The three accessors of one [AsyncControllerScopeBase], with its type
@@ -249,8 +261,10 @@ final class _AsyncControllerScopeElement<
 /// ```
 ///
 /// {@category AsyncControllerScope}
-final class AsyncControllerScopeAccess<W extends AsyncControllerScopeBase<W, C>,
-    C extends ScopeController> {
+final class AsyncControllerScopeAccess<
+  W extends AsyncControllerScopeBase<W, C>,
+  C extends ScopeController
+> {
   /// Creates an accessor for the scope [W].
   const AsyncControllerScopeAccess();
 
@@ -258,20 +272,17 @@ final class AsyncControllerScopeAccess<W extends AsyncControllerScopeBase<W, C>,
   AsyncControllerScopeContext<W, C> of(
     BuildContext context, {
     required bool listen,
-  }) =>
-      AsyncControllerScopeBase.of<W, C>(context, listen: listen);
+  }) => AsyncControllerScopeBase.of<W, C>(context, listen: listen);
 
   /// Tries to find and return the context of the scope.
   AsyncControllerScopeContext<W, C>? maybeOf(
     BuildContext context, {
     required bool listen,
-  }) =>
-      AsyncControllerScopeBase.maybeOf<W, C>(context, listen: listen);
+  }) => AsyncControllerScopeBase.maybeOf<W, C>(context, listen: listen);
 
   /// Selects a value from the scope context and **subscribes** to it.
   V select<V extends Object?>(
     BuildContext context,
     V Function(AsyncControllerScopeContext<W, C> context) selector,
-  ) =>
-      AsyncControllerScopeBase.select<W, C, V>(context, selector);
+  ) => AsyncControllerScopeBase.select<W, C, V>(context, selector);
 }

@@ -22,7 +22,8 @@ final class AsyncControllerScope<C extends ScopeController>
     BuildContext context,
     Object error,
     StackTrace stackTrace,
-  ) errorBuilder;
+  )
+  errorBuilder;
 
   /// Built while the scope is closing, and after its release has finished.
   ///
@@ -75,38 +76,30 @@ final class AsyncControllerScope<C extends ScopeController>
     BuildContext context,
     Object error,
     StackTrace stackTrace,
-  ) =>
-      errorBuilder(context, error, stackTrace);
+  ) => errorBuilder(context, error, stackTrace);
 
   @override
   Widget buildOnReady(BuildContext context, C controller) =>
       builder(context, controller);
 
   /// The nearest `AsyncControllerScope<C>` above [context], or `null`.
-  static AsyncControllerScopeContext<AsyncControllerScope<C>, C>?
-      maybeOf<C extends ScopeController>(
-    BuildContext context, {
-    required bool listen,
-  }) =>
-          ScopeContext.maybeOf<AsyncControllerScope<C>,
-              AsyncControllerScopeContext<AsyncControllerScope<C>, C>>(
-            context,
-            listen: listen,
-          );
+  static AsyncControllerScopeContext<AsyncControllerScope<C>, C>? maybeOf<
+    C extends ScopeController
+  >(BuildContext context, {required bool listen}) =>
+      ScopeContext.maybeOf<
+        AsyncControllerScope<C>,
+        AsyncControllerScopeContext<AsyncControllerScope<C>, C>
+      >(context, listen: listen);
 
   /// The nearest `AsyncControllerScope<C>` above [context].
   ///
   /// Throws when there is none.
   static AsyncControllerScopeContext<AsyncControllerScope<C>, C>
-      of<C extends ScopeController>(
-    BuildContext context, {
-    required bool listen,
-  }) =>
-          ScopeContext.of<AsyncControllerScope<C>,
-              AsyncControllerScopeContext<AsyncControllerScope<C>, C>>(
-            context,
-            listen: listen,
-          );
+  of<C extends ScopeController>(BuildContext context, {required bool listen}) =>
+      ScopeContext.of<
+        AsyncControllerScope<C>,
+        AsyncControllerScopeContext<AsyncControllerScope<C>, C>
+      >(context, listen: listen);
 
   /// Subscribes to one value of the scope and returns it.
   ///
@@ -115,11 +108,11 @@ final class AsyncControllerScope<C extends ScopeController>
   static V select<C extends ScopeController, V extends Object?>(
     BuildContext context,
     V Function(AsyncControllerScopeContext<AsyncControllerScope<C>, C> context)
-        selector,
+    selector,
   ) =>
-      ScopeContext.select<AsyncControllerScope<C>,
-          AsyncControllerScopeContext<AsyncControllerScope<C>, C>, V>(
-        context,
-        selector,
-      );
+      ScopeContext.select<
+        AsyncControllerScope<C>,
+        AsyncControllerScopeContext<AsyncControllerScope<C>, C>,
+        V
+      >(context, selector);
 }

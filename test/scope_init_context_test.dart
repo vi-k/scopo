@@ -50,9 +50,7 @@ void main() {
         await Future<void>.delayed(Duration.zero);
       }
 
-      await tester.pumpWidget(
-        _Host(init: (context, ctx) => openStorage(ctx)),
-      );
+      await tester.pumpWidget(_Host(init: (context, ctx) => openStorage(ctx)));
       await tester.pump();
       await tester.pump();
 
@@ -91,7 +89,8 @@ void main() {
         expect(
           log,
           ['finally'],
-          reason: 'the wait ends the moment the scope leaves the tree, and '
+          reason:
+              'the wait ends the moment the scope leaves the tree, and '
               'the body unwinds instead of running on',
         );
         expect(gate.isCompleted, isFalse, reason: 'nobody completed the gate');
@@ -121,7 +120,8 @@ void main() {
       expect(
         log,
         ['past the await'],
-        reason: 'a bare await does not notice the cancellation, and `check` '
+        reason:
+            'a bare await does not notice the cancellation, and `check` '
             'right after it is what does',
       );
     });
@@ -144,55 +144,52 @@ void main() {
         expect(
           find.text('error: Bad state: no connection (connecting)'),
           findsOneWidget,
-          reason: 'the failure reaches the error branch with the progress it '
+          reason:
+              'the failure reaches the error branch with the progress it '
               'had reached',
         );
       },
     );
 
-    testWidgets(
-      'a scope cancelled after the body finished still releases it',
-      (tester) async {
-        final log = <String>[];
-        final gate = Completer<void>();
+    testWidgets('a scope cancelled after the body finished still releases it', (
+      tester,
+    ) async {
+      final log = <String>[];
+      final gate = Completer<void>();
 
-        await tester.pumpWidget(
-          _Host(
-            init: (context, ctx) async {
-              // A bare `await`: this body never asks whether it is still
-              // wanted, so it runs to its end for a scope that is already
-              // gone.
-              await gate.future;
-              log.add('acquired');
-            },
-            dispose: () => log.add('released'),
-          ),
-        );
-        await tester.pump();
+      await tester.pumpWidget(
+        _Host(
+          init: (context, ctx) async {
+            // A bare `await`: this body never asks whether it is still
+            // wanted, so it runs to its end for a scope that is already
+            // gone.
+            await gate.future;
+            log.add('acquired');
+          },
+          dispose: () => log.add('released'),
+        ),
+      );
+      await tester.pump();
 
-        await tester.pumpWidget(const SizedBox.shrink());
-        gate.complete();
-        await settle(tester, until: () => log.contains('released'));
+      await tester.pumpWidget(const SizedBox.shrink());
+      gate.complete();
+      await settle(tester, until: () => log.contains('released'));
 
-        expect(
-          log,
-          ['acquired', 'released'],
-          reason: 'what a body took after the cancellation is still given back',
-        );
-      },
-    );
+      expect(log, [
+        'acquired',
+        'released',
+      ], reason: 'what a body took after the cancellation is still given back');
+    });
   });
 
   group('ScopeInitJob', () {
     test('starts only when asked, and cannot start twice', () async {
       final gate = Completer<int>();
       var calls = 0;
-      final job = ScopeInitJob<int>(
-        (ctx) {
-          calls++;
-          return gate.future;
-        },
-      );
+      final job = ScopeInitJob<int>((ctx) {
+        calls++;
+        return gate.future;
+      });
 
       await Future<void>.delayed(Duration.zero);
       expect(calls, 0);
@@ -239,13 +236,10 @@ void main() {
       late ScopeInitContext context;
       final gate = Completer<void>();
       final steps = <Object>[];
-      final job = ScopeInitJob<void>(
-        (ctx) {
-          context = ctx;
-          return gate.future;
-        },
-        onProgress: steps.add,
-      )..start();
+      final job = ScopeInitJob<void>((ctx) {
+        context = ctx;
+        return gate.future;
+      }, onProgress: steps.add)..start();
 
       context.progress('opening');
       expect(steps, ['opening']);
@@ -261,41 +255,41 @@ void main() {
       );
     });
 
-    test('abandonable ends on cancellation while its action finishes later',
-        () async {
-      final gate = Completer<int>();
-      var actionFinished = false;
-      final job = ScopeInitJob<int>(
-        (ctx) => ctx.abandonable(() async {
-          final value = await gate.future;
-          actionFinished = true;
-          return value;
-        }),
-      )..start();
-      await job.cancel();
-      expect(await job.done, isA<Cancelled>());
-      expect(actionFinished, isFalse);
-      gate.complete(42);
-      await Future<void>.delayed(Duration.zero);
-      expect(actionFinished, isTrue);
-      expect(await job.done, isA<Cancelled>());
+    test(
+      'abandonable ends on cancellation while its action finishes later',
+      () async {
+        final gate = Completer<int>();
+        var actionFinished = false;
+        final job = ScopeInitJob<int>(
+          (ctx) => ctx.abandonable(() async {
+            final value = await gate.future;
+            actionFinished = true;
+            return value;
+          }),
+        )..start();
+        await job.cancel();
+        expect(await job.done, isA<Cancelled>());
+        expect(actionFinished, isFalse);
+        gate.complete(42);
+        await Future<void>.delayed(Duration.zero);
+        expect(actionFinished, isTrue);
+        expect(await job.done, isA<Cancelled>());
 
-      final completed = ScopeInitJob<int>((ctx) => ctx.abandonable(() => 7))
-        ..start();
-      expect(await completed.value, 7);
-      expect(completed.isCancelled, isFalse);
-    });
+        final completed = ScopeInitJob<int>((ctx) => ctx.abandonable(() => 7))
+          ..start();
+        expect(await completed.value, 7);
+        expect(completed.isCancelled, isFalse);
+      },
+    );
 
     test('abandonable does not start an action under cancellation', () async {
       late ScopeInitContext context;
       final gate = Completer<void>();
       var calls = 0;
-      final job = ScopeInitJob<void>(
-        (ctx) {
-          context = ctx;
-          return gate.future;
-        },
-      )..start();
+      final job = ScopeInitJob<void>((ctx) {
+        context = ctx;
+        return gate.future;
+      })..start();
       expect(await context.abandonable(() => ++calls), 1);
       final cancelled = job.cancel();
       await expectLater(
@@ -311,12 +305,10 @@ void main() {
       late ScopeInitContext context;
       final gate = Completer<void>();
       final calls = <String>[];
-      final job = ScopeInitJob<void>(
-        (ctx) {
-          context = ctx;
-          return gate.future;
-        },
-      )..start();
+      final job = ScopeInitJob<void>((ctx) {
+        context = ctx;
+        return gate.future;
+      })..start();
       context.onCancel(() => calls.add('kept'));
       final remove = context.onCancel(() => calls.add('removed'));
       remove();
@@ -333,11 +325,9 @@ void main() {
       await cancelled;
       expect(calls, ['kept']);
 
-      final completed = ScopeInitJob<void>(
-        (ctx) async {
-          ctx.onCancel(() => calls.add('completed'));
-        },
-      )..start();
+      final completed = ScopeInitJob<void>((ctx) async {
+        ctx.onCancel(() => calls.add('completed'));
+      })..start();
       await completed.done;
       await completed.cancel();
       expect(calls, ['kept']);
@@ -347,35 +337,36 @@ void main() {
   group('a child job', () {
     test('is cancelled with its parent', () async {
       final gate = Completer<void>();
-      final child =
-          ScopeInitJob<void>((ctx) => ctx.abandonable(() => gate.future));
-      final parent = ScopeInitJob<void>(
-        (ctx) async {
-          ctx.run(child).ignore();
-          await child.done;
-        },
-      )..start();
+      final child = ScopeInitJob<void>(
+        (ctx) => ctx.abandonable(() => gate.future),
+      );
+      final parent = ScopeInitJob<void>((ctx) async {
+        ctx.run(child).ignore();
+        await child.done;
+      })..start();
       expect(child.isCancelled, isFalse);
       await parent.cancel();
       expect(child.isCancelled, isTrue);
       expect(
         await child.done,
-        isA<Cancelled>()
-            .having((o) => o.reason, 'reason', isA<ParentCancelReason>()),
+        isA<Cancelled>().having(
+          (o) => o.reason,
+          'reason',
+          isA<ParentCancelReason>(),
+        ),
       );
       gate.complete();
     });
 
     test('is cancelled on its own without touching the parent', () async {
       final gate = Completer<void>();
-      final child =
-          ScopeInitJob<void>((ctx) => ctx.abandonable(() => gate.future));
-      final parent = ScopeInitJob<void>(
-        (ctx) async {
-          ctx.run(child).ignore();
-          await child.done;
-        },
-      )..start();
+      final child = ScopeInitJob<void>(
+        (ctx) => ctx.abandonable(() => gate.future),
+      );
+      final parent = ScopeInitJob<void>((ctx) async {
+        ctx.run(child).ignore();
+        await child.done;
+      })..start();
       await child.cancel();
       expect(child.isCancelled, isTrue);
       expect(parent.isCancelled, isFalse);
@@ -386,19 +377,15 @@ void main() {
     test('tells its own body, and the parent body separately', () async {
       final gate = Completer<void>();
       final told = <String>[];
-      final child = ScopeInitJob<void>(
-        (ctx) async {
-          ctx.onCancel(() => told.add('child'));
-          await ctx.abandonable(() => gate.future);
-        },
-      );
-      final parent = ScopeInitJob<void>(
-        (ctx) async {
-          ctx.onCancel(() => told.add('parent'));
-          ctx.run(child).ignore();
-          await ctx.abandonable(() => gate.future);
-        },
-      )..start();
+      final child = ScopeInitJob<void>((ctx) async {
+        ctx.onCancel(() => told.add('child'));
+        await ctx.abandonable(() => gate.future);
+      });
+      final parent = ScopeInitJob<void>((ctx) async {
+        ctx.onCancel(() => told.add('parent'));
+        ctx.run(child).ignore();
+        await ctx.abandonable(() => gate.future);
+      })..start();
       expect(told, isEmpty);
       await child.cancel();
       expect(told, ['child']);
@@ -407,40 +394,36 @@ void main() {
       gate.complete();
     });
 
-    test('starting under a cancelled parent drops the child and throws',
-        () async {
-      late ScopeInitContext context;
-      final gate = Completer<void>();
-      var calls = 0;
-      final parent = ScopeInitJob<void>(
-        (ctx) {
+    test(
+      'starting under a cancelled parent drops the child and throws',
+      () async {
+        late ScopeInitContext context;
+        final gate = Completer<void>();
+        var calls = 0;
+        final parent = ScopeInitJob<void>((ctx) {
           context = ctx;
           return gate.future;
-        },
-      )..start();
-      final first = ScopeInitJob<void>(
-        (ctx) async {
+        })..start();
+        final first = ScopeInitJob<void>((ctx) async {
           calls++;
-        },
-      );
-      context.run(first).ignore();
-      await first.done;
-      expect(calls, 1);
-      final cancelled = parent.cancel();
-      final child = ScopeInitJob<void>(
-        (ctx) async {
+        });
+        context.run(first).ignore();
+        await first.done;
+        expect(calls, 1);
+        final cancelled = parent.cancel();
+        final child = ScopeInitJob<void>((ctx) async {
           calls++;
-        },
-      );
-      expect(() => context.run(child), throwsA(isA<Cancelled>()));
-      expect(
-        await child.done,
-        isA<Cancelled>().having((o) => o.started, 'started', isFalse),
-      );
-      expect(calls, 1);
-      gate.complete();
-      await cancelled;
-    });
+        });
+        expect(() => context.run(child), throwsA(isA<Cancelled>()));
+        expect(
+          await child.done,
+          isA<Cancelled>().having((o) => o.started, 'started', isFalse),
+        );
+        expect(calls, 1);
+        gate.complete();
+        await cancelled;
+      },
+    );
   });
 }
 
@@ -452,15 +435,14 @@ final class _Host extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Directionality(
-        textDirection: TextDirection.ltr,
-        child: AsyncScope(
-          initScope: init,
-          disposeScope: () => dispose?.call(),
-          progressBuilder: (context, progress) =>
-              Text('initializing: $progress'),
-          errorBuilder: (context, error, stackTrace, progress) =>
-              Text('error: $error ($progress)'),
-          builder: (context) => const Text('ready'),
-        ),
-      );
+    textDirection: TextDirection.ltr,
+    child: AsyncScope(
+      initScope: init,
+      disposeScope: () => dispose?.call(),
+      progressBuilder: (context, progress) => Text('initializing: $progress'),
+      errorBuilder: (context, error, stackTrace, progress) =>
+          Text('error: $error ($progress)'),
+      builder: (context) => const Text('ready'),
+    ),
+  );
 }

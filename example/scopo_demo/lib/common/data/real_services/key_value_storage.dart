@@ -45,9 +45,9 @@ final class KeyValueStorage {
       sharedPreferences.remove(_prefixedKey(key));
 
   Set<String> getKeys() => {
-        for (final key in sharedPreferences.getKeys())
-          if (key.startsWith(prefix)) key.substring(prefix.length),
-      };
+    for (final key in sharedPreferences.getKeys())
+      if (key.startsWith(prefix)) key.substring(prefix.length),
+  };
 
   Future<void> clear() async {
     for (final key in sharedPreferences.getKeys()) {

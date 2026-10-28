@@ -41,9 +41,10 @@ final class ProfileController extends ScopeController {
     // already run, and nothing here should reach the outside world any more.
     if (!mounted) {
       console.log(
-          debugSource,
-          '$debugName: init returned to a scope that is '
-          'gone; taking nothing');
+        debugSource,
+        '$debugName: init returned to a scope that is '
+        'gone; taking nothing',
+      );
 
       return;
     }
@@ -96,11 +97,11 @@ final class ProfileScope
 
   @override
   ProfileController createController(BuildContext context) => ProfileController(
-        debugSource: debugSource,
-        debugName: debugName,
-        initDuration: initDuration,
-        failOnInit: failOnInit,
-      );
+    debugSource: debugSource,
+    debugName: debugName,
+    initDuration: initDuration,
+    failOnInit: failOnInit,
+  );
 
   @override
   Widget buildOnWaiting(BuildContext context) => const Text('Waiting…');
@@ -113,8 +114,7 @@ final class ProfileScope
     BuildContext context,
     Object error,
     StackTrace stackTrace,
-  ) =>
-      Text('Error: $error');
+  ) => Text('Error: $error');
 
   @override
   Widget buildOnReady(BuildContext context, ProfileController controller) =>

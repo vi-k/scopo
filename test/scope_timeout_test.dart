@@ -28,8 +28,9 @@ void main() {
     // the rounds `settle` gives it.
     ScopeConfig.defaultScopeKeyTimeout = const Duration(milliseconds: 20);
     ScopeConfig.defaultDisposeScopeTimeout = const Duration(milliseconds: 20);
-    ScopeConfig.defaultWaitForChildrenTimeout =
-        const Duration(milliseconds: 20);
+    ScopeConfig.defaultWaitForChildrenTimeout = const Duration(
+      milliseconds: 20,
+    );
   });
 
   tearDown(() {
@@ -39,53 +40,57 @@ void main() {
 
   bool expired() => observer.events.any((e) => e.startsWith('timeout '));
 
-  testWidgets('ScopeTimeout.none removes the limit on the wait for a scopeKey',
-      (tester) async {
-    final hold = Completer<void>();
-    addTearDown(() {
-      if (!hold.isCompleted) {
-        hold.complete();
-      }
-    });
+  testWidgets(
+    'ScopeTimeout.none removes the limit on the wait for a scopeKey',
+    (tester) async {
+      final hold = Completer<void>();
+      addTearDown(() {
+        if (!hold.isCompleted) {
+          hold.complete();
+        }
+      });
 
-    await tester.pumpWidget(
-      Directionality(
-        textDirection: TextDirection.ltr,
-        child: AsyncScopeCoordinator(
-          child: Column(
-            children: [
-              _scope(tag: 'holder', scopeKey: 'shared', initGate: hold),
-              _scope(
-                tag: 'waiter',
-                scopeKey: 'shared',
-                scopeKeyTimeout: ScopeTimeout.none,
-              ),
-            ],
+      await tester.pumpWidget(
+        Directionality(
+          textDirection: TextDirection.ltr,
+          child: AsyncScopeCoordinator(
+            child: Column(
+              children: [
+                _scope(tag: 'holder', scopeKey: 'shared', initGate: hold),
+                _scope(
+                  tag: 'waiter',
+                  scopeKey: 'shared',
+                  scopeKeyTimeout: ScopeTimeout.none,
+                ),
+              ],
+            ),
           ),
         ),
-      ),
-    );
-    await settle(tester, until: () => false);
+      );
+      await settle(tester, until: () => false);
 
-    expect(
-      expired(),
-      isFalse,
-      reason: 'the default limit is 20ms and the wait was held far longer; '
-          'without ScopeTimeout.none it would have given up',
-    );
-    expect(
-      observer.events,
-      isNot(contains('ready AsyncScope(waiter)')),
-      reason: 'and it is still waiting rather than let in early',
-    );
+      expect(
+        expired(),
+        isFalse,
+        reason:
+            'the default limit is 20ms and the wait was held far longer; '
+            'without ScopeTimeout.none it would have given up',
+      );
+      expect(
+        observer.events,
+        isNot(contains('ready AsyncScope(waiter)')),
+        reason: 'and it is still waiting rather than let in early',
+      );
 
-    hold.complete();
-    await tester.pumpWidget(const SizedBox.shrink());
-    await settle(tester, until: () => false);
-  });
+      hold.complete();
+      await tester.pumpWidget(const SizedBox.shrink());
+      await settle(tester, until: () => false);
+    },
+  );
 
-  testWidgets("ScopeTimeout.none removes the limit on a scope's own teardown",
-      (tester) async {
+  testWidgets("ScopeTimeout.none removes the limit on a scope's own teardown", (
+    tester,
+  ) async {
     final hold = Completer<void>();
     addTearDown(() {
       if (!hold.isCompleted) {
@@ -115,8 +120,9 @@ void main() {
     await settle(tester, until: () => false);
   });
 
-  testWidgets('ScopeTimeout.none removes the limit on the wait for children',
-      (tester) async {
+  testWidgets('ScopeTimeout.none removes the limit on the wait for children', (
+    tester,
+  ) async {
     final hold = Completer<void>();
     addTearDown(() {
       if (!hold.isCompleted) {
@@ -125,22 +131,22 @@ void main() {
     });
 
     Widget build({required bool present}) => Directionality(
-          textDirection: TextDirection.ltr,
-          child: present
-              ? _parent(
-                  waitForChildrenTimeout: ScopeTimeout.none,
-                  child: _scope(
-                    tag: 'child',
-                    disposeGate: hold,
-                    // Unbounded too: with the default 20 ms the child's own
-                    // teardown would be given up on first, the parent would
-                    // have nothing left to wait for, and the wait under test
-                    // would never run out to begin with.
-                    disposeScopeTimeout: ScopeTimeout.none,
-                  ),
-                )
-              : const SizedBox.shrink(),
-        );
+      textDirection: TextDirection.ltr,
+      child: present
+          ? _parent(
+              waitForChildrenTimeout: ScopeTimeout.none,
+              child: _scope(
+                tag: 'child',
+                disposeGate: hold,
+                // Unbounded too: with the default 20 ms the child's own
+                // teardown would be given up on first, the parent would
+                // have nothing left to wait for, and the wait under test
+                // would never run out to begin with.
+                disposeScopeTimeout: ScopeTimeout.none,
+              ),
+            )
+          : const SizedBox.shrink(),
+    );
 
     await tester.pumpWidget(build(present: true));
     await tester.pumpAndSettle();
@@ -160,60 +166,65 @@ void main() {
   });
 
   testWidgets(
-      'ScopeTimeout.none as the default removes the limit on the wait for a '
-      'cancelled initialization', (tester) async {
-    // The one timeout a single scope may not remove for itself. Every piece of
-    // documentation that says so sends the reader here to remove it for the
-    // whole application instead, so this is the value a reader who followed
-    // that advice writes.
-    ScopeConfig.defaultInitCancellationTimeout = ScopeTimeout.none;
+    'ScopeTimeout.none as the default removes the limit on the wait for a '
+    'cancelled initialization',
+    (tester) async {
+      // The one timeout a single scope may not remove for itself. Every piece
+      // of documentation that says so sends the reader here to remove it for
+      // the whole application instead, so this is the value a reader who
+      // followed that advice writes.
+      ScopeConfig.defaultInitCancellationTimeout = ScopeTimeout.none;
 
-    final hold = Completer<void>();
-    addTearDown(() {
-      if (!hold.isCompleted) {
-        hold.complete();
-      }
-    });
+      final hold = Completer<void>();
+      addTearDown(() {
+        if (!hold.isCompleted) {
+          hold.complete();
+        }
+      });
 
-    await tester.pumpWidget(
-      Directionality(
-        textDirection: TextDirection.ltr,
-        child: _scope(tag: 'cancelled', initGate: hold),
-      ),
-    );
-    await tester.pumpAndSettle();
+      await tester.pumpWidget(
+        Directionality(
+          textDirection: TextDirection.ltr,
+          child: _scope(tag: 'cancelled', initGate: hold),
+        ),
+      );
+      await tester.pumpAndSettle();
 
-    await tester.pumpWidget(const SizedBox.shrink());
-    await settle(tester, until: () => false);
+      await tester.pumpWidget(const SizedBox.shrink());
+      await settle(tester, until: () => false);
 
-    expect(
-      expired(),
-      isFalse,
-      reason: 'the marker means "no limit at all" wherever it is written, and '
-          'a global default that expires at once is the opposite of what was '
-          'asked for',
-    );
-    expect(
-      observer.events,
-      isNot(contains('disposed AsyncScope(cancelled)')),
-      reason: 'and the teardown is still waiting for the cancellation',
-    );
+      expect(
+        expired(),
+        isFalse,
+        reason:
+            'the marker means "no limit at all" wherever it is written, and '
+            'a global default that expires at once is the opposite of what was '
+            'asked for',
+      );
+      expect(
+        observer.events,
+        isNot(contains('disposed AsyncScope(cancelled)')),
+        reason: 'and the teardown is still waiting for the cancellation',
+      );
 
-    hold.complete();
-    await settle(
-      tester,
-      until: () => observer.events.contains('disposed AsyncScope(cancelled)'),
-    );
-    expect(
-      observer.events,
-      contains('disposed AsyncScope(cancelled)'),
-      reason: 'the wait was unbounded, not stuck: letting the generator run '
-          'out finishes it',
-    );
-  });
+      hold.complete();
+      await settle(
+        tester,
+        until: () => observer.events.contains('disposed AsyncScope(cancelled)'),
+      );
+      expect(
+        observer.events,
+        contains('disposed AsyncScope(cancelled)'),
+        reason:
+            'the wait was unbounded, not stuck: letting the generator run '
+            'out finishes it',
+      );
+    },
+  );
 
-  testWidgets('ScopeTimeout.none is refused by pauseAfterInitialization',
-      (tester) async {
+  testWidgets('ScopeTimeout.none is refused by pauseAfterInitialization', (
+    tester,
+  ) async {
     await tester.pumpWidget(
       Directionality(
         textDirection: TextDirection.ltr,
@@ -233,7 +244,8 @@ void main() {
           'ScopeTimeout.none or any other negative Duration.',
         ),
       ),
-      reason: 'a pause is a length of time, not a limit on a wait: "wait as '
+      reason:
+          'a pause is a length of time, not a limit on a wait: "wait as '
           'long as it takes" says nothing here, and used to mean "do not '
           'pause at all" -- the opposite of the one thing the parameter '
           'does. The phase name stands right in front of the error in an '
@@ -242,8 +254,9 @@ void main() {
     );
   });
 
-  testWidgets('a Duration that lost the marker is refused, not run at once',
-      (tester) async {
+  testWidgets('a Duration that lost the marker is refused, not run at once', (
+    tester,
+  ) async {
     late BuildContext context;
 
     await tester.pumpWidget(
@@ -281,8 +294,9 @@ void main() {
     );
   });
 
-  testWidgets('ScopeTimeout.none is refused by initCancellationTimeout',
-      (tester) async {
+  testWidgets('ScopeTimeout.none is refused by initCancellationTimeout', (
+    tester,
+  ) async {
     final hold = Completer<void>();
     addTearDown(() {
       if (!hold.isCompleted) {
@@ -330,7 +344,8 @@ void main() {
         (event) => event.contains('initializationCancellation'),
       ),
       contains(contains('not accepted by initCancellationTimeout')),
-      reason: 'a cancellation that waits with no limit is the hang the limit '
+      reason:
+          'a cancellation that waits with no limit is the hang the limit '
           'was put there to prevent',
     );
     expect(
@@ -353,34 +368,30 @@ Widget _scope({
   Duration? disposeScopeTimeout,
   Duration? initCancellationTimeout,
   Duration? pauseAfterInitialization,
-}) =>
-    AsyncScope(
-      tag: tag,
-      scopeKey: scopeKey,
-      scopeKeyTimeout: scopeKeyTimeout,
-      disposeScopeTimeout: disposeScopeTimeout,
-      initCancellationTimeout: initCancellationTimeout,
-      pauseAfterInitialization: pauseAfterInitialization,
-      initScope: (context, ctx) async {
-        if (initGate != null) {
-          await initGate.future;
-        }
-      },
-      disposeScope: () async {
-        if (disposeGate != null) {
-          await disposeGate.future;
-        }
-      },
-      progressBuilder: (context, progress) => const SizedBox.shrink(),
-      builder: (context) => const SizedBox.shrink(),
-      errorBuilder: (context, error, stackTrace, progress) =>
-          const SizedBox.shrink(),
-    );
+}) => AsyncScope(
+  tag: tag,
+  scopeKey: scopeKey,
+  scopeKeyTimeout: scopeKeyTimeout,
+  disposeScopeTimeout: disposeScopeTimeout,
+  initCancellationTimeout: initCancellationTimeout,
+  pauseAfterInitialization: pauseAfterInitialization,
+  initScope: (context, ctx) async {
+    if (initGate != null) {
+      await initGate.future;
+    }
+  },
+  disposeScope: () async {
+    if (disposeGate != null) {
+      await disposeGate.future;
+    }
+  },
+  progressBuilder: (context, progress) => const SizedBox.shrink(),
+  builder: (context) => const SizedBox.shrink(),
+  errorBuilder: (context, error, stackTrace, progress) =>
+      const SizedBox.shrink(),
+);
 
-Widget _parent({
-  required Widget child,
-  Duration? waitForChildrenTimeout,
-}) =>
+Widget _parent({required Widget child, Duration? waitForChildrenTimeout}) =>
     AsyncScope(
       tag: 'parent',
       waitForChildrenTimeout: waitForChildrenTimeout,

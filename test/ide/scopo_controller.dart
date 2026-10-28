@@ -46,7 +46,7 @@ final class PlayerScope
     extends AsyncControllerScopeBase<PlayerScope, PlayerController> {
   /// Built once the controller is ready, and receives it.
   final Widget Function(BuildContext context, PlayerController controller)
-      builder;
+  builder;
 
   const PlayerScope({super.key, required this.builder});
 
@@ -87,8 +87,7 @@ final class PlayerScope
     BuildContext context,
     Object error,
     StackTrace stackTrace,
-  ) =>
-      Center(child: Text('$error'));
+  ) => Center(child: Text('$error'));
 
   @override
   Widget buildOnReady(BuildContext context, PlayerController controller) =>

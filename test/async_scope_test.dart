@@ -97,8 +97,9 @@ void main() {
         // Captured before removal, so the assertion below can inspect the
         // (by-then-defunct, but still perfectly readable) element instance
         // directly instead of relying on a static/global counter.
-        final element = tester.element(find.byType(_ReadyRaceScope))
-            as _ReadyRaceScopeElement;
+        final element =
+            tester.element(find.byType(_ReadyRaceScope))
+                as _ReadyRaceScopeElement;
 
         // `TestWidgetsFlutterBinding.idle()` runs `FakeAsync.elapse
         // (Duration.zero)`: it flushes pending microtasks/zero-duration
@@ -166,8 +167,9 @@ void main() {
   // What can still ask it is something the body left running: a helper that
   // reports a step after the body has already fallen over.
   group('AsyncScope initialization left with a helper running', () {
-    testWidgets('a failed initialization is not painted over by a late step',
-        (tester) async {
+    testWidgets('a failed initialization is not painted over by a late step', (
+      tester,
+    ) async {
       late ScopeInitContext captured;
 
       await tester.pumpWidget(
@@ -191,7 +193,8 @@ void main() {
       expect(
         scope.state,
         isA<AsyncScopeError>(),
-        reason: 'a scope whose initialization failed does not go back to '
+        reason:
+            'a scope whose initialization failed does not go back to '
             'showing progress because something is still talking',
       );
       expect(
@@ -224,18 +227,19 @@ void main() {
         final scopeKey = GlobalKey();
 
         Widget buildTree(String label) => Directionality(
-              textDirection: TextDirection.ltr,
-              child: _SyncInitAsyncScope(
-                key: scopeKey,
-                failSyncInit: true,
-                label: label,
-              ),
-            );
+          textDirection: TextDirection.ltr,
+          child: _SyncInitAsyncScope(
+            key: scopeKey,
+            failSyncInit: true,
+            label: label,
+          ),
+        );
 
         await tester.pumpWidget(buildTree('first'));
 
-        final element = tester.element(find.byType(_SyncInitAsyncScope))
-            as _SyncInitAsyncScopeElement;
+        final element =
+            tester.element(find.byType(_SyncInitAsyncScope))
+                as _SyncInitAsyncScopeElement;
 
         expect(element.syncInitAttempts, 1);
         expect(element.asyncInitStarts, 0);
@@ -268,13 +272,15 @@ void main() {
         expect(
           element.disposeCount,
           0,
-          reason: 'nothing was initialized asynchronously, so nothing is '
+          reason:
+              'nothing was initialized asynchronously, so nothing is '
               'disposed of asynchronously',
         );
         expect(
           element.unmountCount,
           1,
-          reason: 'the synchronous half is not the asynchronous one: '
+          reason:
+              'the synchronous half is not the asynchronous one: '
               '`onUnmount` is promised to run whether the scope was removed '
               'from the tree or closed, and a scope whose initialization '
               'failed is a scope that may still have taken something before '
@@ -290,19 +296,20 @@ void main() {
         final scopeKey = GlobalKey();
 
         Widget buildTree(String label) => Directionality(
-              textDirection: TextDirection.ltr,
-              child: _SyncInitAsyncScope(
-                key: scopeKey,
-                failSyncInit: false,
-                label: label,
-              ),
-            );
+          textDirection: TextDirection.ltr,
+          child: _SyncInitAsyncScope(
+            key: scopeKey,
+            failSyncInit: false,
+            label: label,
+          ),
+        );
 
         await tester.pumpWidget(buildTree('first'));
         await tester.pumpAndSettle();
 
-        final element = tester.element(find.byType(_SyncInitAsyncScope))
-            as _SyncInitAsyncScopeElement;
+        final element =
+            tester.element(find.byType(_SyncInitAsyncScope))
+                as _SyncInitAsyncScopeElement;
 
         expect(tester.takeException(), isNull);
         expect(element.syncInitAttempts, 1);
@@ -337,40 +344,41 @@ void main() {
         final movedKey = GlobalKey();
 
         Widget buildTree({required bool left}) => Directionality(
-              textDirection: TextDirection.ltr,
-              child: _WaitingParentScope(
-                child: SizedBox(
-                  width: 100,
-                  height: 100,
-                  child: left
-                      ? Align(
-                          alignment: Alignment.topLeft,
-                          child: SizedBox(
-                            key: movedKey,
-                            child: const _SyncInitAsyncScope(
-                              failSyncInit: true,
-                              label: 'child',
-                            ),
-                          ),
-                        )
-                      : Center(
-                          child: SizedBox(
-                            key: movedKey,
-                            child: const _SyncInitAsyncScope(
-                              failSyncInit: true,
-                              label: 'child',
-                            ),
-                          ),
+          textDirection: TextDirection.ltr,
+          child: _WaitingParentScope(
+            child: SizedBox(
+              width: 100,
+              height: 100,
+              child: left
+                  ? Align(
+                      alignment: Alignment.topLeft,
+                      child: SizedBox(
+                        key: movedKey,
+                        child: const _SyncInitAsyncScope(
+                          failSyncInit: true,
+                          label: 'child',
                         ),
-                ),
-              ),
-            );
+                      ),
+                    )
+                  : Center(
+                      child: SizedBox(
+                        key: movedKey,
+                        child: const _SyncInitAsyncScope(
+                          failSyncInit: true,
+                          label: 'child',
+                        ),
+                      ),
+                    ),
+            ),
+          ),
+        );
 
         await tester.pumpWidget(buildTree(left: true));
         expect(tester.takeException(), isA<StateError>());
 
-        final parent = tester.element(find.byType(_WaitingParentScope))
-            as _WaitingParentScopeElement;
+        final parent =
+            tester.element(find.byType(_WaitingParentScope))
+                as _WaitingParentScopeElement;
 
         // The move re-activates the whole subtree, which is where a scope
         // registers itself with its parent again. A scope that never
@@ -392,7 +400,8 @@ void main() {
         expect(
           parent.disposed,
           isTrue,
-          reason: 'the parent got to its own disposal instead of waiting for a '
+          reason:
+              'the parent got to its own disposal instead of waiting for a '
               'child that will never report back',
         );
         expect(
@@ -406,49 +415,48 @@ void main() {
     // Every other family hands the progress to the branches built while the
     // scope is not ready. This one computed it, kept it in the model, and then
     // left the builder to fish it back out of `AsyncScope.of`.
-    testWidgets(
-      'hands the progress to the initializing and error branches',
-      (tester) async {
-        final gate = Completer<void>();
+    testWidgets('hands the progress to the initializing and error branches', (
+      tester,
+    ) async {
+      final gate = Completer<void>();
 
-        await tester.pumpWidget(
-          Directionality(
-            textDirection: TextDirection.ltr,
-            child: AsyncScope(
-              initScope: (context, ctx) async {
-                ctx.progress('connecting');
-                await gate.future;
+      await tester.pumpWidget(
+        Directionality(
+          textDirection: TextDirection.ltr,
+          child: AsyncScope(
+            initScope: (context, ctx) async {
+              ctx.progress('connecting');
+              await gate.future;
 
-                throw StateError('init failed');
-              },
-              disposeScope: () {},
-              progressBuilder: (context, progress) =>
-                  Text('initializing: $progress'),
-              errorBuilder: (context, error, stackTrace, progress) =>
-                  Text('error at $progress'),
-              builder: (context) => const Text('ready'),
-            ),
+              throw StateError('init failed');
+            },
+            disposeScope: () {},
+            progressBuilder: (context, progress) =>
+                Text('initializing: $progress'),
+            errorBuilder: (context, error, stackTrace, progress) =>
+                Text('error at $progress'),
+            builder: (context) => const Text('ready'),
           ),
-        );
-        await tester.pump();
+        ),
+      );
+      await tester.pump();
 
-        expect(
-          find.text('initializing: connecting'),
-          findsOneWidget,
-          reason: 'the progress the body reported is what is shown',
-        );
+      expect(
+        find.text('initializing: connecting'),
+        findsOneWidget,
+        reason: 'the progress the body reported is what is shown',
+      );
 
-        gate.complete();
-        await tester.pumpAndSettle();
+      gate.complete();
+      await tester.pumpAndSettle();
 
-        expect(
-          find.text('error at connecting'),
-          findsOneWidget,
-          reason: 'the error branch is given the progress the scope reached',
-        );
-        expect(tester.takeException(), isNull);
-      },
-    );
+      expect(
+        find.text('error at connecting'),
+        findsOneWidget,
+        reason: 'the error branch is given the progress the scope reached',
+      );
+      expect(tester.takeException(), isNull);
+    });
 
     testWidgets(
       'an error raised inside the init body reaches the model with the last '
@@ -481,8 +489,9 @@ void main() {
 
         expect(find.text('error: Bad state: init failed'), findsOneWidget);
 
-        final element = tester.element(find.byType(AsyncScope))
-            as AsyncScopeContext<AsyncScope>;
+        final element =
+            tester.element(find.byType(AsyncScope))
+                as AsyncScopeContext<AsyncScope>;
 
         expect(element.hasError, isTrue);
         expect(element.error, isA<StateError>());
@@ -520,32 +529,31 @@ void main() {
         // failing, so the body only ever collects, and every `expect` is made
         // once the zone is gone.
         final errors = <Object>[];
-        await runZonedGuarded(
-          () async {
-            await tester.pumpWidget(
-              const Directionality(
-                textDirection: TextDirection.ltr,
-                child: _WaitingParentScope(child: _FailingInitScope()),
-              ),
-            );
-            await tester.pumpAndSettle();
+        await runZonedGuarded(() async {
+          await tester.pumpWidget(
+            const Directionality(
+              textDirection: TextDirection.ltr,
+              child: _WaitingParentScope(child: _FailingInitScope()),
+            ),
+          );
+          await tester.pumpAndSettle();
 
-            parent = tester.element(find.byType(_WaitingParentScope))
-                as _WaitingParentScopeElement;
-            child = tester.element(find.byType(_FailingInitScope))
-                as _FailingInitScopeElement;
-            childrenBefore = parent.childrenCount;
+          parent =
+              tester.element(find.byType(_WaitingParentScope))
+                  as _WaitingParentScopeElement;
+          child =
+              tester.element(find.byType(_FailingInitScope))
+                  as _FailingInitScopeElement;
+          childrenBefore = parent.childrenCount;
 
-            await tester.pumpWidget(
-              const Directionality(
-                textDirection: TextDirection.ltr,
-                child: SizedBox.shrink(),
-              ),
-            );
-            await settle(tester, until: () => parent.disposed);
-          },
-          (error, stackTrace) => errors.add(error),
-        );
+          await tester.pumpWidget(
+            const Directionality(
+              textDirection: TextDirection.ltr,
+              child: SizedBox.shrink(),
+            ),
+          );
+          await settle(tester, until: () => parent.disposed);
+        }, (error, stackTrace) => errors.add(error));
 
         expect(
           childrenBefore,
@@ -575,7 +583,8 @@ void main() {
         expect(
           errors,
           isEmpty,
-          reason: 'a body that throws before its first await is a failed '
+          reason:
+              'a body that throws before its first await is a failed '
               'initialization like any other, not an error escaping into the '
               'zone the mount ran in -- which is what a stream that threw '
               'while it was being built used to be',
@@ -601,37 +610,36 @@ void main() {
         // uncaught error of the zone the mount ran in, and nothing inside the
         // zone may throw.
         final errors = <Object>[];
-        await runZonedGuarded(
-          () async {
-            await tester.pumpWidget(
-              const Directionality(
-                textDirection: TextDirection.ltr,
-                // No `AsyncScopeCoordinator` anywhere above: the lookup in
-                // `AsyncScopeCoordinator._elementOf` throws, and it throws
-                // before `_initJob` exists.
-                child: _WaitingParentScope(
-                  child: _FailingInitScope(testKey: 'shared'),
-                ),
+        await runZonedGuarded(() async {
+          await tester.pumpWidget(
+            const Directionality(
+              textDirection: TextDirection.ltr,
+              // No `AsyncScopeCoordinator` anywhere above: the lookup in
+              // `AsyncScopeCoordinator._elementOf` throws, and it throws
+              // before `_initJob` exists.
+              child: _WaitingParentScope(
+                child: _FailingInitScope(testKey: 'shared'),
               ),
-            );
-            await tester.pumpAndSettle();
+            ),
+          );
+          await tester.pumpAndSettle();
 
-            parent = tester.element(find.byType(_WaitingParentScope))
-                as _WaitingParentScopeElement;
-            child = tester.element(find.byType(_FailingInitScope))
-                as _FailingInitScopeElement;
-            childrenBefore = parent.childrenCount;
+          parent =
+              tester.element(find.byType(_WaitingParentScope))
+                  as _WaitingParentScopeElement;
+          child =
+              tester.element(find.byType(_FailingInitScope))
+                  as _FailingInitScopeElement;
+          childrenBefore = parent.childrenCount;
 
-            await tester.pumpWidget(
-              const Directionality(
-                textDirection: TextDirection.ltr,
-                child: SizedBox.shrink(),
-              ),
-            );
-            await settle(tester, until: () => parent.disposed);
-          },
-          (error, stackTrace) => errors.add(error),
-        );
+          await tester.pumpWidget(
+            const Directionality(
+              textDirection: TextDirection.ltr,
+              child: SizedBox.shrink(),
+            ),
+          );
+          await settle(tester, until: () => parent.disposed);
+        }, (error, stackTrace) => errors.add(error));
 
         expect(
           childrenBefore,
@@ -661,7 +669,8 @@ void main() {
         expect(
           errors,
           hasLength(1),
-          reason: 'the entry that never made it into a queue is dropped, so '
+          reason:
+              'the entry that never made it into a queue is dropped, so '
               'the disposal does not `exit()` it and raise a second error',
         );
         expect(errors.single, isA<FlutterError>());
@@ -685,42 +694,41 @@ void main() {
       (tester) async {
         final errors = <Object>[];
 
-        await runZonedGuarded(
-          () async {
-            await tester.pumpWidget(
-              Directionality(
-                textDirection: TextDirection.ltr,
-                // No `AsyncScopeCoordinator` above a scope that asks for a
-                // `scopeKey`: the lookup throws, and it throws before the
-                // job exists. This is the likeliest way an initialization
-                // fails synchronously, and it is a mistake in the tree rather
-                // than in the work.
-                child: AsyncScope(
-                  scopeKey: 'k',
-                  initScope: (context, ctx) async {},
-                  disposeScope: () {},
-                  progressBuilder: (context, progress) => const Text('init'),
-                  errorBuilder: (context, error, stackTrace, progress) =>
-                      const Text('error'),
-                  builder: (context) => const Text('ready'),
-                ),
+        await runZonedGuarded(() async {
+          await tester.pumpWidget(
+            Directionality(
+              textDirection: TextDirection.ltr,
+              // No `AsyncScopeCoordinator` above a scope that asks for a
+              // `scopeKey`: the lookup throws, and it throws before the
+              // job exists. This is the likeliest way an initialization
+              // fails synchronously, and it is a mistake in the tree rather
+              // than in the work.
+              child: AsyncScope(
+                scopeKey: 'k',
+                initScope: (context, ctx) async {},
+                disposeScope: () {},
+                progressBuilder: (context, progress) => const Text('init'),
+                errorBuilder: (context, error, stackTrace, progress) =>
+                    const Text('error'),
+                builder: (context) => const Text('ready'),
               ),
-            );
-            await tester.pumpAndSettle();
-          },
-          (error, stackTrace) => errors.add(error),
-        );
+            ),
+          );
+          await tester.pumpAndSettle();
+        }, (error, stackTrace) => errors.add(error));
 
         expect(
           find.text('error'),
           findsOneWidget,
-          reason: 'the state table says a failure before the ready state '
+          reason:
+              'the state table says a failure before the ready state '
               'builds `buildOnError`, and this is such a failure',
         );
         expect(
           find.text('init'),
           findsNothing,
-          reason: 'the loading branch is not what a scope that will never '
+          reason:
+              'the loading branch is not what a scope that will never '
               'load should be left showing',
         );
         expect(
@@ -755,8 +763,9 @@ void main() {
   // and whether `disposeScope()` still runs.
 
   group('the model of a scope', () {
-    testWidgets('is one object rather than a wrapper made on every read',
-        (tester) async {
+    testWidgets('is one object rather than a wrapper made on every read', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         const Directionality(
           textDirection: TextDirection.ltr,
@@ -765,13 +774,15 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      final element = tester.element(find.byType(_ReadyRaceScope))
-          as _ReadyRaceScopeElement;
+      final element =
+          tester.element(find.byType(_ReadyRaceScope))
+              as _ReadyRaceScopeElement;
 
       expect(
         element.model,
         same(element.model),
-        reason: '`state`, `isInitialized`, `hasError`, `error`, `stackTrace`, '
+        reason:
+            '`state`, `isInitialized`, `hasError`, `error`, `stackTrace`, '
             '`buildChild` and every run of every selector go through this',
       );
     });
@@ -799,124 +810,113 @@ void main() {
 
     (_WaitingParentScopeElement, _WaitingParentScopeElement) parents(
       WidgetTester tester,
-    ) =>
-        (
-          tester.element(find.byType(_WaitingParentScope).at(0))
-              as _WaitingParentScopeElement,
-          tester.element(find.byType(_WaitingParentScope).at(1))
-              as _WaitingParentScopeElement,
-        );
-
-    testWidgets(
-      'hands itself over to the new parent and lets the old one go',
-      (tester) async {
-        final childKey = GlobalKey();
-
-        await tester.pumpWidget(
-          treeWith(childKey: childKey, underSecond: false),
-        );
-        await tester.pumpAndSettle();
-
-        final (first, second) = parents(tester);
-
-        expect(first.childrenCount, 1, reason: 'the child started here');
-        expect(second.childrenCount, 0);
-
-        // The move goes through `deactivate` + `activate`, and it is
-        // `activate()` that has to unregister the scope from the parent it
-        // left and register it with the one it arrived at. A failed handoff
-        // is invisible from the child's side: it shows up as the old parent
-        // waiting out its whole `waitForChildrenTimeout` on a scope that is
-        // alive and well elsewhere.
-        await tester.pumpWidget(
-          treeWith(childKey: childKey, underSecond: true),
-        );
-        await tester.pumpAndSettle();
-
-        expect(
-          first.childrenCount,
-          0,
-          reason: 'the scope unregistered from the parent it left',
-        );
-        expect(
-          second.childrenCount,
-          1,
-          reason: 'the scope registered with the parent it arrived at',
-        );
-        expect(
-          find.byKey(childKey),
-          findsOneWidget,
-          reason: 'the scope itself survived the move',
-        );
-
-        await tester.pumpWidget(
-          const Directionality(
-            textDirection: TextDirection.ltr,
-            child: SizedBox.shrink(),
-          ),
-        );
-        await settle(tester, until: () => first.disposed && second.disposed);
-      },
+    ) => (
+      tester.element(find.byType(_WaitingParentScope).at(0))
+          as _WaitingParentScopeElement,
+      tester.element(find.byType(_WaitingParentScope).at(1))
+          as _WaitingParentScopeElement,
     );
 
-    testWidgets(
-      'is awaited by the new parent, not by the old one',
-      (tester) async {
-        final childKey = GlobalKey();
+    testWidgets('hands itself over to the new parent and lets the old one go', (
+      tester,
+    ) async {
+      final childKey = GlobalKey();
 
-        await tester.pumpWidget(
-          treeWith(childKey: childKey, underSecond: false),
-        );
-        await tester.pumpAndSettle();
-        await tester.pumpWidget(
-          treeWith(childKey: childKey, underSecond: true),
-        );
-        await tester.pumpAndSettle();
+      await tester.pumpWidget(treeWith(childKey: childKey, underSecond: false));
+      await tester.pumpAndSettle();
 
-        final (first, second) = parents(tester);
-        final child =
-            tester.element(find.byType(_MovableScope)) as _MovableScopeElement;
+      final (first, second) = parents(tester);
 
-        // The child holds its own disposal open, so the parent that awaits it
-        // cannot finish while it is held.
-        final held = Completer<void>();
-        child.disposalGate = held.future;
+      expect(first.childrenCount, 1, reason: 'the child started here');
+      expect(second.childrenCount, 0);
 
-        await tester.pumpWidget(
-          const Directionality(
-            textDirection: TextDirection.ltr,
-            child: SizedBox.shrink(),
-          ),
-        );
-        await settle(tester, until: () => first.disposed);
+      // The move goes through `deactivate` + `activate`, and it is
+      // `activate()` that has to unregister the scope from the parent it
+      // left and register it with the one it arrived at. A failed handoff
+      // is invisible from the child's side: it shows up as the old parent
+      // waiting out its whole `waitForChildrenTimeout` on a scope that is
+      // alive and well elsewhere.
+      await tester.pumpWidget(treeWith(childKey: childKey, underSecond: true));
+      await tester.pumpAndSettle();
 
-        expect(
-          first.disposed,
-          isTrue,
-          reason: 'the parent it left had nothing left to wait for',
-        );
-        expect(
-          first.timedOut,
-          isFalse,
-          reason: 'and it did not have to give up on anything',
-        );
-        expect(
-          second.disposed,
-          isFalse,
-          reason: 'the parent it moved to is held by the child it now awaits',
-        );
+      expect(
+        first.childrenCount,
+        0,
+        reason: 'the scope unregistered from the parent it left',
+      );
+      expect(
+        second.childrenCount,
+        1,
+        reason: 'the scope registered with the parent it arrived at',
+      );
+      expect(
+        find.byKey(childKey),
+        findsOneWidget,
+        reason: 'the scope itself survived the move',
+      );
 
-        held.complete();
-        await settle(tester, until: () => second.disposed);
+      await tester.pumpWidget(
+        const Directionality(
+          textDirection: TextDirection.ltr,
+          child: SizedBox.shrink(),
+        ),
+      );
+      await settle(tester, until: () => first.disposed && second.disposed);
+    });
 
-        expect(
-          second.disposed,
-          isTrue,
-          reason: 'and it finishes once the child is done',
-        );
-        expect(second.timedOut, isFalse);
-      },
-    );
+    testWidgets('is awaited by the new parent, not by the old one', (
+      tester,
+    ) async {
+      final childKey = GlobalKey();
+
+      await tester.pumpWidget(treeWith(childKey: childKey, underSecond: false));
+      await tester.pumpAndSettle();
+      await tester.pumpWidget(treeWith(childKey: childKey, underSecond: true));
+      await tester.pumpAndSettle();
+
+      final (first, second) = parents(tester);
+      final child =
+          tester.element(find.byType(_MovableScope)) as _MovableScopeElement;
+
+      // The child holds its own disposal open, so the parent that awaits it
+      // cannot finish while it is held.
+      final held = Completer<void>();
+      child.disposalGate = held.future;
+
+      await tester.pumpWidget(
+        const Directionality(
+          textDirection: TextDirection.ltr,
+          child: SizedBox.shrink(),
+        ),
+      );
+      await settle(tester, until: () => first.disposed);
+
+      expect(
+        first.disposed,
+        isTrue,
+        reason: 'the parent it left had nothing left to wait for',
+      );
+      expect(
+        first.timedOut,
+        isFalse,
+        reason: 'and it did not have to give up on anything',
+      );
+      expect(
+        second.disposed,
+        isFalse,
+        reason: 'the parent it moved to is held by the child it now awaits',
+      );
+
+      held.complete();
+      await settle(tester, until: () => second.disposed);
+
+      expect(
+        second.disposed,
+        isTrue,
+        reason: 'and it finishes once the child is done',
+      );
+      expect(second.timedOut, isFalse);
+    });
   });
 
   group('AsyncScope initialization that raises while it is cancelled', () {
@@ -931,30 +931,28 @@ void main() {
         // about it: nothing inside may throw, every expectation is made once
         // the zone is gone.
         final errors = <Object>[];
-        await runZonedGuarded(
-          () async {
-            await tester.pumpWidget(
-              const Directionality(
-                textDirection: TextDirection.ltr,
-                child: _WaitingParentScope(child: _RaisingOnCancelScope()),
-              ),
-            );
-            await tester.pump();
+        await runZonedGuarded(() async {
+          await tester.pumpWidget(
+            const Directionality(
+              textDirection: TextDirection.ltr,
+              child: _WaitingParentScope(child: _RaisingOnCancelScope()),
+            ),
+          );
+          await tester.pump();
 
-            parent = tester.element(find.byType(_WaitingParentScope))
-                as _WaitingParentScopeElement;
-            childrenBefore = parent.childrenCount;
+          parent =
+              tester.element(find.byType(_WaitingParentScope))
+                  as _WaitingParentScopeElement;
+          childrenBefore = parent.childrenCount;
 
-            await tester.pumpWidget(
-              const Directionality(
-                textDirection: TextDirection.ltr,
-                child: SizedBox.shrink(),
-              ),
-            );
-            await settle(tester, until: () => parent.disposed);
-          },
-          (error, stackTrace) => errors.add(error),
-        );
+          await tester.pumpWidget(
+            const Directionality(
+              textDirection: TextDirection.ltr,
+              child: SizedBox.shrink(),
+            ),
+          );
+          await settle(tester, until: () => parent.disposed);
+        }, (error, stackTrace) => errors.add(error));
 
         expect(
           childrenBefore,
@@ -1027,8 +1025,9 @@ final class _MovableScopeElement
 /// `finally` of its body throws, and the failure lands in the wait for the
 /// cancellation — the one `_performAsyncDispose` makes before it has
 /// unregistered anything.
-final class _RaisingOnCancelScope extends AsyncScopeCore<_RaisingOnCancelScope,
-    _RaisingOnCancelScopeElement> {
+final class _RaisingOnCancelScope
+    extends
+        AsyncScopeCore<_RaisingOnCancelScope, _RaisingOnCancelScopeElement> {
   const _RaisingOnCancelScope();
 
   @override
@@ -1036,8 +1035,12 @@ final class _RaisingOnCancelScope extends AsyncScopeCore<_RaisingOnCancelScope,
       _RaisingOnCancelScopeElement(this);
 }
 
-final class _RaisingOnCancelScopeElement extends AsyncScopeElementBase<
-    _RaisingOnCancelScope, _RaisingOnCancelScopeElement> {
+final class _RaisingOnCancelScopeElement
+    extends
+        AsyncScopeElementBase<
+          _RaisingOnCancelScope,
+          _RaisingOnCancelScopeElement
+        > {
   _RaisingOnCancelScopeElement(super.widget);
 
   @override
@@ -1073,8 +1076,9 @@ final class _RegisterRaceScope
       _RegisterRaceScopeElement(this);
 }
 
-final class _RegisterRaceScopeElement extends AsyncScopeElementBase<
-    _RegisterRaceScope, _RegisterRaceScopeElement> {
+final class _RegisterRaceScopeElement
+    extends
+        AsyncScopeElementBase<_RegisterRaceScope, _RegisterRaceScopeElement> {
   _RegisterRaceScopeElement(super.widget);
 
   @override
@@ -1126,8 +1130,9 @@ final class _WaitingParentScope
       _WaitingParentScopeElement(this);
 }
 
-final class _WaitingParentScopeElement extends AsyncScopeElementBase<
-    _WaitingParentScope, _WaitingParentScopeElement> {
+final class _WaitingParentScopeElement
+    extends
+        AsyncScopeElementBase<_WaitingParentScope, _WaitingParentScopeElement> {
   bool timedOut = false;
   bool disposed = false;
 
@@ -1168,8 +1173,9 @@ final class _SyncInitAsyncScope
       _SyncInitAsyncScopeElement(this);
 }
 
-final class _SyncInitAsyncScopeElement extends AsyncScopeElementBase<
-    _SyncInitAsyncScope, _SyncInitAsyncScopeElement> {
+final class _SyncInitAsyncScopeElement
+    extends
+        AsyncScopeElementBase<_SyncInitAsyncScope, _SyncInitAsyncScopeElement> {
   int syncInitAttempts = 0;
   int asyncInitStarts = 0;
   int unmountCount = 0;

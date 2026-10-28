@@ -42,8 +42,9 @@ Future<void> _advance(
 }
 
 void main() {
-  testWidgets('ScreenScope closes after all four releases without a timeout',
-      (tester) async {
+  testWidgets('ScreenScope closes after all four releases without a timeout', (
+    tester,
+  ) async {
     ScopeConfig.reset();
     final previousObserver = ScopeConfig.observer;
     final observer = _DisposalObserver();

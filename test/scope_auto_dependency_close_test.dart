@@ -81,8 +81,9 @@ void main() {
     }
   }
 
-  testWidgets('close forwards a hand-written container disposal failure',
-      (tester) async {
+  testWidgets('close forwards a hand-written container disposal failure', (
+    tester,
+  ) async {
     final deps = _ManualDependencies();
     late _TestState state;
     await tester.pumpWidget(
@@ -94,8 +95,10 @@ void main() {
     await tester.pumpAndSettle();
 
     var completed = false;
-    final check = expectLater(state.close(), throwsA(same(deps.failure)))
-        .whenComplete(() => completed = true);
+    final check = expectLater(
+      state.close(),
+      throwsA(same(deps.failure)),
+    ).whenComplete(() => completed = true);
     await settle(tester, until: () => completed);
     expect(completed, isTrue);
     await check;
@@ -110,9 +113,9 @@ final class _Dependencies extends ScopeAutoDependencies<_Dependencies, void> {
   final List<StateError> failures;
 
   _Dependencies(this.parallel, int count)
-      : failures = [
-          for (var i = 0; i < count; i++) StateError('release $i failed'),
-        ];
+    : failures = [
+        for (var i = 0; i < count; i++) StateError('release $i failed'),
+      ];
 
   @override
   ScopeDependency buildDependencies(void context) {
@@ -168,8 +171,7 @@ final class _TestScope
   Future<ScopeDependencies> initDependencies(
     BuildContext context,
     ScopeInitContext ctx,
-  ) =>
-      initialize(ctx);
+  ) => initialize(ctx);
 
   @override
   Widget buildOnProgress(BuildContext context, Object? progress) =>
@@ -181,8 +183,7 @@ final class _TestScope
     Object error,
     StackTrace stackTrace,
     Object? progress,
-  ) =>
-      const SizedBox(width: 50, height: 50);
+  ) => const SizedBox(width: 50, height: 50);
 
   @override
   _TestState createState() => _TestState();

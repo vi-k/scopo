@@ -26,10 +26,10 @@ final class CounterScope extends ScopeNotifierBase<CounterScope, Counter> {
   final Widget Function(BuildContext context) builder;
 
   CounterScope({super.key, required this.builder})
-      : super(
-          create: (context) => Counter(),
-          dispose: (model) => model.dispose(),
-        );
+    : super(
+        create: (context) => Counter(),
+        dispose: (model) => model.dispose(),
+      );
 
   /// Over a notifier somebody else owns. Delete whichever of the two this
   /// scope does not need.
@@ -42,20 +42,12 @@ final class CounterScope extends ScopeNotifierBase<CounterScope, Counter> {
   static ScopeModelContext<CounterScope, Counter> of(
     BuildContext context, {
     required bool listen,
-  }) =>
-      ScopeNotifierBase.of<CounterScope, Counter>(
-        context,
-        listen: listen,
-      );
+  }) => ScopeNotifierBase.of<CounterScope, Counter>(context, listen: listen);
 
   static V select<V>(
     BuildContext context,
     V Function(ScopeModelContext<CounterScope, Counter> context) selector,
-  ) =>
-      ScopeNotifierBase.select<CounterScope, Counter, V>(
-        context,
-        selector,
-      );
+  ) => ScopeNotifierBase.select<CounterScope, Counter, V>(context, selector);
 
   /// One value of the model, subscribed to on its own.
   static int valueOf(BuildContext context) =>

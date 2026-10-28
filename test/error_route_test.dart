@@ -85,8 +85,9 @@ void main() {
       await takeDown(tester, 'AsyncScope');
     });
 
-    testWidgets('a lite scope state whose build throws: flutterError',
-        (tester) async {
+    testWidgets('a lite scope state whose build throws: flutterError', (
+      tester,
+    ) async {
       audit.install();
 
       await tester.pumpWidget(_app(const _Lite(failBuild: true)));
@@ -99,8 +100,9 @@ void main() {
       await takeDown(tester, '_Lite');
     });
 
-    testWidgets('a synchronous init() that throws: flutterError',
-        (tester) async {
+    testWidgets('a synchronous init() that throws: flutterError', (
+      tester,
+    ) async {
       audit.install();
 
       await tester.pumpWidget(
@@ -143,8 +145,9 @@ void main() {
       });
     }
 
-    testWidgets('an initStateAsync of a ScopeState that throws: zone',
-        (tester) async {
+    testWidgets('an initStateAsync of a ScopeState that throws: zone', (
+      tester,
+    ) async {
       audit.install();
 
       await audit.runGuarded(() async {
@@ -161,8 +164,9 @@ void main() {
 
     // Reached right after the awaited `initStateAsync`, inside the discarded
     // future the initialization runs on.
-    testWidgets('an onInitialized that throws after an awaited init: zone',
-        (tester) async {
+    testWidgets('an onInitialized that throws after an awaited init: zone', (
+      tester,
+    ) async {
       audit.install();
 
       await audit.runGuarded(() async {
@@ -183,8 +187,9 @@ void main() {
     // state, so `onInitialized` waits for the frame to end -- and a
     // post-frame callback that throws is reported by the scheduler, not
     // raised into the zone.
-    testWidgets('an onInitialized that throws after the frame: flutterError',
-        (tester) async {
+    testWidgets('an onInitialized that throws after the frame: flutterError', (
+      tester,
+    ) async {
       audit.install();
 
       await audit.runGuarded(() async {
@@ -199,8 +204,9 @@ void main() {
       await takeDown(tester, '_Lite');
     });
 
-    testWidgets('an AsyncScope that fails before its job starts: zone',
-        (tester) async {
+    testWidgets('an AsyncScope that fails before its job starts: zone', (
+      tester,
+    ) async {
       audit.install();
 
       // A `scopeKey` with no coordinator above it: the lookup throws before
@@ -276,8 +282,9 @@ void main() {
   });
 
   group('FlutterError, from the teardown of an element', () {
-    testWidgets('an onUnmount that throws on the way off the tree',
-        (tester) async {
+    testWidgets('an onUnmount that throws on the way off the tree', (
+      tester,
+    ) async {
       await tester.pumpWidget(_app(const _Lite(failUnmount: true)));
       await tester.pumpAndSettle();
       audit.install();
@@ -289,8 +296,9 @@ void main() {
       expect(observer.routes.single.$3, ScopeErrorRoute.flutterError);
     });
 
-    testWidgets('a dispose that throws on the way off the tree',
-        (tester) async {
+    testWidgets('a dispose that throws on the way off the tree', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         _app(
           ScopeModel<_Model>(
@@ -309,8 +317,9 @@ void main() {
       expect(observer.routes.single.$3, ScopeErrorRoute.flutterError);
     });
 
-    testWidgets('a label that cannot be read at the top of the teardown',
-        (tester) async {
+    testWidgets('a label that cannot be read at the top of the teardown', (
+      tester,
+    ) async {
       final tag = _ThrowingTag();
       await tester.pumpWidget(_app(_asyncScope(tag: tag)));
       await tester.pumpAndSettle();
@@ -389,8 +398,9 @@ void main() {
     // handed to: it leaves through the throw into a future `dispose()`
     // reports, and the second through a report of its own. Both end up in
     // `FlutterError`.
-    testWidgets('two failed stages on the way off the tree: flutterError',
-        (tester) async {
+    testWidgets('two failed stages on the way off the tree: flutterError', (
+      tester,
+    ) async {
       final childGate = Completer<void>();
       addTearDown(() {
         if (!childGate.isCompleted) childGate.complete();
@@ -407,10 +417,8 @@ void main() {
             waitForChildrenTimeout: _short,
             onWaitForChildrenTimeout: () => throw preparation,
             disposeScope: () => throw disposal,
-            builder: (context) => _asyncScope(
-              tag: 'child',
-              disposeScope: () => childGate.future,
-            ),
+            builder: (context) =>
+                _asyncScope(tag: 'child', disposeScope: () => childGate.future),
           ),
         ),
       );
@@ -449,8 +457,9 @@ void main() {
 
     // `close()` has a caller to hand the first failure to, and the second
     // can only be reported.
-    testWidgets('two failed stages of close(): caller, then flutterError',
-        (tester) async {
+    testWidgets('two failed stages of close(): caller, then flutterError', (
+      tester,
+    ) async {
       final unmount = StateError('onUnmount failed');
       final disposal = StateError('disposeScope failed');
       late AsyncScopeContext<AsyncScope> scope;
@@ -473,9 +482,9 @@ void main() {
       Object? caught;
       unawaited(
         scope.close().then<void>(
-              (_) {},
-              onError: (Object error) => caught = error,
-            ),
+          (_) {},
+          onError: (Object error) => caught = error,
+        ),
       );
       await settle(tester, until: () => caught != null);
       expect(caught, isNotNull);
@@ -499,8 +508,9 @@ void main() {
     // Described rather than fixed: the teardown is the tree's, so its first
     // failure is reported, and the `close()` that joined it is handed the
     // same failure as well.
-    testWidgets('close() joining a teardown the tree began: flutterError',
-        (tester) async {
+    testWidgets('close() joining a teardown the tree began: flutterError', (
+      tester,
+    ) async {
       final gate = Completer<void>();
       final disposal = StateError('disposeScope failed');
       late AsyncScopeContext<AsyncScope> scope;
@@ -526,9 +536,9 @@ void main() {
       Object? caught;
       unawaited(
         scope.close().then<void>(
-              (_) {},
-              onError: (Object error) => caught = error,
-            ),
+          (_) {},
+          onError: (Object error) => caught = error,
+        ),
       );
       gate.complete();
       await settle(
@@ -556,8 +566,9 @@ void main() {
           ? 'while close() is inside disposeScope'
           : 'before the closing frame';
 
-      testWidgets('the tree takes a closing scope away $when: caller',
-          (tester) async {
+      testWidgets('the tree takes a closing scope away $when: caller', (
+        tester,
+      ) async {
         final gate = Completer<void>();
         var entered = false;
         final disposal = StateError('disposeScope failed');
@@ -584,9 +595,9 @@ void main() {
         Object? caught;
         unawaited(
           scope.close().then<void>(
-                (_) {},
-                onError: (Object error) => caught = error,
-              ),
+            (_) {},
+            onError: (Object error) => caught = error,
+          ),
         );
         if (inDisposeScope) {
           await settle(tester, until: () => entered);
@@ -611,8 +622,9 @@ void main() {
     // Pins documented current behaviour, not an intended one: a `Cancelled`
     // thrown by `disposeScope` is not told apart from any other failure of
     // the stage, so the tree's teardown reports it.
-    testWidgets('a disposeScope that throws Cancelled: flutterError',
-        (tester) async {
+    testWidgets('a disposeScope that throws Cancelled: flutterError', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         _app(_asyncScope(disposeScope: () => throw const Cancelled('gone'))),
       );
@@ -648,16 +660,18 @@ void main() {
       expect(observer.routes.single.$3, ScopeErrorRoute.flutterError);
     });
 
-    testWidgets('the controller an initialization never handed over',
-        (tester) async {
+    testWidgets('the controller an initialization never handed over', (
+      tester,
+    ) async {
       audit.install();
 
       await tester.pumpWidget(_app(const _Controlled()));
       await tester.pumpAndSettle();
 
       audit.verify(observer.routes);
-      final release = observer.routes
-          .singleWhere((entry) => entry.$2 == ScopePhase.disposal);
+      final release = observer.routes.singleWhere(
+        (entry) => entry.$2 == ScopePhase.disposal,
+      );
       expect(release.$3, ScopeErrorRoute.flutterError);
 
       await takeDown(tester, '_Controlled');
@@ -704,20 +718,22 @@ void main() {
   });
 
   group('FlutterError, from a container or the cancellation', () {
-    test('a container that fails to unmount after a failed initialization',
-        () async {
-      final dependencies = _UnmountAfterFailure();
-      audit.install();
+    test(
+      'a container that fails to unmount after a failed initialization',
+      () async {
+        final dependencies = _UnmountAfterFailure();
+        audit.install();
 
-      await expectLater(
-        runScopeInit((ctx) => dependencies.init(null, ctx)),
-        throwsA(anything),
-      );
+        await expectLater(
+          runScopeInit((ctx) => dependencies.init(null, ctx)),
+          throwsA(anything),
+        );
 
-      audit.verify(observer.routes);
-      expect(observer.routes.single.$2, ScopePhase.unmount);
-      expect(observer.routes.single.$3, ScopeErrorRoute.flutterError);
-    });
+        audit.verify(observer.routes);
+        expect(observer.routes.single.$2, ScopePhase.unmount);
+        expect(observer.routes.single.$3, ScopeErrorRoute.flutterError);
+      },
+    );
 
     test('an arm of concurrent covered by the failure beside it', () async {
       final dependencies = _TwoGatedArms();
@@ -873,31 +889,33 @@ void main() {
       expect(audit.seenIn(SeenIn.flutterError), hasLength(2));
     });
 
-    test('a failed leaf in a nested group and one beside it: flutterError each',
-        () async {
-      final routes = await disposeOf(
-        _Steps(
-          (deps) => deps.sequential('', [
-            _failingDep(deps, 'outer'),
-            deps.sequential('inner', [_failingDep(deps, 'leaf')]),
-          ]),
-        ),
-      );
+    test(
+      'a failed leaf in a nested group and one beside it: flutterError each',
+      () async {
+        final routes = await disposeOf(
+          _Steps(
+            (deps) => deps.sequential('', [
+              _failingDep(deps, 'outer'),
+              deps.sequential('inner', [_failingDep(deps, 'leaf')]),
+            ]),
+          ),
+        );
 
-      expect(routes, [
-        (
-          ScopePhase.disposal,
-          ScopeErrorRoute.flutterError,
-          'inner/leaf: Bad state: leaf cannot let go',
-        ),
-        (
-          ScopePhase.disposal,
-          ScopeErrorRoute.flutterError,
-          'outer: Bad state: outer cannot let go',
-        ),
-      ]);
-      expect(audit.seenIn(SeenIn.flutterError), hasLength(2));
-    });
+        expect(routes, [
+          (
+            ScopePhase.disposal,
+            ScopeErrorRoute.flutterError,
+            'inner/leaf: Bad state: leaf cannot let go',
+          ),
+          (
+            ScopePhase.disposal,
+            ScopeErrorRoute.flutterError,
+            'outer: Bad state: outer cannot let go',
+          ),
+        ]);
+        expect(audit.seenIn(SeenIn.flutterError), hasLength(2));
+      },
+    );
 
     // Pins what the `CHANGELOG.md` entry on every failed disposal step says:
     // N reports, each named with the path of its step.
@@ -961,20 +979,22 @@ void main() {
       });
     }
 
-    test('a foreign child that throws a named cancellation: cancellation',
-        () async {
-      final routes = await disposeOf(
-        _Steps(
-          (deps) => deps.sequential('', [
-            _ForeignRoot(named('deep', const Cancelled())),
-          ]),
-        ),
-      );
+    test(
+      'a foreign child that throws a named cancellation: cancellation',
+      () async {
+        final routes = await disposeOf(
+          _Steps(
+            (deps) => deps.sequential('', [
+              _ForeignRoot(named('deep', const Cancelled())),
+            ]),
+          ),
+        );
 
-      expect(routes.single.$1, ScopePhase.disposal);
-      expect(routes.single.$2, ScopeErrorRoute.cancellation);
-      expect(audit.seenIn(SeenIn.flutterError), isEmpty);
-    });
+        expect(routes.single.$1, ScopePhase.disposal);
+        expect(routes.single.$2, ScopeErrorRoute.cancellation);
+        expect(audit.seenIn(SeenIn.flutterError), isEmpty);
+      },
+    );
   });
 
   // The tree of a container is public, and a walk over it can be driven by
@@ -985,41 +1005,39 @@ void main() {
   // rather than fixed: the package has reported it, and whoever drove the
   // walk has nothing left to report.
   group('FlutterError, for a container walk driven by hand', () {
-    test('every failed step: flutterError, the first thrown to the driver too',
-        () async {
-      final dependencies = _Steps(
-        (deps) => deps.sequential('', [
-          _failingDep(deps, 'first'),
-          _failingDep(deps, 'second'),
-        ]),
-      );
-      await runScopeInit((ctx) => dependencies.init(null, ctx));
-      audit.install();
+    test(
+      'every failed step: flutterError, the first thrown to the driver too',
+      () async {
+        final dependencies = _Steps(
+          (deps) => deps.sequential('', [
+            _failingDep(deps, 'first'),
+            _failingDep(deps, 'second'),
+          ]),
+        );
+        await runScopeInit((ctx) => dependencies.init(null, ctx));
+        audit.install();
 
-      Object? caught;
-      await dependencies.root.dispose((_) {}).then<void>(
-            (_) {},
-            onError: (Object error) => caught = error,
-          );
+        Object? caught;
+        await dependencies.root
+            .dispose((_) {})
+            .then<void>((_) {}, onError: (Object error) => caught = error);
 
-      audit.verify(observer.routes);
-      expect(
-        [for (final (_, phase, route, _) in observer.routes) (phase, route)],
-        [
-          (ScopePhase.disposal, ScopeErrorRoute.flutterError),
-          (ScopePhase.disposal, ScopeErrorRoute.flutterError),
-        ],
-      );
-      expect(audit.seenIn(SeenIn.flutterError), hasLength(2));
-      // The first failure of the walk, in walk order -- the teardown runs the
-      // construction backwards, so that is `second`.
-      expect(caught, isA<ScopeDependencyException>());
-      final first = observer.routes.first.$4 as ScopeDependencyException;
-      expect(
-        (caught! as ScopeDependencyException).error,
-        same(first.error),
-      );
-    });
+        audit.verify(observer.routes);
+        expect(
+          [for (final (_, phase, route, _) in observer.routes) (phase, route)],
+          [
+            (ScopePhase.disposal, ScopeErrorRoute.flutterError),
+            (ScopePhase.disposal, ScopeErrorRoute.flutterError),
+          ],
+        );
+        expect(audit.seenIn(SeenIn.flutterError), hasLength(2));
+        // The first failure of the walk, in walk order -- the teardown runs the
+        // construction backwards, so that is `second`.
+        expect(caught, isA<ScopeDependencyException>());
+        final first = observer.routes.first.$4 as ScopeDependencyException;
+        expect((caught! as ScopeDependencyException).error, same(first.error));
+      },
+    );
 
     // The container joins the walk already running and is handed its
     // failure, which that walk's step has reported before the container's
@@ -1053,44 +1071,48 @@ void main() {
     // the container comes after. The next tree must not inherit it: a failure
     // that never passes through a step, with the same error inside, would be
     // taken for one that had already been reported, and dropped.
-    test('a step reported by hand does not hide a failure of the next tree',
-        () async {
-      const boom = _Boom();
-      var built = 0;
-      final dependencies = _Steps(
-        (deps) => built++ == 0
-            ? deps.sequential('', [
-                deps.dep('leaf', (handle) {
-                  handle.dispose = () => throw boom;
-                }),
-              ])
-            : deps.sequential('', [const _RefusingForeign(boom)]),
-      );
-      await runScopeInit((ctx) => dependencies.init(null, ctx));
-      audit.install();
+    test(
+      'a step reported by hand does not hide a failure of the next tree',
+      () async {
+        const boom = _Boom();
+        var built = 0;
+        final dependencies = _Steps(
+          (deps) => built++ == 0
+              ? deps.sequential('', [
+                  deps.dep('leaf', (handle) {
+                    handle.dispose = () => throw boom;
+                  }),
+                ])
+              : deps.sequential('', [const _RefusingForeign(boom)]),
+        );
+        await runScopeInit((ctx) => dependencies.init(null, ctx));
+        audit.install();
 
-      await dependencies.root.dispose((_) {}).onError((_, __) {});
-      expect(audit.seenIn(SeenIn.flutterError), hasLength(1));
+        await dependencies.root.dispose((_) {}).onError((_, __) {});
+        expect(audit.seenIn(SeenIn.flutterError), hasLength(1));
 
-      await runScopeInit((ctx) => dependencies.init(null, ctx));
-      expect(built, 2, reason: 'the second init() builds a new tree');
-      await dependencies.dispose();
-      audit.uninstall();
+        await runScopeInit((ctx) => dependencies.init(null, ctx));
+        expect(built, 2, reason: 'the second init() builds a new tree');
+        await dependencies.dispose();
+        audit.uninstall();
 
-      expect(
-        audit.seenIn(SeenIn.flutterError),
-        hasLength(2),
-        reason: 'the group of the new tree fails before it reaches any '
-            'child, so no step reports it: the container is the only one '
-            'that does',
-      );
-      expect(
-        observer.routes,
-        hasLength(1),
-        reason: 'nor is the observer told of it: the one route it has is the '
-            'step of the first tree',
-      );
-    });
+        expect(
+          audit.seenIn(SeenIn.flutterError),
+          hasLength(2),
+          reason:
+              'the group of the new tree fails before it reaches any '
+              'child, so no step reports it: the container is the only one '
+              'that does',
+        );
+        expect(
+          observer.routes,
+          hasLength(1),
+          reason:
+              'nor is the observer told of it: the one route it has is the '
+              'step of the first tree',
+        );
+      },
+    );
 
     // What a disposal of the container looked up ends with it. A foreign child
     // that threw may still hold, so the tree is walked again by the next
@@ -1099,80 +1121,88 @@ void main() {
     // child, with the very object a step of the first one reported: it is a
     // failure nobody has reported yet, and it must not be taken for the old
     // one.
-    test('a step reported by one disposal does not hide a failure of the next',
-        () async {
-      const boom = _Boom();
-      // Reported named, one layer down: by the step, and by the container.
-      bool carriesBoom(Object e) =>
-          e is ScopeDependencyException && identical(e.error, boom);
-      final holding = _HoldingForeign(boom);
-      final dependencies = _Steps(
-        (deps) => deps.sequential('', [
-          holding,
-          deps.dep('leaf', (handle) {
-            handle.dispose = () => throw boom;
-          }),
-        ]),
-      );
-      await runScopeInit((ctx) => dependencies.init(null, ctx));
-      audit.install();
+    test(
+      'a step reported by one disposal does not hide a failure of the next',
+      () async {
+        const boom = _Boom();
+        // Reported named, one layer down: by the step, and by the container.
+        bool carriesBoom(Object e) =>
+            e is ScopeDependencyException && identical(e.error, boom);
+        final holding = _HoldingForeign(boom);
+        final dependencies = _Steps(
+          (deps) => deps.sequential('', [
+            holding,
+            deps.dep('leaf', (handle) {
+              handle.dispose = () => throw boom;
+            }),
+          ]),
+        );
+        await runScopeInit((ctx) => dependencies.init(null, ctx));
+        audit.install();
 
-      await dependencies.dispose();
-      expect(
-        audit.seenIn(SeenIn.flutterError).where(carriesBoom),
-        hasLength(1),
-        reason: 'the step of the leaf reports it',
-      );
+        await dependencies.dispose();
+        expect(
+          audit.seenIn(SeenIn.flutterError).where(carriesBoom),
+          hasLength(1),
+          reason: 'the step of the leaf reports it',
+        );
 
-      await dependencies.dispose();
-      audit.uninstall();
+        await dependencies.dispose();
+        audit.uninstall();
 
-      expect(
-        holding.asked,
-        2,
-        reason: 'the second disposal walks the same tree again',
-      );
-      expect(
-        audit.seenIn(SeenIn.flutterError).where(carriesBoom),
-        hasLength(2),
-        reason: 'the group fails before it reaches any child, so no step '
-            'reports it: the container is the only one that does',
-      );
-    });
+        expect(
+          holding.asked,
+          2,
+          reason: 'the second disposal walks the same tree again',
+        );
+        expect(
+          audit.seenIn(SeenIn.flutterError).where(carriesBoom),
+          hasLength(2),
+          reason:
+              'the group fails before it reaches any child, so no step '
+              'reports it: the container is the only one that does',
+        );
+      },
+    );
 
     // Pins "a group that fails behind another failure" in the routes list of
     // `doc/debug.md`.
-    test('a group that fails behind another failure: only the first is told',
-        () async {
-      const boom = _Boom();
-      final dependencies = _Steps(
-        (deps) => deps.sequential('', [
-          deps.sequential('inner', [_RefusingForeign(Exception('refused'))]),
-          deps.dep('leaf', (handle) {
-            handle.dispose = () => throw boom;
-          }),
-        ]),
-      );
-      await runScopeInit((ctx) => dependencies.init(null, ctx));
-      audit.install();
+    test(
+      'a group that fails behind another failure: only the first is told',
+      () async {
+        const boom = _Boom();
+        final dependencies = _Steps(
+          (deps) => deps.sequential('', [
+            deps.sequential('inner', [_RefusingForeign(Exception('refused'))]),
+            deps.dep('leaf', (handle) {
+              handle.dispose = () => throw boom;
+            }),
+          ]),
+        );
+        await runScopeInit((ctx) => dependencies.init(null, ctx));
+        audit.install();
 
-      await dependencies.dispose().onError((_, __) {});
-      audit.uninstall();
+        await dependencies.dispose().onError((_, __) {});
+        audit.uninstall();
 
-      expect(observer.routes, hasLength(1), reason: 'the step of the leaf');
-      expect(observer.routes.single.$3, ScopeErrorRoute.flutterError);
-      bool carriesBoom(Object e) =>
-          e is ScopeDependencyException && identical(e.error, boom);
-      expect(audit.seenIn(SeenIn.flutterError), hasLength(1));
-      expect(audit.seenIn(SeenIn.flutterError).single, predicate(carriesBoom));
-      expect(
-        dependencies.flattenDependenciesWithErrors().map((i) => i.dependency),
-        contains(
-          isA<ScopeDependency>().having((d) => d.name, 'name', 'inner'),
-        ),
-        reason: 'the failure of the group is kept in the state of the tree',
-      );
-    });
+        expect(observer.routes, hasLength(1), reason: 'the step of the leaf');
+        expect(observer.routes.single.$3, ScopeErrorRoute.flutterError);
+        bool carriesBoom(Object e) =>
+            e is ScopeDependencyException && identical(e.error, boom);
+        expect(audit.seenIn(SeenIn.flutterError), hasLength(1));
+        expect(
+          audit.seenIn(SeenIn.flutterError).single,
+          predicate(carriesBoom),
+        );
+        expect(
+          dependencies.flattenDependenciesWithErrors().map((i) => i.dependency),
+          contains(
+            isA<ScopeDependency>().having((d) => d.name, 'name', 'inner'),
+          ),
+          reason: 'the failure of the group is kept in the state of the tree',
+        );
+      },
+    );
   });
 
   // The kernel hands this observer errors of two roads. One asks for an
@@ -1187,11 +1217,10 @@ void main() {
     /// The routes announced for [error], by identity.
     List<(String, ScopePhase, ScopeErrorRoute, Object)> routesOf(
       Object error,
-    ) =>
-        [
-          for (final entry in observer.routes)
-            if (identical(entry.$4, error)) entry,
-        ];
+    ) => [
+      for (final entry in observer.routes)
+        if (identical(entry.$4, error)) entry,
+    ];
 
     testWidgets('a ctx.onDispose that throws: flutterError', (tester) async {
       final failure = StateError('cleanup failed');
@@ -1215,43 +1244,46 @@ void main() {
     });
 
     testWidgets(
-        'a ParallelWaitError from the cleanup stack: a route for each error '
-        'inside', (tester) async {
-      final first = StateError('first release failed');
-      final second = StateError('second release failed');
-      const cancelled = Cancelled('a release gave up');
-      audit.install();
+      'a ParallelWaitError from the cleanup stack: a route for each error '
+      'inside',
+      (tester) async {
+        final first = StateError('first release failed');
+        final second = StateError('second release failed');
+        const cancelled = Cancelled('a release gave up');
+        audit.install();
 
-      await tester.pumpWidget(
-        _app(
-          _asyncScope(
-            initScope: (context, ctx) async => ctx.onDispose(
-              () => [
-                Future<void>.error(first),
-                Future<void>.error(second),
-                Future<void>.error(cancelled),
-              ].wait,
+        await tester.pumpWidget(
+          _app(
+            _asyncScope(
+              initScope: (context, ctx) async => ctx.onDispose(
+                () => [
+                  Future<void>.error(first),
+                  Future<void>.error(second),
+                  Future<void>.error(cancelled),
+                ].wait,
+              ),
             ),
           ),
-        ),
-      );
-      await tester.pumpAndSettle();
+        );
+        await tester.pumpAndSettle();
 
-      audit.verify(observer.routes);
-      expect(routesOf(first).single.$3, ScopeErrorRoute.flutterError);
-      expect(routesOf(second).single.$3, ScopeErrorRoute.flutterError);
-      expect(routesOf(cancelled).single.$3, ScopeErrorRoute.cancellation);
-      expect(
-        observer.routes,
-        hasLength(3),
-        reason: 'the envelope itself is not an error of its own',
-      );
+        audit.verify(observer.routes);
+        expect(routesOf(first).single.$3, ScopeErrorRoute.flutterError);
+        expect(routesOf(second).single.$3, ScopeErrorRoute.flutterError);
+        expect(routesOf(cancelled).single.$3, ScopeErrorRoute.cancellation);
+        expect(
+          observer.routes,
+          hasLength(3),
+          reason: 'the envelope itself is not an error of its own',
+        );
 
-      await takeDown(tester, 'AsyncScope');
-    });
+        await takeDown(tester, 'AsyncScope');
+      },
+    );
 
-    testWidgets('a Cancelled thrown by a callback: cancellation',
-        (tester) async {
+    testWidgets('a Cancelled thrown by a callback: cancellation', (
+      tester,
+    ) async {
       audit.install();
 
       await tester.pumpWidget(
@@ -1298,8 +1330,7 @@ void main() {
       await takeDown(tester, 'AsyncScope');
     });
 
-    testWidgets(
-        'a child failure nobody read, with an observer: observer, and '
+    testWidgets('a child failure nobody read, with an observer: observer, and '
         'nothing in FlutterError', (tester) async {
       final failure = StateError('child failed, and nobody looked');
       audit.install();
@@ -1320,7 +1351,8 @@ void main() {
       expect(
         audit.seenIn(SeenIn.flutterError),
         isEmpty,
-        reason: 'the observer was told the route is final, and a crash '
+        reason:
+            'the observer was told the route is final, and a crash '
             'reporter that forwards `observer` has it already',
       );
 
@@ -1335,43 +1367,44 @@ void main() {
     // already and is not told again: its one route says `observer` while
     // `FlutterError` has the object as well -- the leftover the docs list.
     testWidgets(
-        'a cleanup failure that shares an object with a caught child failure '
-        'reaches FlutterError', (tester) async {
-      audit.install();
+      'a cleanup failure that shares an object with a caught child failure '
+      'reaches FlutterError',
+      (tester) async {
+        audit.install();
 
-      await tester.pumpWidget(
-        _app(
-          _asyncScope(
-            initScope: (context, ctx) async {
-              try {
-                await ctx.run(
-                  Job.deferred<void>((_) async => throw const _Boom()),
-                );
-              } on _Boom {
-                // Handled: the scope goes on without it.
-              }
-              ctx.onDispose(() => throw const _Boom());
-            },
+        await tester.pumpWidget(
+          _app(
+            _asyncScope(
+              initScope: (context, ctx) async {
+                try {
+                  await ctx.run(
+                    Job.deferred<void>((_) async => throw const _Boom()),
+                  );
+                } on _Boom {
+                  // Handled: the scope goes on without it.
+                }
+                ctx.onDispose(() => throw const _Boom());
+              },
+            ),
           ),
-        ),
-      );
-      await tester.pumpAndSettle();
-      audit.uninstall();
+        );
+        await tester.pumpAndSettle();
+        audit.uninstall();
 
-      expect(routesOf(const _Boom()).single.$3, ScopeErrorRoute.observer);
-      expect(
-        audit.seenIn(SeenIn.flutterError),
-        [same(const _Boom())],
-        reason: 'the cleanup failure is reported, once',
-      );
+        expect(routesOf(const _Boom()).single.$3, ScopeErrorRoute.observer);
+        expect(
+          audit.seenIn(SeenIn.flutterError),
+          [same(const _Boom())],
+          reason: 'the cleanup failure is reported, once',
+        );
 
-      await takeDown(tester, 'AsyncScope');
-    });
+        await takeDown(tester, 'AsyncScope');
+      },
+    );
 
     // An observer that throws has heard nothing, and a failure it was meant
     // to be the only one to hear would then reach nobody.
-    testWidgets(
-        'a child failure nobody read, with an observer that throws: '
+    testWidgets('a child failure nobody read, with an observer that throws: '
         'FlutterError', (tester) async {
       ScopeConfig.observer = _ThrowingObserver();
       final failure = StateError('child failed, and the observer is down');
@@ -1427,35 +1460,36 @@ void main() {
     });
 
     testWidgets(
-        'a child failure nobody read, without an observer: one report in '
-        'FlutterError', (tester) async {
-      ScopeConfig.observer = null;
-      final failure = StateError('child failed, and nobody looked');
-      audit.install();
+      'a child failure nobody read, without an observer: one report in '
+      'FlutterError',
+      (tester) async {
+        ScopeConfig.observer = null;
+        final failure = StateError('child failed, and nobody looked');
+        audit.install();
 
-      await tester.pumpWidget(
-        _app(
-          _asyncScope(
-            initScope: (context, ctx) async =>
-                ctx.start(Job.deferred<void>((_) async => throw failure)),
+        await tester.pumpWidget(
+          _app(
+            _asyncScope(
+              initScope: (context, ctx) async =>
+                  ctx.start(Job.deferred<void>((_) async => throw failure)),
+            ),
           ),
-        ),
-      );
-      await tester.pumpAndSettle();
-      audit.uninstall();
+        );
+        await tester.pumpAndSettle();
+        audit.uninstall();
 
-      expect(
-        audit.seenIn(SeenIn.flutterError),
-        [same(failure)],
-        reason: 'with nobody to have heard it, the red line is all there is',
-      );
+        expect(
+          audit.seenIn(SeenIn.flutterError),
+          [same(failure)],
+          reason: 'with nobody to have heard it, the red line is all there is',
+        );
 
-      await tester.pumpWidget(_app(const SizedBox.shrink()));
-      await tester.pumpAndSettle();
-    });
+        await tester.pumpWidget(_app(const SizedBox.shrink()));
+        await tester.pumpAndSettle();
+      },
+    );
 
-    testWidgets(
-        'a body failure whose outcome a cancellation took over: '
+    testWidgets('a body failure whose outcome a cancellation took over: '
         'flutterError', (tester) async {
       final failure = StateError('body failed');
       final cleanup = Completer<void>();
@@ -1496,169 +1530,178 @@ void main() {
     // Pins "an observer is there even when it does nothing" in the routes
     // list of `doc/debug.md`.
     testWidgets(
-        'a child failure nobody read, with an empty composite observer: '
-        'nothing in FlutterError', (tester) async {
-      ScopeConfig.observer = const ScopeCompositeObserver([]);
-      final failure = StateError('child failed, and nobody looked');
-      var thrown = false;
-      audit.install();
+      'a child failure nobody read, with an empty composite observer: '
+      'nothing in FlutterError',
+      (tester) async {
+        ScopeConfig.observer = const ScopeCompositeObserver([]);
+        final failure = StateError('child failed, and nobody looked');
+        var thrown = false;
+        audit.install();
 
-      await tester.pumpWidget(
-        _app(
-          _asyncScope(
-            initScope: (context, ctx) async => ctx.start(
-              Job.deferred<void>((_) async {
-                thrown = true;
-                throw failure;
-              }),
+        await tester.pumpWidget(
+          _app(
+            _asyncScope(
+              initScope: (context, ctx) async => ctx.start(
+                Job.deferred<void>((_) async {
+                  thrown = true;
+                  throw failure;
+                }),
+              ),
             ),
           ),
-        ),
-      );
-      await tester.pumpAndSettle();
-      await tester.pumpWidget(_app(const SizedBox.shrink()));
-      await tester.pumpAndSettle();
-      audit.uninstall();
+        );
+        await tester.pumpAndSettle();
+        await tester.pumpWidget(_app(const SizedBox.shrink()));
+        await tester.pumpAndSettle();
+        audit.uninstall();
 
-      expect(thrown, isTrue);
-      expect(
-        audit.seenIn(SeenIn.flutterError),
-        isEmpty,
-        reason: 'an observer is set, so the route said `observer` -- to an '
-            'observer that hands it to nobody',
-      );
-    });
+        expect(thrown, isTrue);
+        expect(
+          audit.seenIn(SeenIn.flutterError),
+          isEmpty,
+          reason:
+              'an observer is set, so the route said `observer` -- to an '
+              'observer that hands it to nobody',
+        );
+      },
+    );
 
     // A composite is no more heard than the observers inside it: one of them
     // threw -- the crash reporter, say -- so the failure is reported as it is
     // behind a single observer that throws, and the observer that did hear it
     // may have it twice. A duplicate is better than a loss.
     testWidgets(
-        'a child failure nobody read, with a composite whose member throws: '
-        'FlutterError', (tester) async {
-      final inside = RecordingObserver();
-      ScopeConfig.observer = ScopeCompositeObserver([
-        inside,
-        _ThrowingObserver(),
-      ]);
-      final failure = StateError('child failed, and the reporter is down');
-      audit.install();
+      'a child failure nobody read, with a composite whose member throws: '
+      'FlutterError',
+      (tester) async {
+        final inside = RecordingObserver();
+        ScopeConfig.observer = ScopeCompositeObserver([
+          inside,
+          _ThrowingObserver(),
+        ]);
+        final failure = StateError('child failed, and the reporter is down');
+        audit.install();
 
-      await tester.pumpWidget(
-        _app(
-          _asyncScope(
-            initScope: (context, ctx) async =>
-                ctx.start(Job.deferred<void>((_) async => throw failure)),
+        await tester.pumpWidget(
+          _app(
+            _asyncScope(
+              initScope: (context, ctx) async =>
+                  ctx.start(Job.deferred<void>((_) async => throw failure)),
+            ),
           ),
-        ),
-      );
-      await tester.pumpAndSettle();
-      audit.uninstall();
+        );
+        await tester.pumpAndSettle();
+        audit.uninstall();
 
-      expect(
-        inside.routes.where((r) => identical(r.$4, failure)).single.$3,
-        ScopeErrorRoute.observer,
-      );
-      final reported = audit.seenIn(SeenIn.flutterError);
-      expect(
-        reported.where(
-          (e) => e is StateError && e.message == 'crash reporter is down',
-        ),
-        hasLength(1),
-        reason: 'the member failure is reported once',
-      );
-      expect(reported.where((e) => identical(e, failure)), hasLength(1));
+        expect(
+          inside.routes.where((r) => identical(r.$4, failure)).single.$3,
+          ScopeErrorRoute.observer,
+        );
+        final reported = audit.seenIn(SeenIn.flutterError);
+        expect(
+          reported.where(
+            (e) => e is StateError && e.message == 'crash reporter is down',
+          ),
+          hasLength(1),
+          reason: 'the member failure is reported once',
+        );
+        expect(reported.where((e) => identical(e, failure)), hasLength(1));
 
-      await tester.pumpWidget(_app(const SizedBox.shrink()));
-      await tester.pumpAndSettle();
-    });
+        await tester.pumpWidget(_app(const SizedBox.shrink()));
+        await tester.pumpAndSettle();
+      },
+    );
 
     // Pins "one object that fails twice" in the routes list of
     // `doc/debug.md`: a child failure kept out of `FlutterError` is read by
     // the body after the scope was taken off the tree, and that reaches it.
     testWidgets(
-        'a child failure the body reads after the cancellation: observer, '
-        'and FlutterError as well', (tester) async {
-      final failure = StateError('child failed, and was read late');
-      final gate = Completer<void>();
-      audit.install();
+      'a child failure the body reads after the cancellation: observer, '
+      'and FlutterError as well',
+      (tester) async {
+        final failure = StateError('child failed, and was read late');
+        final gate = Completer<void>();
+        audit.install();
 
-      await tester.pumpWidget(
-        _app(
-          _asyncScope(
-            initScope: (context, ctx) async {
-              final child = Job.deferred<void>((_) async => throw failure);
-              ctx.start(child);
-              await gate.future;
-              await child.value;
-            },
-          ),
-        ),
-      );
-      await tester.pumpAndSettle();
-      expect(routesOf(failure).single.$3, ScopeErrorRoute.observer);
-      expect(
-        audit.seenIn(SeenIn.flutterError),
-        isEmpty,
-        reason: 'kept out while the scope stands',
-      );
-
-      await tester.pumpWidget(_app(const SizedBox.shrink()));
-      await tester.pump();
-      gate.complete();
-      await settle(
-        tester,
-        until: () => observer.events.contains('disposed AsyncScope'),
-      );
-      audit.uninstall();
-
-      expect(routesOf(failure).single.$3, ScopeErrorRoute.observer);
-      expect(
-        audit.seenIn(SeenIn.flutterError).where((e) => identical(e, failure)),
-        hasLength(1),
-      );
-    });
-
-    // Pins "a failure your app calls a cancellation, raised before the
-    // cancellation" in the routes list of `doc/debug.md`.
-    testWidgets(
-        'a body failure the filter names, covered by a cancellation: no '
-        'onError at all', (tester) async {
-      Job.isCancellationError = (error) => error is _Boom;
-      addTearDown(() => Job.isCancellationError = null);
-      final cleanup = Completer<void>();
-      audit.install();
-
-      await audit.runGuarded(() async {
         await tester.pumpWidget(
           _app(
             _asyncScope(
               initScope: (context, ctx) async {
-                ctx.onDispose(() => cleanup.future);
-                throw const _Boom();
+                final child = Job.deferred<void>((_) async => throw failure);
+                ctx.start(child);
+                await gate.future;
+                await child.value;
               },
             ),
           ),
         );
         await tester.pumpAndSettle();
+        expect(routesOf(failure).single.$3, ScopeErrorRoute.observer);
+        expect(
+          audit.seenIn(SeenIn.flutterError),
+          isEmpty,
+          reason: 'kept out while the scope stands',
+        );
+
         await tester.pumpWidget(_app(const SizedBox.shrink()));
-        cleanup.complete();
+        await tester.pump();
+        gate.complete();
         await settle(
           tester,
           until: () => observer.events.contains('disposed AsyncScope'),
         );
-      });
-      // Nothing more is due once the teardown is over: give it a fair chance
-      // all the same, and look again.
-      await settle(tester, until: () => false, rounds: 5);
-      audit.uninstall();
+        audit.uninstall();
 
-      expect(observer.events, contains('disposed AsyncScope'));
-      expect(observer.events, contains('cancelled AsyncScope'));
-      expect(observer.routes, isEmpty);
-      expect(audit.seenIn(SeenIn.flutterError), isEmpty);
-      expect(audit.seenIn(SeenIn.zone), isEmpty);
-    });
+        expect(routesOf(failure).single.$3, ScopeErrorRoute.observer);
+        expect(
+          audit.seenIn(SeenIn.flutterError).where((e) => identical(e, failure)),
+          hasLength(1),
+        );
+      },
+    );
+
+    // Pins "a failure your app calls a cancellation, raised before the
+    // cancellation" in the routes list of `doc/debug.md`.
+    testWidgets(
+      'a body failure the filter names, covered by a cancellation: no '
+      'onError at all',
+      (tester) async {
+        Job.isCancellationError = (error) => error is _Boom;
+        addTearDown(() => Job.isCancellationError = null);
+        final cleanup = Completer<void>();
+        audit.install();
+
+        await audit.runGuarded(() async {
+          await tester.pumpWidget(
+            _app(
+              _asyncScope(
+                initScope: (context, ctx) async {
+                  ctx.onDispose(() => cleanup.future);
+                  throw const _Boom();
+                },
+              ),
+            ),
+          );
+          await tester.pumpAndSettle();
+          await tester.pumpWidget(_app(const SizedBox.shrink()));
+          cleanup.complete();
+          await settle(
+            tester,
+            until: () => observer.events.contains('disposed AsyncScope'),
+          );
+        });
+        // Nothing more is due once the teardown is over: give it a fair chance
+        // all the same, and look again.
+        await settle(tester, until: () => false, rounds: 5);
+        audit.uninstall();
+
+        expect(observer.events, contains('disposed AsyncScope'));
+        expect(observer.events, contains('cancelled AsyncScope'));
+        expect(observer.routes, isEmpty);
+        expect(audit.seenIn(SeenIn.flutterError), isEmpty);
+        expect(audit.seenIn(SeenIn.zone), isEmpty);
+      },
+    );
 
     // Pins "`ignoreFailure()` called late on a cancelled child" in the routes
     // list of `doc/debug.md`: with the late `ignoreFailure()` the route says
@@ -1714,8 +1757,9 @@ void main() {
       });
     }
 
-    testWidgets('a late disposeScope of AsyncScope (ctx.onDiscard)',
-        (tester) async {
+    testWidgets('a late disposeScope of AsyncScope (ctx.onDiscard)', (
+      tester,
+    ) async {
       final gate = Completer<void>();
       final failure = StateError('the late release failed');
       await tester.pumpWidget(
@@ -1772,8 +1816,9 @@ void main() {
       expect(routesOf(failure).single.$3, ScopeErrorRoute.flutterError);
     });
 
-    testWidgets('a ctx.onCancel callback that throws: flutterError',
-        (tester) async {
+    testWidgets('a ctx.onCancel callback that throws: flutterError', (
+      tester,
+    ) async {
       final failure = StateError('the cancellation callback failed');
       await tester.pumpWidget(
         _app(
@@ -1798,8 +1843,9 @@ void main() {
       expect(routesOf(failure).single.$3, ScopeErrorRoute.flutterError);
     });
 
-    testWidgets('a whenFinished callback that throws: flutterError',
-        (tester) async {
+    testWidgets('a whenFinished callback that throws: flutterError', (
+      tester,
+    ) async {
       final failure = StateError('the finish callback failed');
       audit.install();
 
@@ -1819,8 +1865,9 @@ void main() {
       await takeDown(tester, 'AsyncScope');
     });
 
-    testWidgets('a late failure of ctx.abandonable: flutterError',
-        (tester) async {
+    testWidgets('a late failure of ctx.abandonable: flutterError', (
+      tester,
+    ) async {
       final gate = Completer<void>();
       final failure = StateError('the abandoned action failed');
       await tester.pumpWidget(
@@ -1845,8 +1892,9 @@ void main() {
       expect(routesOf(failure).single.$3, ScopeErrorRoute.flutterError);
     });
 
-    testWidgets('a failure of ctx.unattended work: flutterError',
-        (tester) async {
+    testWidgets('a failure of ctx.unattended work: flutterError', (
+      tester,
+    ) async {
       final gate = Completer<void>();
       final failure = StateError('the unattended work failed');
       await tester.pumpWidget(
@@ -1882,8 +1930,7 @@ void main() {
           : ScopeErrorRoute.flutterError;
       final how = filtered ? 'with the filter' : 'without the filter';
 
-      testWidgets(
-          'a ctx.onDispose of a cancelled job that throws, $how: '
+      testWidgets('a ctx.onDispose of a cancelled job that throws, $how: '
           '${expected.name}', (tester) async {
         if (filtered) {
           Job.isCancellationError = (error) => error is _Boom;
@@ -1913,38 +1960,39 @@ void main() {
       });
 
       testWidgets(
-          'a body that fails after its cancellation, $how: ${expected.name}',
-          (tester) async {
-        if (filtered) {
-          Job.isCancellationError = (error) => error is _Boom;
-          addTearDown(() => Job.isCancellationError = null);
-        }
-        await tester.pumpWidget(
-          _app(
-            _asyncScope(
-              initScope: (context, ctx) async {
-                final stop = Completer<void>();
-                ctx.onCancel(stop.complete);
-                await ctx.join(() async {
-                  await stop.future;
-                  throw const _Boom();
-                });
-              },
+        'a body that fails after its cancellation, $how: ${expected.name}',
+        (tester) async {
+          if (filtered) {
+            Job.isCancellationError = (error) => error is _Boom;
+            addTearDown(() => Job.isCancellationError = null);
+          }
+          await tester.pumpWidget(
+            _app(
+              _asyncScope(
+                initScope: (context, ctx) async {
+                  final stop = Completer<void>();
+                  ctx.onCancel(stop.complete);
+                  await ctx.join(() async {
+                    await stop.future;
+                    throw const _Boom();
+                  });
+                },
+              ),
             ),
-          ),
-        );
-        await tester.pump();
-        audit.install();
+          );
+          await tester.pump();
+          audit.install();
 
-        await takeDown(tester, 'AsyncScope');
+          await takeDown(tester, 'AsyncScope');
 
-        audit.verify(observer.routes);
-        expect(
-          routesOf(const _Boom()).single.$2,
-          ScopePhase.initializationCancellation,
-        );
-        expect(routesOf(const _Boom()).single.$3, expected);
-      });
+          audit.verify(observer.routes);
+          expect(
+            routesOf(const _Boom()).single.$2,
+            ScopePhase.initializationCancellation,
+          );
+          expect(routesOf(const _Boom()).single.$3, expected);
+        },
+      );
     }
   });
 }
@@ -1964,23 +2012,22 @@ AsyncScope _asyncScope({
   Duration? initCancellationTimeout,
   void Function()? onInitCancellationTimeout,
   WidgetBuilder? builder,
-}) =>
-    AsyncScope(
-      tag: tag,
-      scopeKey: scopeKey,
-      disposeScopeTimeout: disposeScopeTimeout,
-      waitForChildrenTimeout: waitForChildrenTimeout,
-      onWaitForChildrenTimeout: onWaitForChildrenTimeout,
-      initCancellationTimeout: initCancellationTimeout,
-      onInitCancellationTimeout: onInitCancellationTimeout,
-      initScope: initScope ?? (context, ctx) async {},
-      onUnmount: onUnmount,
-      disposeScope: disposeScope ?? () {},
-      progressBuilder: (context, progress) => const SizedBox.shrink(),
-      errorBuilder: (context, error, stackTrace, progress) =>
-          const SizedBox.shrink(),
-      builder: builder ?? (context) => const SizedBox.shrink(),
-    );
+}) => AsyncScope(
+  tag: tag,
+  scopeKey: scopeKey,
+  disposeScopeTimeout: disposeScopeTimeout,
+  waitForChildrenTimeout: waitForChildrenTimeout,
+  onWaitForChildrenTimeout: onWaitForChildrenTimeout,
+  initCancellationTimeout: initCancellationTimeout,
+  onInitCancellationTimeout: onInitCancellationTimeout,
+  initScope: initScope ?? (context, ctx) async {},
+  onUnmount: onUnmount,
+  disposeScope: disposeScope ?? () {},
+  progressBuilder: (context, progress) => const SizedBox.shrink(),
+  errorBuilder: (context, error, stackTrace, progress) =>
+      const SizedBox.shrink(),
+  builder: builder ?? (context) => const SizedBox.shrink(),
+);
 
 /// Something an observer can be told about, with nothing behind it.
 final class _Target implements ScopeObservable {
@@ -2118,8 +2165,7 @@ final class _Full extends Scope<_Full, _Deps, _FullState> {
     Object error,
     StackTrace stackTrace,
     Object? progress,
-  ) =>
-      const SizedBox.shrink();
+  ) => const SizedBox.shrink();
 
   @override
   _FullState createState() => _FullState();
@@ -2197,8 +2243,7 @@ final class _Controlled
     BuildContext context,
     Object error,
     StackTrace stackTrace,
-  ) =>
-      const SizedBox.shrink();
+  ) => const SizedBox.shrink();
 
   @override
   Widget buildOnReady(BuildContext context, _FailingController controller) =>
@@ -2209,11 +2254,11 @@ final class _Controlled
 final class _UnmountTwice extends ScopeAutoDependencies<_UnmountTwice, void> {
   @override
   ScopeDependency buildDependencies(void context) => sequential('', [
-        for (final name in const ['first', 'second'])
-          dep(name, (handle) {
-            handle.unmount = () => throw StateError('$name failed to unmount');
-          }),
-      ]);
+    for (final name in const ['first', 'second'])
+      dep(name, (handle) {
+        handle.unmount = () => throw StateError('$name failed to unmount');
+      }),
+  ]);
 }
 
 /// A dependency that cannot unmount, behind one that fails to initialize.
@@ -2221,11 +2266,11 @@ final class _UnmountAfterFailure
     extends ScopeAutoDependencies<_UnmountAfterFailure, void> {
   @override
   ScopeDependency buildDependencies(void context) => sequential('', [
-        dep('held', (handle) {
-          handle.unmount = () => throw StateError('held failed to unmount');
-        }),
-        dep('broken', (handle) => throw StateError('broken failed')),
-      ]);
+    dep('held', (handle) {
+      handle.unmount = () => throw StateError('held failed to unmount');
+    }),
+    dep('broken', (handle) => throw StateError('broken failed')),
+  ]);
 }
 
 /// A container whose initialization fails and whose disposal fails late.
@@ -2237,8 +2282,8 @@ final class _SlowToDispose extends ScopeAutoDependencies<_SlowToDispose, void> {
 
   @override
   ScopeDependency buildDependencies(void context) => sequential('', [
-        dep('broken', (handle) => throw StateError('broken failed')),
-      ]);
+    dep('broken', (handle) => throw StateError('broken failed')),
+  ]);
 
   @override
   Future<void> dispose() async {
@@ -2254,12 +2299,12 @@ final class _TwoGatedArms extends ScopeAutoDependencies<_TwoGatedArms, void> {
 
   @override
   ScopeDependency buildDependencies(void context) => concurrent('', [
-        for (final name in const ['left', 'right'])
-          dep(name, (_) async {
-            await gate.future;
-            throw StateError('$name failed');
-          }),
-      ]);
+    for (final name in const ['left', 'right'])
+      dep(name, (_) async {
+        await gate.future;
+        throw StateError('$name failed');
+      }),
+  ]);
 }
 
 /// Two arms that resume from their own delay, so the second is already
@@ -2268,12 +2313,12 @@ final class _TwoFailingArms
     extends ScopeAutoDependencies<_TwoFailingArms, void> {
   @override
   ScopeDependency buildDependencies(void context) => concurrent('', [
-        for (final name in const ['alpha', 'beta'])
-          dep(name, (_) async {
-            await Future<void>.delayed(Duration.zero);
-            throw StateError('$name failed');
-          }),
-      ]);
+    for (final name in const ['alpha', 'beta'])
+      dep(name, (_) async {
+        await Future<void>.delayed(Duration.zero);
+        throw StateError('$name failed');
+      }),
+  ]);
 }
 
 /// A container whose root is of the caller's own making.
@@ -2311,8 +2356,7 @@ final class _ThrowingObserver extends ScopeObserver {
     ScopeErrorRoute route,
     Object error,
     StackTrace? stackTrace,
-  ) =>
-      throw StateError('crash reporter is down');
+  ) => throw StateError('crash reporter is down');
 }
 
 /// A failure that is the same object every time it is thrown.

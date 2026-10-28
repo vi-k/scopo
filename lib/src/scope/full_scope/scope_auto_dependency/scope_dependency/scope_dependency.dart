@@ -5,8 +5,7 @@ abstract interface class ScopeDependency {
   factory ScopeDependency(
     String name,
     FutureOr<void> Function(ScopeDependencyHandle dep) init,
-  ) =>
-      _ScopeDependencyImpl(name, init);
+  ) => _ScopeDependencyImpl(name, init);
 
   factory ScopeDependency.sequential(
     String name,
@@ -76,24 +75,23 @@ extension ScopeDependencyExtension on ScopeDependency {
 
   /// Whether the initialization succeeded.
   bool get isInitialized => switch (state) {
-        ScopeDependencyInitialized() => true,
-        ScopeDependencyAnySuccess() ||
-        ScopeDependencyAnyFailed() ||
-        ScopeDependencyAnyCancelled() =>
-          false,
-      };
+    ScopeDependencyInitialized() => true,
+    ScopeDependencyAnySuccess() ||
+    ScopeDependencyAnyFailed() ||
+    ScopeDependencyAnyCancelled() => false,
+  };
 
   /// Whether the initialization or the disposal was cancelled.
   bool get isCancelled => switch (state) {
-        ScopeDependencyAnyCancelled() => true,
-        ScopeDependencyAnySuccess() || ScopeDependencyAnyFailed() => false,
-      };
+    ScopeDependencyAnyCancelled() => true,
+    ScopeDependencyAnySuccess() || ScopeDependencyAnyFailed() => false,
+  };
 
   /// Whether the initialization or the disposal failed.
   bool get isFailed => switch (state) {
-        ScopeDependencyAnyFailed() => true,
-        ScopeDependencyAnySuccess() || ScopeDependencyAnyCancelled() => false,
-      };
+    ScopeDependencyAnyFailed() => true,
+    ScopeDependencyAnySuccess() || ScopeDependencyAnyCancelled() => false,
+  };
 
   /// Whether this dependency stands in [ScopeDependencyDisposed].
   ///
@@ -107,10 +105,9 @@ extension ScopeDependencyExtension on ScopeDependency {
   /// What says there is nothing left to release is [disposalRequired]. This
   /// getter names the state.
   bool get isDisposed => switch (state) {
-        ScopeDependencyDisposed() => true,
-        ScopeDependencyAnySuccess() ||
-        ScopeDependencyAnyFailed() ||
-        ScopeDependencyAnyCancelled() =>
-          false,
-      };
+    ScopeDependencyDisposed() => true,
+    ScopeDependencyAnySuccess() ||
+    ScopeDependencyAnyFailed() ||
+    ScopeDependencyAnyCancelled() => false,
+  };
 }

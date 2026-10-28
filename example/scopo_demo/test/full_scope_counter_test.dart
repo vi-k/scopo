@@ -26,8 +26,9 @@ import 'package:scopo_demo/utils/console/console.dart';
 /// — the controller stays reachable through the dependency container to the end
 /// of the test, so an undisposed one is not a leak it reports.
 void main() {
-  testWidgets('the controller of a scope abandoned mid-init is released',
-      (tester) async {
+  testWidgets('the controller of a scope abandoned mid-init is released', (
+    tester,
+  ) async {
     console.clearAll();
 
     await tester.pumpWidget(

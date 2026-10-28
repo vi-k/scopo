@@ -61,8 +61,9 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
-  testWidgets('CounterScope.of does not rebuild a consumer on increment',
-      (tester) async {
+  testWidgets('CounterScope.of does not rebuild a consumer on increment', (
+    tester,
+  ) async {
     addTearDown(() async {
       await tester.pumpWidget(const SizedBox.shrink());
       await _advance(tester);

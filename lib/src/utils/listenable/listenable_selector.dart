@@ -38,7 +38,8 @@ final class ListenableSelector<L extends Listenable, T extends Object?>
     L listenable,
     T value,
     Widget? child,
-  ) builder;
+  )
+  builder;
 
   /// Passed back to [builder] untouched, to keep a subtree out of the
   /// rebuild.
@@ -103,15 +104,11 @@ final class _ListenableSelectorState<L extends Listenable, T extends Object?>
   }
 
   void _subscribe() {
-    _subscription = widget.listenable.select(
-      widget.selector,
-      (_, __) {
-        if (mounted) {
-          setState(() {});
-        }
-      },
-      compare: widget.compare,
-    );
+    _subscription = widget.listenable.select(widget.selector, (_, __) {
+      if (mounted) {
+        setState(() {});
+      }
+    }, compare: widget.compare);
   }
 
   @override
@@ -122,9 +119,9 @@ final class _ListenableSelectorState<L extends Listenable, T extends Object?>
 
   @override
   Widget build(BuildContext context) => widget.builder(
-        context,
-        widget.listenable,
-        _subscription.value,
-        widget.child,
-      );
+    context,
+    widget.listenable,
+    _subscription.value,
+    widget.child,
+  );
 }

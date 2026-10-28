@@ -71,25 +71,19 @@ void main() {
     // the spot instead of parking the details), so the mount runs inside a
     // guarded child zone that catches it first.
     final errors = <Object>[];
-    await runZonedGuarded(
-      () async {
-        await tester.pumpWidget(
-          const Directionality(
-            textDirection: TextDirection.ltr,
-            child: _TestScope(testKey: 'shared'),
-          ),
-        );
-        await tester.pump();
-      },
-      (error, stackTrace) => errors.add(error),
-    );
+    await runZonedGuarded(() async {
+      await tester.pumpWidget(
+        const Directionality(
+          textDirection: TextDirection.ltr,
+          child: _TestScope(testKey: 'shared'),
+        ),
+      );
+      await tester.pump();
+    }, (error, stackTrace) => errors.add(error));
 
     expect(errors, hasLength(1));
     expect(errors.single, isA<FlutterError>());
-    expect(
-      errors.single.toString(),
-      contains('No `AsyncScopeCoordinator`'),
-    );
+    expect(errors.single.toString(), contains('No `AsyncScopeCoordinator`'));
     expect(
       errors.single.toString(),
       contains('`scopeKey`'),
@@ -101,72 +95,74 @@ void main() {
   // with whatever the getter answers now. `scopeKey` is user code: a message
   // built eagerly would run it again from a teardown that has already begun,
   // and the package promises to read it once.
-  testWidgets('cancelling a pending wait reports the key without asking again',
-      (tester) async {
-    final observer = RecordingObserver(trace: true);
-    ScopeConfig.observer = observer;
-    addTearDown(() => ScopeConfig.observer = null);
+  testWidgets(
+    'cancelling a pending wait reports the key without asking again',
+    (tester) async {
+      final observer = RecordingObserver(trace: true);
+      ScopeConfig.observer = observer;
+      addTearDown(() => ScopeConfig.observer = null);
 
-    final gate = Completer<void>();
-    Widget build({required bool withSuccessor}) => Directionality(
-          textDirection: TextDirection.ltr,
-          child: AsyncScopeCoordinator(
-            child: Column(
-              children: [
-                _TestScope(
-                  key: const ValueKey('holder'),
+      final gate = Completer<void>();
+      Widget build({required bool withSuccessor}) => Directionality(
+        textDirection: TextDirection.ltr,
+        child: AsyncScopeCoordinator(
+          child: Column(
+            children: [
+              _TestScope(
+                key: const ValueKey('holder'),
+                testKey: 'shared',
+                disposeLabel: 'holder',
+                disposeGate: gate,
+              ),
+              if (withSuccessor)
+                const _TestScope(
+                  key: ValueKey('successor'),
                   testKey: 'shared',
-                  disposeLabel: 'holder',
-                  disposeGate: gate,
+                  disposeLabel: 'successor',
                 ),
-                if (withSuccessor)
-                  const _TestScope(
-                    key: ValueKey('successor'),
-                    testKey: 'shared',
-                    disposeLabel: 'successor',
-                  ),
-              ],
-            ),
+            ],
           ),
-        );
+        ),
+      );
 
-    await tester.pumpWidget(build(withSuccessor: true));
-    await tester.pumpAndSettle();
+      await tester.pumpWidget(build(withSuccessor: true));
+      await tester.pumpAndSettle();
 
-    final successor = tester.element<_TestScopeElement>(
-      find.byKey(const ValueKey('successor')),
-    );
+      final successor = tester.element<_TestScopeElement>(
+        find.byKey(const ValueKey('successor')),
+      );
 
-    expect(
-      successor.isInitialized,
-      isFalse,
-      reason: 'the holder has the key, so the successor is still waiting',
-    );
+      expect(
+        successor.isInitialized,
+        isFalse,
+        reason: 'the holder has the key, so the successor is still waiting',
+      );
 
-    final readsBefore = successor.scopeKeyReads;
-    observer.events.clear();
+      final readsBefore = successor.scopeKeyReads;
+      observer.events.clear();
 
-    // The successor leaves while its wait is still pending.
-    await tester.pumpWidget(build(withSuccessor: false));
-    await tester.pump();
+      // The successor leaves while its wait is still pending.
+      await tester.pumpWidget(build(withSuccessor: false));
+      await tester.pump();
 
-    expect(
-      observer.events,
-      contains('trace _TestScope cancel waiting for access to [shared]'),
-      reason: 'the trace names the key the scope took',
-    );
-    expect(
-      successor.scopeKeyReads,
-      readsBefore,
-      reason: 'and it names it without asking the scope again',
-    );
+      expect(
+        observer.events,
+        contains('trace _TestScope cancel waiting for access to [shared]'),
+        reason: 'the trace names the key the scope took',
+      );
+      expect(
+        successor.scopeKeyReads,
+        readsBefore,
+        reason: 'and it names it without asking the scope again',
+      );
 
-    gate.complete();
-    await settle(
-      tester,
-      until: () => _TestScopeElement.disposalOrder.contains('holder'),
-    );
-  });
+      gate.complete();
+      await settle(
+        tester,
+        until: () => _TestScopeElement.disposalOrder.contains('holder'),
+      );
+    },
+  );
 
   // The same diagnostic, in the one state where the two facts it reports come
   // apart: the key is remembered before the coordinator is looked up, and the
@@ -177,18 +173,15 @@ void main() {
     'a key changed after a failed lookup is not reported as held',
     (tester) async {
       final errors = <Object>[];
-      await runZonedGuarded(
-        () async {
-          await tester.pumpWidget(
-            const Directionality(
-              textDirection: TextDirection.ltr,
-              child: _TestScope(testKey: 'shared'),
-            ),
-          );
-          await tester.pump();
-        },
-        (error, stackTrace) => errors.add(error),
-      );
+      await runZonedGuarded(() async {
+        await tester.pumpWidget(
+          const Directionality(
+            textDirection: TextDirection.ltr,
+            child: _TestScope(testKey: 'shared'),
+          ),
+        );
+        await tester.pump();
+      }, (error, stackTrace) => errors.add(error));
 
       expect(
         errors,
@@ -222,8 +215,9 @@ void main() {
     experimentalLeakTesting: unmountableTree,
   );
 
-  testWidgets('a scope with no parent scope registers with the coordinator',
-      (tester) async {
+  testWidgets('a scope with no parent scope registers with the coordinator', (
+    tester,
+  ) async {
     await tester.pumpWidget(
       const Directionality(
         textDirection: TextDirection.ltr,
@@ -238,75 +232,78 @@ void main() {
   });
 
   testWidgets(
-      'a scope under nested coordinators registers with the nearest one',
-      (tester) async {
-    await tester.pumpWidget(
-      const Directionality(
-        textDirection: TextDirection.ltr,
-        child: AsyncScopeCoordinator(
-          child: AsyncScopeCoordinator(child: _TestScope()),
+    'a scope under nested coordinators registers with the nearest one',
+    (tester) async {
+      await tester.pumpWidget(
+        const Directionality(
+          textDirection: TextDirection.ltr,
+          child: AsyncScopeCoordinator(
+            child: AsyncScopeCoordinator(child: _TestScope()),
+          ),
         ),
-      ),
-    );
-    await tester.pumpAndSettle();
+      );
+      await tester.pumpAndSettle();
 
-    final [outer, inner] = tester
-        .elementList(find.byType(AsyncScopeCoordinator))
-        .cast<AsyncScopeParent>()
-        .toList();
+      final [outer, inner] = tester
+          .elementList(find.byType(AsyncScopeCoordinator))
+          .cast<AsyncScopeParent>()
+          .toList();
 
-    expect(
-      inner.childrenCount,
-      1,
-      reason: 'the scope registered with the nearest coordinator',
-    );
-    expect(
-      outer.childrenCount,
-      0,
-      reason: 'the outer coordinator never sees a child of the inner one',
-    );
+      expect(
+        inner.childrenCount,
+        1,
+        reason: 'the scope registered with the nearest coordinator',
+      );
+      expect(
+        outer.childrenCount,
+        0,
+        reason: 'the outer coordinator never sees a child of the inner one',
+      );
 
-    await _tearDownTree(tester, scopes: 1);
-  });
+      await _tearDownTree(tester, scopes: 1);
+    },
+  );
 
   testWidgets(
-      'a coordinator between two scopes does not take the place of the parent',
-      (tester) async {
-    await tester.pumpWidget(
-      const Directionality(
-        textDirection: TextDirection.ltr,
-        child: _TestScope(
-          disposeLabel: 'parent',
-          child: AsyncScopeCoordinator(
-            child: _TestScope(
-              disposeLabel: 'child',
-              disposeDelay: Duration(milliseconds: 50),
+    'a coordinator between two scopes does not take the place of the parent',
+    (tester) async {
+      await tester.pumpWidget(
+        const Directionality(
+          textDirection: TextDirection.ltr,
+          child: _TestScope(
+            disposeLabel: 'parent',
+            child: AsyncScopeCoordinator(
+              child: _TestScope(
+                disposeLabel: 'child',
+                disposeDelay: Duration(milliseconds: 50),
+              ),
             ),
           ),
         ),
-      ),
-    );
-    await tester.pumpAndSettle();
+      );
+      await tester.pumpAndSettle();
 
-    expect(
-      _coordinatorOf(tester).childrenCount,
-      0,
-      reason: 'the child registered with the parent scope, not the coordinator',
-    );
+      expect(
+        _coordinatorOf(tester).childrenCount,
+        0,
+        reason:
+            'the child registered with the parent scope, not the coordinator',
+      );
 
-    await tester.pumpWidget(
-      const Directionality(
-        textDirection: TextDirection.ltr,
-        child: SizedBox.shrink(),
-      ),
-    );
-    await settle(
-      tester,
-      until: () => _TestScopeElement.disposalOrder.length == 2,
-    );
+      await tester.pumpWidget(
+        const Directionality(
+          textDirection: TextDirection.ltr,
+          child: SizedBox.shrink(),
+        ),
+      );
+      await settle(
+        tester,
+        until: () => _TestScopeElement.disposalOrder.length == 2,
+      );
 
-    expect(_TestScopeElement.disposalOrder, ['child', 'parent']);
-  });
+      expect(_TestScopeElement.disposalOrder, ['child', 'parent']);
+    },
+  );
 
   testWidgets('a parent scope waits for the scope below it', (tester) async {
     await tester.pumpWidget(
@@ -337,8 +334,9 @@ void main() {
     expect(_TestScopeElement.disposalOrder, ['child', 'parent']);
   });
 
-  testWidgets('a coordinator above a parent scope leaves the pair alone',
-      (tester) async {
+  testWidgets('a coordinator above a parent scope leaves the pair alone', (
+    tester,
+  ) async {
     await tester.pumpWidget(
       const Directionality(
         textDirection: TextDirection.ltr,
@@ -369,8 +367,9 @@ void main() {
     expect(_TestScopeElement.disposalOrder, ['child', 'parent']);
   });
 
-  testWidgets('a scope with no parent and no coordinator disposes cleanly',
-      (tester) async {
+  testWidgets('a scope with no parent and no coordinator disposes cleanly', (
+    tester,
+  ) async {
     await tester.pumpWidget(
       const Directionality(
         textDirection: TextDirection.ltr,
@@ -394,54 +393,60 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
-  testWidgets('waitForChildren completes only after disposeScope has finished',
-      (tester) async {
-    final gate = Completer<void>();
-    late BuildContext context;
-    Widget build({required bool withScope}) => _coordinatorTree(
-          withScope: withScope,
-          gate: gate,
-          onContext: (builderContext) => context = builderContext,
-        );
+  testWidgets(
+    'waitForChildren completes only after disposeScope has finished',
+    (tester) async {
+      final gate = Completer<void>();
+      late BuildContext context;
+      Widget build({required bool withScope}) => _coordinatorTree(
+        withScope: withScope,
+        gate: gate,
+        onContext: (builderContext) => context = builderContext,
+      );
 
-    await tester.pumpWidget(build(withScope: true));
-    await tester.pumpAndSettle();
+      await tester.pumpWidget(build(withScope: true));
+      await tester.pumpAndSettle();
 
-    expect(_coordinatorOf(tester).childrenCount, 1);
+      expect(_coordinatorOf(tester).childrenCount, 1);
 
-    await tester.pumpWidget(build(withScope: false));
+      await tester.pumpWidget(build(withScope: false));
 
-    var waited = false;
-    unawaited(
-      AsyncScopeCoordinator.waitForChildren(context).then((_) => waited = true),
-    );
-    await settle(tester, until: () => waited);
+      var waited = false;
+      unawaited(
+        AsyncScopeCoordinator.waitForChildren(
+          context,
+        ).then((_) => waited = true),
+      );
+      await settle(tester, until: () => waited);
 
-    expect(waited, isFalse, reason: 'disposeScope has not finished yet');
-    expect(_TestScopeElement.disposalOrder, isEmpty);
+      expect(waited, isFalse, reason: 'disposeScope has not finished yet');
+      expect(_TestScopeElement.disposalOrder, isEmpty);
 
-    gate.complete();
-    await settle(tester, until: () => waited);
+      gate.complete();
+      await settle(tester, until: () => waited);
 
-    expect(_TestScopeElement.disposalOrder, ['top']);
-    expect(waited, isTrue);
-    expect(_coordinatorOf(tester).childrenCount, 0);
-  });
+      expect(_TestScopeElement.disposalOrder, ['top']);
+      expect(waited, isTrue);
+      expect(_coordinatorOf(tester).childrenCount, 0);
+    },
+  );
 
   // The two tests below pin the defaults of the public `waitForChildren`:
   // without them the wait is unbounded again, or silent again, and the suite
   // stays green.
-  testWidgets('waitForChildren gives up on time and reports the expiry',
-      (tester) async {
-    ScopeConfig.defaultWaitForChildrenTimeout =
-        const Duration(milliseconds: 50);
+  testWidgets('waitForChildren gives up on time and reports the expiry', (
+    tester,
+  ) async {
+    ScopeConfig.defaultWaitForChildrenTimeout = const Duration(
+      milliseconds: 50,
+    );
     final gate = Completer<void>();
     late BuildContext context;
     Widget build({required bool withScope}) => _coordinatorTree(
-          withScope: withScope,
-          gate: gate,
-          onContext: (builderContext) => context = builderContext,
-        );
+      withScope: withScope,
+      gate: gate,
+      onContext: (builderContext) => context = builderContext,
+    );
 
     await tester.pumpWidget(build(withScope: true));
     await tester.pumpAndSettle();
@@ -492,66 +497,70 @@ void main() {
     );
   });
 
-  testWidgets('waitForChildren reports an expiry that outlives the coordinator',
-      (tester) async {
-    ScopeConfig.defaultWaitForChildrenTimeout =
-        const Duration(milliseconds: 50);
-    final gate = Completer<void>();
-    late BuildContext context;
+  testWidgets(
+    'waitForChildren reports an expiry that outlives the coordinator',
+    (tester) async {
+      ScopeConfig.defaultWaitForChildrenTimeout = const Duration(
+        milliseconds: 50,
+      );
+      final gate = Completer<void>();
+      late BuildContext context;
 
-    await tester.pumpWidget(
-      _coordinatorTree(
-        withScope: true,
-        gate: gate,
-        onContext: (builderContext) => context = builderContext,
-      ),
-    );
-    await tester.pumpAndSettle();
+      await tester.pumpWidget(
+        _coordinatorTree(
+          withScope: true,
+          gate: gate,
+          onContext: (builderContext) => context = builderContext,
+        ),
+      );
+      await tester.pumpAndSettle();
 
-    Object? error;
-    var waited = false;
-    unawaited(
-      AsyncScopeCoordinator.waitForChildren(context).then(
-        (_) => waited = true,
-        onError: (Object failure) => error = failure,
-      ),
-    );
+      Object? error;
+      var waited = false;
+      unawaited(
+        AsyncScopeCoordinator.waitForChildren(context).then(
+          (_) => waited = true,
+          onError: (Object failure) => error = failure,
+        ),
+      );
 
-    // The whole tree goes away while the wait is running -- "before tearing
-    // down a test" is the documented use case -- so the coordinator's element
-    // is unmounted by the time the timeout fires and its widget is gone.
-    await tester.pumpWidget(
-      const Directionality(
-        textDirection: TextDirection.ltr,
-        child: SizedBox.shrink(),
-      ),
-    );
-    await settle(tester, until: () => waited || error != null);
+      // The whole tree goes away while the wait is running -- "before tearing
+      // down a test" is the documented use case -- so the coordinator's element
+      // is unmounted by the time the timeout fires and its widget is gone.
+      await tester.pumpWidget(
+        const Directionality(
+          textDirection: TextDirection.ltr,
+          child: SizedBox.shrink(),
+        ),
+      );
+      await settle(tester, until: () => waited || error != null);
 
-    expect(error, isNull, reason: 'an expiry completes the future normally');
-    expect(waited, isTrue);
+      expect(error, isNull, reason: 'an expiry completes the future normally');
+      expect(waited, isTrue);
 
-    final exception = tester.takeException();
-    expect(exception, isA<TimeoutException>());
-    expect(
-      (exception as TimeoutException).message,
-      startsWith('$AsyncScopeCoordinator'),
-    );
+      final exception = tester.takeException();
+      expect(exception, isA<TimeoutException>());
+      expect(
+        (exception as TimeoutException).message,
+        startsWith('$AsyncScopeCoordinator'),
+      );
 
-    gate.complete();
-    await settle(
-      tester,
-      until: () => _TestScopeElement.disposalOrder.isNotEmpty,
-    );
-  });
+      gate.complete();
+      await settle(
+        tester,
+        until: () => _TestScopeElement.disposalOrder.isNotEmpty,
+      );
+    },
+  );
 
   // `AsyncScopeParent.waitForChildren` is public API in its own right, not
   // just the plumbing behind the static helper: `AsyncScopeCore.of` hands out
   // the element, and every custom `AsyncScopeElementBase` exposes the method.
   // Called without an `onTimeout` it must report the expiry itself, or a
   // dropped child is total silence.
-  testWidgets('the mixin waitForChildren reports an expiry by default',
-      (tester) async {
+  testWidgets('the mixin waitForChildren reports an expiry by default', (
+    tester,
+  ) async {
     await tester.pumpWidget(
       const Directionality(
         textDirection: TextDirection.ltr,
@@ -565,8 +574,9 @@ void main() {
 
     // The very object `AsyncScopeCore.of<_TestScope, _TestScopeElement>(
     // context, listen: false)` returns for the outer scope.
-    final parent =
-        tester.element<_TestScopeElement>(find.byType(_TestScope).first);
+    final parent = tester.element<_TestScopeElement>(
+      find.byType(_TestScope).first,
+    );
     expect(parent.childrenCount, 1);
 
     Object? error;
@@ -574,7 +584,9 @@ void main() {
     unawaited(
       // No `onTimeout`: its default is what is under test. The child scope is
       // still mounted and never unregisters, so the wait can only expire.
-      parent.waitForChildren(timeout: const Duration(milliseconds: 50)).then(
+      parent
+          .waitForChildren(timeout: const Duration(milliseconds: 50))
+          .then(
             (_) => waited = true,
             onError: (Object failure) => error = failure,
           ),
@@ -593,13 +605,15 @@ void main() {
     expect(
       (exception as TimeoutException).message,
       startsWith('$_TestScope'),
-      reason: 'the element puts its own short description in front of the '
+      reason:
+          'the element puts its own short description in front of the '
           'message the registry builds',
     );
     expect(
       find.byType(_TestScope),
       findsNWidgets(2),
-      reason: 'the child that was dropped is still mounted -- nothing was '
+      reason:
+          'the child that was dropped is still mounted -- nothing was '
           'really waited for, so the silence would have been the whole story',
     );
   });
@@ -609,11 +623,13 @@ void main() {
   // "no limit", so the most natural call of the method -- without arguments --
   // was the one that could wait for ever. The static helper on the
   // coordinator has always substituted the `ScopeConfig` default.
-  testWidgets('the mixin waitForChildren applies the default timeout',
-      (tester) async {
+  testWidgets('the mixin waitForChildren applies the default timeout', (
+    tester,
+  ) async {
     final previous = ScopeConfig.defaultWaitForChildrenTimeout;
-    ScopeConfig.defaultWaitForChildrenTimeout =
-        const Duration(milliseconds: 50);
+    ScopeConfig.defaultWaitForChildrenTimeout = const Duration(
+      milliseconds: 50,
+    );
     addTearDown(() => ScopeConfig.defaultWaitForChildrenTimeout = previous);
 
     await tester.pumpWidget(
@@ -627,8 +643,9 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    final parent =
-        tester.element<_TestScopeElement>(find.byType(_TestScope).first);
+    final parent = tester.element<_TestScopeElement>(
+      find.byType(_TestScope).first,
+    );
     expect(parent.childrenCount, 1);
 
     var waited = false;
@@ -642,7 +659,8 @@ void main() {
     expect(
       waited,
       isTrue,
-      reason: 'the wait gave up on the configured default, the way the '
+      reason:
+          'the wait gave up on the configured default, the way the '
           'coordinator has always done',
     );
     expect(
@@ -652,8 +670,9 @@ void main() {
     );
   });
 
-  testWidgets('waitForChildren without a coordinator is an error',
-      (tester) async {
+  testWidgets('waitForChildren without a coordinator is an error', (
+    tester,
+  ) async {
     late BuildContext context;
     await tester.pumpWidget(
       Directionality(
@@ -774,8 +793,9 @@ void main() {
           ? 'a scopeKey timeout allows readiness during previous disposal'
           : 'a null scopeKey timeout waits for previous disposal',
       (tester) async {
-        ScopeConfig.defaultScopeKeyTimeout =
-            bounded ? const Duration(milliseconds: 50) : null;
+        ScopeConfig.defaultScopeKeyTimeout = bounded
+            ? const Duration(milliseconds: 50)
+            : null;
         // Only the key wait may expire: the old owner keeps its key until
         // its actual disposal finishes, however long this test holds it.
         ScopeConfig.defaultDisposeScopeTimeout = null;
@@ -789,26 +809,26 @@ void main() {
         });
 
         Widget build(String owner) => Directionality(
-              textDirection: TextDirection.ltr,
-              child: AsyncScopeCoordinator(
-                child: AsyncScope(
-                  key: ValueKey(owner),
-                  tag: owner,
-                  scopeKey: 'shared',
-                  initScope: (context, ctx) async {},
-                  progressBuilder: (context, progress) => const Text('loading'),
-                  errorBuilder: (context, e, s, p) => const Text('error'),
-                  disposeScope: owner == 'old'
-                      ? () async {
-                          disposing = true;
-                          await gate.future;
-                          released = true;
-                        }
-                      : () {},
-                  builder: (context) => Text('$owner ready'),
-                ),
-              ),
-            );
+          textDirection: TextDirection.ltr,
+          child: AsyncScopeCoordinator(
+            child: AsyncScope(
+              key: ValueKey(owner),
+              tag: owner,
+              scopeKey: 'shared',
+              initScope: (context, ctx) async {},
+              progressBuilder: (context, progress) => const Text('loading'),
+              errorBuilder: (context, e, s, p) => const Text('error'),
+              disposeScope: owner == 'old'
+                  ? () async {
+                      disposing = true;
+                      await gate.future;
+                      released = true;
+                    }
+                  : () {},
+              builder: (context) => Text('$owner ready'),
+            ),
+          ),
+        );
 
         await tester.pumpWidget(build('old'));
         await tester.pumpAndSettle();
@@ -908,36 +928,36 @@ void main() {
   // having had to give up on the wait (`keyTimedOut`), and its own limit is
   // set far beyond what the test can advance, so an expiry cannot be what let
   // it in.
-  testWidgets('a failing onScopeKeyTimeout does not leak the scopeKey',
-      (tester) async {
+  testWidgets('a failing onScopeKeyTimeout does not leak the scopeKey', (
+    tester,
+  ) async {
     Widget build({
       required bool holder,
       required bool waiter,
       required bool successor,
-    }) =>
-        Directionality(
-          textDirection: TextDirection.ltr,
-          child: AsyncScopeCoordinator(
-            child: Column(
-              children: [
-                if (holder)
-                  const _TestScope(testKey: 'shared', disposeLabel: 'holder'),
-                if (waiter)
-                  const _TestScope(
-                    testKey: 'shared',
-                    keyTimeout: Duration(milliseconds: 50),
-                    throwOnKeyTimeout: true,
-                  ),
-                if (successor)
-                  const _TestScope(
-                    testKey: 'shared',
-                    disposeLabel: 'successor',
-                    keyTimeout: Duration(days: 1),
-                  ),
-              ],
-            ),
-          ),
-        );
+    }) => Directionality(
+      textDirection: TextDirection.ltr,
+      child: AsyncScopeCoordinator(
+        child: Column(
+          children: [
+            if (holder)
+              const _TestScope(testKey: 'shared', disposeLabel: 'holder'),
+            if (waiter)
+              const _TestScope(
+                testKey: 'shared',
+                keyTimeout: Duration(milliseconds: 50),
+                throwOnKeyTimeout: true,
+              ),
+            if (successor)
+              const _TestScope(
+                testKey: 'shared',
+                disposeLabel: 'successor',
+                keyTimeout: Duration(days: 1),
+              ),
+          ],
+        ),
+      ),
+    );
 
     // The hook's failure surfaces as an uncaught error of the zone the mount
     // ran in -- `_performAsyncInit()`'s future is discarded -- so a guarded
@@ -945,24 +965,22 @@ void main() {
     // Nothing inside that zone may throw, so every `expect` is made once it
     // is gone.
     final errors = <Object>[];
-    await runZonedGuarded(
-      () async {
-        await tester.pumpWidget(
-          build(holder: true, waiter: false, successor: false),
-        );
-        await tester.pumpAndSettle();
+    await runZonedGuarded(() async {
+      await tester.pumpWidget(
+        build(holder: true, waiter: false, successor: false),
+      );
+      await tester.pumpAndSettle();
 
-        // The waiter queues up behind the holder and its limit expires: it is
-        // let in anyway, the expiry is reported, and `onScopeKeyTimeout()`
-        // throws.
-        await tester
-            .pumpWidget(build(holder: true, waiter: true, successor: false));
-        // Real time, not the fake clock: the limit is a timer of the root
-        // zone, and only `settle` moves both.
-        await settle(tester, until: () => errors.isNotEmpty);
-      },
-      (error, stackTrace) => errors.add(error),
-    );
+      // The waiter queues up behind the holder and its limit expires: it is
+      // let in anyway, the expiry is reported, and `onScopeKeyTimeout()`
+      // throws.
+      await tester.pumpWidget(
+        build(holder: true, waiter: true, successor: false),
+      );
+      // Real time, not the fake clock: the limit is a timer of the root
+      // zone, and only `settle` moves both.
+      await settle(tester, until: () => errors.isNotEmpty);
+    }, (error, stackTrace) => errors.add(error));
 
     expect(errors, hasLength(1));
     expect(errors.single, isA<StateError>());
@@ -974,20 +992,23 @@ void main() {
 
     // Both scopes leave; the holder releases the key on the way out, and so
     // must the waiter whose hook threw.
-    await tester
-        .pumpWidget(build(holder: false, waiter: false, successor: false));
+    await tester.pumpWidget(
+      build(holder: false, waiter: false, successor: false),
+    );
     await settle(
       tester,
       until: () => _TestScopeElement.disposalOrder.contains('holder'),
     );
     expect(_TestScopeElement.disposalOrder, ['holder']);
 
-    await tester
-        .pumpWidget(build(holder: false, waiter: false, successor: true));
+    await tester.pumpWidget(
+      build(holder: false, waiter: false, successor: true),
+    );
     await tester.pumpAndSettle();
 
-    final successor =
-        tester.element<_TestScopeElement>(find.byType(_TestScope));
+    final successor = tester.element<_TestScopeElement>(
+      find.byType(_TestScope),
+    );
 
     expect(
       successor.state,
@@ -1015,11 +1036,13 @@ void main() {
   // What proves the release is a later scope on the same key getting in and
   // initializing, with its own limit set far beyond anything this test can
   // advance: an expiry cannot be what let it in.
-  testWidgets('a scopeKey is given back by a scope stuck in initScope',
-      (tester) async {
+  testWidgets('a scopeKey is given back by a scope stuck in initScope', (
+    tester,
+  ) async {
     // Short enough to expire inside `settle`'s budget of real time.
-    ScopeConfig.defaultInitCancellationTimeout =
-        const Duration(milliseconds: 50);
+    ScopeConfig.defaultInitCancellationTimeout = const Duration(
+      milliseconds: 50,
+    );
 
     // Never completed: this is the hang under test.
     final hang = Completer<void>();
@@ -1068,14 +1091,12 @@ void main() {
     );
 
     await tester.pumpWidget(build(hung: false, successor: true));
-    await settle(
-      tester,
-      until: () => _TestScopeElement.initialized == 2,
-    );
+    await settle(tester, until: () => _TestScopeElement.initialized == 2);
     await tester.pumpAndSettle();
 
-    final successor =
-        tester.element<_TestScopeElement>(find.byType(_TestScope));
+    final successor = tester.element<_TestScopeElement>(
+      find.byType(_TestScope),
+    );
 
     expect(
       successor.state,
@@ -1100,8 +1121,9 @@ void main() {
   //
   // Proved the same way: the successor's own limit is a day, so it can only be
   // in because the key came back.
-  testWidgets('a scopeKey is given back by a scope stuck in disposeScope',
-      (tester) async {
+  testWidgets('a scopeKey is given back by a scope stuck in disposeScope', (
+    tester,
+  ) async {
     // Short enough to expire inside `settle`'s budget of real time.
     ScopeConfig.defaultDisposeScopeTimeout = const Duration(milliseconds: 50);
 
@@ -1149,8 +1171,9 @@ void main() {
     await settle(tester, until: () => _TestScopeElement.initialized == 2);
     await tester.pumpAndSettle();
 
-    final successor =
-        tester.element<_TestScopeElement>(find.byType(_TestScope));
+    final successor = tester.element<_TestScopeElement>(
+      find.byType(_TestScope),
+    );
 
     expect(
       successor.state,
@@ -1180,9 +1203,9 @@ void main() {
       'cannot change',
       (tester) async {
         Widget build(Object key) => Directionality(
-              textDirection: TextDirection.ltr,
-              child: AsyncScopeCoordinator(child: _TestScope(testKey: key)),
-            );
+          textDirection: TextDirection.ltr,
+          child: AsyncScopeCoordinator(child: _TestScope(testKey: key)),
+        );
 
         await tester.pumpWidget(build('first'));
         await tester.pumpAndSettle();
@@ -1218,16 +1241,16 @@ void main() {
       'cannot appear after the scope has mounted',
       (tester) async {
         Widget build(Object? lateKey) => Directionality(
-              textDirection: TextDirection.ltr,
-              child: AsyncScopeCoordinator(
-                child: Column(
-                  children: [
-                    const _TestScope(testKey: 'shared'),
-                    _TestScope(testKey: lateKey),
-                  ],
-                ),
-              ),
-            );
+          textDirection: TextDirection.ltr,
+          child: AsyncScopeCoordinator(
+            child: Column(
+              children: [
+                const _TestScope(testKey: 'shared'),
+                _TestScope(testKey: lateKey),
+              ],
+            ),
+          ),
+        );
 
         await tester.pumpWidget(build(null));
         await tester.pumpAndSettle();
@@ -1265,9 +1288,9 @@ void main() {
       'cannot be given up while the scope is holding it',
       (tester) async {
         Widget build(Object? key) => Directionality(
-              textDirection: TextDirection.ltr,
-              child: AsyncScopeCoordinator(child: _TestScope(testKey: key)),
-            );
+          textDirection: TextDirection.ltr,
+          child: AsyncScopeCoordinator(child: _TestScope(testKey: key)),
+        );
 
         await tester.pumpWidget(build('shared'));
         await tester.pumpAndSettle();
@@ -1280,7 +1303,8 @@ void main() {
         expect(
           exception.toString(),
           contains('given up'),
-          reason: 'a key let go is not a key that changed: the entry is still '
+          reason:
+              'a key let go is not a key that changed: the entry is still '
               'held, by a scope that no longer claims to need it',
         );
         expect(
@@ -1307,22 +1331,22 @@ void main() {
         // failed build has bounded constraints: an unbounded one overflows the
         // `Column` and buries the report under a second, unrelated exception.
         Widget build({required bool moved}) => Directionality(
-              textDirection: TextDirection.ltr,
-              child: Column(
-                children: [
-                  Expanded(
-                    child: AsyncScopeCoordinator(
-                      child: moved ? const SizedBox.shrink() : scope,
-                    ),
-                  ),
-                  Expanded(
-                    child: AsyncScopeCoordinator(
-                      child: moved ? scope : const SizedBox.shrink(),
-                    ),
-                  ),
-                ],
+          textDirection: TextDirection.ltr,
+          child: Column(
+            children: [
+              Expanded(
+                child: AsyncScopeCoordinator(
+                  child: moved ? const SizedBox.shrink() : scope,
+                ),
               ),
-            );
+              Expanded(
+                child: AsyncScopeCoordinator(
+                  child: moved ? scope : const SizedBox.shrink(),
+                ),
+              ),
+            ],
+          ),
+        );
 
         await tester.pumpWidget(build(moved: false));
         await tester.pumpAndSettle();
@@ -1376,7 +1400,8 @@ void main() {
         expect(
           waited,
           isTrue,
-          reason: 'the limit is far beyond what this test can advance, so only '
+          reason:
+              'the limit is far beyond what this test can advance, so only '
               'an empty registry can have released the wait',
         );
       },
@@ -1391,11 +1416,11 @@ void main() {
   // at the start. Asking an unmounted coordinator raised a `_TypeError`
   // inside the observer's own hook; the guard then named the observer as the
   // thing that had failed, and the expiry reached nobody at all.
-  testWidgets(
-      'an expiry on a coordinator that left the tree still reaches '
+  testWidgets('an expiry on a coordinator that left the tree still reaches '
       'the observer', (tester) async {
-    ScopeConfig.defaultWaitForChildrenTimeout =
-        const Duration(milliseconds: 40);
+    ScopeConfig.defaultWaitForChildrenTimeout = const Duration(
+      milliseconds: 40,
+    );
     final observer = RecordingObserver();
     ScopeConfig.observer = observer;
 
@@ -1437,7 +1462,8 @@ void main() {
     expect(
       observer.timeouts.map((error) => '${error.message}'),
       contains(contains("couldn't wait for the children to complete")),
-      reason: 'the coordinator names itself from the label it took while '
+      reason:
+          'the coordinator names itself from the label it took while '
           'there was still a widget to take it from',
     );
     expect(tester.takeException(), isA<TimeoutException>());
@@ -1447,8 +1473,9 @@ void main() {
   });
 
   testWidgets('an expired wait for children is reported', (tester) async {
-    ScopeConfig.defaultWaitForChildrenTimeout =
-        const Duration(milliseconds: 50);
+    ScopeConfig.defaultWaitForChildrenTimeout = const Duration(
+      milliseconds: 50,
+    );
     final gate = Completer<void>();
 
     await tester.pumpWidget(
@@ -1500,10 +1527,12 @@ void main() {
   // element is a type and a hash. The two neighbouring waits (the coordinator's,
   // and a scope's own teardown) already name the widget; this one dropped the tag
   // exactly where it is asked for.
-  testWidgets('a parent names an expired wait after its widget, tag and all',
-      (tester) async {
-    ScopeConfig.defaultWaitForChildrenTimeout =
-        const Duration(milliseconds: 50);
+  testWidgets('a parent names an expired wait after its widget, tag and all', (
+    tester,
+  ) async {
+    ScopeConfig.defaultWaitForChildrenTimeout = const Duration(
+      milliseconds: 50,
+    );
     final gate = Completer<void>();
 
     await tester.pumpWidget(
@@ -1518,11 +1547,13 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    final parent = tester.element(
-      find.byWidgetPredicate(
-        (widget) => widget is _TestScope && widget.tag == 'checkout',
-      ),
-    ) as AsyncScopeParent;
+    final parent =
+        tester.element(
+              find.byWidgetPredicate(
+                (widget) => widget is _TestScope && widget.tag == 'checkout',
+              ),
+            )
+            as AsyncScopeParent;
 
     var waited = false;
     unawaited(parent.waitForChildren().then((_) => waited = true));
@@ -1537,7 +1568,8 @@ void main() {
     expect(
       (exception as TimeoutException).message,
       startsWith('$_TestScope(checkout)'),
-      reason: 'the tag is the only thing that tells two scopes of one family '
+      reason:
+          'the tag is the only thing that tells two scopes of one family '
           'apart in a report',
     );
 
@@ -1551,24 +1583,23 @@ Widget _coordinatorTree({
   required bool withScope,
   required Completer<void> gate,
   required ValueSetter<BuildContext> onContext,
-}) =>
-    Directionality(
-      textDirection: TextDirection.ltr,
-      child: AsyncScopeCoordinator(
-        child: Column(
-          children: [
-            if (withScope) _TestScope(disposeLabel: 'top', disposeGate: gate),
-            Builder(
-              builder: (context) {
-                onContext(context);
+}) => Directionality(
+  textDirection: TextDirection.ltr,
+  child: AsyncScopeCoordinator(
+    child: Column(
+      children: [
+        if (withScope) _TestScope(disposeLabel: 'top', disposeGate: gate),
+        Builder(
+          builder: (context) {
+            onContext(context);
 
-                return const SizedBox.shrink();
-              },
-            ),
-          ],
+            return const SizedBox.shrink();
+          },
         ),
-      ),
-    );
+      ],
+    ),
+  ),
+);
 
 /// The coordinator's element, seen through the public half of its wait-root
 /// role.

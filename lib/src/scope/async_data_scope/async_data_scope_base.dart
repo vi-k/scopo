@@ -1,8 +1,10 @@
 part of '../scope.dart';
 
 /// {@category AsyncDataScope}
-abstract base class AsyncDataScopeBase<W extends AsyncDataScopeBase<W, T>,
-        T extends Object?>
+abstract base class AsyncDataScopeBase<
+  W extends AsyncDataScopeBase<W, T>,
+  T extends Object?
+>
     extends AsyncDataScopeCore<W, _AsyncDataScopeElement<W, T>, T> {
   /// Serializes this scope with the others that share the key.
   ///
@@ -145,43 +147,41 @@ abstract base class AsyncDataScopeBase<W extends AsyncDataScopeBase<W, T>,
       _AsyncDataScopeElement<W, T>(this as W);
 
   /// The nearest scope [W] above [context], or `null`.
-  static AsyncDataScopeContext<W, T>?
-      maybeOf<W extends AsyncDataScopeBase<W, T>, T extends Object?>(
-    BuildContext context, {
-    required bool listen,
-  }) =>
-          ScopeContext.maybeOf<W, AsyncDataScopeContext<W, T>>(
-            context,
-            listen: listen,
-          );
+  static AsyncDataScopeContext<W, T>? maybeOf<
+    W extends AsyncDataScopeBase<W, T>,
+    T extends Object?
+  >(BuildContext context, {required bool listen}) =>
+      ScopeContext.maybeOf<W, AsyncDataScopeContext<W, T>>(
+        context,
+        listen: listen,
+      );
 
   /// The nearest scope [W] above [context].
   ///
   /// Throws when there is none.
   static AsyncDataScopeContext<W, T>
-      of<W extends AsyncDataScopeBase<W, T>, T extends Object?>(
+  of<W extends AsyncDataScopeBase<W, T>, T extends Object?>(
     BuildContext context, {
     required bool listen,
   }) =>
-          ScopeContext.of<W, AsyncDataScopeContext<W, T>>(
-            context,
-            listen: listen,
-          );
+      ScopeContext.of<W, AsyncDataScopeContext<W, T>>(context, listen: listen);
 
   /// Subscribes to one value of the scope and returns it.
-  static V select<W extends AsyncDataScopeBase<W, T>, T extends Object?,
-          V extends Object?>(
+  static V select<
+    W extends AsyncDataScopeBase<W, T>,
+    T extends Object?,
+    V extends Object?
+  >(
     BuildContext context,
     V Function(AsyncDataScopeContext<W, T> context) selector,
   ) =>
-      ScopeContext.select<W, AsyncDataScopeContext<W, T>, V>(
-        context,
-        selector,
-      );
+      ScopeContext.select<W, AsyncDataScopeContext<W, T>, V>(context, selector);
 }
 
-final class _AsyncDataScopeElement<W extends AsyncDataScopeBase<W, T>,
-        T extends Object?>
+final class _AsyncDataScopeElement<
+  W extends AsyncDataScopeBase<W, T>,
+  T extends Object?
+>
     extends AsyncDataScopeElementBase<W, _AsyncDataScopeElement<W, T>, T> {
   _AsyncDataScopeElement(super.widget);
 
@@ -197,12 +197,13 @@ final class _AsyncDataScopeElement<W extends AsyncDataScopeBase<W, T>,
     void Function()? initCancellation,
     void Function()? disposeScope,
     void Function()? waitForChildren,
-  }) get timeoutCallbacks => (
-        scopeKey: widget.onScopeKeyTimeout,
-        initCancellation: widget.onInitCancellationTimeout,
-        disposeScope: widget.onDisposeScopeTimeout,
-        waitForChildren: widget.onWaitForChildrenTimeout,
-      );
+  })
+  get timeoutCallbacks => (
+    scopeKey: widget.onScopeKeyTimeout,
+    initCancellation: widget.onInitCancellationTimeout,
+    disposeScope: widget.onDisposeScopeTimeout,
+    waitForChildren: widget.onWaitForChildrenTimeout,
+  );
 
   @override
   Duration? get initCancellationTimeout => widget.initCancellationTimeout;
@@ -240,14 +241,16 @@ final class _AsyncDataScopeElement<W extends AsyncDataScopeBase<W, T>,
 
   @override
   Widget buildOnState(AsyncScopeState state) => switch (state) {
-        AsyncScopeWaiting() =>
-          widget.buildOnWaiting(this) ?? widget.buildOnProgress(this, null),
-        AsyncScopeProgress(:final progress) =>
-          widget.buildOnProgress(this, progress),
-        AsyncScopeReady() => widget.buildOnReady(this, data),
-        AsyncScopeError(:final error, :final stackTrace, :final progress) =>
-          widget.buildOnError(this, error, stackTrace, progress),
-      };
+    AsyncScopeWaiting() =>
+      widget.buildOnWaiting(this) ?? widget.buildOnProgress(this, null),
+    AsyncScopeProgress(:final progress) => widget.buildOnProgress(
+      this,
+      progress,
+    ),
+    AsyncScopeReady() => widget.buildOnReady(this, data),
+    AsyncScopeError(:final error, :final stackTrace, :final progress) =>
+      widget.buildOnError(this, error, stackTrace, progress),
+  };
 }
 
 /// The three accessors of one [AsyncDataScopeBase], with its type arguments
@@ -261,8 +264,10 @@ final class _AsyncDataScopeElement<W extends AsyncDataScopeBase<W, T>,
 /// ```
 ///
 /// {@category AsyncDataScope}
-final class AsyncDataScopeAccess<W extends AsyncDataScopeBase<W, T>,
-    T extends Object?> {
+final class AsyncDataScopeAccess<
+  W extends AsyncDataScopeBase<W, T>,
+  T extends Object?
+> {
   /// Creates an accessor for the scope [W].
   const AsyncDataScopeAccess();
 
@@ -270,20 +275,17 @@ final class AsyncDataScopeAccess<W extends AsyncDataScopeBase<W, T>,
   AsyncDataScopeContext<W, T> of(
     BuildContext context, {
     required bool listen,
-  }) =>
-      AsyncDataScopeBase.of<W, T>(context, listen: listen);
+  }) => AsyncDataScopeBase.of<W, T>(context, listen: listen);
 
   /// Tries to find and return the context of the scope.
   AsyncDataScopeContext<W, T>? maybeOf(
     BuildContext context, {
     required bool listen,
-  }) =>
-      AsyncDataScopeBase.maybeOf<W, T>(context, listen: listen);
+  }) => AsyncDataScopeBase.maybeOf<W, T>(context, listen: listen);
 
   /// Selects a value from the scope context and **subscribes** to it.
   V select<V extends Object?>(
     BuildContext context,
     V Function(AsyncDataScopeContext<W, T> context) selector,
-  ) =>
-      AsyncDataScopeBase.select<W, T, V>(context, selector);
+  ) => AsyncDataScopeBase.select<W, T, V>(context, selector);
 }

@@ -36,10 +36,7 @@ void main() {
           textDirection: TextDirection.ltr,
           child: Builder(
             builder: (context) {
-              ScopeWidgetCore.of<_Scope, _ScopeElement>(
-                context,
-                listen: false,
-              );
+              ScopeWidgetCore.of<_Scope, _ScopeElement>(context, listen: false);
 
               return const SizedBox.shrink();
             },
@@ -86,8 +83,7 @@ void main() {
       );
     });
 
-    testWidgets(
-        'a scope finds itself, and a listener of its own value is '
+    testWidgets('a scope finds itself, and a listener of its own value is '
         'notified', (tester) async {
       await tester.pumpWidget(const _Host());
       await tester.pumpAndSettle();
@@ -95,10 +91,7 @@ void main() {
       final scope = tester.element(find.byType(_Scope)) as _ScopeElement;
 
       expect(
-        ScopeWidgetCore.maybeOf<_Scope, _ScopeElement>(
-          scope,
-          listen: false,
-        ),
+        ScopeWidgetCore.maybeOf<_Scope, _ScopeElement>(scope, listen: false),
         same(scope),
         reason: 'the lookup starts at the element itself',
       );
@@ -159,8 +152,9 @@ void main() {
     // is a placeholder that refuses to become an element. It used to refuse with
     // a bare `UnimplementedError` raised from inside the framework, which is
     // immediate but says nothing.
-    testWidgets('the placeholder nobody passed says which mistake it is',
-        (tester) async {
+    testWidgets('the placeholder nobody passed says which mistake it is', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         const Directionality(
           textDirection: TextDirection.ltr,
@@ -173,7 +167,8 @@ void main() {
       expect(
         exception.toString(),
         contains('buildChild()'),
-        reason: 'the message names the way a scope is meant to build what it '
+        reason:
+            'the message names the way a scope is meant to build what it '
             'shows',
       );
     });
@@ -229,8 +224,9 @@ void main() {
     // refused a working and very common pattern. It worked in release all
     // along, which made this a difference between debug and release rather
     // than a rule.
-    testWidgets('subscribing from a layout callback is allowed',
-        (tester) async {
+    testWidgets('subscribing from a layout callback is allowed', (
+      tester,
+    ) async {
       var value = -1;
 
       await tester.pumpWidget(
@@ -257,7 +253,8 @@ void main() {
       expect(
         value,
         1,
-        reason: 'and the subscription taken there is a real one, honoured by '
+        reason:
+            'and the subscription taken there is a real one, honoured by '
             'the next change like any other',
       );
     });
@@ -265,8 +262,9 @@ void main() {
     // A `SliverLayoutBuilder` is the same widget for slivers -- both descend
     // from `ConstrainedLayoutBuilder`, which is what the rule names. provider
     // checks for `LayoutBuilder` itself and refuses this one.
-    testWidgets('a sliver layout callback may subscribe as well',
-        (tester) async {
+    testWidgets('a sliver layout callback may subscribe as well', (
+      tester,
+    ) async {
       var value = -1;
 
       await tester.pumpWidget(
@@ -280,9 +278,7 @@ void main() {
                     (element) => element.value,
                   );
 
-                  return const SliverToBoxAdapter(
-                    child: SizedBox(height: 40),
-                  );
+                  return const SliverToBoxAdapter(child: SizedBox(height: 40));
                 },
               ),
             ],
@@ -337,7 +333,8 @@ void main() {
       expect(
         value,
         1,
-        reason: 'the relayout re-took the registration on a frame of its own, '
+        reason:
+            'the relayout re-took the registration on a frame of its own, '
             'and it is the only registration that element has',
       );
     });
@@ -351,48 +348,51 @@ void main() {
     // nothing said at all. The assertion allowed this until 2026-09-22 and
     // the documentation called it working code; measured in
     // `docs/records/2026-09-22[3]-lazy-registration-report.md`.
-    testWidgets('subscribing from the item builder of a lazy list is rejected',
-        (tester) async {
-      await tester.pumpWidget(
-        _Host(
-          builder: (context) => ListView.builder(
-            itemCount: 1,
-            itemBuilder: (context, index) {
-              ScopeWidgetCore.select<_Scope, _ScopeElement, int>(
-                context,
-                (element) => element.value,
-              );
+    testWidgets(
+      'subscribing from the item builder of a lazy list is rejected',
+      (tester) async {
+        await tester.pumpWidget(
+          _Host(
+            builder: (context) => ListView.builder(
+              itemCount: 1,
+              itemBuilder: (context, index) {
+                ScopeWidgetCore.select<_Scope, _ScopeElement, int>(
+                  context,
+                  (element) => element.value,
+                );
 
-              return const SizedBox(height: 40);
-            },
-          ),
-        ),
-      );
-
-      expect(
-        tester.takeException(),
-        isA<FlutterError>()
-            .having(
-              (error) => error.diagnostics.first.toString(),
-              'summary',
-              'A scope can only be subscribed to from a build.',
-            )
-            .having(
-              (error) => error.diagnostics.join(' '),
-              'parts',
-              contains('`Builder`'),
+                return const SizedBox(height: 40);
+              },
             ),
-        reason: 'and the way out is named in the error itself',
-      );
-    });
+          ),
+        );
+
+        expect(
+          tester.takeException(),
+          isA<FlutterError>()
+              .having(
+                (error) => error.diagnostics.first.toString(),
+                'summary',
+                'A scope can only be subscribed to from a build.',
+              )
+              .having(
+                (error) => error.diagnostics.join(' '),
+                'parts',
+                contains('`Builder`'),
+              ),
+          reason: 'and the way out is named in the error itself',
+        );
+      },
+    );
 
     // That way out, and why it is one: a `Builder` around the item gives the
     // item an element of its own, so the registration belongs to the item
     // rather than to the list. Nothing wipes it when the next item is built,
     // and a change wakes the one item that asked for it instead of rebuilding
     // the whole list.
-    testWidgets('a Builder inside the item subscribes that item alone',
-        (tester) async {
+    testWidgets('a Builder inside the item subscribes that item alone', (
+      tester,
+    ) async {
       final built = <int>[];
 
       await tester.pumpWidget(
@@ -432,7 +432,8 @@ void main() {
       expect(
         built,
         isNotEmpty,
-        reason: 'the scroll built an item on a later frame, which is what '
+        reason:
+            'the scroll built an item on a later frame, which is what '
             'used to wipe the registrations of the items above it',
       );
       built.clear();
@@ -443,7 +444,8 @@ void main() {
       expect(
         built,
         [0],
-        reason: 'the first item is still subscribed, and it alone is woken by '
+        reason:
+            'the first item is still subscribed, and it alone is woken by '
             'a change of its own value',
       );
     });
@@ -491,39 +493,41 @@ void main() {
     // one registration on a new frame and wipes everything the outer `build`
     // had asked for.
     testWidgets(
-        'a layout callback that subscribes through the context above it is '
-        'rejected', (tester) async {
-      await tester.pumpWidget(
-        _Host(
-          builder: (outer) => LayoutBuilder(
-            builder: (context, constraints) {
-              ScopeWidgetCore.select<_Scope, _ScopeElement, int>(
-                outer,
-                (element) => element.value,
-              );
+      'a layout callback that subscribes through the context above it is '
+      'rejected',
+      (tester) async {
+        await tester.pumpWidget(
+          _Host(
+            builder: (outer) => LayoutBuilder(
+              builder: (context, constraints) {
+                ScopeWidgetCore.select<_Scope, _ScopeElement, int>(
+                  outer,
+                  (element) => element.value,
+                );
 
-              return const SizedBox.shrink();
-            },
-          ),
-        ),
-      );
-
-      expect(
-        tester.takeException(),
-        isA<FlutterError>()
-            .having(
-              (error) => error.diagnostics.first.toString(),
-              'summary',
-              'A scope can only be subscribed to from a build.',
-            )
-            .having(
-              (error) => error.diagnostics.join(' '),
-              'parts',
-              contains('the context it is given'),
+                return const SizedBox.shrink();
+              },
             ),
-        reason: 'and the way out is named in the error itself',
-      );
-    });
+          ),
+        );
+
+        expect(
+          tester.takeException(),
+          isA<FlutterError>()
+              .having(
+                (error) => error.diagnostics.first.toString(),
+                'summary',
+                'A scope can only be subscribed to from a build.',
+              )
+              .having(
+                (error) => error.diagnostics.join(' '),
+                'parts',
+                contains('the context it is given'),
+              ),
+          reason: 'and the way out is named in the error itself',
+        );
+      },
+    );
 
     // The same mistake one level down, and the shape that named the widget
     // type alone let through: the inner callback captured the context of a
@@ -535,34 +539,36 @@ void main() {
     // own. What tells them apart is the render object being laid out: it
     // belongs to the builder that is running.
     testWidgets(
-        'a layout callback that subscribes through a layout callback above it '
-        'is rejected', (tester) async {
-      await tester.pumpWidget(
-        _Host(
-          builder: (context) => LayoutBuilder(
-            builder: (outer, outerConstraints) => LayoutBuilder(
-              builder: (context, constraints) {
-                ScopeWidgetCore.select<_Scope, _ScopeElement, int>(
-                  outer,
-                  (element) => element.value,
-                );
+      'a layout callback that subscribes through a layout callback above it '
+      'is rejected',
+      (tester) async {
+        await tester.pumpWidget(
+          _Host(
+            builder: (context) => LayoutBuilder(
+              builder: (outer, outerConstraints) => LayoutBuilder(
+                builder: (context, constraints) {
+                  ScopeWidgetCore.select<_Scope, _ScopeElement, int>(
+                    outer,
+                    (element) => element.value,
+                  );
 
-                return const SizedBox.shrink();
-              },
+                  return const SizedBox.shrink();
+                },
+              ),
             ),
           ),
-        ),
-      );
+        );
 
-      expect(
-        tester.takeException(),
-        isA<FlutterError>().having(
-          (error) => error.diagnostics.first.toString(),
-          'summary',
-          'A scope can only be subscribed to from a build.',
-        ),
-      );
-    });
+        expect(
+          tester.takeException(),
+          isA<FlutterError>().having(
+            (error) => error.diagnostics.first.toString(),
+            'summary',
+            'A scope can only be subscribed to from a build.',
+          ),
+        );
+      },
+    );
 
     // The one shape the rule of the morning left uncaught: `didUpdateWidget`
     // of a widget that itself stands under a layout callback. It is not that
@@ -572,10 +578,10 @@ void main() {
       'subscribing from didUpdateWidget under a layout callback is rejected',
       (tester) async {
         Widget tree(int tag) => _Host(
-              builder: (context) => LayoutBuilder(
-                builder: (context, constraints) => _SubscribesOnUpdate(tag),
-              ),
-            );
+          builder: (context) => LayoutBuilder(
+            builder: (context, constraints) => _SubscribesOnUpdate(tag),
+          ),
+        );
 
         await tester.pumpWidget(tree(1));
 
@@ -602,8 +608,9 @@ void main() {
     // the very one the rule lets through while the callback runs, which is
     // what makes it worth stashing -- what is allowed is the registration, not
     // the context that took it.
-    testWidgets('subscribing between frames is rejected whatever the context',
-        (tester) async {
+    testWidgets('subscribing between frames is rejected whatever the context', (
+      tester,
+    ) async {
       late BuildContext stashed;
 
       await tester.pumpWidget(
@@ -737,13 +744,15 @@ void main() {
       expect(
         seen,
         ['outer', 'inner'],
-        reason: 'each lookup answers the nearest scope above it, so the same '
+        reason:
+            'each lookup answers the nearest scope above it, so the same '
             'call reads a different scope on either side of the inner one',
       );
     });
 
-    testWidgets('does not wake the dependents of the one shadowing it',
-        (tester) async {
+    testWidgets('does not wake the dependents of the one shadowing it', (
+      tester,
+    ) async {
       var builds = 0;
 
       await tester.pumpWidget(
@@ -779,7 +788,8 @@ void main() {
       expect(
         builds,
         1,
-        reason: 'the value that changed belongs to the shadowed scope, which '
+        reason:
+            'the value that changed belongs to the shadowed scope, which '
             'is not the one the dependent read',
       );
 
@@ -793,9 +803,10 @@ void main() {
 
 /// The label of the nearest [_Scope] above [context].
 String _labelOf(BuildContext context) =>
-    ScopeWidgetCore.of<_Scope, _ScopeElement>(context, listen: false)
-        .widget
-        .label;
+    ScopeWidgetCore.of<_Scope, _ScopeElement>(
+      context,
+      listen: false,
+    ).widget.label;
 
 final class _Host extends StatelessWidget {
   final WidgetBuilder? builder;
@@ -804,9 +815,9 @@ final class _Host extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Directionality(
-        textDirection: TextDirection.ltr,
-        child: _Scope(builder: builder),
-      );
+    textDirection: TextDirection.ltr,
+    child: _Scope(builder: builder),
+  );
 }
 
 /// Looks the scope up with `listen: true` and counts how often Flutter tells
@@ -830,10 +841,8 @@ final class _SeekerState extends State<_Seeker> {
 
   @override
   Widget build(BuildContext context) {
-    found = ScopeWidgetCore.maybeOf<_Scope, _ScopeElement>(
-          context,
-          listen: true,
-        ) !=
+    found =
+        ScopeWidgetCore.maybeOf<_Scope, _ScopeElement>(context, listen: true) !=
         null;
 
     return const SizedBox.shrink();
@@ -998,8 +1007,6 @@ final class _ScopeElement
       );
     }
 
-    return Builder(
-      builder: widget.builder ?? (_) => const SizedBox.shrink(),
-    );
+    return Builder(builder: widget.builder ?? (_) => const SizedBox.shrink());
   }
 }

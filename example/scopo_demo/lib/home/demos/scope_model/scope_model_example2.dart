@@ -33,17 +33,20 @@ final class CounterScope
         listen: false,
       );
 
-  static int countOf(BuildContext context) => ScopeModelCore.select<
-      CounterScope,
-      CounterScopeElement,
-      CounterModel,
-      int>(context, (element) => element.model.count);
+  static int countOf(BuildContext context) =>
+      ScopeModelCore.select<
+        CounterScope,
+        CounterScopeElement,
+        CounterModel,
+        int
+      >(context, (element) => element.model.count);
 
   Widget build(BuildContext context) {
     return Center(
       child: BlinkingBox(
-        blinkingColor:
-            Theme.of(context).colorScheme.primary.withValues(alpha: 0.2),
+        blinkingColor: Theme.of(
+          context,
+        ).colorScheme.primary.withValues(alpha: 0.2),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
@@ -69,8 +72,10 @@ abstract interface class CounterScopeContext {
 }
 
 /// Owns the model and explicitly notifies dependents after mutating it.
-final class CounterScopeElement extends ScopeModelElementBase<CounterScope,
-    CounterScopeElement, CounterModel> implements CounterScopeContext {
+final class CounterScopeElement
+    extends
+        ScopeModelElementBase<CounterScope, CounterScopeElement, CounterModel>
+    implements CounterScopeContext {
   CounterScopeElement(super.widget);
 
   @override
@@ -95,8 +100,9 @@ class _CounterView extends StatelessWidget {
     final count = CounterScope.countOf(context);
     return Center(
       child: BlinkingBox(
-        blinkingColor:
-            Theme.of(context).colorScheme.primary.withValues(alpha: 0.2),
+        blinkingColor: Theme.of(
+          context,
+        ).colorScheme.primary.withValues(alpha: 0.2),
         child: Text('$count'),
       ),
     );

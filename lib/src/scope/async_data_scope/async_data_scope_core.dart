@@ -2,9 +2,11 @@ part of '../scope.dart';
 
 /// {@category AsyncDataScope}
 abstract base class AsyncDataScopeCore<
-    W extends AsyncDataScopeCore<W, E, T>,
-    E extends AsyncDataScopeElementBase<W, E, T>,
-    T extends Object?> extends AsyncScopeCore<W, E> {
+  W extends AsyncDataScopeCore<W, E, T>,
+  E extends AsyncDataScopeElementBase<W, E, T>,
+  T extends Object?
+>
+    extends AsyncScopeCore<W, E> {
   /// Creates the widget half of a scope producing a value.
   const AsyncDataScopeCore({
     super.key,
@@ -13,49 +15,40 @@ abstract base class AsyncDataScopeCore<
   });
 
   /// The element of the nearest scope [W] above [context], or `null`.
-  static E? maybeOf<W extends AsyncDataScopeCore<W, E, T>,
-          E extends AsyncDataScopeElementBase<W, E, T>, T extends Object?>(
-    BuildContext context, {
-    required bool listen,
-  }) =>
-      ScopeContext.maybeOf<W, E>(
-        context,
-        listen: listen,
-      );
+  static E? maybeOf<
+    W extends AsyncDataScopeCore<W, E, T>,
+    E extends AsyncDataScopeElementBase<W, E, T>,
+    T extends Object?
+  >(BuildContext context, {required bool listen}) =>
+      ScopeContext.maybeOf<W, E>(context, listen: listen);
 
   /// The element of the nearest scope [W] above [context].
   ///
   /// Throws when there is none.
-  static E of<W extends AsyncDataScopeCore<W, E, T>,
-          E extends AsyncDataScopeElementBase<W, E, T>, T extends Object?>(
-    BuildContext context, {
-    required bool listen,
-  }) =>
-      ScopeContext.of<W, E>(
-        context,
-        listen: listen,
-      );
+  static E of<
+    W extends AsyncDataScopeCore<W, E, T>,
+    E extends AsyncDataScopeElementBase<W, E, T>,
+    T extends Object?
+  >(BuildContext context, {required bool listen}) =>
+      ScopeContext.of<W, E>(context, listen: listen);
 
   /// Subscribes to one value of the scope and returns it.
   static V select<
-          W extends AsyncDataScopeCore<W, E, T>,
-          E extends AsyncDataScopeElementBase<W, E, T>,
-          T extends Object?,
-          V extends Object?>(
-    BuildContext context,
-    V Function(E element) selector,
-  ) =>
-      ScopeContext.select<W, E, V>(
-        context,
-        selector,
-      );
+    W extends AsyncDataScopeCore<W, E, T>,
+    E extends AsyncDataScopeElementBase<W, E, T>,
+    T extends Object?,
+    V extends Object?
+  >(BuildContext context, V Function(E element) selector) =>
+      ScopeContext.select<W, E, V>(context, selector);
 }
 
 /// {@category AsyncDataScope}
 abstract base class AsyncDataScopeElementBase<
-        W extends AsyncDataScopeCore<W, E, T>,
-        E extends AsyncDataScopeElementBase<W, E, T>,
-        T extends Object?> extends AsyncScopeElementBase<W, E>
+  W extends AsyncDataScopeCore<W, E, T>,
+  E extends AsyncDataScopeElementBase<W, E, T>,
+  T extends Object?
+>
+    extends AsyncScopeElementBase<W, E>
     implements AsyncDataScopeContext<W, T> {
   //
   // Overriding block

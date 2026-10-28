@@ -16,9 +16,7 @@ class NavigationNodeDemo extends StatelessWidget {
       style: Theme.of(context).textTheme.bodySmall!,
       child: Column(
         children: [
-          const Expanded(
-            child: Center(child: CounterView()),
-          ),
+          const Expanded(child: Center(child: CounterView())),
           const Divider(),
           Expanded(
             flex: 2,
@@ -28,9 +26,7 @@ class NavigationNodeDemo extends StatelessWidget {
                   child: CounterScope(
                     tag: 'w/o node',
                     title: 'Local counter w/o navigation node',
-                    child: const Center(
-                      child: _CounterAndUsecases(),
-                    ),
+                    child: const Center(child: _CounterAndUsecases()),
                   ),
                 ),
                 const VerticalDivider(),
@@ -39,9 +35,7 @@ class NavigationNodeDemo extends StatelessWidget {
                     tag: 'with node',
                     title: 'Local counter with navigation node',
                     child: const NavigationNode(
-                      child: Center(
-                        child: _CounterAndUsecases(),
-                      ),
+                      child: Center(child: _CounterAndUsecases()),
                     ),
                   ),
                 ),
@@ -61,10 +55,7 @@ class _CounterAndUsecases extends StatelessWidget {
   Widget build(BuildContext context) {
     return const Column(
       mainAxisSize: MainAxisSize.min,
-      children: [
-        CounterView(),
-        _Usecases(),
-      ],
+      children: [CounterView(), _Usecases()],
     );
   }
 }
@@ -73,49 +64,49 @@ class _Usecases extends StatelessWidget {
   const _Usecases();
 
   Future<void> _openDialog(BuildContext context) => showAdaptiveDialog<void>(
-        // Use the nearest navigator; only a local NavigationNode keeps the
-        // dialog under the local counter scope.
-        useRootNavigator: false,
-        context: context,
-        barrierDismissible: true,
-        builder: (context) {
-          return Dialog(
-            backgroundColor: Theme.of(
-              context,
-            ).colorScheme.surface.withValues(alpha: 0.7),
-            clipBehavior: Clip.antiAlias,
-            child: IntrinsicWidth(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  AppBar(title: const Text('Dialog'), primary: false),
-                  const SizedBox(height: 20),
-                  const CounterView(),
-                  const SizedBox(height: 20),
-                ],
-              ),
-            ),
-          );
-        },
+    // Use the nearest navigator; only a local NavigationNode keeps the
+    // dialog under the local counter scope.
+    useRootNavigator: false,
+    context: context,
+    barrierDismissible: true,
+    builder: (context) {
+      return Dialog(
+        backgroundColor: Theme.of(
+          context,
+        ).colorScheme.surface.withValues(alpha: 0.7),
+        clipBehavior: Clip.antiAlias,
+        child: IntrinsicWidth(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              AppBar(title: const Text('Dialog'), primary: false),
+              const SizedBox(height: 20),
+              const CounterView(),
+              const SizedBox(height: 20),
+            ],
+          ),
+        ),
       );
+    },
+  );
 
   Future<void> _openBottomSheet(BuildContext context) => showModalBottomSheet(
-        context: context,
-        clipBehavior: Clip.antiAlias,
-        builder: (context) {
-          return SafeArea(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                AppBar(title: const Text('Bottom sheet')),
-                const SizedBox(height: 20),
-                const CounterView(),
-                const SizedBox(height: 20),
-              ],
-            ),
-          );
-        },
+    context: context,
+    clipBehavior: Clip.antiAlias,
+    builder: (context) {
+      return SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            AppBar(title: const Text('Bottom sheet')),
+            const SizedBox(height: 20),
+            const CounterView(),
+            const SizedBox(height: 20),
+          ],
+        ),
       );
+    },
+  );
 
   @override
   Widget build(BuildContext context) {

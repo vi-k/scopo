@@ -16,10 +16,7 @@ void main() {
       await tester.pumpWidget(
         const Directionality(
           textDirection: TextDirection.ltr,
-          child: _AncestorScope(
-            value: 'ready',
-            child: _InitReaderScope(),
-          ),
+          child: _AncestorScope(value: 'ready', child: _InitReaderScope()),
         ),
       );
 
@@ -32,9 +29,9 @@ void main() {
       final scopeKey = GlobalKey();
 
       Widget buildTree(String label) => Directionality(
-            textDirection: TextDirection.ltr,
-            child: _FailingInitScope(key: scopeKey, label: label),
-          );
+        textDirection: TextDirection.ltr,
+        child: _FailingInitScope(key: scopeKey, label: label),
+      );
 
       await tester.pumpWidget(buildTree('first'));
 
@@ -86,10 +83,7 @@ void main() {
       await tester.pumpWidget(
         const Directionality(
           textDirection: TextDirection.ltr,
-          child: _AncestorScope(
-            value: 'ready',
-            child: _ListeningInitScope(),
-          ),
+          child: _AncestorScope(value: 'ready', child: _ListeningInitScope()),
         ),
       );
 
@@ -143,7 +137,8 @@ void main() {
         expect(
           _PlainText.buildCount,
           subtreeBuilds,
-          reason: 'the subtree was not rebuilt: `updateChild` kept the old '
+          reason:
+              'the subtree was not rebuilt: `updateChild` kept the old '
               'child',
         );
       },
@@ -231,56 +226,50 @@ void main() {
     // The other half of the same rule: a build may ask for more than one
     // value, and all of them belong to it. Keeping only the last would be a
     // missed rebuild, which is worse than the extra one above.
-    testWidgets(
-      'a dependent of two values is rebuilt by either of them',
-      (tester) async {
-        await tester.pumpWidget(const _Host(param: 'a'));
-        await tester.pumpAndSettle();
+    testWidgets('a dependent of two values is rebuilt by either of them', (
+      tester,
+    ) async {
+      await tester.pumpWidget(const _Host(param: 'a'));
+      await tester.pumpAndSettle();
 
-        final scope =
-            tester.element(find.byType(_CounterScope)) as _CounterScopeElement;
-        final builds = _BothText.buildCount;
+      final scope =
+          tester.element(find.byType(_CounterScope)) as _CounterScopeElement;
+      final builds = _BothText.buildCount;
 
-        scope.bump();
-        await tester.pump();
+      scope.bump();
+      await tester.pump();
 
-        expect(
-          _BothText.buildCount,
-          builds + 1,
-          reason: 'the first of the two changed',
-        );
+      expect(
+        _BothText.buildCount,
+        builds + 1,
+        reason: 'the first of the two changed',
+      );
 
-        scope.bumpOther();
-        await tester.pump();
+      scope.bumpOther();
+      await tester.pump();
 
-        expect(
-          _BothText.buildCount,
-          builds + 2,
-          reason: 'and so did the second',
-        );
-      },
-    );
+      expect(_BothText.buildCount, builds + 2, reason: 'and so did the second');
+    });
 
-    testWidgets(
-      'a dependent of an unchanged value is not rebuilt',
-      (tester) async {
-        await tester.pumpWidget(const _Host(param: 'a'));
-        await tester.pumpAndSettle();
+    testWidgets('a dependent of an unchanged value is not rebuilt', (
+      tester,
+    ) async {
+      await tester.pumpWidget(const _Host(param: 'a'));
+      await tester.pumpAndSettle();
 
-        final scope =
-            tester.element(find.byType(_CounterScope)) as _CounterScopeElement;
-        final otherBuilds = _OtherText.buildCount;
+      final scope =
+          tester.element(find.byType(_CounterScope)) as _CounterScopeElement;
+      final otherBuilds = _OtherText.buildCount;
 
-        scope.bump();
-        await tester.pump();
+      scope.bump();
+      await tester.pump();
 
-        expect(
-          _OtherText.buildCount,
-          otherBuilds,
-          reason: 'its selected value did not change',
-        );
-      },
-    );
+      expect(
+        _OtherText.buildCount,
+        otherBuilds,
+        reason: 'its selected value did not change',
+      );
+    });
 
     // A notification runs user code -- every selector of every dependent, and
     // the scope's own -- and it runs it from `performRebuild`, outside any
@@ -290,35 +279,35 @@ void main() {
     // depended on the iteration order of a hash map. The scope's own
     // subscription is first, so a failure there swallowed the notification
     // whole.
-    testWidgets(
-      'a selector that throws does not swallow the notification',
-      (tester) async {
-        await tester.pumpWidget(const _Host(param: 'a'));
-        await tester.pumpAndSettle();
+    testWidgets('a selector that throws does not swallow the notification', (
+      tester,
+    ) async {
+      await tester.pumpWidget(const _Host(param: 'a'));
+      await tester.pumpAndSettle();
 
-        final scope =
-            tester.element(find.byType(_CounterScope)) as _CounterScopeElement;
+      final scope =
+          tester.element(find.byType(_CounterScope)) as _CounterScopeElement;
 
-        expect(find.text('0'), findsOneWidget);
+      expect(find.text('0'), findsOneWidget);
 
-        scope
-          ..explodeOnce = true
-          ..bump();
-        await tester.pump();
+      scope
+        ..explodeOnce = true
+        ..bump();
+      await tester.pump();
 
-        expect(
-          tester.takeException(),
-          isA<StateError>(),
-          reason: 'what the selector threw is reported, not swallowed',
-        );
-        expect(
-          find.text('1'),
-          findsOneWidget,
-          reason: 'and the dependents still heard the notification that the '
-              'failing selector was only a part of',
-        );
-      },
-    );
+      expect(
+        tester.takeException(),
+        isA<StateError>(),
+        reason: 'what the selector threw is reported, not swallowed',
+      );
+      expect(
+        find.text('1'),
+        findsOneWidget,
+        reason:
+            'and the dependents still heard the notification that the '
+            'failing selector was only a part of',
+      );
+    });
 
     // And what the failure costs the subscription it belongs to: a selector
     // that could not answer counts as *changed*, so its dependent is rebuilt
@@ -326,41 +315,41 @@ void main() {
     // error boundary turns a second failure into an `ErrorWidget` for that
     // one widget. Counting it as unchanged instead would be the quiet
     // opposite: the dependent keeps a value nobody could confirm.
-    testWidgets(
-      'a selector that could not answer counts as changed',
-      (tester) async {
-        await tester.pumpWidget(const _Host(param: 'a'));
-        await tester.pumpAndSettle();
+    testWidgets('a selector that could not answer counts as changed', (
+      tester,
+    ) async {
+      await tester.pumpWidget(const _Host(param: 'a'));
+      await tester.pumpAndSettle();
 
-        final scope =
-            tester.element(find.byType(_CounterScope)) as _CounterScopeElement;
-        final before = _CounterScopeElement.buildChildCount;
+      final scope =
+          tester.element(find.byType(_CounterScope)) as _CounterScopeElement;
+      final before = _CounterScopeElement.buildChildCount;
 
-        // Control: the scope's own selector reads a value that never changes,
-        // so an ordinary notification leaves its subtree alone.
-        scope.bump();
-        await tester.pump();
+      // Control: the scope's own selector reads a value that never changes,
+      // so an ordinary notification leaves its subtree alone.
+      scope.bump();
+      await tester.pump();
 
-        expect(
-          _CounterScopeElement.buildChildCount,
-          before,
-          reason: 'the selector answered, and answered the same as before',
-        );
+      expect(
+        _CounterScopeElement.buildChildCount,
+        before,
+        reason: 'the selector answered, and answered the same as before',
+      );
 
-        scope
-          ..explodeOnce = true
-          ..bump();
-        await tester.pump();
+      scope
+        ..explodeOnce = true
+        ..bump();
+      await tester.pump();
 
-        expect(tester.takeException(), isA<StateError>());
-        expect(
-          _CounterScopeElement.buildChildCount,
-          before + 1,
-          reason: 'the selector could not answer, so the subtree is rebuilt '
-              'rather than left standing on an answer nobody gave',
-        );
-      },
-    );
+      expect(tester.takeException(), isA<StateError>());
+      expect(
+        _CounterScopeElement.buildChildCount,
+        before + 1,
+        reason:
+            'the selector could not answer, so the subtree is rebuilt '
+            'rather than left standing on an answer nobody gave',
+      );
+    });
 
     // "Skips rebuilding the whole subtree" was true of the elements and not
     // of the widgets: `ComponentElement.performRebuild` calls `build()`
@@ -368,8 +357,9 @@ void main() {
     // `buildChild()` ran on every notification and the widget tree it
     // returned was thrown away. On a scope notified every frame that is the
     // whole graph of its subtree, allocated and dropped, once per frame.
-    testWidgets('a notification does not rebuild the subtree widgets',
-        (tester) async {
+    testWidgets('a notification does not rebuild the subtree widgets', (
+      tester,
+    ) async {
       await tester.pumpWidget(const _Host(param: 'a'));
       await tester.pumpAndSettle();
 
@@ -407,11 +397,17 @@ void main() {
     // or markNeedsBuild() called during build". In release the check lives in
     // an assert and the same code works, which made this a difference between
     // debug and release rather than a rule.
-    testWidgets('a notification made from a descendant build is not refused',
-        (tester) async {
+    testWidgets('a notification made from a descendant build is not refused', (
+      tester,
+    ) async {
       final key = GlobalKey<_BumperState>();
 
-      await tester.pumpWidget(_Host(param: 'a', extra: _Bumper(key: key)));
+      await tester.pumpWidget(
+        _Host(
+          param: 'a',
+          extra: _Bumper(key: key),
+        ),
+      );
       await tester.pumpAndSettle();
 
       // Its own rebuild, so the scope above it is not the one building.
@@ -437,14 +433,15 @@ void main() {
     // takes it down as it acts on it. Left standing, *every* later rebuild
     // that does not come from the parent -- a `MediaQuery`, a `Theme`, a
     // locale -- is treated as notify-only, and the subtree freezes for good.
-    testWidgets('a notification is spent by the rebuild that acts on it',
-        (tester) async {
+    testWidgets('a notification is spent by the rebuild that acts on it', (
+      tester,
+    ) async {
       await tester.pumpWidget(const _Host(param: 'a'));
       await tester.pumpAndSettle();
 
-      final scope = tester.element(find.byType(_CounterScope))
-          as _CounterScopeElement
-        ..bump();
+      final scope =
+          tester.element(find.byType(_CounterScope)) as _CounterScopeElement
+            ..bump();
       await tester.pump();
 
       final builds = _CounterScopeElement.buildChildCount;
@@ -457,7 +454,8 @@ void main() {
       expect(
         _CounterScopeElement.buildChildCount,
         builds + 1,
-        reason: 'the notification was spent by the rebuild before it, so this '
+        reason:
+            'the notification was spent by the rebuild before it, so this '
             'one is an ordinary rebuild and builds the subtree',
       );
     });
@@ -477,11 +475,11 @@ void main() {
       'an inherited change that lands with a notification is not eaten',
       (tester) async {
         Future<void> pumpShade(int level) => tester.pumpWidget(
-              Directionality(
-                textDirection: TextDirection.ltr,
-                child: _Shade(level: level, child: const _ShadeScope()),
-              ),
-            );
+          Directionality(
+            textDirection: TextDirection.ltr,
+            child: _Shade(level: level, child: const _ShadeScope()),
+          ),
+        );
 
         await pumpShade(1);
         expect(find.text('shade:1'), findsOneWidget);
@@ -502,7 +500,8 @@ void main() {
         expect(
           find.text('shade:3'),
           findsOneWidget,
-          reason: 'the notification must not swallow the dependency change: '
+          reason:
+              'the notification must not swallow the dependency change: '
               'the framework delivered it once and will not do so again',
         );
 
@@ -534,44 +533,46 @@ void main() {
         expect(
           find.text('shade:2'),
           findsOneWidget,
-          reason: 'the widget carries a parameter and is not a constant; what '
+          reason:
+              'the widget carries a parameter and is not a constant; what '
               'matters is that the element was handed the same instance and '
               'so was never updated',
         );
       },
     );
 
-    testWidgets('a notification recovers from a later builder failure',
-        (tester) async {
+    testWidgets('a notification recovers from a later builder failure', (
+      tester,
+    ) async {
       final model = ValueNotifier<int>(0);
       addTearDown(model.dispose);
       var failOnce = false;
       var builderCalls = 0;
 
       Widget build() => Directionality(
-            textDirection: TextDirection.ltr,
-            child: ScopeNotifier<ValueNotifier<int>>.value(
-              value: model,
+        textDirection: TextDirection.ltr,
+        child: ScopeNotifier<ValueNotifier<int>>.value(
+          value: model,
+          builder: (context) {
+            builderCalls++;
+            if (failOnce) {
+              failOnce = false;
+              throw StateError('temporary builder failure');
+            }
+
+            return Builder(
               builder: (context) {
-                builderCalls++;
-                if (failOnce) {
-                  failOnce = false;
-                  throw StateError('temporary builder failure');
-                }
-
-                return Builder(
-                  builder: (context) {
-                    final value = ScopeNotifier.select<ValueNotifier<int>, int>(
-                      context,
-                      (model) => model.value,
-                    );
-
-                    return Text('value: $value');
-                  },
+                final value = ScopeNotifier.select<ValueNotifier<int>, int>(
+                  context,
+                  (model) => model.value,
                 );
+
+                return Text('value: $value');
               },
-            ),
-          );
+            );
+          },
+        ),
+      );
 
       await tester.pumpWidget(build());
       expect(find.text('value: 0'), findsOneWidget);
@@ -618,35 +619,36 @@ void main() {
     // filled the cache with what it had just thrown away -- so the second
     // notification did not even build. The scope was frozen on the error for
     // the rest of its life, and only a rebuild from above could bring it back.
-    testWidgets('a notification rebuilds a subtree the first build never made',
-        (tester) async {
-      await tester.pumpWidget(
-        const _Host(param: 'a', failFirstBuild: true),
-      );
+    testWidgets(
+      'a notification rebuilds a subtree the first build never made',
+      (tester) async {
+        await tester.pumpWidget(const _Host(param: 'a', failFirstBuild: true));
 
-      expect(
-        tester.takeException(),
-        isA<StateError>(),
-        reason: 'the first build failed, and the boundary above showed it',
-      );
-      expect(find.byType(ErrorWidget), findsOneWidget);
+        expect(
+          tester.takeException(),
+          isA<StateError>(),
+          reason: 'the first build failed, and the boundary above showed it',
+        );
+        expect(find.byType(ErrorWidget), findsOneWidget);
 
-      (tester.element(find.byType(_CounterScope)) as _CounterScopeElement)
-          .bump();
-      await tester.pump();
+        (tester.element(find.byType(_CounterScope)) as _CounterScopeElement)
+            .bump();
+        await tester.pump();
 
-      expect(
-        find.text('1'),
-        findsOneWidget,
-        reason: 'with nothing cached there is nothing to hand back, so the '
-            'rebuild cannot be notify-only',
-      );
-      expect(
-        find.byType(ErrorWidget),
-        findsNothing,
-        reason: 'and the error branch is gone rather than there for good',
-      );
-    });
+        expect(
+          find.text('1'),
+          findsOneWidget,
+          reason:
+              'with nothing cached there is nothing to hand back, so the '
+              'rebuild cannot be notify-only',
+        );
+        expect(
+          find.byType(ErrorWidget),
+          findsNothing,
+          reason: 'and the error branch is gone rather than there for good',
+        );
+      },
+    );
   });
 }
 
@@ -719,13 +721,13 @@ final class _Host extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Directionality(
-        textDirection: TextDirection.ltr,
-        child: _CounterScope(
-          param: param,
-          failFirstBuild: failFirstBuild,
-          extra: extra,
-        ),
-      );
+    textDirection: TextDirection.ltr,
+    child: _CounterScope(
+      param: param,
+      failFirstBuild: failFirstBuild,
+      extra: extra,
+    ),
+  );
 }
 
 final class _CounterScope
@@ -816,16 +818,15 @@ final class _CounterScopeElement
     //
     // It reads `constant`, so it never fires by itself and the other tests in
     // this file see the notify-only path they were written for.
-    ScopeWidgetCore.select<_CounterScope, _CounterScopeElement, int>(
-      this,
-      (element) {
-        if (element._takeExplode()) {
-          throw StateError('the selector failed');
-        }
+    ScopeWidgetCore.select<_CounterScope, _CounterScopeElement, int>(this, (
+      element,
+    ) {
+      if (element._takeExplode()) {
+        throw StateError('the selector failed');
+      }
 
-        return element.constant;
-      },
-    );
+      return element.constant;
+    });
 
     return Column(
       children: [
@@ -851,9 +852,9 @@ final class _ValueText extends StatelessWidget {
     buildCount++;
     final value =
         ScopeWidgetCore.select<_CounterScope, _CounterScopeElement, int>(
-      context,
-      (element) => element.value,
-    );
+          context,
+          (element) => element.value,
+        );
 
     return Text('$value');
   }
@@ -869,9 +870,9 @@ final class _OtherText extends StatelessWidget {
     buildCount++;
     final value =
         ScopeWidgetCore.select<_CounterScope, _CounterScopeElement, int>(
-      context,
-      (element) => element.constant,
-    );
+          context,
+          (element) => element.constant,
+        );
 
     return Text('constant: $value');
   }
@@ -894,9 +895,9 @@ final class _SwitchingText extends StatelessWidget {
     buildCount++;
     final value =
         ScopeWidgetCore.select<_CounterScope, _CounterScopeElement, int>(
-      context,
-      useValue ? (element) => element.value : (element) => element.other,
-    );
+          context,
+          useValue ? (element) => element.value : (element) => element.other,
+        );
 
     return Text('switching: $value');
   }
@@ -913,14 +914,14 @@ final class _BothText extends StatelessWidget {
     buildCount++;
     final value =
         ScopeWidgetCore.select<_CounterScope, _CounterScopeElement, int>(
-      context,
-      (element) => element.value,
-    );
+          context,
+          (element) => element.value,
+        );
     final other =
         ScopeWidgetCore.select<_CounterScope, _CounterScopeElement, int>(
-      context,
-      (element) => element.other,
-    );
+          context,
+          (element) => element.other,
+        );
 
     return Text('both: $value/$other');
   }
@@ -933,9 +934,9 @@ final class _ParamText extends StatelessWidget {
   Widget build(BuildContext context) {
     final param =
         ScopeWidgetCore.select<_CounterScope, _CounterScopeElement, String>(
-      context,
-      (element) => element.widget.param,
-    );
+          context,
+          (element) => element.widget.param,
+        );
 
     return Text('param: $param');
   }
@@ -976,8 +977,9 @@ final class _FailingInitScope
       _FailingInitScopeElement(this);
 }
 
-final class _FailingInitScopeElement extends ScopeWidgetElementBase<
-    _FailingInitScope, _FailingInitScopeElement> {
+final class _FailingInitScopeElement
+    extends
+        ScopeWidgetElementBase<_FailingInitScope, _FailingInitScopeElement> {
   static int initAttempts = 0;
   static int acquired = 0;
   static int released = 0;
@@ -1012,8 +1014,12 @@ final class _ListeningInitScope
       _ListeningInitScopeElement(this);
 }
 
-final class _ListeningInitScopeElement extends ScopeWidgetElementBase<
-    _ListeningInitScope, _ListeningInitScopeElement> {
+final class _ListeningInitScopeElement
+    extends
+        ScopeWidgetElementBase<
+          _ListeningInitScope,
+          _ListeningInitScopeElement
+        > {
   _ListeningInitScopeElement(super.widget);
 
   @override
@@ -1105,14 +1111,15 @@ final class _ShadeHost extends StatefulWidget {
 final class _ShadeHostState extends State<_ShadeHost> {
   // Built once here, from a value only known at run time, and handed down
   // unchanged from then on. Nothing about it is `const`.
-  late final Widget _scope =
-      _ShadeScope(label: 'kept at level ${widget.level}');
+  late final Widget _scope = _ShadeScope(
+    label: 'kept at level ${widget.level}',
+  );
 
   @override
   Widget build(BuildContext context) => Directionality(
-        textDirection: TextDirection.ltr,
-        child: _Shade(level: widget.level, child: _scope),
-      );
+    textDirection: TextDirection.ltr,
+    child: _Shade(level: widget.level, child: _scope),
+  );
 }
 
 final class _ShadeScopeElement

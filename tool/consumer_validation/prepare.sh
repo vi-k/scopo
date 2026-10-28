@@ -28,7 +28,7 @@ if [ -n "$(ls -A "$RUN")" ]; then
   exit 2
 fi
 # The floor of pubspec.yaml, as in AGENTS.md §6.
-FLUTTER=3.27.0
+FLUTTER=3.38.1
 FLUTTER_SDK=${FLUTTER_SDK:-$HOME/fvm/versions/$FLUTTER}
 SOURCES=${SOURCES:-$HOME/development}
 if [ ! -d "$FLUTTER_SDK" ]; then

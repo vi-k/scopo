@@ -1,8 +1,11 @@
 part of '../scope.dart';
 
 /// {@category ScopeModel}
-abstract interface class ScopeModelContext<W extends ScopeInheritedWidget,
-    M extends Object> implements ScopeContext<W> {
+abstract interface class ScopeModelContext<
+  W extends ScopeInheritedWidget,
+  M extends Object
+>
+    implements ScopeContext<W> {
   @override
   W get widget;
 
@@ -12,7 +15,9 @@ abstract interface class ScopeModelContext<W extends ScopeInheritedWidget,
 
 /// {@category ScopeModel}
 abstract interface class ScopeModelInheritedElement<
-        W extends ScopeInheritedWidget, M extends Object>
+  W extends ScopeInheritedWidget,
+  M extends Object
+>
     implements
         // ignore: avoid_implementing_value_types
         InheritedElement,
@@ -50,8 +55,11 @@ base mixin _ScopeModelMixin<M extends Object> on _ScopeModelBaseMixin<M> {
   Widget build(BuildContext context) => builder(context);
 }
 
-base mixin _ScopeModelElementMixin<W extends _ScopeModelBaseMixin<M>,
-    M extends Object> on InheritedElement, ScopeInheritedElement<W> {
+base mixin _ScopeModelElementMixin<
+  W extends _ScopeModelBaseMixin<M>,
+  M extends Object
+>
+    on InheritedElement, ScopeInheritedElement<W> {
   M? _model;
 
   M get model => _model ?? widget.value!;

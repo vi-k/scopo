@@ -11,7 +11,7 @@ final class AsyncDataScope<T extends Object?>
 
   /// What [initData] was given.
   final Future<T> Function(BuildContext context, ScopeInitContext ctx)
-      _initData;
+  _initData;
 
   /// What [onUnmount] was given, if anything.
   final void Function(T? data)? _onUnmount;
@@ -38,7 +38,8 @@ final class AsyncDataScope<T extends Object?>
     Object error,
     StackTrace stackTrace,
     Object? progress,
-  ) errorBuilder;
+  )
+  errorBuilder;
 
   /// Built while the scope is closing, and after its release has finished.
   ///
@@ -68,7 +69,7 @@ final class AsyncDataScope<T extends Object?>
     super.pauseAfterInitialization,
     void Function(BuildContext context)? onMount,
     required Future<T> Function(BuildContext context, ScopeInitContext ctx)
-        initData,
+    initData,
     void Function(T? data)? onUnmount,
     required FutureOr<void> Function(T data) disposeData,
     this.waitingBuilder,
@@ -76,10 +77,10 @@ final class AsyncDataScope<T extends Object?>
     required this.progressBuilder,
     required this.builder,
     required this.errorBuilder,
-  })  : _onMount = onMount,
-        _initData = initData,
-        _onUnmount = onUnmount,
-        _disposeData = disposeData;
+  }) : _onMount = onMount,
+       _initData = initData,
+       _onUnmount = onUnmount,
+       _disposeData = disposeData;
 
   @override
   void onMount(BuildContext context) => _onMount?.call(context);
@@ -110,23 +111,18 @@ final class AsyncDataScope<T extends Object?>
     Object error,
     StackTrace stackTrace,
     Object? progress,
-  ) =>
-      errorBuilder(context, error, stackTrace, progress);
+  ) => errorBuilder(context, error, stackTrace, progress);
 
   @override
   Widget buildOnReady(BuildContext context, T data) => builder(context, data);
 
   /// The nearest `AsyncDataScope<T>` above [context], or `null`.
   static AsyncDataScopeContext<AsyncDataScope<T>, T>?
-      maybeOf<T extends Object?>(
-    BuildContext context, {
-    required bool listen,
-  }) =>
-          ScopeContext.maybeOf<AsyncDataScope<T>,
-              AsyncDataScopeContext<AsyncDataScope<T>, T>>(
-            context,
-            listen: listen,
-          );
+  maybeOf<T extends Object?>(BuildContext context, {required bool listen}) =>
+      ScopeContext.maybeOf<
+        AsyncDataScope<T>,
+        AsyncDataScopeContext<AsyncDataScope<T>, T>
+      >(context, listen: listen);
 
   /// The nearest `AsyncDataScope<T>` above [context].
   ///
@@ -135,11 +131,10 @@ final class AsyncDataScope<T extends Object?>
     BuildContext context, {
     required bool listen,
   }) =>
-      ScopeContext.of<AsyncDataScope<T>,
-          AsyncDataScopeContext<AsyncDataScope<T>, T>>(
-        context,
-        listen: listen,
-      );
+      ScopeContext.of<
+        AsyncDataScope<T>,
+        AsyncDataScopeContext<AsyncDataScope<T>, T>
+      >(context, listen: listen);
 
   /// Subscribes to one value of the scope and returns it.
   ///
@@ -150,9 +145,9 @@ final class AsyncDataScope<T extends Object?>
     BuildContext context,
     V Function(AsyncDataScopeContext<AsyncDataScope<T>, T> context) selector,
   ) =>
-      ScopeContext.select<AsyncDataScope<T>,
-          AsyncDataScopeContext<AsyncDataScope<T>, T>, V>(
-        context,
-        selector,
-      );
+      ScopeContext.select<
+        AsyncDataScope<T>,
+        AsyncDataScopeContext<AsyncDataScope<T>, T>,
+        V
+      >(context, selector);
 }

@@ -157,11 +157,7 @@ abstract base class AsyncScopeBase<W extends AsyncScopeBase<W>>
   static AsyncScopeContext<W>? maybeOf<W extends AsyncScopeBase<W>>(
     BuildContext context, {
     required bool listen,
-  }) =>
-      ScopeContext.maybeOf<W, AsyncScopeContext<W>>(
-        context,
-        listen: listen,
-      );
+  }) => ScopeContext.maybeOf<W, AsyncScopeContext<W>>(context, listen: listen);
 
   /// The nearest scope [W] above [context].
   ///
@@ -169,21 +165,13 @@ abstract base class AsyncScopeBase<W extends AsyncScopeBase<W>>
   static AsyncScopeContext<W> of<W extends AsyncScopeBase<W>>(
     BuildContext context, {
     required bool listen,
-  }) =>
-      ScopeContext.of<W, AsyncScopeContext<W>>(
-        context,
-        listen: listen,
-      );
+  }) => ScopeContext.of<W, AsyncScopeContext<W>>(context, listen: listen);
 
   /// Subscribes to one value of the scope and returns it.
   static V select<W extends AsyncScopeBase<W>, V extends Object?>(
     BuildContext context,
     V Function(AsyncScopeContext<W> context) selector,
-  ) =>
-      ScopeContext.select<W, AsyncScopeContext<W>, V>(
-        context,
-        selector,
-      );
+  ) => ScopeContext.select<W, AsyncScopeContext<W>, V>(context, selector);
 }
 
 final class _AsyncScopeElement<W extends AsyncScopeBase<W>>
@@ -202,12 +190,13 @@ final class _AsyncScopeElement<W extends AsyncScopeBase<W>>
     void Function()? initCancellation,
     void Function()? disposeScope,
     void Function()? waitForChildren,
-  }) get timeoutCallbacks => (
-        scopeKey: widget.onScopeKeyTimeout,
-        initCancellation: widget.onInitCancellationTimeout,
-        disposeScope: widget.onDisposeScopeTimeout,
-        waitForChildren: widget.onWaitForChildrenTimeout,
-      );
+  })
+  get timeoutCallbacks => (
+    scopeKey: widget.onScopeKeyTimeout,
+    initCancellation: widget.onInitCancellationTimeout,
+    disposeScope: widget.onDisposeScopeTimeout,
+    waitForChildren: widget.onWaitForChildrenTimeout,
+  );
 
   @override
   Duration? get initCancellationTimeout => widget.initCancellationTimeout;
@@ -252,14 +241,16 @@ final class _AsyncScopeElement<W extends AsyncScopeBase<W>>
 
   @override
   Widget buildOnState(AsyncScopeState state) => switch (state) {
-        AsyncScopeWaiting() =>
-          widget.buildOnWaiting(this) ?? widget.buildOnProgress(this, null),
-        AsyncScopeProgress(:final progress) =>
-          widget.buildOnProgress(this, progress),
-        AsyncScopeReady() => widget.buildOnReady(this),
-        AsyncScopeError(:final error, :final stackTrace, :final progress) =>
-          widget.buildOnError(this, error, stackTrace, progress),
-      };
+    AsyncScopeWaiting() =>
+      widget.buildOnWaiting(this) ?? widget.buildOnProgress(this, null),
+    AsyncScopeProgress(:final progress) => widget.buildOnProgress(
+      this,
+      progress,
+    ),
+    AsyncScopeReady() => widget.buildOnReady(this),
+    AsyncScopeError(:final error, :final stackTrace, :final progress) =>
+      widget.buildOnError(this, error, stackTrace, progress),
+  };
 }
 
 /// The three accessors of one [AsyncScopeBase], with its type argument named
@@ -282,16 +273,12 @@ final class AsyncScopeAccess<W extends AsyncScopeBase<W>> {
       AsyncScopeBase.of<W>(context, listen: listen);
 
   /// Tries to find and return the context of the scope.
-  AsyncScopeContext<W>? maybeOf(
-    BuildContext context, {
-    required bool listen,
-  }) =>
+  AsyncScopeContext<W>? maybeOf(BuildContext context, {required bool listen}) =>
       AsyncScopeBase.maybeOf<W>(context, listen: listen);
 
   /// Selects a value from the scope context and **subscribes** to it.
   V select<V extends Object?>(
     BuildContext context,
     V Function(AsyncScopeContext<W> context) selector,
-  ) =>
-      AsyncScopeBase.select<W, V>(context, selector);
+  ) => AsyncScopeBase.select<W, V>(context, selector);
 }

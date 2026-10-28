@@ -41,18 +41,17 @@ final class TestDependencies
   FutureOr<void> Function(ScopeDependencyHandle) initDep(
     Duration delay, {
     bool dispose = true,
-  }) =>
-      (dep) async {
-        await Future<void>.delayed(delay);
-        if (failed.contains(dep.name)) {
-          throw Exception('${dep.name} failed');
-        }
-        if (dispose) {
-          dep.dispose = () async {
-            await Future<void>.delayed(step);
-          };
-        }
+  }) => (dep) async {
+    await Future<void>.delayed(delay);
+    if (failed.contains(dep.name)) {
+      throw Exception('${dep.name} failed');
+    }
+    if (dispose) {
+      dep.dispose = () async {
+        await Future<void>.delayed(step);
       };
+    }
+  };
 
   // For debug
   //
@@ -69,25 +68,25 @@ final class TestDependencies
   // том порядке, в котором они будут инициализироваться.
   @override
   ScopeDependency buildDependencies(_) => sequential('', [
-        dep('dep1', initDep(step)),
-        concurrent('concurrent1', [
-          dep('dep4', initDep(step * 3)),
-          sequential('sequential1', [
-            dep('dep3', initDep(step * 2, dispose: false)),
-            concurrent('concurrent2', [
-              dep('dep5', initDep(step)),
-              sequential('sequential2', [
-                dep('dep7', initDep(step)),
-                dep('dep8', initDep(step)),
-              ]),
-              dep('dep6', initDep(step, dispose: false)),
-            ]),
-            dep('dep9', initDep(step, dispose: false)),
+    dep('dep1', initDep(step)),
+    concurrent('concurrent1', [
+      dep('dep4', initDep(step * 3)),
+      sequential('sequential1', [
+        dep('dep3', initDep(step * 2, dispose: false)),
+        concurrent('concurrent2', [
+          dep('dep5', initDep(step)),
+          sequential('sequential2', [
+            dep('dep7', initDep(step)),
+            dep('dep8', initDep(step)),
           ]),
-          dep('dep2', initDep(step)),
+          dep('dep6', initDep(step, dispose: false)),
         ]),
-        dep('dep10', initDep(step)),
-      ]);
+        dep('dep9', initDep(step, dispose: false)),
+      ]),
+      dep('dep2', initDep(step)),
+    ]),
+    dep('dep10', initDep(step)),
+  ]);
 
   @override
   String toString() => '$TestDependencies';
@@ -116,11 +115,9 @@ final class TestDependenciesAnonNested
   // построение пути не добавляет ведущий '/' и не задваивает разделители.
   @override
   ScopeDependency buildDependencies(_) => sequential('', [
-        dep('depA', initDep(step)),
-        concurrent('', [
-          dep('depB', initDep(step)),
-        ]),
-      ]);
+    dep('depA', initDep(step)),
+    concurrent('', [dep('depB', initDep(step))]),
+  ]);
 
   @override
   String toString() => '$TestDependenciesAnonNested';
@@ -140,11 +137,9 @@ final class TestDependenciesNamedNested
 
   @override
   ScopeDependency buildDependencies(_) => sequential('', [
-        dep('dep1', initDep(step)),
-        sequential('group1', [
-          dep('dep2', initDep(step)),
-        ]),
-      ]);
+    dep('dep1', initDep(step)),
+    sequential('group1', [dep('dep2', initDep(step))]),
+  ]);
 
   @override
   String toString() => '$TestDependenciesNamedNested';
@@ -172,9 +167,9 @@ final class TestDependenciesTwinFailures
 
   @override
   ScopeDependency buildDependencies(_) => concurrent('twins', [
-        dep('depA', _failAfterStep('depA')),
-        dep('depB', _failAfterStep('depB')),
-      ]);
+    dep('depA', _failAfterStep('depA')),
+    dep('depB', _failAfterStep('depB')),
+  ]);
 
   @override
   String toString() => '$TestDependenciesTwinFailures';
@@ -195,10 +190,8 @@ final class TestDependenciesConcurrentNoDispose
   // Корневая группа — сама concurrent, чтобы dispose() концентрированной
   // группы вызывался напрямую из ScopeAutoDependencies.dispose().
   @override
-  ScopeDependency buildDependencies(_) => concurrent('g', [
-        dep('depA', initDep(step)),
-        dep('depB', initDep(step)),
-      ]);
+  ScopeDependency buildDependencies(_) =>
+      concurrent('g', [dep('depA', initDep(step)), dep('depB', initDep(step))]);
 
   @override
   String toString() => '$TestDependenciesConcurrentNoDispose';
@@ -255,14 +248,14 @@ final class TestAutoDisposeDependencies
   TestAutoDisposeDependencies({this.failed = const {}});
 
   FutureOr<void> Function(ScopeDependencyHandle) initDep() => (dep) async {
-        await Future<void>.delayed(step);
-        if (failed.contains(dep.name)) {
-          throw Exception('${dep.name} failed');
-        }
-        dep.dispose = () {
-          disposed.add(dep.name);
-        };
-      };
+    await Future<void>.delayed(step);
+    if (failed.contains(dep.name)) {
+      throw Exception('${dep.name} failed');
+    }
+    dep.dispose = () {
+      disposed.add(dep.name);
+    };
+  };
 
   // An anonymous root, like `TestDependencies`, so the paths below carry no
   // group segment and the expectations stay about the states alone.
@@ -270,10 +263,7 @@ final class TestAutoDisposeDependencies
   ScopeDependency buildDependencies(_) {
     buildCount++;
 
-    return sequential('', [
-      dep('depA', initDep()),
-      dep('depB', initDep()),
-    ]);
+    return sequential('', [dep('depA', initDep()), dep('depB', initDep())]);
   }
 
   @override
@@ -356,9 +346,9 @@ final class TestPreassignedDependencies
 
   @override
   ScopeDependency buildDependencies(void context) => dep('player', (dep) async {
-        value = 'built';
-        dep.dispose = () {};
-      });
+    value = 'built';
+    dep.dispose = () {};
+  });
 
   @override
   String toString() => '$TestPreassignedDependencies';
@@ -524,7 +514,8 @@ void main() {
         dependencies
             .flattenDependenciesWithErrors()
             .map(
-              (info) => '${info.path}${info.dependency.name}'
+              (info) =>
+                  '${info.path}${info.dependency.name}'
                   ' ${info.dependency.stateToString()}',
             )
             .toList();
@@ -686,8 +677,9 @@ void main() {
       test('failed: dep1', () {
         myFakeAsync((fakeAsync) {
           final dependencies = TestDependencies(failed: {'dep1'});
-          final progress =
-              fakeAsync.waitFuture(handleInit(dependencies)).result;
+          final progress = fakeAsync
+              .waitFuture(handleInit(dependencies))
+              .result;
           expect(progress, ['dep1: Exception: dep1 failed']);
           expect(states(dependencies), [
             '[group] failed: dep1',
@@ -744,8 +736,9 @@ void main() {
       test('failed: dep2', () {
         myFakeAsync((fakeAsync) {
           final dependencies = TestDependencies(failed: {'dep2'});
-          final progress =
-              fakeAsync.waitFuture(handleInit(dependencies)).result;
+          final progress = fakeAsync
+              .waitFuture(handleInit(dependencies))
+              .result;
           expect(progress, [
             'dep1 (1/10)',
             'concurrent1/sequential1/dep3 (2/10)',
@@ -807,8 +800,9 @@ void main() {
       test('failed: dep3', () {
         myFakeAsync((fakeAsync) {
           final dependencies = TestDependencies(failed: {'dep3'});
-          final progress =
-              fakeAsync.waitFuture(handleInit(dependencies)).result;
+          final progress = fakeAsync
+              .waitFuture(handleInit(dependencies))
+              .result;
           expect(progress, [
             'dep1 (1/10)',
             'concurrent1/dep2 (2/10)',
@@ -870,8 +864,9 @@ void main() {
       test('failed: dep4', () {
         myFakeAsync((fakeAsync) {
           final dependencies = TestDependencies(failed: {'dep4'});
-          final progress =
-              fakeAsync.waitFuture(handleInit(dependencies)).result;
+          final progress = fakeAsync
+              .waitFuture(handleInit(dependencies))
+              .result;
           expect(progress, [
             'dep1 (1/10)',
             'concurrent1/dep2 (2/10)',
@@ -936,8 +931,9 @@ void main() {
       test('failed: dep5', () {
         myFakeAsync((fakeAsync) {
           final dependencies = TestDependencies(failed: {'dep5'});
-          final progress =
-              fakeAsync.waitFuture(handleInit(dependencies)).result;
+          final progress = fakeAsync
+              .waitFuture(handleInit(dependencies))
+              .result;
           expect(progress, [
             'dep1 (1/10)',
             'concurrent1/dep2 (2/10)',
@@ -1002,8 +998,9 @@ void main() {
       test('failed: dep6', () {
         myFakeAsync((fakeAsync) {
           final dependencies = TestDependencies(failed: {'dep6'});
-          final progress =
-              fakeAsync.waitFuture(handleInit(dependencies)).result;
+          final progress = fakeAsync
+              .waitFuture(handleInit(dependencies))
+              .result;
           expect(progress, [
             'dep1 (1/10)',
             'concurrent1/dep2 (2/10)',
@@ -1069,8 +1066,9 @@ void main() {
       test('failed: dep7', () {
         myFakeAsync((fakeAsync) {
           final dependencies = TestDependencies(failed: {'dep7'});
-          final progress =
-              fakeAsync.waitFuture(handleInit(dependencies)).result;
+          final progress = fakeAsync
+              .waitFuture(handleInit(dependencies))
+              .result;
           expect(progress, [
             'dep1 (1/10)',
             'concurrent1/dep2 (2/10)',
@@ -1135,8 +1133,9 @@ void main() {
       test('failed: dep8', () {
         myFakeAsync((fakeAsync) {
           final dependencies = TestDependencies(failed: {'dep8'});
-          final progress =
-              fakeAsync.waitFuture(handleInit(dependencies)).result;
+          final progress = fakeAsync
+              .waitFuture(handleInit(dependencies))
+              .result;
           expect(progress, [
             'dep1 (1/10)',
             'concurrent1/dep2 (2/10)',
@@ -1202,8 +1201,9 @@ void main() {
       test('failed: dep9', () {
         myFakeAsync((fakeAsync) {
           final dependencies = TestDependencies(failed: {'dep9'});
-          final progress =
-              fakeAsync.waitFuture(handleInit(dependencies)).result;
+          final progress = fakeAsync
+              .waitFuture(handleInit(dependencies))
+              .result;
           expect(progress, [
             'dep1 (1/10)',
             'concurrent1/dep2 (2/10)',
@@ -1270,8 +1270,9 @@ void main() {
       test('failed: dep10', () {
         myFakeAsync((fakeAsync) {
           final dependencies = TestDependencies(failed: {'dep10'});
-          final progress =
-              fakeAsync.waitFuture(handleInit(dependencies)).result;
+          final progress = fakeAsync
+              .waitFuture(handleInit(dependencies))
+              .result;
           expect(progress, [
             'dep1 (1/10)',
             'concurrent1/dep2 (2/10)',
@@ -1341,8 +1342,9 @@ void main() {
       test('dep3, dep4', () {
         myFakeAsync((fakeAsync) {
           final dependencies = TestDependencies(failed: {'dep3', 'dep4'});
-          final progress =
-              fakeAsync.waitFuture(handleInit(dependencies)).result;
+          final progress = fakeAsync
+              .waitFuture(handleInit(dependencies))
+              .result;
           expect(progress, [
             'dep1 (1/10)',
             'concurrent1/dep2 (2/10)',
@@ -1404,8 +1406,9 @@ void main() {
       test('dep4, dep7`', () {
         myFakeAsync((fakeAsync) {
           final dependencies = TestDependencies(failed: {'dep4', 'dep7'});
-          final progress =
-              fakeAsync.waitFuture(handleInit(dependencies)).result;
+          final progress = fakeAsync
+              .waitFuture(handleInit(dependencies))
+              .result;
           expect(progress, [
             'dep1 (1/10)',
             'concurrent1/dep2 (2/10)',
@@ -1472,8 +1475,9 @@ void main() {
           final dependencies = TestDependencies(
             failed: {'dep4', 'dep5', 'dep7'},
           );
-          final progress =
-              fakeAsync.waitFuture(handleInit(dependencies)).result;
+          final progress = fakeAsync
+              .waitFuture(handleInit(dependencies))
+              .result;
           expect(progress, [
             'dep1 (1/10)',
             'concurrent1/dep2 (2/10)',
@@ -1538,8 +1542,9 @@ void main() {
       test('dep5, dep6`', () {
         myFakeAsync((fakeAsync) {
           final dependencies = TestDependencies(failed: {'dep5', 'dep6'});
-          final progress =
-              fakeAsync.waitFuture(handleInit(dependencies)).result;
+          final progress = fakeAsync
+              .waitFuture(handleInit(dependencies))
+              .result;
           expect(progress, [
             'dep1 (1/10)',
             'concurrent1/dep2 (2/10)',
@@ -1606,8 +1611,9 @@ void main() {
           final dependencies = TestDependencies(
             failed: {'dep5', 'dep6', 'dep7'},
           );
-          final progress =
-              fakeAsync.waitFuture(handleInit(dependencies)).result;
+          final progress = fakeAsync
+              .waitFuture(handleInit(dependencies))
+              .result;
           expect(progress, [
             'dep1 (1/10)',
             'concurrent1/dep2 (2/10)',
@@ -1703,9 +1709,7 @@ void main() {
           onProgress: (step) =>
               events.add(step as ScopeAutoDependenciesProgress),
         )..start();
-        unawaited(
-          handle.value.whenComplete(completer.complete),
-        );
+        unawaited(handle.value.whenComplete(completer.complete));
         async.waitFuture(completer.future);
       });
 
@@ -1768,23 +1772,20 @@ void main() {
     // own initialization starts from `ScopeDependencyInitial`. A second
     // `init()` on the tree a disposal left behind therefore tripped that
     // assert instead of starting over.
-    test(
-      'control: a first init() builds the tree and initializes it',
-      () {
-        myFakeAsync((async) {
-          final dependencies = TestAutoDisposeDependencies();
-          final progress = handleInitFor(dependencies, async);
+    test('control: a first init() builds the tree and initializes it', () {
+      myFakeAsync((async) {
+        final dependencies = TestAutoDisposeDependencies();
+        final progress = handleInitFor(dependencies, async);
 
-          expect(progress, [
-            'depA (1/2)',
-            'depB (2/2)',
-            '$TestAutoDisposeDependencies',
-          ]);
-          expect(dependencies.buildCount, 1);
-          expect(dependencies.root.isInitialized, isTrue);
-        });
-      },
-    );
+        expect(progress, [
+          'depA (1/2)',
+          'depB (2/2)',
+          '$TestAutoDisposeDependencies',
+        ]);
+        expect(dependencies.buildCount, 1);
+        expect(dependencies.root.isInitialized, isTrue);
+      });
+    });
 
     test('a second init() rebuilds the tree the disposal left behind', () {
       myFakeAsync((async) {
@@ -1801,7 +1802,8 @@ void main() {
         expect(
           dependencies.buildCount,
           2,
-          reason: 'a tree that has been disposed of cannot be initialized '
+          reason:
+              'a tree that has been disposed of cannot be initialized '
               'again, so the second init() has to build a new one',
         );
         expect(
@@ -1811,11 +1813,7 @@ void main() {
         );
         expect(
           progress,
-          [
-            'depA (1/2)',
-            'depB (2/2)',
-            '$TestAutoDisposeDependencies',
-          ],
+          ['depA (1/2)', 'depB (2/2)', '$TestAutoDisposeDependencies'],
           reason: 'the second run must initialize exactly like the first one',
         );
         expect(dependencies.root.isInitialized, isTrue);
@@ -1834,87 +1832,95 @@ void main() {
     // was reading the raise as "the walk stopped halfway" and refused every
     // later `init()`, advising the caller to dispose of a tree they had
     // already awaited the disposal of.
-    test('a disposal that raised still counts as one, and a later init runs',
-        () {
-      myFakeAsync((async) {
-        final reported = <Object>[];
-        final previous = FlutterError.onError;
-        FlutterError.onError = (details) => reported.add(details.exception);
+    test(
+      'a disposal that raised still counts as one, and a later init runs',
+      () {
+        myFakeAsync((async) {
+          final reported = <Object>[];
+          final previous = FlutterError.onError;
+          FlutterError.onError = (details) => reported.add(details.exception);
 
-        try {
-          final dependencies = TestFailingDisposeDependencies();
-          handleInitFor(dependencies, async);
-          final firstRoot = dependencies.root;
+          try {
+            final dependencies = TestFailingDisposeDependencies();
+            handleInitFor(dependencies, async);
+            final firstRoot = dependencies.root;
 
-          expectDisposed(async, dependencies.dispose());
+            expectDisposed(async, dependencies.dispose());
 
-          expect(
-            dependencies.disposed,
-            ['depB', 'depA'],
-            reason: 'the failing disposer is no reason to walk away from the '
-                'dependency below it, which is still holding something',
-          );
-          expect(reported, hasLength(1));
-          expect(
-            dependencies.root.disposalRequired,
-            isFalse,
-            reason: 'the tree says itself that it holds nothing any more',
-          );
+            expect(
+              dependencies.disposed,
+              ['depB', 'depA'],
+              reason:
+                  'the failing disposer is no reason to walk away from the '
+                  'dependency below it, which is still holding something',
+            );
+            expect(reported, hasLength(1));
+            expect(
+              dependencies.root.disposalRequired,
+              isFalse,
+              reason: 'the tree says itself that it holds nothing any more',
+            );
 
-          handleInitFor(dependencies, async);
+            handleInitFor(dependencies, async);
 
-          expect(
-            identical(dependencies.root, firstRoot),
-            isFalse,
-            reason: 'the tree the failed disposal left behind is replaced, '
-                'not reused',
-          );
-          expect(dependencies.root.isInitialized, isTrue);
-        } finally {
-          FlutterError.onError = previous;
-        }
-      });
-    });
+            expect(
+              identical(dependencies.root, firstRoot),
+              isFalse,
+              reason:
+                  'the tree the failed disposal left behind is replaced, '
+                  'not reused',
+            );
+            expect(dependencies.root.isInitialized, isTrue);
+          } finally {
+            FlutterError.onError = previous;
+          }
+        });
+      },
+    );
 
     // Two ways a raise can reach the same `catch`, and only one of them means
     // the walk went through everybody. The verdict of M1 rested on a property
     // of the three `_runDispose` implementations here -- true of their loops,
     // and not of what stands before them, nor of what a dependency of
     // somebody else's making does with a failure it throws.
-    test('a walk that fell over before it reached anybody is not a teardown',
-        () {
-      myFakeAsync((async) {
-        final reported = <Object>[];
-        final previous = FlutterError.onError;
-        FlutterError.onError = (details) => reported.add(details.exception);
+    test(
+      'a walk that fell over before it reached anybody is not a teardown',
+      () {
+        myFakeAsync((async) {
+          final reported = <Object>[];
+          final previous = FlutterError.onError;
+          FlutterError.onError = (details) => reported.add(details.exception);
 
-        try {
-          final dependencies = TestForeignPrologueDependencies();
-          handleInitFor(dependencies, async);
+          try {
+            final dependencies = TestForeignPrologueDependencies();
+            handleInitFor(dependencies, async);
 
-          // The container answers the caller and hands the failure to
-          // `FlutterError`, as it does for every disposal that raised.
-          expectDisposed(async, dependencies.dispose());
-          expect(reported, isNotEmpty);
+            // The container answers the caller and hands the failure to
+            // `FlutterError`, as it does for every disposal that raised.
+            expectDisposed(async, dependencies.dispose());
+            expect(reported, isNotEmpty);
 
-          expect(
-            dependencies.released,
-            isEmpty,
-            reason: 'the order is asked for before the first child is '
-                'visited, so a raise there touches nobody',
-          );
-          final progress = handleInitFor(dependencies, async);
-          expect(
-            progress.single,
-            contains('has not been disposed of'),
-            reason: 'and the next init() is refused out loud, rather than '
-                'building a second tree over the first',
-          );
-        } finally {
-          FlutterError.onError = previous;
-        }
-      });
-    });
+            expect(
+              dependencies.released,
+              isEmpty,
+              reason:
+                  'the order is asked for before the first child is '
+                  'visited, so a raise there touches nobody',
+            );
+            final progress = handleInitFor(dependencies, async);
+            expect(
+              progress.single,
+              contains('has not been disposed of'),
+              reason:
+                  'and the next init() is refused out loud, rather than '
+                  'building a second tree over the first',
+            );
+          } finally {
+            FlutterError.onError = previous;
+          }
+        });
+      },
+    );
 
     // The other half. Here the walk did reach everybody, so it is a teardown
     // -- but one of the children is not this package's, and the interface it
@@ -1943,7 +1949,8 @@ void main() {
           expect(
             progress.single,
             contains('has not been disposed of'),
-            reason: 'so the container refuses to build over it -- the loud '
+            reason:
+                'so the container refuses to build over it -- the loud '
                 'refusal M1 removed belongs here, and only here',
           );
         } finally {
@@ -1954,7 +1961,8 @@ void main() {
 
     for (final concurrent in [false, true]) {
       for (final nested in [false, true]) {
-        final shape = '${concurrent ? 'concurrent' : 'sequential'}, '
+        final shape =
+            '${concurrent ? 'concurrent' : 'sequential'}, '
             '${nested ? 'nested' : 'flat'}';
 
         test('a foreign disposal retry permits a fresh init ($shape)', () {
@@ -2003,65 +2011,67 @@ void main() {
           });
         });
 
-        test('a foreign disposal retry that still holds refuses init ($shape)',
-            () {
-          myFakeAsync((async) {
-            final reported = <Object>[];
-            final previous = FlutterError.onError;
-            FlutterError.onError = (details) => reported.add(details.exception);
+        test(
+          'a foreign disposal retry that still holds refuses init ($shape)',
+          () {
+            myFakeAsync((async) {
+              final reported = <Object>[];
+              final previous = FlutterError.onError;
+              FlutterError.onError = (details) =>
+                  reported.add(details.exception);
 
-            try {
-              final dependencies = TestRetryingForeignDependencies(
-                useConcurrent: concurrent,
-                nested: nested,
-                failuresBeforeRelease: 2,
-              );
-              handleInitFor(dependencies, async);
-              final firstRoot = dependencies.root;
-              final resource = dependencies._resource;
-              final refusal = allOf(
-                startsWith(
-                  'Bad state: TestRetryingForeignDependencies has already '
-                  'been initialized (disposal failed',
-                ),
-                endsWith(
-                  ') and has not been disposed of. Dispose of it before '
-                  'initializing it again: a second `init()` builds the tree '
-                  'afresh and runs every initializer over the same container, '
-                  'whose fields the first run has already assigned — and '
-                  'where that run is still holding something, nothing would '
-                  'ever release it.',
-                ),
-              );
+              try {
+                final dependencies = TestRetryingForeignDependencies(
+                  useConcurrent: concurrent,
+                  nested: nested,
+                  failuresBeforeRelease: 2,
+                );
+                handleInitFor(dependencies, async);
+                final firstRoot = dependencies.root;
+                final resource = dependencies._resource;
+                final refusal = allOf(
+                  startsWith(
+                    'Bad state: TestRetryingForeignDependencies has already '
+                    'been initialized (disposal failed',
+                  ),
+                  endsWith(
+                    ') and has not been disposed of. Dispose of it before '
+                    'initializing it again: a second `init()` builds the tree '
+                    'afresh and runs every initializer over the same '
+                    'container, whose fields the first run has already '
+                    'assigned — and where that run is still holding something, '
+                    'nothing would ever release it.',
+                  ),
+                );
 
-              expectDisposed(async, dependencies.dispose());
-              expect(resource.attempts, 1);
-              expect(resource.held, isTrue);
-              expect(handleInitFor(dependencies, async).single, refusal);
+                expectDisposed(async, dependencies.dispose());
+                expect(resource.attempts, 1);
+                expect(resource.held, isTrue);
+                expect(handleInitFor(dependencies, async).single, refusal);
 
-              expectDisposed(async, dependencies.dispose());
-              expect(resource.attempts, 2);
-              expect(resource.held, isTrue);
-              expect(reported, hasLength(2));
-              expect(handleInitFor(dependencies, async).single, refusal);
-              expect(dependencies.buildCount, 1);
-              expect(dependencies.root, same(firstRoot));
+                expectDisposed(async, dependencies.dispose());
+                expect(resource.attempts, 2);
+                expect(resource.held, isTrue);
+                expect(reported, hasLength(2));
+                expect(handleInitFor(dependencies, async).single, refusal);
+                expect(dependencies.buildCount, 1);
+                expect(dependencies.root, same(firstRoot));
 
-              expectDisposed(async, dependencies.dispose());
-              expect(resource.attempts, 3);
-              expect(resource.held, isFalse);
-              handleInitFor(dependencies, async);
-              expect(dependencies.buildCount, 2);
-              expect(dependencies.root.isInitialized, isTrue);
-            } finally {
-              FlutterError.onError = previous;
-            }
-          });
-        });
+                expectDisposed(async, dependencies.dispose());
+                expect(resource.attempts, 3);
+                expect(resource.held, isFalse);
+                handleInitFor(dependencies, async);
+                expect(dependencies.buildCount, 2);
+                expect(dependencies.root.isInitialized, isTrue);
+              } finally {
+                FlutterError.onError = previous;
+              }
+            });
+          },
+        );
       }
 
-      test(
-          'a foreign disposal retry stopped before the walk refuses init '
+      test('a foreign disposal retry stopped before the walk refuses init '
           '(concurrent=$concurrent)', () {
         myFakeAsync((async) {
           final reported = <Object>[];
@@ -2114,7 +2124,8 @@ void main() {
         expect(
           progress.single,
           contains('has already been initialized'),
-          reason: 'a tree that is still alive must not be silently thrown '
+          reason:
+              'a tree that is still alive must not be silently thrown '
               'away by a second init(): whatever it holds would leak',
         );
         expect(dependencies.buildCount, 1);
@@ -2140,7 +2151,8 @@ void main() {
         expect(
           progress.single,
           contains('has already been initialized'),
-          reason: 'holding nothing is not the same as having been disposed '
+          reason:
+              'holding nothing is not the same as having been disposed '
               'of, and the container is the same object either way',
         );
         expect(dependencies.buildCount, 1);
@@ -2174,13 +2186,15 @@ void main() {
             contains('second `init()`'),
             contains('`late`'),
           ),
-          reason: 'naming the dependency is not the answer: the reason is '
+          reason:
+              'naming the dependency is not the answer: the reason is '
               'that this container has run before',
         );
         expect(
           dependencies.buildCount,
           2,
-          reason: 'the tree was rebuilt -- the refusal is the field, not the '
+          reason:
+              'the tree was rebuilt -- the refusal is the field, not the '
               'guard',
         );
       });
@@ -2198,7 +2212,8 @@ void main() {
         expect(
           progress,
           ['player (1/1)', '$TestLateDependencies'],
-          reason: 'this is what the topic promises for a container meant to '
+          reason:
+              'this is what the topic promises for a container meant to '
               'be initialized more than once',
         );
         expect(dependencies.value, 'built');
@@ -2214,14 +2229,12 @@ void main() {
 
         final progress = handleInitFor(dependencies, async);
 
-        expect(
-          progress.single,
-          contains('the second run failed on its own'),
-        );
+        expect(progress.single, contains('the second run failed on its own'));
         expect(
           progress.single,
           isNot(contains('`late`')),
-          reason: 'the hint explains one failure, and a hint that shows up '
+          reason:
+              'the hint explains one failure, and a hint that shows up '
               'beside the others is one nobody believes',
         );
       });
@@ -2274,7 +2287,8 @@ void main() {
         expect(
           progress.single,
           isNot(contains('second `init()`')),
-          reason: 'this field was not assigned by the first run: it was never '
+          reason:
+              'this field was not assigned by the first run: it was never '
               'assigned at all, and a hint saying otherwise sends the reader '
               'looking for an assignment that does not exist',
         );
@@ -2306,7 +2320,8 @@ void main() {
         expect(
           dependencies.runs,
           1,
-          reason: 'the refusal stands where the silence used to: before the '
+          reason:
+              'the refusal stands where the silence used to: before the '
               'walk, not after a run nobody made',
         );
       });
@@ -2348,7 +2363,8 @@ void main() {
       expect(
         (state as ScopeDependencyFailed).errors(),
         hasLength(1),
-        reason: 'two children failed at once, and the group closed on the '
+        reason:
+            'two children failed at once, and the group closed on the '
             'first of them',
       );
       expect(
@@ -2409,13 +2425,15 @@ void main() {
         expect(
           dependencies.root.disposalRequired,
           isFalse,
-          reason: 'a group that has been disposed of does not need disposing '
+          reason:
+              'a group that has been disposed of does not need disposing '
               'again, whatever its state says about the initialization',
         );
         expect(
           dependencies.root.isDisposed,
           isFalse,
-          reason: 'and `isDisposed` says which state it stands in, not '
+          reason:
+              'and `isDisposed` says which state it stands in, not '
               'whether the walk happened: the failure is kept, so this tree '
               'is released and not `ScopeDependencyDisposed` -- the contract '
               'the dartdoc of that getter now states',
@@ -2448,8 +2466,9 @@ void main() {
     test(
       'a disposer that never finishes does not hold the failure back',
       () async {
-        ScopeConfig.defaultDisposeScopeTimeout =
-            const Duration(milliseconds: 50);
+        ScopeConfig.defaultDisposeScopeTimeout = const Duration(
+          milliseconds: 50,
+        );
         addTearDown(ScopeConfig.reset);
 
         final dependencies = HangingDisposeDependencies();
@@ -2463,7 +2482,8 @@ void main() {
               contains('the second one failed'),
             ),
           ),
-          reason: 'the failure of the initialization is what the scope above '
+          reason:
+              'the failure of the initialization is what the scope above '
               'is waiting for, and giving up on the disposer is what lets it '
               'through',
         );
@@ -2491,24 +2511,23 @@ void main() {
         });
 
         var settled = false;
-        unawaited(
-          () async {
-            try {
-              await runScopeInit((ctx) => dependencies.init(null, ctx));
-            } on Object {
-              // The failure is what this test is about; where it goes is not.
-            } finally {
-              settled = true;
-            }
-          }(),
-        );
+        unawaited(() async {
+          try {
+            await runScopeInit((ctx) => dependencies.init(null, ctx));
+          } on Object {
+            // The failure is what this test is about; where it goes is not.
+          } finally {
+            settled = true;
+          }
+        }());
 
         await Future<void>.delayed(const Duration(milliseconds: 100));
 
         expect(
           settled,
           isFalse,
-          reason: 'with no limit the failure stays inside the body for as '
+          reason:
+              'with no limit the failure stays inside the body for as '
               'long as the disposer holds it',
         );
 
@@ -2518,7 +2537,8 @@ void main() {
         expect(
           settled,
           isTrue,
-          reason: 'and the wait was unbounded rather than stuck: releasing the '
+          reason:
+              'and the wait was unbounded rather than stuck: releasing the '
               'disposer lets the failure out',
         );
       },
@@ -2531,43 +2551,47 @@ void main() {
     // one behind it used to be dropped where it happened -- not passed to the
     // caller, not sent to the observer, not reported. The walk itself was
     // right: every sibling is unmounted whatever any one of them makes of it.
-    test('reports the failures behind the first instead of dropping them',
-        () async {
-      final observer = RecordingObserver();
-      ScopeConfig.observer = observer;
-      addTearDown(() => ScopeConfig.observer = null);
+    test(
+      'reports the failures behind the first instead of dropping them',
+      () async {
+        final observer = RecordingObserver();
+        ScopeConfig.observer = observer;
+        addTearDown(() => ScopeConfig.observer = null);
 
-      final log = <String>[];
-      final dependencies = TwoFailingUnmountsDependencies(log);
-      await runScopeInit((ctx) => dependencies.init(null, ctx));
+        final log = <String>[];
+        final dependencies = TwoFailingUnmountsDependencies(log);
+        await runScopeInit((ctx) => dependencies.init(null, ctx));
 
-      expect(
-        dependencies.onUnmount,
-        throwsA(
-          isA<StateError>().having(
-            (error) => error.message,
-            'message',
-            // Reverse declaration order: the later dependency is built on top
-            // of the earlier one, so it stops reaching the world first.
-            'unmount b failed',
+        expect(
+          dependencies.onUnmount,
+          throwsA(
+            isA<StateError>().having(
+              (error) => error.message,
+              'message',
+              // Reverse declaration order: the later dependency is built on top
+              // of the earlier one, so it stops reaching the world first.
+              'unmount b failed',
+            ),
           ),
-        ),
-        reason: 'the first hook to fail is the one the caller hears',
-      );
+          reason: 'the first hook to fail is the one the caller hears',
+        );
 
-      expect(
-        log,
-        ['unmount b', 'unmount a'],
-        reason: 'and both hooks ran: one that threw is no reason to leave the '
-            'sibling below it holding what it holds',
-      );
-      expect(
-        observer.events.where((event) => event.contains('unmount')),
-        contains(contains('unmount a failed')),
-        reason: 'and the one behind it is reported rather than dropped where '
-            'it happened',
-      );
-    });
+        expect(
+          log,
+          ['unmount b', 'unmount a'],
+          reason:
+              'and both hooks ran: one that threw is no reason to leave the '
+              'sibling below it holding what it holds',
+        );
+        expect(
+          observer.events.where((event) => event.contains('unmount')),
+          contains(contains('unmount a failed')),
+          reason:
+              'and the one behind it is reported rather than dropped where '
+              'it happened',
+        );
+      },
+    );
   });
 
   group('ScopeAutoDependencies concurrent init', () {
@@ -2612,25 +2636,23 @@ void main() {
         await first;
         await second;
 
-        expect(
-          log,
-          ['init slow'],
-          reason: 'the initializer of a dependency runs once per tree',
-        );
+        expect(log, [
+          'init slow',
+        ], reason: 'the initializer of a dependency runs once per tree');
         expect(
           refused,
           isA<StateError>(),
-          reason: 'and the caller is told, rather than left believing it '
+          reason:
+              'and the caller is told, rather than left believing it '
               'started something',
         );
 
         await dependencies.dispose();
 
-        expect(
-          log,
-          ['init slow', 'dispose slow'],
-          reason: 'what the one run took is what the disposal gives back',
-        );
+        expect(log, [
+          'init slow',
+          'dispose slow',
+        ], reason: 'what the one run took is what the disposal gives back');
       },
       timeout: const Timeout(Duration(seconds: 10)),
     );
@@ -2674,14 +2696,13 @@ void main() {
         expect(
           refused,
           isA<StateError>(),
-          reason: 'a walk started here cannot see what the parked initializer '
+          reason:
+              'a walk started here cannot see what the parked initializer '
               'is about to register, so it must not start',
         );
-        expect(
-          log,
-          ['init slow'],
-          reason: 'and nothing was released, because nothing was taken yet',
-        );
+        expect(log, [
+          'init slow',
+        ], reason: 'and nothing was released, because nothing was taken yet');
 
         gate.complete();
         await first;
@@ -2689,7 +2710,8 @@ void main() {
         expect(
           dependencies.root.isDisposed,
           isFalse,
-          reason: 'the refused walk left no mark: the tree is alive and the '
+          reason:
+              'the refused walk left no mark: the tree is alive and the '
               'initialization it interrupted nothing of has finished',
         );
 
@@ -2698,7 +2720,8 @@ void main() {
         expect(
           log,
           ['init slow', 'dispose slow'],
-          reason: 'the disposer registered after the await is reached by the '
+          reason:
+              'the disposer registered after the await is reached by the '
               'walk that comes later -- which is the whole point',
         );
       },
@@ -2735,9 +2758,9 @@ void main() {
         Object? refusedKept;
         await kept.dispose().catchError((Object error) => refusedKept = error);
         Object? refusedReleased;
-        await released
-            .dispose()
-            .catchError((Object error) => refusedReleased = error);
+        await released.dispose().catchError(
+          (Object error) => refusedReleased = error,
+        );
 
         expect(
           refusedKept,
@@ -2749,7 +2772,8 @@ void main() {
               contains('dispose of it once the cancellation has come back'),
             ),
           ),
-          reason: 'cancelling unmounts and keeps the tree here, so the '
+          reason:
+              'cancelling unmounts and keeps the tree here, so the '
               'cancellation on its own is not the teardown',
         );
         expect(
@@ -2804,7 +2828,8 @@ void main() {
         expect(
           refused,
           isA<StateError>(),
-          reason: 'the walk cannot see what the parked initializer is about '
+          reason:
+              'the walk cannot see what the parked initializer is about '
               'to register, whichever door it came through',
         );
 
@@ -2814,7 +2839,8 @@ void main() {
         expect(
           dependencies.root.disposalRequired,
           isTrue,
-          reason: 'the refused walk left no mark: the tree holds what the '
+          reason:
+              'the refused walk left no mark: the tree holds what the '
               'initializer took and says so',
         );
 
@@ -2823,7 +2849,8 @@ void main() {
         expect(
           log,
           ['init a', 'release a'],
-          reason: 'and the disposer registered after the await is reached by '
+          reason:
+              'and the disposer registered after the await is reached by '
               'the walk that comes later',
         );
       },
@@ -2862,11 +2889,9 @@ void main() {
 
         await group.dispose((_) {});
 
-        expect(
-          log,
-          ['init a'],
-          reason: 'nothing was released, because nothing was taken yet',
-        );
+        expect(log, [
+          'init a',
+        ], reason: 'nothing was released, because nothing was taken yet');
 
         gate.complete();
         await first;
@@ -2874,7 +2899,8 @@ void main() {
         expect(
           leaf.disposalRequired,
           isTrue,
-          reason: 'the walk that found an empty handle wrote nothing down: the '
+          reason:
+              'the walk that found an empty handle wrote nothing down: the '
               'disposer registered a moment later is still owed',
         );
 
@@ -2883,7 +2909,8 @@ void main() {
         expect(
           log,
           ['init a', 'release a'],
-          reason: 'and the walk that comes later reaches it -- the loss is '
+          reason:
+              'and the walk that comes later reaches it -- the loss is '
               'recoverable, which is the whole of what this asks',
         );
       },
@@ -2996,7 +3023,8 @@ void main() {
         expect(
           identical(first, second),
           isTrue,
-          reason: 'the second caller observes the run already going rather '
+          reason:
+              'the second caller observes the run already going rather '
               'than opening a second teardown of the same tree',
         );
 
@@ -3046,31 +3074,34 @@ void main() {
     // `ScopeReady` casts -- the whole tree built and running, a bare
     // `TypeError` out of a line nobody wrote, and no teardown, since the one
     // in `init` is for a tree that did not finish.
-    test('naming another container is refused before anything is built',
-        () async {
-      final built = <String>[];
-      final dependencies = WrongTypeArgumentDependencies(built);
+    test(
+      'naming another container is refused before anything is built',
+      () async {
+        final built = <String>[];
+        final dependencies = WrongTypeArgumentDependencies(built);
 
-      await expectLater(
-        runScopeInit((ctx) => dependencies.init(null, ctx)),
-        throwsA(
-          isA<StateError>().having(
-            (error) => error.message,
-            'message',
-            allOf(
-              contains('$WrongTypeArgumentDependencies'),
-              contains('$TestDependencies'),
+        await expectLater(
+          runScopeInit((ctx) => dependencies.init(null, ctx)),
+          throwsA(
+            isA<StateError>().having(
+              (error) => error.message,
+              'message',
+              allOf(
+                contains('$WrongTypeArgumentDependencies'),
+                contains('$TestDependencies'),
+              ),
             ),
           ),
-        ),
-      );
+        );
 
-      expect(
-        built,
-        isEmpty,
-        reason: 'nothing was built, so there is nothing left holding anything',
-      );
-    });
+        expect(
+          built,
+          isEmpty,
+          reason:
+              'nothing was built, so there is nothing left holding anything',
+        );
+      },
+    );
   });
 }
 
@@ -3082,9 +3113,9 @@ final class HangingDisposeDependencies
 
   @override
   ScopeDependency buildDependencies(void context) => sequential('', [
-        dep('holds', (dep) => dep.dispose = () => hang.future),
-        dep('fails', (dep) => throw Exception('the second one failed')),
-      ]);
+    dep('holds', (dep) => dep.dispose = () => hang.future),
+    dep('fails', (dep) => throw Exception('the second one failed')),
+  ]);
 }
 
 /// A container whose two dependencies both fail to unmount.
@@ -3096,15 +3127,15 @@ final class TwoFailingUnmountsDependencies
 
   @override
   ScopeDependency buildDependencies(void context) => sequential('', [
-        for (final name in ['a', 'b'])
-          dep(name, (dep) {
-            dep.unmount = () {
-              log.add('unmount $name');
+    for (final name in ['a', 'b'])
+      dep(name, (dep) {
+        dep.unmount = () {
+          log.add('unmount $name');
 
-              throw StateError('unmount $name failed');
-            };
-          }),
-      ]);
+          throw StateError('unmount $name failed');
+        };
+      }),
+  ]);
 }
 
 /// A container whose one dependency parks its *disposer* on a gate.
@@ -3117,11 +3148,11 @@ final class SlowDisposeDependencies
 
   @override
   ScopeDependency buildDependencies(void context) => dep('slow', (dep) {
-        dep.dispose = () async {
-          log.add('dispose slow');
-          await gate.future;
-        };
-      });
+    dep.dispose = () async {
+      log.add('dispose slow');
+      await gate.future;
+    };
+  });
 }
 
 /// A bare leaf as the root of a container, holding a subscription through
@@ -3153,10 +3184,10 @@ final class SlowInitDependencies
 
   @override
   ScopeDependency buildDependencies(void context) => dep('slow', (dep) async {
-        log.add('init slow');
-        dep.dispose = () => log.add('dispose slow');
-        await gate.future;
-      });
+    log.add('init slow');
+    dep.dispose = () => log.add('dispose slow');
+    await gate.future;
+  });
 }
 
 /// A container whose dependency parks *before* it has anything to give back.
@@ -3174,10 +3205,10 @@ final class LateRegisteringDependencies
 
   @override
   ScopeDependency buildDependencies(void context) => dep('slow', (dep) async {
-        log.add('init slow');
-        await gate.future;
-        dep.dispose = () => log.add('dispose slow');
-      });
+    log.add('init slow');
+    await gate.future;
+    dep.dispose = () => log.add('dispose slow');
+  });
 }
 
 /// The same late registration, in a container that keeps its half-built tree.
@@ -3197,10 +3228,10 @@ final class KeptOnErrorDependencies
 
   @override
   ScopeDependency buildDependencies(void context) => dep('slow', (dep) async {
-        log.add('init slow');
-        await gate.future;
-        dep.dispose = () => log.add('dispose slow');
-      });
+    log.add('init slow');
+    await gate.future;
+    dep.dispose = () => log.add('dispose slow');
+  });
 }
 
 /// The same late registration, under a group.
@@ -3217,12 +3248,12 @@ final class LateRegisteringGroupDependencies
 
   @override
   ScopeDependency buildDependencies(void context) => sequential('g', [
-        dep('a', (dep) async {
-          log.add('init a');
-          await gate.future;
-          dep.dispose = () => log.add('release a');
-        }),
-      ]);
+    dep('a', (dep) async {
+      log.add('init a');
+      await gate.future;
+      dep.dispose = () => log.add('release a');
+    }),
+  ]);
 }
 
 /// A container that names another one where it should name itself -- the
@@ -3252,16 +3283,16 @@ final class TestFailingDisposeDependencies
 
   @override
   ScopeDependency buildDependencies(_) => sequential('', [
-        dep('depA', (dep) {
-          dep.dispose = () => disposed.add(dep.name);
-        }),
-        dep('depB', (dep) {
-          dep.dispose = () {
-            disposed.add(dep.name);
-            throw Exception('depB cannot let go');
-          };
-        }),
-      ]);
+    dep('depA', (dep) {
+      dep.dispose = () => disposed.add(dep.name);
+    }),
+    dep('depB', (dep) {
+      dep.dispose = () {
+        disposed.add(dep.name);
+        throw Exception('depB cannot let go');
+      };
+    }),
+  ]);
 }
 
 /// A tree whose foreign child cannot even be asked whether it needs disposing.
@@ -3275,11 +3306,11 @@ final class TestForeignPrologueDependencies
 
   @override
   ScopeDependency buildDependencies(_) => sequential('', [
-        dep('ours', (dep) {
-          dep.dispose = () => released.add(dep.name);
-        }),
-        _ForeignDependency(name: 'foreign', throwFromRequired: true),
-      ]);
+    dep('ours', (dep) {
+      dep.dispose = () => released.add(dep.name);
+    }),
+    _ForeignDependency(name: 'foreign', throwFromRequired: true),
+  ]);
 }
 
 /// A tree whose foreign child throws out of its own `dispose()`.
@@ -3289,11 +3320,11 @@ final class TestForeignDisposeDependencies
 
   @override
   ScopeDependency buildDependencies(_) => sequential('', [
-        dep('ours', (dep) {
-          dep.dispose = () => released.add(dep.name);
-        }),
-        _ForeignDependency(name: 'foreign'),
-      ]);
+    dep('ours', (dep) {
+      dep.dispose = () => released.add(dep.name);
+    }),
+    _ForeignDependency(name: 'foreign'),
+  ]);
 }
 
 final class TestRetryingForeignDependencies
@@ -3316,8 +3347,9 @@ final class TestRetryingForeignDependencies
     buildCount++;
     _resource = _RetryingForeignDependency('resource', failuresBeforeRelease);
     _released = _RetryingForeignDependency('released', 0);
-    final group =
-        useConcurrent ? ScopeDependency.concurrent : ScopeDependency.sequential;
+    final group = useConcurrent
+        ? ScopeDependency.concurrent
+        : ScopeDependency.sequential;
     return group('root', [
       group('successful', [_released]),
       if (nested) group('inner', [_resource]) else _resource,

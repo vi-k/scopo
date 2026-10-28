@@ -36,37 +36,38 @@ void main() {
       // scope entirely: a second scope on the same key cannot start until the
       // first has finished disposing of itself. A key that never reaches the
       // element makes the two strangers, and the second one is ready at once.
-      testWidgets('scopeKey holds the next scope on the same key back',
-          (tester) async {
+      testWidgets('scopeKey holds the next scope on the same key back', (
+        tester,
+      ) async {
         final held = Completer<void>();
         final log = <String>[];
 
         Widget build({required bool first, required bool second}) => _wrap(
-              Column(
-                children: [
-                  if (first)
-                    family.build(
-                      _Case(
-                        label: 'first',
-                        log: log,
-                        scopeKey: 'shared',
-                        disposeGate: held,
-                      ),
-                    ),
-                  if (second)
-                    family.build(
-                      _Case(
-                        label: 'second',
-                        log: log,
-                        scopeKey: 'shared',
-                        // Beyond anything this test advances, so an expiry
-                        // cannot be what lets the second scope in.
-                        scopeKeyTimeout: const Duration(days: 1),
-                      ),
-                    ),
-                ],
-              ),
-            );
+          Column(
+            children: [
+              if (first)
+                family.build(
+                  _Case(
+                    label: 'first',
+                    log: log,
+                    scopeKey: 'shared',
+                    disposeGate: held,
+                  ),
+                ),
+              if (second)
+                family.build(
+                  _Case(
+                    label: 'second',
+                    log: log,
+                    scopeKey: 'shared',
+                    // Beyond anything this test advances, so an expiry
+                    // cannot be what lets the second scope in.
+                    scopeKeyTimeout: const Duration(days: 1),
+                  ),
+                ),
+            ],
+          ),
+        );
 
         await tester.pumpWidget(build(first: true, second: false));
         await tester.pumpAndSettle();
@@ -88,7 +89,8 @@ void main() {
         expect(
           log,
           ['ready: first'],
-          reason: 'the second scope is waiting for a key the first has not '
+          reason:
+              'the second scope is waiting for a key the first has not '
               'given back',
         );
 
@@ -104,37 +106,38 @@ void main() {
       // The wait for a key is bounded, and the bound is this parameter. With
       // the forwarder gone the element takes `ScopeConfig`'s three seconds,
       // which no round of this test reaches.
-      testWidgets('scopeKeyTimeout bounds that wait, and reports the expiry',
-          (tester) async {
+      testWidgets('scopeKeyTimeout bounds that wait, and reports the expiry', (
+        tester,
+      ) async {
         final held = Completer<void>();
         final log = <String>[];
         var expired = false;
 
         Widget build({required bool first, required bool second}) => _wrap(
-              Column(
-                children: [
-                  if (first)
-                    family.build(
-                      _Case(
-                        label: 'first',
-                        log: log,
-                        scopeKey: 'shared',
-                        disposeGate: held,
-                      ),
-                    ),
-                  if (second)
-                    family.build(
-                      _Case(
-                        label: 'second',
-                        log: log,
-                        scopeKey: 'shared',
-                        scopeKeyTimeout: const Duration(milliseconds: 50),
-                        onScopeKeyTimeout: () => expired = true,
-                      ),
-                    ),
-                ],
-              ),
-            );
+          Column(
+            children: [
+              if (first)
+                family.build(
+                  _Case(
+                    label: 'first',
+                    log: log,
+                    scopeKey: 'shared',
+                    disposeGate: held,
+                  ),
+                ),
+              if (second)
+                family.build(
+                  _Case(
+                    label: 'second',
+                    log: log,
+                    scopeKey: 'shared',
+                    scopeKeyTimeout: const Duration(milliseconds: 50),
+                    onScopeKeyTimeout: () => expired = true,
+                  ),
+                ),
+            ],
+          ),
+        );
 
         await tester.pumpWidget(build(first: true, second: false));
         await tester.pumpAndSettle();
@@ -149,7 +152,8 @@ void main() {
         expect(
           expired,
           isTrue,
-          reason: 'the wait was given the 50 ms of this scope, not the three '
+          reason:
+              'the wait was given the 50 ms of this scope, not the three '
               'seconds of the global default',
         );
         expect(
@@ -167,8 +171,9 @@ void main() {
       // cancelled: cancelling an `async*` means resuming its body, and a body
       // suspended for good is never resumed. The teardown gives up after this
       // parameter's duration.
-      testWidgets('initCancellationTimeout bounds the cancellation',
-          (tester) async {
+      testWidgets('initCancellationTimeout bounds the cancellation', (
+        tester,
+      ) async {
         final never = Completer<void>();
         final log = <String>[];
         var expired = false;
@@ -194,13 +199,15 @@ void main() {
         expect(
           expired,
           isTrue,
-          reason: 'the teardown stopped waiting after the 50 ms of this '
+          reason:
+              'the teardown stopped waiting after the 50 ms of this '
               'scope, not after the global default',
         );
         expect(
           tester.takeException(),
           isA<TimeoutException>(),
-          reason: 'an expiry is reported before the callback is called, and '
+          reason:
+              'an expiry is reported before the callback is called, and '
               'never passed over in silence',
         );
 
@@ -211,8 +218,9 @@ void main() {
 
       // The scope's own teardown is user code, and a teardown that never
       // finishes must not hold the scope's registration and key for ever.
-      testWidgets("disposeScopeTimeout bounds the scope's own teardown",
-          (tester) async {
+      testWidgets("disposeScopeTimeout bounds the scope's own teardown", (
+        tester,
+      ) async {
         final never = Completer<void>();
         final log = <String>[];
         var expired = false;
@@ -244,8 +252,9 @@ void main() {
 
       // A parent waits for the scopes registered with it before it disposes
       // of itself, and that wait is bounded by this parameter.
-      testWidgets('waitForChildrenTimeout bounds the wait for the children',
-          (tester) async {
+      testWidgets('waitForChildrenTimeout bounds the wait for the children', (
+        tester,
+      ) async {
         final never = Completer<void>();
         final log = <String>[];
         var expired = false;
@@ -280,8 +289,9 @@ void main() {
 
       // The ready branch is held back for this long, so a spinner that has
       // just appeared is not replaced in the very next frame.
-      testWidgets('pauseAfterInitialization holds the ready branch back',
-          (tester) async {
+      testWidgets('pauseAfterInitialization holds the ready branch back', (
+        tester,
+      ) async {
         final log = <String>[];
 
         await tester.pumpWidget(
@@ -301,7 +311,8 @@ void main() {
         expect(
           log,
           isEmpty,
-          reason: 'the ready branch has not been built yet: the pause is what '
+          reason:
+              'the ready branch has not been built yet: the pause is what '
               'keeps the initializing one on screen',
         );
 
@@ -319,8 +330,9 @@ void main() {
       // one. A forwarder that answers `null` shows the screenshot alone --
       // a screen that looks alive and is not.
       if (family.closes) {
-        testWidgets('buildOnClosing is shown while close() runs',
-            (tester) async {
+        testWidgets('buildOnClosing is shown while close() runs', (
+          tester,
+        ) async {
           final held = Completer<void>();
           final log = <String>[];
           // `close()` captures a screenshot of the subtree, which needs a size
@@ -342,7 +354,8 @@ void main() {
           expect(
             find.text('closing'),
             findsOneWidget,
-            reason: 'the closing branch belongs to the widget, and the '
+            reason:
+                'the closing branch belongs to the widget, and the '
                 'element only asks for it',
           );
 
@@ -358,9 +371,9 @@ void main() {
 }
 
 Widget _wrap(Widget child) => Directionality(
-      textDirection: TextDirection.ltr,
-      child: AsyncScopeCoordinator(child: child),
-    );
+  textDirection: TextDirection.ltr,
+  child: AsyncScopeCoordinator(child: child),
+);
 
 /// One row of the matrix: a family, and the way its widget is built.
 final class _Family {
@@ -433,74 +446,74 @@ const _families = [
 ];
 
 Widget _asyncScope(_Case c) => AsyncScope(
-      scopeKey: c.scopeKey,
-      scopeKeyTimeout: c.scopeKeyTimeout,
-      onScopeKeyTimeout: c.onScopeKeyTimeout,
-      initCancellationTimeout: c.initCancellationTimeout,
-      onInitCancellationTimeout: c.onInitCancellationTimeout,
-      disposeScopeTimeout: c.disposeScopeTimeout,
-      onDisposeScopeTimeout: c.onDisposeScopeTimeout,
-      waitForChildrenTimeout: c.waitForChildrenTimeout,
-      onWaitForChildrenTimeout: c.onWaitForChildrenTimeout,
-      pauseAfterInitialization: c.pauseAfterInitialization,
-      initScope: (context, ctx) async {
-        if (c.initGate case final gate?) {
-          await gate.future;
-        }
-      },
-      disposeScope: () async {
-        if (c.disposeGate case final gate?) {
-          await gate.future;
-        }
-      },
-      progressBuilder: (context, progress) => const SizedBox.shrink(),
-      errorBuilder: (context, error, stackTrace, progress) => Text('$error'),
-      builder: (context) => c.ready,
-    );
+  scopeKey: c.scopeKey,
+  scopeKeyTimeout: c.scopeKeyTimeout,
+  onScopeKeyTimeout: c.onScopeKeyTimeout,
+  initCancellationTimeout: c.initCancellationTimeout,
+  onInitCancellationTimeout: c.onInitCancellationTimeout,
+  disposeScopeTimeout: c.disposeScopeTimeout,
+  onDisposeScopeTimeout: c.onDisposeScopeTimeout,
+  waitForChildrenTimeout: c.waitForChildrenTimeout,
+  onWaitForChildrenTimeout: c.onWaitForChildrenTimeout,
+  pauseAfterInitialization: c.pauseAfterInitialization,
+  initScope: (context, ctx) async {
+    if (c.initGate case final gate?) {
+      await gate.future;
+    }
+  },
+  disposeScope: () async {
+    if (c.disposeGate case final gate?) {
+      await gate.future;
+    }
+  },
+  progressBuilder: (context, progress) => const SizedBox.shrink(),
+  errorBuilder: (context, error, stackTrace, progress) => Text('$error'),
+  builder: (context) => c.ready,
+);
 
 Widget _asyncDataScope(_Case c) => AsyncDataScope<String>(
-      scopeKey: c.scopeKey,
-      scopeKeyTimeout: c.scopeKeyTimeout,
-      onScopeKeyTimeout: c.onScopeKeyTimeout,
-      initCancellationTimeout: c.initCancellationTimeout,
-      onInitCancellationTimeout: c.onInitCancellationTimeout,
-      disposeScopeTimeout: c.disposeScopeTimeout,
-      onDisposeScopeTimeout: c.onDisposeScopeTimeout,
-      waitForChildrenTimeout: c.waitForChildrenTimeout,
-      onWaitForChildrenTimeout: c.onWaitForChildrenTimeout,
-      pauseAfterInitialization: c.pauseAfterInitialization,
-      initData: (context, ctx) async {
-        if (c.initGate case final gate?) {
-          await gate.future;
-        }
-        return c.label;
-      },
-      disposeData: (data) async {
-        if (c.disposeGate case final gate?) {
-          await gate.future;
-        }
-      },
-      progressBuilder: (context, progress) => const SizedBox.shrink(),
-      errorBuilder: (context, error, stackTrace, progress) => Text('$error'),
-      builder: (context, data) => c.ready,
-    );
+  scopeKey: c.scopeKey,
+  scopeKeyTimeout: c.scopeKeyTimeout,
+  onScopeKeyTimeout: c.onScopeKeyTimeout,
+  initCancellationTimeout: c.initCancellationTimeout,
+  onInitCancellationTimeout: c.onInitCancellationTimeout,
+  disposeScopeTimeout: c.disposeScopeTimeout,
+  onDisposeScopeTimeout: c.onDisposeScopeTimeout,
+  waitForChildrenTimeout: c.waitForChildrenTimeout,
+  onWaitForChildrenTimeout: c.onWaitForChildrenTimeout,
+  pauseAfterInitialization: c.pauseAfterInitialization,
+  initData: (context, ctx) async {
+    if (c.initGate case final gate?) {
+      await gate.future;
+    }
+    return c.label;
+  },
+  disposeData: (data) async {
+    if (c.disposeGate case final gate?) {
+      await gate.future;
+    }
+  },
+  progressBuilder: (context, progress) => const SizedBox.shrink(),
+  errorBuilder: (context, error, stackTrace, progress) => Text('$error'),
+  builder: (context, data) => c.ready,
+);
 
 Widget _asyncControllerScope(_Case c) => AsyncControllerScope<_Controller>(
-      scopeKey: c.scopeKey,
-      scopeKeyTimeout: c.scopeKeyTimeout,
-      onScopeKeyTimeout: c.onScopeKeyTimeout,
-      initCancellationTimeout: c.initCancellationTimeout,
-      onInitCancellationTimeout: c.onInitCancellationTimeout,
-      disposeScopeTimeout: c.disposeScopeTimeout,
-      onDisposeScopeTimeout: c.onDisposeScopeTimeout,
-      waitForChildrenTimeout: c.waitForChildrenTimeout,
-      onWaitForChildrenTimeout: c.onWaitForChildrenTimeout,
-      pauseAfterInitialization: c.pauseAfterInitialization,
-      createController: (context) => _Controller(c),
-      progressBuilder: (context) => const SizedBox.shrink(),
-      errorBuilder: (context, error, stackTrace) => Text('$error'),
-      builder: (context, controller) => c.ready,
-    );
+  scopeKey: c.scopeKey,
+  scopeKeyTimeout: c.scopeKeyTimeout,
+  onScopeKeyTimeout: c.onScopeKeyTimeout,
+  initCancellationTimeout: c.initCancellationTimeout,
+  onInitCancellationTimeout: c.onInitCancellationTimeout,
+  disposeScopeTimeout: c.disposeScopeTimeout,
+  onDisposeScopeTimeout: c.onDisposeScopeTimeout,
+  waitForChildrenTimeout: c.waitForChildrenTimeout,
+  onWaitForChildrenTimeout: c.onWaitForChildrenTimeout,
+  pauseAfterInitialization: c.pauseAfterInitialization,
+  createController: (context) => _Controller(c),
+  progressBuilder: (context) => const SizedBox.shrink(),
+  errorBuilder: (context, error, stackTrace) => Text('$error'),
+  builder: (context, controller) => c.ready,
+);
 
 Widget _liteScope(_Case c) => _LiteFixture(c);
 
@@ -530,18 +543,18 @@ final class _LiteFixture extends LiteScope<_LiteFixture, _LiteFixtureState> {
   final _Case c;
 
   _LiteFixture(this.c)
-      : super(
-          scopeKey: c.scopeKey,
-          scopeKeyTimeout: c.scopeKeyTimeout,
-          onScopeKeyTimeout: c.onScopeKeyTimeout,
-          initCancellationTimeout: c.initCancellationTimeout,
-          onInitCancellationTimeout: c.onInitCancellationTimeout,
-          disposeScopeTimeout: c.disposeScopeTimeout,
-          onDisposeScopeTimeout: c.onDisposeScopeTimeout,
-          waitForChildrenTimeout: c.waitForChildrenTimeout,
-          onWaitForChildrenTimeout: c.onWaitForChildrenTimeout,
-          pauseAfterInitialization: c.pauseAfterInitialization,
-        );
+    : super(
+        scopeKey: c.scopeKey,
+        scopeKeyTimeout: c.scopeKeyTimeout,
+        onScopeKeyTimeout: c.onScopeKeyTimeout,
+        initCancellationTimeout: c.initCancellationTimeout,
+        onInitCancellationTimeout: c.onInitCancellationTimeout,
+        disposeScopeTimeout: c.disposeScopeTimeout,
+        onDisposeScopeTimeout: c.onDisposeScopeTimeout,
+        waitForChildrenTimeout: c.waitForChildrenTimeout,
+        onWaitForChildrenTimeout: c.onWaitForChildrenTimeout,
+        pauseAfterInitialization: c.pauseAfterInitialization,
+      );
 
   @override
   Future<void> initScope(ScopeInitContext ctx) async {
@@ -563,8 +576,7 @@ final class _LiteFixture extends LiteScope<_LiteFixture, _LiteFixtureState> {
     Object error,
     StackTrace stackTrace,
     Object? progress,
-  ) =>
-      Text('$error');
+  ) => Text('$error');
 
   @override
   Widget? buildOnClosing(BuildContext context) => const Text('closing');
@@ -597,18 +609,18 @@ final class _ScopeFixture
   final _Case c;
 
   _ScopeFixture(this.c)
-      : super(
-          scopeKey: c.scopeKey,
-          scopeKeyTimeout: c.scopeKeyTimeout,
-          onScopeKeyTimeout: c.onScopeKeyTimeout,
-          initCancellationTimeout: c.initCancellationTimeout,
-          onInitCancellationTimeout: c.onInitCancellationTimeout,
-          disposeScopeTimeout: c.disposeScopeTimeout,
-          onDisposeScopeTimeout: c.onDisposeScopeTimeout,
-          waitForChildrenTimeout: c.waitForChildrenTimeout,
-          onWaitForChildrenTimeout: c.onWaitForChildrenTimeout,
-          pauseAfterInitialization: c.pauseAfterInitialization,
-        );
+    : super(
+        scopeKey: c.scopeKey,
+        scopeKeyTimeout: c.scopeKeyTimeout,
+        onScopeKeyTimeout: c.onScopeKeyTimeout,
+        initCancellationTimeout: c.initCancellationTimeout,
+        onInitCancellationTimeout: c.onInitCancellationTimeout,
+        disposeScopeTimeout: c.disposeScopeTimeout,
+        onDisposeScopeTimeout: c.onDisposeScopeTimeout,
+        waitForChildrenTimeout: c.waitForChildrenTimeout,
+        onWaitForChildrenTimeout: c.onWaitForChildrenTimeout,
+        pauseAfterInitialization: c.pauseAfterInitialization,
+      );
 
   @override
   Future<_Deps> initDependencies(
@@ -632,8 +644,7 @@ final class _ScopeFixture
     Object error,
     StackTrace stackTrace,
     Object? progress,
-  ) =>
-      Text('$error');
+  ) => Text('$error');
 
   @override
   Widget? buildOnClosing(BuildContext context) => const Text('closing');

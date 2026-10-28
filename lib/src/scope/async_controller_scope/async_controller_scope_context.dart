@@ -10,8 +10,10 @@ part of '../scope.dart';
 ///
 /// {@category AsyncControllerScope}
 abstract interface class AsyncControllerScopeContext<
-    W extends ScopeInheritedWidget,
-    C extends ScopeController> implements AsyncDataScopeContext<W, C> {
+  W extends ScopeInheritedWidget,
+  C extends ScopeController
+>
+    implements AsyncDataScopeContext<W, C> {
   /// The controller this scope owns.
   ///
   /// Throws a [StateError] until there is one; [controllerOrNull] is the safe

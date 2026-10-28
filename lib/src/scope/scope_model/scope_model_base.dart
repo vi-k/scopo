@@ -1,8 +1,11 @@
 part of '../scope.dart';
 
 /// {@category ScopeModel}
-abstract base class ScopeModelBase<W extends ScopeModelBase<W, M>,
-        M extends Object> extends ScopeModelCore<W, _ScopeModelElement<W, M>, M>
+abstract base class ScopeModelBase<
+  W extends ScopeModelBase<W, M>,
+  M extends Object
+>
+    extends ScopeModelCore<W, _ScopeModelElement<W, M>, M>
     with _ScopeModelBaseMixin<M> {
   @override
   final M? value;
@@ -23,8 +26,8 @@ abstract base class ScopeModelBase<W extends ScopeModelBase<W, M>,
     required M Function(BuildContext context) this.create,
     required this.dispose,
     super.child, // Not used by default. You can use it at your own discretion.
-  })  : hasValue = false,
-        value = null;
+  }) : hasValue = false,
+       value = null;
 
   /// Creates a scope over a model somebody else owns.
   ///
@@ -35,13 +38,10 @@ abstract base class ScopeModelBase<W extends ScopeModelBase<W, M>,
   /// the subscription taken in `init()` -- so a `null` used to compile and
   /// then fail on a bare null check, naming neither the scope nor the
   /// parameter.
-  const ScopeModelBase.value({
-    super.key,
-    super.tag,
-    required M this.value,
-  })  : hasValue = true,
-        create = null,
-        dispose = null;
+  const ScopeModelBase.value({super.key, super.tag, required M this.value})
+    : hasValue = true,
+      create = null,
+      dispose = null;
 
   @override
   // ignore: library_private_types_in_public_api
@@ -53,38 +53,27 @@ abstract base class ScopeModelBase<W extends ScopeModelBase<W, M>,
 
   /// The context of the nearest scope [W], or `null` if there is none.
   static ScopeModelContext<W, M>?
-      maybeOf<W extends ScopeModelBase<W, M>, M extends Object>(
+  maybeOf<W extends ScopeModelBase<W, M>, M extends Object>(
     BuildContext context, {
     required bool listen,
   }) =>
-          ScopeContext.maybeOf<W, ScopeModelContext<W, M>>(
-            context,
-            listen: listen,
-          );
+      ScopeContext.maybeOf<W, ScopeModelContext<W, M>>(context, listen: listen);
 
   /// The context of the nearest scope [W].
   ///
   /// Throws when there is no such scope above [context].
   static ScopeModelContext<W, M>
-      of<W extends ScopeModelBase<W, M>, M extends Object>(
+  of<W extends ScopeModelBase<W, M>, M extends Object>(
     BuildContext context, {
     required bool listen,
-  }) =>
-          ScopeContext.of<W, ScopeModelContext<W, M>>(
-            context,
-            listen: listen,
-          );
+  }) => ScopeContext.of<W, ScopeModelContext<W, M>>(context, listen: listen);
 
   /// Subscribes to one value of the scope and returns it.
-  static V select<W extends ScopeModelBase<W, M>, M extends Object,
-          V extends Object?>(
+  static V
+  select<W extends ScopeModelBase<W, M>, M extends Object, V extends Object?>(
     BuildContext context,
     V Function(ScopeModelContext<W, M> context) selector,
-  ) =>
-      ScopeContext.select<W, ScopeModelContext<W, M>, V>(
-        context,
-        selector,
-      );
+  ) => ScopeContext.select<W, ScopeModelContext<W, M>, V>(context, selector);
 }
 
 final class _ScopeModelElement<W extends ScopeModelBase<W, M>, M extends Object>
@@ -121,13 +110,11 @@ final class ScopeModelAccess<W extends ScopeModelBase<W, M>, M extends Object> {
   ScopeModelContext<W, M>? maybeOf(
     BuildContext context, {
     required bool listen,
-  }) =>
-      ScopeModelBase.maybeOf<W, M>(context, listen: listen);
+  }) => ScopeModelBase.maybeOf<W, M>(context, listen: listen);
 
   /// Selects a value from the scope context and **subscribes** to it.
   V select<V extends Object?>(
     BuildContext context,
     V Function(ScopeModelContext<W, M> context) selector,
-  ) =>
-      ScopeModelBase.select<W, M, V>(context, selector);
+  ) => ScopeModelBase.select<W, M, V>(context, selector);
 }

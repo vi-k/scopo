@@ -33,19 +33,12 @@ final class App extends Scope<App, AppDependencies, AppState> {
   const App({super.key, required this.title, required this.builder});
 
   static App paramsOf(BuildContext context, {required bool listen}) =>
-      Scope.paramsOf<App, AppDependencies, AppState>(
-        context,
-        listen: listen,
-      );
+      Scope.paramsOf<App, AppDependencies, AppState>(context, listen: listen);
 
   static V selectParam<V>(
     BuildContext context,
     V Function(App widget) selector,
-  ) =>
-      Scope.selectParam<App, AppDependencies, AppState, V>(
-        context,
-        selector,
-      );
+  ) => Scope.selectParam<App, AppDependencies, AppState, V>(context, selector);
 
   /// One parameter, subscribed to on its own.
   static String titleOf(BuildContext context) =>
@@ -57,11 +50,7 @@ final class App extends Scope<App, AppDependencies, AppState> {
   static V select<V>(
     BuildContext context,
     V Function(AppState state) selector,
-  ) =>
-      Scope.select<App, AppDependencies, AppState, V>(
-        context,
-        selector,
-      );
+  ) => Scope.select<App, AppDependencies, AppState, V>(context, selector);
 
   /// One value of the state, subscribed to on its own.
   static int counterOf(BuildContext context) =>
@@ -71,8 +60,7 @@ final class App extends Scope<App, AppDependencies, AppState> {
   Future<AppDependencies> initDependencies(
     BuildContext context,
     ScopeInitContext ctx,
-  ) =>
-      AppDependencies().init(context, ctx);
+  ) => AppDependencies().init(context, ctx);
 
   @override
   AppState createState() => AppState();
@@ -85,18 +73,17 @@ final class App extends Scope<App, AppDependencies, AppState> {
   Widget buildOnProgress(
     BuildContext context,
     covariant ScopeAutoDependenciesProgress? progress,
-  ) =>
-      Center(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            // Null until the first dependency reports: indeterminate
-            // until then, determinate from there on.
-            CircularProgressIndicator(value: progress?.value),
-            Text(progress?.name ?? ''),
-          ],
-        ),
-      );
+  ) => Center(
+    child: Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        // Null until the first dependency reports: indeterminate
+        // until then, determinate from there on.
+        CircularProgressIndicator(value: progress?.value),
+        Text(progress?.name ?? ''),
+      ],
+    ),
+  );
 
   /// The same progress value, at the step the initialization broke on.
   @override
@@ -105,12 +92,9 @@ final class App extends Scope<App, AppDependencies, AppState> {
     Object error,
     StackTrace stackTrace,
     covariant ScopeAutoDependenciesProgress? progress,
-  ) =>
-      Center(
-        child: Text(
-          progress == null ? '$error' : '${progress.name}: $error',
-        ),
-      );
+  ) => Center(
+    child: Text(progress == null ? '$error' : '${progress.name}: $error'),
+  );
 }
 
 final class AppDependencies
@@ -119,11 +103,11 @@ final class AppDependencies
 
   @override
   ScopeDependency buildDependencies(BuildContext context) => sequential('', [
-        dep('database', (dep) async {
-          database = await Database.open();
-          dep.dispose = database.close;
-        }),
-      ]);
+    dep('database', (dep) async {
+      database = await Database.open();
+      dep.dispose = database.close;
+    }),
+  ]);
 }
 
 final class AppState extends ScopeState<App, AppDependencies, AppState> {

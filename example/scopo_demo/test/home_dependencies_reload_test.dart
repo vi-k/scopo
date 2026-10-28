@@ -38,8 +38,9 @@ void main() {
     });
   });
 
-  testWidgets('ready Home accepts another bloc load without reinitializing',
-      (tester) async {
+  testWidgets('ready Home accepts another bloc load without reinitializing', (
+    tester,
+  ) async {
     addTearDown(() async {
       await tester.pumpWidget(const SizedBox.shrink());
       await _advance(tester, 30);
@@ -87,8 +88,9 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
-  testWidgets('a first bloc load error still fails Home initialization',
-      (tester) async {
+  testWidgets('a first bloc load error still fails Home initialization', (
+    tester,
+  ) async {
     addTearDown(() async {
       await tester.pumpWidget(const SizedBox.shrink());
       await _advance(tester, 30);
@@ -103,12 +105,13 @@ void main() {
         progressBuilder: (_, progress) => Text(progress ?? ''),
         builder: (_) => Home(
           init: (_, ctx) async {
-            final result = await dependencies.init(null, ctx).onError<Object>(
-              (error, stackTrace) {
-                initializationError = error;
-                Error.throwWithStackTrace(error, stackTrace);
-              },
-            );
+            final result = await dependencies.init(null, ctx).onError<Object>((
+              error,
+              stackTrace,
+            ) {
+              initializationError = error;
+              Error.throwWithStackTrace(error, stackTrace);
+            });
             completions++;
             return result;
           },

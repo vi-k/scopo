@@ -10,17 +10,11 @@ void main() {
   for (final family in _Family.values) {
     group('${family.name}.close()', () {
       for (final offstage in [false, true]) {
-        testWidgets(
-            'unmounts the consumer before releasing its value '
+        testWidgets('unmounts the consumer before releasing its value '
             '(offstage=$offstage)', (tester) async {
           final h = _Harness(family);
           await tester.pumpWidget(
-            _app(
-              Offstage(
-                offstage: offstage,
-                child: h.scope(),
-              ),
-            ),
+            _app(Offstage(offstage: offstage, child: h.scope())),
           );
           await tester.pumpAndSettle();
           expect(find.byType(_Consumer, skipOffstage: false), findsOneWidget);
@@ -63,14 +57,7 @@ void main() {
         final owner = _Harness(family, scopeKey: 'shared');
         final waiting = _Harness(family, scopeKey: 'shared');
         await tester.pumpWidget(
-          _app(
-            Column(
-              children: [
-                owner.scope(),
-                waiting.scope(),
-              ],
-            ),
-          ),
+          _app(Column(children: [owner.scope(), waiting.scope()])),
         );
         await tester.pumpAndSettle();
         expect(waiting.context.state, isA<AsyncScopeWaiting>());
@@ -87,8 +74,7 @@ void main() {
       });
 
       for (final showClosing in [false, true]) {
-        testWidgets(
-            'replaces the subtree on the first closing frame '
+        testWidgets('replaces the subtree on the first closing frame '
             '(showClosing=$showClosing)', (tester) async {
           final h = _Harness(family, showClosing: showClosing)
             ..disposeGate = Completer<void>();
@@ -115,8 +101,9 @@ void main() {
         });
       }
 
-      testWidgets('closing replaces a pending initialization notification',
-          (tester) async {
+      testWidgets('closing replaces a pending initialization notification', (
+        tester,
+      ) async {
         final h = _Harness(family);
         await tester.pumpWidget(_app(h.scope()));
         // Readiness is applied at the end of a frame. Stop there, before the
@@ -134,8 +121,9 @@ void main() {
       });
 
       for (final showClosing in [false, true]) {
-        testWidgets('class-based closing hook (showClosing=$showClosing)',
-            (tester) async {
+        testWidgets('class-based closing hook (showClosing=$showClosing)', (
+          tester,
+        ) async {
           final h = _Harness(family, showClosing: showClosing);
           final Widget scope = switch (family) {
             _Family.asyncScope => _ClassScope(h),
@@ -158,8 +146,9 @@ void main() {
         });
       }
 
-      testWidgets('closing remounts the same widget type and key',
-          (tester) async {
+      testWidgets('closing remounts the same widget type and key', (
+        tester,
+      ) async {
         final h = _Harness(family);
         h
           ..body = _ReusedBranch(h, key: const ValueKey('branch'))
@@ -200,8 +189,9 @@ void main() {
         });
       }
 
-      testWidgets('finishes if the app pauses before the closing frame',
-          (tester) async {
+      testWidgets('finishes if the app pauses before the closing frame', (
+        tester,
+      ) async {
         final h = _Harness(family);
         await tester.pumpWidget(_app(h.scope()));
         await tester.pumpAndSettle();
@@ -209,8 +199,9 @@ void main() {
         // The first check for disabled frames has already run while resumed.
         await tester.idle();
         try {
-          tester.binding
-              .handleAppLifecycleStateChanged(AppLifecycleState.paused);
+          tester.binding.handleAppLifecycleStateChanged(
+            AppLifecycleState.paused,
+          );
           for (var i = 0; i < 20 && !done.settled; i++) {
             await tester.runAsync(
               () => Future<void>.delayed(const Duration(milliseconds: 10)),
@@ -221,25 +212,20 @@ void main() {
           expect(done.failure, isNull);
           expect(h.events, ['child.dispose', 'resource.dispose']);
         } finally {
-          tester.binding
-              .handleAppLifecycleStateChanged(AppLifecycleState.resumed);
+          tester.binding.handleAppLifecycleStateChanged(
+            AppLifecycleState.resumed,
+          );
           await _remove(tester);
         }
       });
 
-      testWidgets('releases scopeKey while the closed scope stays mounted',
-          (tester) async {
+      testWidgets('releases scopeKey while the closed scope stays mounted', (
+        tester,
+      ) async {
         final first = _Harness(family, scopeKey: 'shared');
         final second = _Harness(family, scopeKey: 'shared');
         await tester.pumpWidget(
-          _app(
-            Column(
-              children: [
-                first.scope(),
-                second.scope(),
-              ],
-            ),
-          ),
+          _app(Column(children: [first.scope(), second.scope()])),
         );
         await tester.pumpAndSettle();
         expect(second.initializations, 0);
@@ -257,8 +243,9 @@ void main() {
         await _remove(tester);
       });
 
-      testWidgets('awaits a child scope before releasing the parent',
-          (tester) async {
+      testWidgets('awaits a child scope before releasing the parent', (
+        tester,
+      ) async {
         final events = <String>[];
         final parent = _Harness(family, events: events, label: 'parent');
         final child = _Harness(family, events: events, label: 'nested')
@@ -283,37 +270,41 @@ void main() {
         await _remove(tester);
       });
 
-      testWidgets('concurrent and repeated calls share one successful release',
-          (tester) async {
-        final h = _Harness(family)..disposeGate = Completer<void>();
-        await tester.pumpWidget(_app(h.scope()));
-        await tester.pumpAndSettle();
-        final context = h.context;
-        final first = _Outcome(context.close());
-        final second = _Outcome(context.close());
-        await settle(tester, until: () => h.releases == 1);
-        expect(first.settled, isFalse);
-        expect(second.settled, isFalse);
-        h.disposeGate!.complete();
-        await settle(tester, until: () => first.settled && second.settled);
-        final third = _Outcome(context.close());
-        await tester.idle();
+      testWidgets(
+        'concurrent and repeated calls share one successful release',
+        (tester) async {
+          final h = _Harness(family)..disposeGate = Completer<void>();
+          await tester.pumpWidget(_app(h.scope()));
+          await tester.pumpAndSettle();
+          final context = h.context;
+          final first = _Outcome(context.close());
+          final second = _Outcome(context.close());
+          await settle(tester, until: () => h.releases == 1);
+          expect(first.settled, isFalse);
+          expect(second.settled, isFalse);
+          h.disposeGate!.complete();
+          await settle(tester, until: () => first.settled && second.settled);
+          final third = _Outcome(context.close());
+          await tester.idle();
 
-        expect(first.settled && second.settled && third.settled, isTrue);
-        expect(
-          [first.failure, second.failure, third.failure],
-          everyElement(isNull),
-        );
-        expect(h.releases, 1);
-        await _remove(tester);
-        final removed = _Outcome(context.close());
-        await tester.idle();
-        expect(removed.settled, isTrue);
-        expect(h.releases, 1);
-      });
+          expect(first.settled && second.settled && third.settled, isTrue);
+          expect([
+            first.failure,
+            second.failure,
+            third.failure,
+          ], everyElement(isNull));
+          expect(h.releases, 1);
+          await _remove(tester);
+          final removed = _Outcome(context.close());
+          await tester.idle();
+          expect(removed.settled, isTrue);
+          expect(h.releases, 1);
+        },
+      );
 
-      testWidgets('every caller receives the same failure and stack',
-          (tester) async {
+      testWidgets('every caller receives the same failure and stack', (
+        tester,
+      ) async {
         final h = _Harness(family)
           ..disposeGate = Completer<void>()
           ..disposalError = StateError('release failed');
@@ -352,8 +343,7 @@ void main() {
       });
 
       for (final beforeFrame in [true, false]) {
-        testWidgets(
-            'unmount during close completes once '
+        testWidgets('unmount during close completes once '
             '(beforeFrame=$beforeFrame)', (tester) async {
           final h = _Harness(family)..disposeGate = Completer<void>();
           await tester.pumpWidget(_app(h.scope()));
@@ -374,8 +364,7 @@ void main() {
       }
 
       for (final retry in [true, false]) {
-        testWidgets(
-            'a close refused during build allows later teardown '
+        testWidgets('a close refused during build allows later teardown '
             '(retry=$retry)', (tester) async {
           final closeNow = ValueNotifier(false);
           addTearDown(closeNow.dispose);
@@ -407,8 +396,9 @@ void main() {
         });
       }
 
-      testWidgets('a close refused during build keeps the ready branch',
-          (tester) async {
+      testWidgets('a close refused during build keeps the ready branch', (
+        tester,
+      ) async {
         final closeNow = ValueNotifier(false);
         addTearDown(closeNow.dispose);
         final h = _Harness(family);
@@ -467,32 +457,35 @@ void main() {
       });
 
       testWidgets(
-          'a closed GlobalKey scope does not register with a new parent',
-          (tester) async {
-        final h = _Harness(family);
-        final left = _Harness(family)..body = h.scope();
-        final right = _Harness(family)..body = const SizedBox.shrink();
-        await tester
-            .pumpWidget(_app(Column(children: [left.scope(), right.scope()])));
-        await tester.pumpAndSettle();
-        final context = h.context;
-        final done = _Outcome(context.close());
-        await settle(tester, until: () => done.settled);
-        expect(done.settled, isTrue);
-        expect((left.context as AsyncScopeParent).childrenCount, 0);
+        'a closed GlobalKey scope does not register with a new parent',
+        (tester) async {
+          final h = _Harness(family);
+          final left = _Harness(family)..body = h.scope();
+          final right = _Harness(family)..body = const SizedBox.shrink();
+          await tester.pumpWidget(
+            _app(Column(children: [left.scope(), right.scope()])),
+          );
+          await tester.pumpAndSettle();
+          final context = h.context;
+          final done = _Outcome(context.close());
+          await settle(tester, until: () => done.settled);
+          expect(done.settled, isTrue);
+          expect((left.context as AsyncScopeParent).childrenCount, 0);
 
-        left.body = const SizedBox.shrink();
-        right.body = h.scope();
-        await tester
-            .pumpWidget(_app(Column(children: [left.scope(), right.scope()])));
-        await tester.pumpAndSettle();
+          left.body = const SizedBox.shrink();
+          right.body = h.scope();
+          await tester.pumpWidget(
+            _app(Column(children: [left.scope(), right.scope()])),
+          );
+          await tester.pumpAndSettle();
 
-        expect(h.context, same(context));
-        expect((right.context as AsyncScopeParent).childrenCount, 0);
-        expect(h.initializations, 1);
-        expect(h.releases, 1);
-        await _remove(tester);
-      });
+          expect(h.context, same(context));
+          expect((right.context as AsyncScopeParent).childrenCount, 0);
+          expect(h.initializations, 1);
+          expect(h.releases, 1);
+          await _remove(tester);
+        },
+      );
     });
   }
 }
@@ -582,41 +575,39 @@ class _Harness {
 
     return switch (family) {
       _Family.asyncScope => AsyncScope(
-          key: key,
-          scopeKey: scopeKey,
-          onMount: onMount,
-          initScope: (context, ctx) => initialize(ctx),
-          disposeScope: release,
-          progressBuilder: (context, progress) => const Text('initializing'),
-          errorBuilder: (context, error, stack, progress) =>
-              const Text('error'),
-          builder: ready,
-          closingBuilder: showClosing ? closing : null,
-        ),
+        key: key,
+        scopeKey: scopeKey,
+        onMount: onMount,
+        initScope: (context, ctx) => initialize(ctx),
+        disposeScope: release,
+        progressBuilder: (context, progress) => const Text('initializing'),
+        errorBuilder: (context, error, stack, progress) => const Text('error'),
+        builder: ready,
+        closingBuilder: showClosing ? closing : null,
+      ),
       _Family.dataScope => AsyncDataScope<_Resource>(
-          key: key,
-          scopeKey: scopeKey,
-          onMount: onMount,
-          initData: (context, ctx) async {
-            await initialize(ctx);
-            return resource;
-          },
-          disposeData: (data) => data.dispose(),
-          progressBuilder: (context, progress) => const Text('initializing'),
-          errorBuilder: (context, error, stack, progress) =>
-              const Text('error'),
-          builder: (context, data) => ready(context),
-          closingBuilder: showClosing ? closing : null,
-        ),
+        key: key,
+        scopeKey: scopeKey,
+        onMount: onMount,
+        initData: (context, ctx) async {
+          await initialize(ctx);
+          return resource;
+        },
+        disposeData: (data) => data.dispose(),
+        progressBuilder: (context, progress) => const Text('initializing'),
+        errorBuilder: (context, error, stack, progress) => const Text('error'),
+        builder: (context, data) => ready(context),
+        closingBuilder: showClosing ? closing : null,
+      ),
       _Family.controllerScope => AsyncControllerScope<_Resource>(
-          key: key,
-          scopeKey: scopeKey,
-          createController: (context) => resource,
-          progressBuilder: (context) => const Text('initializing'),
-          errorBuilder: (context, error, stack) => const Text('error'),
-          builder: (context, controller) => ready(context),
-          closingBuilder: showClosing ? closing : null,
-        ),
+        key: key,
+        scopeKey: scopeKey,
+        createController: (context) => resource,
+        progressBuilder: (context) => const Text('initializing'),
+        errorBuilder: (context, error, stack) => const Text('error'),
+        builder: (context, controller) => ready(context),
+        closingBuilder: showClosing ? closing : null,
+      ),
     };
   }
 }
@@ -650,13 +641,18 @@ class _ConsumerState extends State<_Consumer> {
   Widget build(BuildContext context) {
     final h = widget.harness;
     resource = switch (h.family) {
-      _Family.asyncScope => AsyncScope.of(context, listen: true).isInitialized
-          ? h.resource
-          : throw StateError('not ready'),
-      _Family.dataScope =>
-        AsyncDataScope.of<_Resource>(context, listen: true).data,
-      _Family.controllerScope =>
-        AsyncControllerScope.of<_Resource>(context, listen: true).controller,
+      _Family.asyncScope =>
+        AsyncScope.of(context, listen: true).isInitialized
+            ? h.resource
+            : throw StateError('not ready'),
+      _Family.dataScope => AsyncDataScope.of<_Resource>(
+        context,
+        listen: true,
+      ).data,
+      _Family.controllerScope => AsyncControllerScope.of<_Resource>(
+        context,
+        listen: true,
+      ).controller,
     };
     return const SizedBox(width: 20, height: 20);
   }
@@ -674,8 +670,8 @@ class _ConsumerState extends State<_Consumer> {
 }
 
 Widget _app(Widget child) => AsyncScopeCoordinator(
-      child: MaterialApp(home: Center(child: child)),
-    );
+  child: MaterialApp(home: Center(child: child)),
+);
 
 Future<void> _remove(WidgetTester tester) async {
   await tester.pumpWidget(_app(const SizedBox.shrink()));
@@ -707,8 +703,7 @@ final class _ClassScope extends AsyncScopeBase<_ClassScope> {
     Object error,
     StackTrace stackTrace,
     Object? progress,
-  ) =>
-      const SizedBox.shrink();
+  ) => const SizedBox.shrink();
 
   @override
   Widget? buildOnClosing(BuildContext context) =>
@@ -744,8 +739,7 @@ final class _ClassDataScope
     Object error,
     StackTrace stackTrace,
     Object? progress,
-  ) =>
-      const SizedBox.shrink();
+  ) => const SizedBox.shrink();
 
   @override
   Widget? buildOnClosing(BuildContext context) =>
@@ -773,8 +767,7 @@ final class _ClassControllerScope
     BuildContext context,
     Object error,
     StackTrace stackTrace,
-  ) =>
-      const SizedBox.shrink();
+  ) => const SizedBox.shrink();
 
   @override
   Widget? buildOnClosing(BuildContext context) =>

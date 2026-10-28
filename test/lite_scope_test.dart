@@ -102,40 +102,41 @@ void main() {
     // `close()` waits forever.
     for (final (state, init, body)
         in <(String, Future<void> Function(ScopeInitContext), String)>[
-      ('waiting', _neverEmits, 'waiting'),
-      ('initializing', _emitsProgressOnly, 'initializing'),
-      ('error', _failsImmediately, 'error'),
-    ]) {
-      testWidgets(
-        'completes while the scope is in the $state state',
-        (tester) async {
-          await tester.pumpWidget(_app(_CloseScope(init: init)));
-          // A few extra frames, so the init stream event (or error) is
-          // delivered and applied to the model before `close()` is called.
-          for (var i = 0; i < 3; i++) {
-            await tester.pump();
-          }
-          expect(find.text(body), findsOneWidget);
+          ('waiting', _neverEmits, 'waiting'),
+          ('initializing', _emitsProgressOnly, 'initializing'),
+          ('error', _failsImmediately, 'error'),
+        ]) {
+      testWidgets('completes while the scope is in the $state state', (
+        tester,
+      ) async {
+        await tester.pumpWidget(_app(_CloseScope(init: init)));
+        // A few extra frames, so the init stream event (or error) is
+        // delivered and applied to the model before `close()` is called.
+        for (var i = 0; i < 3; i++) {
+          await tester.pump();
+        }
+        expect(find.text(body), findsOneWidget);
 
-          final element =
-              tester.element<_CloseScopeElement>(find.byType(_CloseScope));
+        final element = tester.element<_CloseScopeElement>(
+          find.byType(_CloseScope),
+        );
 
-          // Deliberately not awaited: before the fix this future never
-          // completes, so awaiting it would hang the whole test run instead of
-          // failing this test.
-          var isClosed = false;
-          unawaited(element.close().whenComplete(() => isClosed = true));
+        // Deliberately not awaited: before the fix this future never
+        // completes, so awaiting it would hang the whole test run instead of
+        // failing this test.
+        var isClosed = false;
+        unawaited(element.close().whenComplete(() => isClosed = true));
 
-          await settle(tester, until: () => isClosed);
+        await settle(tester, until: () => isClosed);
 
-          expect(
-            isClosed,
-            isTrue,
-            reason: 'close() must not wait for a screenshot that '
-                'buildOnReady() never takes in the $state state',
-          );
-        },
-      );
+        expect(
+          isClosed,
+          isTrue,
+          reason:
+              'close() must not wait for a screenshot that '
+              'buildOnReady() never takes in the $state state',
+        );
+      });
     }
 
     testWidgets(
@@ -145,8 +146,9 @@ void main() {
         await tester.pumpAndSettle();
         expect(find.text('ready'), findsOneWidget);
 
-        final element =
-            tester.element<_CloseScopeElement>(find.byType(_CloseScope));
+        final element = tester.element<_CloseScopeElement>(
+          find.byType(_CloseScope),
+        );
 
         var isClosed = false;
         unawaited(element.close().whenComplete(() => isClosed = true));
@@ -162,7 +164,8 @@ void main() {
         expect(
           isClosed,
           isTrue,
-          reason: 'in the ready state the barrier must still be installed and '
+          reason:
+              'in the ready state the barrier must still be installed and '
               'released by the ScreenshotReplacer',
         );
       },
@@ -202,7 +205,8 @@ void main() {
         expect(
           isClosed,
           isTrue,
-          reason: 'the documented shape of a root scope must not be the one '
+          reason:
+              'the documented shape of a root scope must not be the one '
               'shape close() cannot finish in',
         );
       },
@@ -214,34 +218,34 @@ void main() {
     // is not that screen's to cancel — the whole of it, four stages, the
     // `scopeKey` and the registration with the parent included.
 
-    testWidgets(
-      'completes when the closing screen refuses to build',
-      (tester) async {
-        await tester.pumpWidget(
-          _app(const _CloseScope(init: _becomesReady, failClosingBuild: true)),
-        );
-        await tester.pumpAndSettle();
+    testWidgets('completes when the closing screen refuses to build', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        _app(const _CloseScope(init: _becomesReady, failClosingBuild: true)),
+      );
+      await tester.pumpAndSettle();
 
-        final element = _scopeOf(tester);
+      final element = _scopeOf(tester);
 
-        var isClosed = false;
-        unawaited(element.close().whenComplete(() => isClosed = true));
+      var isClosed = false;
+      unawaited(element.close().whenComplete(() => isClosed = true));
 
-        await settle(tester, until: () => isClosed);
+      await settle(tester, until: () => isClosed);
 
-        expect(
-          tester.takeException(),
-          isA<StateError>(),
-          reason: 'the failure is still reported',
-        );
-        expect(
-          isClosed,
-          isTrue,
-          reason: 'a closing screen that cannot be built is a screen nobody '
-              'sees, not a teardown nobody runs',
-        );
-      },
-    );
+      expect(
+        tester.takeException(),
+        isA<StateError>(),
+        reason: 'the failure is still reported',
+      );
+      expect(
+        isClosed,
+        isTrue,
+        reason:
+            'a closing screen that cannot be built is a screen nobody '
+            'sees, not a teardown nobody runs',
+      );
+    });
 
     // The failure the guard around the closing build cannot see: a screen that
     // is built without complaint and throws while it is being mounted. What
@@ -289,30 +293,29 @@ void main() {
     // sufficient: the `ScreenshotReplacer` that releases the barrier is never
     // mounted, and a scope closed in place stays mounted, so the `dispose()`
     // fallback never runs either.
-    testWidgets(
-      'control: a plain close() mounts the ScreenshotReplacer',
-      (tester) async {
-        await tester.pumpWidget(_app(const _CloseScope(init: _becomesReady)));
-        await tester.pumpAndSettle();
-        expect(find.text('ready'), findsOneWidget);
+    testWidgets('control: a plain close() mounts the ScreenshotReplacer', (
+      tester,
+    ) async {
+      await tester.pumpWidget(_app(const _CloseScope(init: _becomesReady)));
+      await tester.pumpAndSettle();
+      expect(find.text('ready'), findsOneWidget);
 
-        final element = _scopeOf(tester);
+      final element = _scopeOf(tester);
 
-        var isClosed = false;
-        unawaited(element.close().whenComplete(() => isClosed = true));
+      var isClosed = false;
+      unawaited(element.close().whenComplete(() => isClosed = true));
 
-        await tester.pump();
+      await tester.pump();
 
-        expect(
-          find.byType(ScreenshotReplacer),
-          findsOneWidget,
-          reason: 'the probe must be able to see the barrier being installed',
-        );
+      expect(
+        find.byType(ScreenshotReplacer),
+        findsOneWidget,
+        reason: 'the probe must be able to see the barrier being installed',
+      );
 
-        await settle(tester, until: () => isClosed);
-        expect(isClosed, isTrue);
-      },
-    );
+      await settle(tester, until: () => isClosed);
+      expect(isClosed, isTrue);
+    });
 
     testWidgets(
       'completes when a pending notifyDependents() would skip the subtree '
@@ -336,7 +339,8 @@ void main() {
         expect(
           isClosed,
           isTrue,
-          reason: 'close() must not wait for a ScreenshotReplacer that the '
+          reason:
+              'close() must not wait for a ScreenshotReplacer that the '
               'notify-only rebuild kept from ever being mounted',
         );
       },
@@ -350,8 +354,9 @@ void main() {
         await tester.pumpAndSettle();
         expect(find.text('ready'), findsOneWidget);
 
-        final element =
-            tester.element<_CloseScopeElement>(find.byType(_CloseScope));
+        final element = tester.element<_CloseScopeElement>(
+          find.byType(_CloseScope),
+        );
 
         var isClosed = false;
         unawaited(element.close().whenComplete(() => isClosed = true));
@@ -367,52 +372,53 @@ void main() {
         expect(
           isClosed,
           isTrue,
-          reason: 'a scope removed from the tree while closing must not keep '
+          reason:
+              'a scope removed from the tree while closing must not keep '
               'close() waiting for a screenshot that can no longer be taken',
         );
       },
     );
 
-    testWidgets(
-      'completes both futures when close() is called twice',
-      (tester) async {
-        await tester.pumpWidget(_app(const _CloseScope(init: _becomesReady)));
-        await tester.pumpAndSettle();
-        expect(find.text('ready'), findsOneWidget);
+    testWidgets('completes both futures when close() is called twice', (
+      tester,
+    ) async {
+      await tester.pumpWidget(_app(const _CloseScope(init: _becomesReady)));
+      await tester.pumpAndSettle();
+      expect(find.text('ready'), findsOneWidget);
 
-        final element =
-            tester.element<_CloseScopeElement>(find.byType(_CloseScope));
+      final element = tester.element<_CloseScopeElement>(
+        find.byType(_CloseScope),
+      );
 
-        var isFirstClosed = false;
-        var isSecondClosed = false;
-        unawaited(element.close().whenComplete(() => isFirstClosed = true));
+      var isFirstClosed = false;
+      var isSecondClosed = false;
+      unawaited(element.close().whenComplete(() => isFirstClosed = true));
 
-        // Build the closing frame *without* drawing it, so the
-        // `ScreenshotReplacer` that is going to release the barrier is mounted
-        // while its capture is still pending: drawing the frame here would run
-        // the capture to completion before the second `close()` arrives.
-        tester.binding.buildOwner!.buildScope(tester.binding.rootElement!);
-        expect(find.byType(ScreenshotReplacer), findsOneWidget);
+      // Build the closing frame *without* drawing it, so the
+      // `ScreenshotReplacer` that is going to release the barrier is mounted
+      // while its capture is still pending: drawing the frame here would run
+      // the capture to completion before the second `close()` arrives.
+      tester.binding.buildOwner!.buildScope(tester.binding.rootElement!);
+      expect(find.byType(ScreenshotReplacer), findsOneWidget);
 
-        // A second `close()` must not swap the barrier out from under the
-        // first one: the barrier the first `close()` is waiting for is the one
-        // the replacer releases.
-        unawaited(element.close().whenComplete(() => isSecondClosed = true));
+      // A second `close()` must not swap the barrier out from under the
+      // first one: the barrier the first `close()` is waiting for is the one
+      // the replacer releases.
+      unawaited(element.close().whenComplete(() => isSecondClosed = true));
 
-        await settle(tester, until: () => isFirstClosed && isSecondClosed);
+      await settle(tester, until: () => isFirstClosed && isSecondClosed);
 
-        expect(
-          isFirstClosed,
-          isTrue,
-          reason: 'the first close() must not be orphaned by the second one',
-        );
-        expect(
-          isSecondClosed,
-          isTrue,
-          reason: 'the second close() must join the first one',
-        );
-      },
-    );
+      expect(
+        isFirstClosed,
+        isTrue,
+        reason: 'the first close() must not be orphaned by the second one',
+      );
+      expect(
+        isSecondClosed,
+        isTrue,
+        reason: 'the second close() must join the first one',
+      );
+    });
 
     // L16 of the sixth review. Whether a teardown has a caller waiting for it
     // was read off `_isDisposing`, and the lite layer raises that only once
@@ -463,67 +469,69 @@ void main() {
         expect(
           reported,
           isEmpty,
-          reason: 'and nobody reports it a second time on its behalf: the '
+          reason:
+              'and nobody reports it a second time on its behalf: the '
               'report is for a walk with no caller, and this one has one',
         );
       },
     );
 
-    testWidgets(
-      'hands the same disposal failure to every close() caller',
-      (tester) async {
-        await tester.pumpWidget(
-          _app(const _CloseScope(init: _becomesReady, failStateDispose: true)),
-        );
-        await tester.pumpAndSettle();
-        expect(find.text('ready'), findsOneWidget);
+    testWidgets('hands the same disposal failure to every close() caller', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        _app(const _CloseScope(init: _becomesReady, failStateDispose: true)),
+      );
+      await tester.pumpAndSettle();
+      expect(find.text('ready'), findsOneWidget);
 
-        final element =
-            tester.element<_CloseScopeElement>(find.byType(_CloseScope));
+      final element = tester.element<_CloseScopeElement>(
+        find.byType(_CloseScope),
+      );
 
-        Object? firstError;
-        Object? secondError;
-        var isFirstSettled = false;
-        var isSecondSettled = false;
+      Object? firstError;
+      Object? secondError;
+      var isFirstSettled = false;
+      var isSecondSettled = false;
 
-        // The first caller starts the disposal; the second one, issued before
-        // the first can settle, joins the very same run.
-        unawaited(
-          element.close().then(
-            (_) => isFirstSettled = true,
-            onError: (Object error) {
-              firstError = error;
-              isFirstSettled = true;
-            },
-          ),
-        );
-        unawaited(
-          element.close().then(
-            (_) => isSecondSettled = true,
-            onError: (Object error) {
-              secondError = error;
-              isSecondSettled = true;
-            },
-          ),
-        );
+      // The first caller starts the disposal; the second one, issued before
+      // the first can settle, joins the very same run.
+      unawaited(
+        element.close().then(
+          (_) => isFirstSettled = true,
+          onError: (Object error) {
+            firstError = error;
+            isFirstSettled = true;
+          },
+        ),
+      );
+      unawaited(
+        element.close().then(
+          (_) => isSecondSettled = true,
+          onError: (Object error) {
+            secondError = error;
+            isSecondSettled = true;
+          },
+        ),
+      );
 
-        await settle(tester, until: () => isFirstSettled && isSecondSettled);
+      await settle(tester, until: () => isFirstSettled && isSecondSettled);
 
-        expect(isFirstSettled, isTrue, reason: 'both calls must settle');
-        expect(isSecondSettled, isTrue, reason: 'both calls must settle');
-        expect(
-          firstError,
-          isA<StateError>(),
-          reason: 'the caller that started the disposal sees it fail',
-        );
-        expect(
-          secondError,
-          same(firstError),
-          reason: 'a caller that joined the run in flight must be told the '
-              'same thing, not that the disposal succeeded',
-        );
-      },
-    );
+      expect(isFirstSettled, isTrue, reason: 'both calls must settle');
+      expect(isSecondSettled, isTrue, reason: 'both calls must settle');
+      expect(
+        firstError,
+        isA<StateError>(),
+        reason: 'the caller that started the disposal sees it fail',
+      );
+      expect(
+        secondError,
+        same(firstError),
+        reason:
+            'a caller that joined the run in flight must be told the '
+            'same thing, not that the disposal succeeded',
+      );
+    });
 
     testWidgets(
       'completes in the ready state even when the screenshot can never '
@@ -548,7 +556,8 @@ void main() {
         expect(
           isClosed,
           isTrue,
-          reason: 'the capture must give up after a bounded number of retries '
+          reason:
+              'the capture must give up after a bounded number of retries '
               'instead of keeping close() waiting forever',
         );
         expect(find.byType(RawImage, skipOffstage: false), findsNothing);
@@ -599,7 +608,8 @@ void main() {
         expect(
           outer.childrenCount,
           0,
-          reason: 'the subtree went away, so the scope under it finished its '
+          reason:
+              'the subtree went away, so the scope under it finished its '
               'own teardown and unregistered',
         );
       },
@@ -689,8 +699,9 @@ void main() {
         );
         binding.buildOwner!.buildScope(binding.rootElement!);
 
-        final coordinator = tester.element(find.byType(AsyncScopeCoordinator))
-            as AsyncScopeParent;
+        final coordinator =
+            tester.element(find.byType(AsyncScopeCoordinator))
+                as AsyncScopeParent;
         final element = _scopeOf(tester);
 
         var isClosed = false;
@@ -712,7 +723,8 @@ void main() {
         expect(
           coordinator.childrenCount,
           0,
-          reason: 'a scope that has finished disposing of itself must not '
+          reason:
+              'a scope that has finished disposing of itself must not '
               'register a fresh entry with its parent',
         );
 
@@ -727,7 +739,8 @@ void main() {
         expect(
           waited,
           isTrue,
-          reason: 'nothing would ever complete an orphaned entry, so the wait '
+          reason:
+              'nothing would ever complete an orphaned entry, so the wait '
               'could only end by giving up on a scope that is already gone',
         );
         expect(tester.takeException(), isNull);
@@ -741,62 +754,64 @@ void main() {
     // never cleared the field, so that re-registration reached for an entry
     // that was already gone -- an assert in debug, and a `Future already
     // completed` in release, where that assert is not there to stop it.
-    testWidgets(
-      'survives being moved with a GlobalKey after close()',
-      (tester) async {
-        final scopeKey = GlobalKey();
-        Widget build({required bool moved}) => Directionality(
-              textDirection: TextDirection.ltr,
-              child: AsyncScopeCoordinator(
-                child: Column(
-                  children: [
-                    if (!moved)
-                      SizedBox(
-                        child: _CloseScope(key: scopeKey, init: _neverEmits),
-                      ),
-                    if (moved)
-                      Center(
-                        child: _CloseScope(key: scopeKey, init: _neverEmits),
-                      ),
-                  ],
+    testWidgets('survives being moved with a GlobalKey after close()', (
+      tester,
+    ) async {
+      final scopeKey = GlobalKey();
+      Widget build({required bool moved}) => Directionality(
+        textDirection: TextDirection.ltr,
+        child: AsyncScopeCoordinator(
+          child: Column(
+            children: [
+              if (!moved)
+                SizedBox(
+                  child: _CloseScope(key: scopeKey, init: _neverEmits),
                 ),
-              ),
-            );
+              if (moved)
+                Center(
+                  child: _CloseScope(key: scopeKey, init: _neverEmits),
+                ),
+            ],
+          ),
+        ),
+      );
 
-        await tester.pumpWidget(build(moved: false));
-        await tester.pumpAndSettle();
+      await tester.pumpWidget(build(moved: false));
+      await tester.pumpAndSettle();
 
-        final coordinator = tester.element(find.byType(AsyncScopeCoordinator))
-            as AsyncScopeParent;
-        expect(coordinator.childrenCount, 1);
+      final coordinator =
+          tester.element(find.byType(AsyncScopeCoordinator))
+              as AsyncScopeParent;
+      expect(coordinator.childrenCount, 1);
 
-        final element = _scopeOf(tester);
-        var isClosed = false;
-        unawaited(element.close().whenComplete(() => isClosed = true));
-        await settle(tester, until: () => isClosed);
+      final element = _scopeOf(tester);
+      var isClosed = false;
+      unawaited(element.close().whenComplete(() => isClosed = true));
+      await settle(tester, until: () => isClosed);
 
-        expect(isClosed, isTrue);
-        expect(coordinator.childrenCount, 0);
+      expect(isClosed, isTrue);
+      expect(coordinator.childrenCount, 0);
 
-        // The closed scope is moved under a different parent widget: its
-        // element is retaken by the `GlobalKey` instead of being unmounted,
-        // so `activate()` runs on an element whose disposal is over.
-        await tester.pumpWidget(build(moved: true));
+      // The closed scope is moved under a different parent widget: its
+      // element is retaken by the `GlobalKey` instead of being unmounted,
+      // so `activate()` runs on an element whose disposal is over.
+      await tester.pumpWidget(build(moved: true));
 
-        expect(
-          tester.takeException(),
-          isNull,
-          reason: 'reactivating a closed scope must not reach for the parent '
-              'entry its disposal already unregistered',
-        );
-        expect(
-          coordinator.childrenCount,
-          0,
-          reason: 'a scope that is done disposing of itself must not register '
-              'with its new parent either -- nothing would complete the entry',
-        );
-      },
-    );
+      expect(
+        tester.takeException(),
+        isNull,
+        reason:
+            'reactivating a closed scope must not reach for the parent '
+            'entry its disposal already unregistered',
+      );
+      expect(
+        coordinator.childrenCount,
+        0,
+        reason:
+            'a scope that is done disposing of itself must not register '
+            'with its new parent either -- nothing would complete the entry',
+      );
+    });
 
     // `close()` keeps the element mounted on purpose -- so it can render a
     // closing screen, and so it can still be moved with a `GlobalKey` -- and a
@@ -817,22 +832,22 @@ void main() {
           // bounded constraints and cannot bury the report under a `Column`
           // overflow.
           Widget build({required bool moved}) => Directionality(
-                textDirection: TextDirection.ltr,
-                child: Column(
-                  children: [
-                    Expanded(
-                      child: AsyncScopeCoordinator(
-                        child: moved ? const SizedBox.shrink() : scope,
-                      ),
-                    ),
-                    Expanded(
-                      child: AsyncScopeCoordinator(
-                        child: moved ? scope : const SizedBox.shrink(),
-                      ),
-                    ),
-                  ],
+            textDirection: TextDirection.ltr,
+            child: Column(
+              children: [
+                Expanded(
+                  child: AsyncScopeCoordinator(
+                    child: moved ? const SizedBox.shrink() : scope,
+                  ),
                 ),
-              );
+                Expanded(
+                  child: AsyncScopeCoordinator(
+                    child: moved ? scope : const SizedBox.shrink(),
+                  ),
+                ),
+              ],
+            ),
+          );
 
           await tester.pumpWidget(build(moved: false));
           await tester.pumpAndSettle();
@@ -851,7 +866,8 @@ void main() {
           expect(
             tester.takeException(),
             isNull,
-            reason: 'a scope that has released its key holds nothing that '
+            reason:
+                'a scope that has released its key holds nothing that '
                 'could be left parked on the coordinator it came from',
           );
         },
@@ -861,11 +877,11 @@ void main() {
         'may be rebuilt with a different scopeKey once it has finished closing',
         (tester) async {
           Widget build(Object key) => Directionality(
-                textDirection: TextDirection.ltr,
-                child: AsyncScopeCoordinator(
-                  child: _CloseScope(init: _neverEmits, testKey: key),
-                ),
-              );
+            textDirection: TextDirection.ltr,
+            child: AsyncScopeCoordinator(
+              child: _CloseScope(init: _neverEmits, testKey: key),
+            ),
+          );
 
           await tester.pumpWidget(build('shared'));
           await tester.pumpAndSettle();
@@ -884,7 +900,8 @@ void main() {
           expect(
             tester.takeException(),
             isNull,
-            reason: 'the key it read is no longer holding anything, so there '
+            reason:
+                'the key it read is no longer holding anything, so there '
                 'is nothing left for a new one to contradict',
           );
         },
@@ -902,14 +919,14 @@ void main() {
           // it, which trips framework asserts of its own.
           final gate = Completer<void>();
           Widget build(Object key) => Directionality(
-                textDirection: TextDirection.ltr,
-                child: AsyncScopeCoordinator(
-                  child: _CloseScope(
-                    init: _neverEmitsUntilCancelled(gate),
-                    testKey: key,
-                  ),
-                ),
-              );
+            textDirection: TextDirection.ltr,
+            child: AsyncScopeCoordinator(
+              child: _CloseScope(
+                init: _neverEmitsUntilCancelled(gate),
+                testKey: key,
+              ),
+            ),
+          );
 
           await tester.pumpWidget(build('shared'));
           await tester.pumpAndSettle();
@@ -930,7 +947,8 @@ void main() {
           expect(
             exception,
             isA<FlutterError>(),
-            reason: 'the entry is still in the queue, so this is the real '
+            reason:
+                'the entry is still in the queue, so this is the real '
                 'violation and turning the check off on disposal would hide it',
           );
           expect(
@@ -957,64 +975,61 @@ void main() {
     // unsettled, so `close()` -- which reaches it through
     // `LiteScopeElementBase.disposeScope()` -- never came back.
     for (final (kind, isAsync) in [('synchronously', false), ('async', true)]) {
-      testWidgets(
-        'completes when the state initScope throws $kind',
-        (tester) async {
-          // The failure surfaces as an uncaught error of the zone the build
-          // ran in, exactly as for the scope-level initialization; a guarded
-          // child zone catches it before `flutter_test` ends the test on it.
-          // Nothing inside that zone may throw -- an assertion that fails
-          // there is swallowed by the zone's error handler and the test hangs
-          // instead of failing -- so every `expect` is made once it is gone.
-          final errors = <Object>[];
-          var isClosed = false;
-          late _CloseScopeElement element;
+      testWidgets('completes when the state initScope throws $kind', (
+        tester,
+      ) async {
+        // The failure surfaces as an uncaught error of the zone the build
+        // ran in, exactly as for the scope-level initialization; a guarded
+        // child zone catches it before `flutter_test` ends the test on it.
+        // Nothing inside that zone may throw -- an assertion that fails
+        // there is swallowed by the zone's error handler and the test hangs
+        // instead of failing -- so every `expect` is made once it is gone.
+        final errors = <Object>[];
+        var isClosed = false;
+        late _CloseScopeElement element;
 
-          await runZonedGuarded(
-            () async {
-              await tester.pumpWidget(
-                _app(
-                  _CloseScope(
-                    init: _becomesReady,
-                    failStateInit: true,
-                    failStateInitAsync: isAsync,
-                  ),
-                ),
-              );
-              element = _scopeOf(tester);
-              // The state only exists once the scope is ready: it is created
-              // by the widget `buildOnReady()` mounts.
-              await settle(tester, until: () => element.createdState != null);
+        await runZonedGuarded(() async {
+          await tester.pumpWidget(
+            _app(
+              _CloseScope(
+                init: _becomesReady,
+                failStateInit: true,
+                failStateInitAsync: isAsync,
+              ),
+            ),
+          );
+          element = _scopeOf(tester);
+          // The state only exists once the scope is ready: it is created
+          // by the widget `buildOnReady()` mounts.
+          await settle(tester, until: () => element.createdState != null);
 
-              unawaited(element.close().whenComplete(() => isClosed = true));
-              await settle(tester, until: () => isClosed);
-            },
-            (error, stackTrace) => errors.add(error),
-          );
+          unawaited(element.close().whenComplete(() => isClosed = true));
+          await settle(tester, until: () => isClosed);
+        }, (error, stackTrace) => errors.add(error));
 
-          expect(
-            element.createdState,
-            isNotNull,
-            reason: 'the state must have been created and initialized',
-          );
-          expect(
-            isClosed,
-            isTrue,
-            reason: 'close() must not wait for an initialization that failed',
-          );
-          expect(
-            element.createdState!.disposeStateAsyncCount,
-            1,
-            reason: 'the initializer ran, so the teardown runs too -- what '
-                'it took before it failed has no second owner to give it back',
-          );
-          expect(
-            errors.single,
-            isA<StateError>(),
-            reason: 'the failure is still reported, not swallowed',
-          );
-        },
-      );
+        expect(
+          element.createdState,
+          isNotNull,
+          reason: 'the state must have been created and initialized',
+        );
+        expect(
+          isClosed,
+          isTrue,
+          reason: 'close() must not wait for an initialization that failed',
+        );
+        expect(
+          element.createdState!.disposeStateAsyncCount,
+          1,
+          reason:
+              'the initializer ran, so the teardown runs too -- what '
+              'it took before it failed has no second owner to give it back',
+        );
+        expect(
+          errors.single,
+          isA<StateError>(),
+          reason: 'the failure is still reported, not swallowed',
+        );
+      });
 
       // The half of that the old promise had backwards. "The initialization
       // failed" is not "the initialization never happened": the initializer
@@ -1036,36 +1051,35 @@ void main() {
           var isClosed = false;
           late _CloseScopeElement element;
 
-          await runZonedGuarded(
-            () async {
-              await tester.pumpWidget(
-                _app(
-                  _CloseScope(
-                    init: _becomesReady,
-                    failStateInit: true,
-                    failStateInitAsync: isAsync,
-                  ),
+          await runZonedGuarded(() async {
+            await tester.pumpWidget(
+              _app(
+                _CloseScope(
+                  init: _becomesReady,
+                  failStateInit: true,
+                  failStateInitAsync: isAsync,
                 ),
-              );
-              element = _scopeOf(tester);
-              await settle(tester, until: () => element.createdState != null);
+              ),
+            );
+            element = _scopeOf(tester);
+            await settle(tester, until: () => element.createdState != null);
 
-              unawaited(element.close().whenComplete(() => isClosed = true));
-              await settle(tester, until: () => isClosed);
-            },
-            (error, stackTrace) => errors.add(error),
-          );
+            unawaited(element.close().whenComplete(() => isClosed = true));
+            await settle(tester, until: () => isClosed);
+          }, (error, stackTrace) => errors.add(error));
 
           expect(
             element.createdState!.acquired,
             isTrue,
-            reason: 'the initializer took something before it failed -- '
+            reason:
+                'the initializer took something before it failed -- '
                 'without that this test proves nothing',
           );
           expect(
             element.createdState!.released,
             isTrue,
-            reason: 'and it was given back: a teardown skipped here is a leak '
+            reason:
+                'and it was given back: a teardown skipped here is a leak '
                 'with no second owner to notice it',
           );
           expect(isClosed, isTrue);
@@ -1106,7 +1120,8 @@ void main() {
       expect(
         element.unmountCount,
         1,
-        reason: 'the synchronous half of the teardown runs whether the '
+        reason:
+            'the synchronous half of the teardown runs whether the '
             'initialization got anywhere or not, and `close()` is the only '
             'path that can show it: a scope taken off the tree has already '
             'been unmounted by the framework by the time the teardown starts',
@@ -1123,8 +1138,9 @@ void main() {
     // Only `close()` can show it. On a scope taken off the tree the framework
     // has run `unmountScope()` before the teardown even starts, so its first
     // stage is a no-op there and cannot fail at all.
-    testWidgets('reports the first failure of a teardown, not the last',
-        (tester) async {
+    testWidgets('reports the first failure of a teardown, not the last', (
+      tester,
+    ) async {
       final childGate = Completer<void>();
       addTearDown(() {
         if (!childGate.isCompleted) childGate.complete();
@@ -1141,10 +1157,7 @@ void main() {
             // expire: the scope below is held open by a teardown of its own
             // that never finishes, so it never unregisters.
             failOnWaitForChildrenTimeout: true,
-            body: _CloseScope(
-              init: _becomesReady,
-              disposeGate: childGate,
-            ),
+            body: _CloseScope(init: _becomesReady, disposeGate: childGate),
           ),
         ),
       );
@@ -1194,7 +1207,8 @@ void main() {
           'message',
           'state onUnmount failed',
         ),
-        reason: 'the caller of close() hears the first failure of the '
+        reason:
+            'the caller of close() hears the first failure of the '
             'teardown, which is what the four stages were written to promise',
       );
 
@@ -1208,7 +1222,8 @@ void main() {
             'onWaitForChildrenTimeout failed',
           ),
         ],
-        reason: 'the expiry of the wait is reported on its own, as it always '
+        reason:
+            'the expiry of the wait is reported on its own, as it always '
             'is, and the failure of the second stage goes the same way: the '
             'throw is taken by the first stage, so a report is the only way '
             'out it has left',
@@ -1231,8 +1246,9 @@ void main() {
     // `params` is the way to them. Anything that reads `widget` all the same --
     // a `State` mixin written for ordinary widgets -- deserves to be told why
     // rather than handed a bare `UnimplementedError`.
-    testWidgets('a scope state says it has no widget of its own',
-        (tester) async {
+    testWidgets('a scope state says it has no widget of its own', (
+      tester,
+    ) async {
       await tester.pumpWidget(_app(const _CloseScope(init: _becomesReady)));
       await tester.pumpAndSettle();
 
@@ -1256,8 +1272,9 @@ void main() {
 
     // once the state has been unmounted, and it finds the *nearest* scope of
     // that type, which is not necessarily this one.
-    testWidgets('close() on a state whose tree is gone is a no-op',
-        (tester) async {
+    testWidgets('close() on a state whose tree is gone is a no-op', (
+      tester,
+    ) async {
       await tester.pumpWidget(_app(const _CloseScope(init: _becomesReady)));
       await tester.pumpAndSettle();
 
@@ -1282,7 +1299,8 @@ void main() {
       expect(
         failure,
         isNull,
-        reason: 'the scope this state belongs to is a field, not something to '
+        reason:
+            'the scope this state belongs to is a field, not something to '
             'go looking for through a context that no longer exists',
       );
       expect(done, isTrue);
@@ -1294,104 +1312,49 @@ void main() {
     // names neither the scope nor the phase it is in -- and the `base` topic
     // promises that both ways a lookup can fail carry the type that was asked
     // for.
-    testWidgets('of() before the ready branch says which scope and which state',
-        (tester) async {
-      await tester.pumpWidget(_app(const _CloseScope(init: _neverEmits)));
-      await tester.pump();
+    testWidgets(
+      'of() before the ready branch says which scope and which state',
+      (tester) async {
+        await tester.pumpWidget(_app(const _CloseScope(init: _neverEmits)));
+        await tester.pump();
 
-      final element = _scopeOf(tester);
+        final element = _scopeOf(tester);
 
-      _CloseScopeState lookUp() =>
-          LiteScopeCore.of<_CloseScope, _CloseScopeElement, _CloseScopeState>(
-            element,
-          );
+        _CloseScopeState lookUp() =>
+            LiteScopeCore.of<_CloseScope, _CloseScopeElement, _CloseScopeState>(
+              element,
+            );
 
-      expect(
-        lookUp,
-        throwsA(
-          isA<StateError>()
-              .having(
-                (error) => error.message,
-                'names the scope',
-                contains('_CloseScope'),
-              )
-              .having(
-                (error) => error.message,
-                'names the state it is in',
-                contains('AsyncScopeWaiting'),
-              ),
-        ),
-      );
-    });
+        expect(
+          lookUp,
+          throwsA(
+            isA<StateError>()
+                .having(
+                  (error) => error.message,
+                  'names the scope',
+                  contains('_CloseScope'),
+                )
+                .having(
+                  (error) => error.message,
+                  'names the state it is in',
+                  contains('AsyncScopeWaiting'),
+                ),
+          ),
+        );
+      },
+    );
 
     testWidgets(
-        'a refused close() keeps the ready subtree on an ordinary rebuild',
-        (tester) async {
-      final closeNow = ValueNotifier(false);
-      addTearDown(closeNow.dispose);
-      late final _CloseScopeElement element;
-      Object? refusal;
+      'a refused close() keeps the ready subtree on an ordinary rebuild',
+      (tester) async {
+        final closeNow = ValueNotifier(false);
+        addTearDown(closeNow.dispose);
+        late final _CloseScopeElement element;
+        Object? refusal;
 
-      Widget app() => _app(
-            _CloseScope(
-              init: _becomesReady,
-              closingBody: const Text('closing'),
-              body: ListenableBuilder(
-                listenable: closeNow,
-                builder: (context, child) {
-                  if (closeNow.value) {
-                    element.close().onError((error, stackTrace) {
-                      refusal = error;
-                    });
-                  }
-
-                  return const SizedBox(
-                    width: 100,
-                    height: 100,
-                    child: Text('ready'),
-                  );
-                },
-              ),
-            ),
-          );
-
-      await tester.pumpWidget(app());
-      await tester.pumpAndSettle();
-      element = _scopeOf(tester);
-      final state = element.createdState!;
-      closeNow.value = true;
-      await tester.pump();
-      expect(refusal, isFlutterError);
-
-      closeNow.value = false;
-      await tester.pumpWidget(app());
-      await tester.pumpAndSettle();
-
-      try {
-        expect(find.text('ready'), findsOneWidget);
-        expect(find.text('closing'), findsNothing);
-        expect(state.disposeStateAsyncCount, 0);
-        expect(state.mounted, isTrue);
-        expect(element.createdState, same(state));
-      } finally {
-        await _teardown(tester);
-      }
-    });
-
-    testWidgets(
-        'a retry after a refused close() waits for the subtree before disposal',
-        (tester) async {
-      final closeNow = ValueNotifier(false);
-      addTearDown(closeNow.dispose);
-      final disposeGate = Completer<void>();
-      late final _CloseScopeElement element;
-      Object? refusal;
-
-      await tester.pumpWidget(
-        _app(
+        Widget app() => _app(
           _CloseScope(
             init: _becomesReady,
-            disposeGate: disposeGate,
             closingBody: const Text('closing'),
             body: ListenableBuilder(
               listenable: closeNow,
@@ -1410,40 +1373,99 @@ void main() {
               },
             ),
           ),
-        ),
-      );
-      await tester.pumpAndSettle();
-      element = _scopeOf(tester);
-      final state = element.createdState!;
-      closeNow.value = true;
-      await tester.pump();
-      expect(refusal, isFlutterError);
-      closeNow.value = false;
-      await tester.pump();
+        );
 
-      var closed = false;
-      unawaited(element.close().then((_) => closed = true));
-      // The retry must wait for a new frame to unmount the live subtree.
-      expect(state.mounted, isTrue);
-      expect(state.disposeStateAsyncCount, 0);
-      await settle(tester, until: () => state.disposeStateAsyncCount == 1);
+        await tester.pumpWidget(app());
+        await tester.pumpAndSettle();
+        element = _scopeOf(tester);
+        final state = element.createdState!;
+        closeNow.value = true;
+        await tester.pump();
+        expect(refusal, isFlutterError);
 
-      expect(state.mounted, isFalse);
-      expect(find.text('ready'), findsNothing);
-      expect(find.text('closing'), findsOneWidget);
-      expect(state.disposeStateAsyncCount, 1);
-      expect(closed, isFalse);
+        closeNow.value = false;
+        await tester.pumpWidget(app());
+        await tester.pumpAndSettle();
 
-      var joined = false;
-      unawaited(element.close().then((_) => joined = true));
-      disposeGate.complete();
-      await settle(tester, until: () => closed && joined);
-      expect(closed, isTrue);
-      expect(joined, isTrue);
-      await _teardown(tester);
-      expect(state.disposeStateAsyncCount, 1);
-      expect(element.disposeScopeCount, 1);
-    });
+        try {
+          expect(find.text('ready'), findsOneWidget);
+          expect(find.text('closing'), findsNothing);
+          expect(state.disposeStateAsyncCount, 0);
+          expect(state.mounted, isTrue);
+          expect(element.createdState, same(state));
+        } finally {
+          await _teardown(tester);
+        }
+      },
+    );
+
+    testWidgets(
+      'a retry after a refused close() waits for the subtree before disposal',
+      (tester) async {
+        final closeNow = ValueNotifier(false);
+        addTearDown(closeNow.dispose);
+        final disposeGate = Completer<void>();
+        late final _CloseScopeElement element;
+        Object? refusal;
+
+        await tester.pumpWidget(
+          _app(
+            _CloseScope(
+              init: _becomesReady,
+              disposeGate: disposeGate,
+              closingBody: const Text('closing'),
+              body: ListenableBuilder(
+                listenable: closeNow,
+                builder: (context, child) {
+                  if (closeNow.value) {
+                    element.close().onError((error, stackTrace) {
+                      refusal = error;
+                    });
+                  }
+
+                  return const SizedBox(
+                    width: 100,
+                    height: 100,
+                    child: Text('ready'),
+                  );
+                },
+              ),
+            ),
+          ),
+        );
+        await tester.pumpAndSettle();
+        element = _scopeOf(tester);
+        final state = element.createdState!;
+        closeNow.value = true;
+        await tester.pump();
+        expect(refusal, isFlutterError);
+        closeNow.value = false;
+        await tester.pump();
+
+        var closed = false;
+        unawaited(element.close().then((_) => closed = true));
+        // The retry must wait for a new frame to unmount the live subtree.
+        expect(state.mounted, isTrue);
+        expect(state.disposeStateAsyncCount, 0);
+        await settle(tester, until: () => state.disposeStateAsyncCount == 1);
+
+        expect(state.mounted, isFalse);
+        expect(find.text('ready'), findsNothing);
+        expect(find.text('closing'), findsOneWidget);
+        expect(state.disposeStateAsyncCount, 1);
+        expect(closed, isFalse);
+
+        var joined = false;
+        unawaited(element.close().then((_) => joined = true));
+        disposeGate.complete();
+        await settle(tester, until: () => closed && joined);
+        expect(closed, isTrue);
+        expect(joined, isTrue);
+        await _teardown(tester);
+        expect(state.disposeStateAsyncCount, 1);
+        expect(element.disposeScopeCount, 1);
+      },
+    );
 
     // M5 of the sixth review. `close()` from the build of a descendant is a
     // mistake of the caller's -- the framework refuses `markNeedsBuild()`
@@ -1454,8 +1476,9 @@ void main() {
     // no `disposeScope`, no cancellation of `initScope`, no
     // `disposeStateAsync`, no leaving of the `scopeKey` queue -- and the leak
     // tracker saw what that left behind.
-    testWidgets('a close() refused from a build does not poison the teardown',
-        (tester) async {
+    testWidgets('a close() refused from a build does not poison the teardown', (
+      tester,
+    ) async {
       final closeNow = ValueNotifier(false);
       addTearDown(closeNow.dispose);
 
@@ -1494,7 +1517,8 @@ void main() {
       expect(
         refusal,
         isNotNull,
-        reason: 'the caller is told about its own mistake, and that much was '
+        reason:
+            'the caller is told about its own mistake, and that much was '
             'never in question',
       );
 
@@ -1504,7 +1528,8 @@ void main() {
       expect(
         element.disposeScopeCount,
         1,
-        reason: 'the scope leaving the tree runs its teardown all the same: '
+        reason:
+            'the scope leaving the tree runs its teardown all the same: '
             'what failed above happened before the teardown had begun, so it '
             'is not the answer every later caller gets',
       );
@@ -1516,8 +1541,9 @@ void main() {
     // allows it. Probed and working is not pinned, and this is the path a
     // caller actually retries on: the refusal came from their own build, so
     // the obvious next move is to call again from outside it.
-    testWidgets('a close() that follows a refused one runs the teardown once',
-        (tester) async {
+    testWidgets('a close() that follows a refused one runs the teardown once', (
+      tester,
+    ) async {
       final closeNow = ValueNotifier(false);
       addTearDown(closeNow.dispose);
 
@@ -1563,7 +1589,8 @@ void main() {
       expect(
         element.disposeScopeCount,
         1,
-        reason: 'the refusal was not sealed into the memo every later caller '
+        reason:
+            'the refusal was not sealed into the memo every later caller '
             'joins: this one ran the teardown, and ran it whole',
       );
 
@@ -1573,7 +1600,8 @@ void main() {
       expect(
         element.disposeScopeCount,
         1,
-        reason: 'and the tree coming down after a close that finished does '
+        reason:
+            'and the tree coming down after a close that finished does '
             'not run it a second time',
       );
     });
@@ -1585,35 +1613,38 @@ void main() {
   // framework answers is `'_lifecycleState != _ElementLifecycle.defunct' is
   // not true`, which names neither the scope nor what was done to it; the
   // deferred half of the same method has always simply dropped it.
-  testWidgets('a notification that arrives after the scope is gone is dropped',
-      (tester) async {
-    await tester.pumpWidget(
-      const Directionality(
-        textDirection: TextDirection.ltr,
-        child: _HalvesScope(child: _HalvesReader()),
-      ),
-    );
-    await tester.pumpAndSettle();
+  testWidgets(
+    'a notification that arrives after the scope is gone is dropped',
+    (tester) async {
+      await tester.pumpWidget(
+        const Directionality(
+          textDirection: TextDirection.ltr,
+          child: _HalvesScope(child: _HalvesReader()),
+        ),
+      );
+      await tester.pumpAndSettle();
 
-    final state = _HalvesScope.of(tester.element(find.byType(_HalvesReader)));
+      final state = _HalvesScope.of(tester.element(find.byType(_HalvesReader)));
 
-    await tester.pumpWidget(
-      const Directionality(
-        textDirection: TextDirection.ltr,
-        child: SizedBox(width: 1, height: 1),
-      ),
-    );
-    await settle(tester, until: () => false);
+      await tester.pumpWidget(
+        const Directionality(
+          textDirection: TextDirection.ltr,
+          child: SizedBox(width: 1, height: 1),
+        ),
+      );
+      await settle(tester, until: () => false);
 
-    state.bumpWithNotify();
+      state.bumpWithNotify();
 
-    expect(
-      tester.takeException(),
-      isNull,
-      reason: 'a report with nobody to hear it is dropped, not raised -- the '
-          'rule this package follows everywhere else',
-    );
-  });
+      expect(
+        tester.takeException(),
+        isNull,
+        reason:
+            'a report with nobody to hear it is dropped, not raised -- the '
+            'rule this package follows everywhere else',
+      );
+    },
+  );
 
   // L18 of the sixth review. `null` from `buildOnWaiting` means "show the
   // initializing branch instead", and the default of that branch refuses with
@@ -1673,7 +1704,8 @@ void main() {
         expect(
           initCount,
           0,
-          reason: 'the probe must observe the window: `initScope()` cannot '
+          reason:
+              'the probe must observe the window: `initScope()` cannot '
               'have been called before the key was granted',
         );
 
@@ -1712,7 +1744,8 @@ void main() {
         expect(
           initCount,
           0,
-          reason: 'a scope that is going away must not subscribe to its own '
+          reason:
+              'a scope that is going away must not subscribe to its own '
               'initialization once the key finally arrives',
         );
         expect(
@@ -1736,8 +1769,9 @@ void main() {
   // ordinary `State` -- and the README now says so, which is why it is pinned
   // here rather than left to be re-derived.
   group('notifyDependents and setState are separate halves', () {
-    testWidgets('notifyDependents reaches the subscribers, not the own build',
-        (tester) async {
+    testWidgets('notifyDependents reaches the subscribers, not the own build', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         const Directionality(
           textDirection: TextDirection.ltr,
@@ -1748,22 +1782,25 @@ void main() {
 
       expect(_shown(tester), 'own 0 | reader 0');
 
-      _HalvesScope.of(tester.element(find.byType(_HalvesReader)))
-          .bumpWithNotify();
+      _HalvesScope.of(
+        tester.element(find.byType(_HalvesReader)),
+      ).bumpWithNotify();
       await tester.pumpAndSettle();
 
       expect(
         _shown(tester),
         'own 0 | reader 1',
-        reason: "the subscriber saw the new value and the state's own build "
+        reason:
+            "the subscriber saw the new value and the state's own build "
             'did not run, so what it draws from the same field is stale',
       );
 
       await _teardown(tester);
     });
 
-    testWidgets('setState reaches the own build, not the subscribers',
-        (tester) async {
+    testWidgets('setState reaches the own build, not the subscribers', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         const Directionality(
           textDirection: TextDirection.ltr,
@@ -1772,14 +1809,16 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      _HalvesScope.of(tester.element(find.byType(_HalvesReader)))
-          .bumpWithSetState();
+      _HalvesScope.of(
+        tester.element(find.byType(_HalvesReader)),
+      ).bumpWithSetState();
       await tester.pumpAndSettle();
 
       expect(
         _shown(tester),
         'own 1 | reader 0',
-        reason: 'setState is untouched by the package and does what it does '
+        reason:
+            'setState is untouched by the package and does what it does '
             'on any State -- and a subscriber is not part of that',
       );
 
@@ -1882,7 +1921,8 @@ void main() {
         expect(
           captured,
           isNotNull,
-          reason: 'the screenshot is taken whatever the caller does with the '
+          reason:
+              'the screenshot is taken whatever the caller does with the '
               'news of it',
         );
         expect(tester.takeException(), isA<StateError>());
@@ -1929,7 +1969,8 @@ void main() {
         expect(
           find.byType(RawImage, skipOffstage: false),
           findsNothing,
-          reason: 'nothing was captured, which is why the report is left to '
+          reason:
+              'nothing was captured, which is why the report is left to '
               'disposal',
         );
 
@@ -1985,7 +2026,8 @@ void main() {
           expect(
             completedCount,
             0,
-            reason: 'retry $i of ${ScreenshotReplacer.maxRetries} must not '
+            reason:
+                'retry $i of ${ScreenshotReplacer.maxRetries} must not '
                 'report completion',
           );
         }
@@ -2020,7 +2062,8 @@ void main() {
         expect(
           find.byKey(const ValueKey('captured'), skipOffstage: false),
           findsNothing,
-          reason: 'and the child is gone with the picture that could not be '
+          reason:
+              'and the child is gone with the picture that could not be '
               'taken of it: what waits on the report waits in order to let go '
               'of what the child holds',
         );
@@ -2056,10 +2099,10 @@ final class _ResourceState
 
   @override
   Widget build(BuildContext context) => _ResourceChild(
-        resource: resource,
-        onDispose: () => events.add('child.dispose'),
-        useResourceOnDispose: useResourceOnDispose,
-      );
+    resource: resource,
+    onDispose: () => events.add('child.dispose'),
+    useResourceOnDispose: useResourceOnDispose,
+  );
 
   @override
   void disposeStateAsync() {
@@ -2110,10 +2153,8 @@ class _ResourceChildState extends State<_ResourceChild> {
 }
 
 /// The scope element currently in the tree, offstage or not.
-_CloseScopeElement _scopeOf(WidgetTester tester) =>
-    tester.element<_CloseScopeElement>(
-      find.byType(_CloseScope, skipOffstage: false),
-    );
+_CloseScopeElement _scopeOf(WidgetTester tester) => tester
+    .element<_CloseScopeElement>(find.byType(_CloseScope, skipOffstage: false));
 
 /// the budget runs out.
 ///
@@ -2165,12 +2206,11 @@ Future<void> _neverEmits(ScopeInitContext ctx) =>
 /// and still holding its `AccessEntry`.
 Future<void> Function(ScopeInitContext) _neverEmitsUntilCancelled(
   Completer<void> gate,
-) =>
-    (ctx) async {
-      // Not through `ctx.abandonable`: the body has to be still running when
-      // the cancellation arrives, and to end only once the gate lets it.
-      await gate.future;
-    };
+) => (ctx) async {
+  // Not through `ctx.abandonable`: the body has to be still running when
+  // the cancellation arrives, and to end only once the gate lets it.
+  await gate.future;
+};
 
 /// Moves the scope into [AsyncScopeProgress] and keeps it there.
 Future<void> _emitsProgressOnly(ScopeInitContext ctx) {
@@ -2282,8 +2322,13 @@ final class _CloseScope
   _CloseScopeElement createScopeElement() => _CloseScopeElement(this);
 }
 
-final class _CloseScopeElement extends LiteScopeElementBase<_CloseScope,
-    _CloseScopeElement, _CloseScopeState> {
+final class _CloseScopeElement
+    extends
+        LiteScopeElementBase<
+          _CloseScope,
+          _CloseScopeElement,
+          _CloseScopeState
+        > {
   /// How many times [disposeScope] ran, to prove that a disposal racing the
   /// ready state still releases what `initScope()` acquired.
   int disposeScopeCount = 0;
@@ -2364,19 +2409,16 @@ final class _CloseScopeElement extends LiteScopeElementBase<_CloseScope,
       _branch(const Text('initializing'));
 
   @override
-  Widget buildOnError(
-    Object error,
-    StackTrace stackTrace,
-    Object? progress,
-  ) =>
+  Widget buildOnError(Object error, StackTrace stackTrace, Object? progress) =>
       _branch(const Text('error'));
 
   @override
   _CloseScopeState createState() => createdState = _CloseScopeState();
 }
 
-final class _CloseScopeState extends LiteScopeCoreState<_CloseScope,
-    _CloseScopeElement, _CloseScopeState> {
+final class _CloseScopeState
+    extends
+        LiteScopeCoreState<_CloseScope, _CloseScopeElement, _CloseScopeState> {
   /// How many times [disposeStateAsync] ran, to prove that a state whose
   /// initialization failed is not disposed of.
   int disposeStateAsyncCount = 0;
@@ -2495,23 +2537,20 @@ final class _HalvesScopeState
   }
 
   @override
-  Widget build(BuildContext context) => Column(
-        children: [
-          Text('own $counter'),
-          params.child,
-        ],
-      );
+  Widget build(BuildContext context) =>
+      Column(children: [Text('own $counter'), params.child]);
 }
 
 final class _HalvesReader extends StatelessWidget {
   const _HalvesReader();
 
   @override
-  Widget build(BuildContext context) => Text(
-        'reader '
-        '${LiteScope.select<_HalvesScope, _HalvesScopeState, int>(
-          context,
-          (state) => state.counter,
-        )}',
-      );
+  Widget build(BuildContext context) {
+    final counter = LiteScope.select<_HalvesScope, _HalvesScopeState, int>(
+      context,
+      (state) => state.counter,
+    );
+
+    return Text('reader $counter');
+  }
 }

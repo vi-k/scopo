@@ -12,7 +12,7 @@ final class _ScopeDependencyImpl with ScopeDependencyMixin {
   ScopeDependencyHandle? _helper;
 
   _ScopeDependencyImpl(this.name, this._init)
-      : assert(name.isNotEmpty, 'The dependency name cannot be empty');
+    : assert(name.isNotEmpty, 'The dependency name cannot be empty');
 
   /// Whether this dependency is holding something that has to be given back.
   ///

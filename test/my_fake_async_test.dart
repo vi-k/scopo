@@ -23,7 +23,8 @@ void main() {
         expect(
           async.nonPeriodicTimerCount,
           0,
-          reason: 'a cancelled timer is not pending; the count is what '
+          reason:
+              'a cancelled timer is not pending; the count is what '
               'waitFuture reads to decide there is nothing left to run',
         );
         expect(async.pendingTimers, isEmpty);

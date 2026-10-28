@@ -51,26 +51,29 @@ void main() {
       expect(
         released,
         ['holder'],
-        reason: 'the disposer was registered before the failure, so whatever '
+        reason:
+            'the disposer was registered before the failure, so whatever '
             'it releases was already taken',
       );
     });
 
-    test('still releases it when the initializer fails asynchronously',
-        () async {
-      final released = <String>[];
-      final deps = _Deps(released, (dep) async {
-        dep.dispose = () async => released.add(dep.name);
-        await Future<void>.delayed(Duration.zero);
+    test(
+      'still releases it when the initializer fails asynchronously',
+      () async {
+        final released = <String>[];
+        final deps = _Deps(released, (dep) async {
+          dep.dispose = () async => released.add(dep.name);
+          await Future<void>.delayed(Duration.zero);
 
-        throw Exception('boom');
-      });
+          throw Exception('boom');
+        });
 
-      await _init(deps);
-      await deps.dispose();
+        await _init(deps);
+        await deps.dispose();
 
-      expect(released, ['holder']);
-    });
+        expect(released, ['holder']);
+      },
+    );
 
     test('releases nothing when the initializer took nothing', () async {
       final released = <String>[];
@@ -131,29 +134,32 @@ final class _Three extends ScopeAutoDependencies<_Three, void> {
 
   @override
   ScopeDependency buildDependencies(void context) => sequential('', [
-        dep('a', _init('a')),
-        dep('b', _init('b')),
-        dep('c', _init('c')),
-      ]);
+    dep('a', _init('a')),
+    dep('b', _init('b')),
+    dep('c', _init('c')),
+  ]);
 }
 
 void _sequentialDisposalGroup() {
   group('a disposer that throws', () {
-    test('does not keep the dependencies below it from being released',
-        () async {
-      final released = <String>[];
-      final deps = _Three(released, failOnDispose: {'b'});
+    test(
+      'does not keep the dependencies below it from being released',
+      () async {
+        final released = <String>[];
+        final deps = _Three(released, failOnDispose: {'b'});
 
-      await runScopeInit((ctx) => deps.init(null, ctx));
-      await deps.dispose();
+        await runScopeInit((ctx) => deps.init(null, ctx));
+        await deps.dispose();
 
-      expect(
-        released,
-        ['c', 'b', 'a'],
-        reason: 'disposal runs in reverse order, and one failure is not a '
-            'reason to abandon whatever is left holding resources',
-      );
-    });
+        expect(
+          released,
+          ['c', 'b', 'a'],
+          reason:
+              'disposal runs in reverse order, and one failure is not a '
+              'reason to abandon whatever is left holding resources',
+        );
+      },
+    );
 
     test('is still reported', () async {
       final deps = _Three(<String>[], failOnDispose: {'b'});
@@ -200,12 +206,9 @@ final class _Nested extends ScopeAutoDependencies<_Nested, void> {
 
   @override
   ScopeDependency buildDependencies(void context) => concurrent('', [
-        sequential('branch', [
-          dep('a', _init('a')),
-          dep('b', _init('b')),
-        ]),
-        dep('x', _init('x')),
-      ]);
+    sequential('branch', [dep('a', _init('a')), dep('b', _init('b'))]),
+    dep('x', _init('x')),
+  ]);
 }
 
 void _concurrentDisposalGroup() {
@@ -220,7 +223,8 @@ void _concurrentDisposalGroup() {
       expect(
         released,
         containsAll(['x', 'b', 'a']),
-        reason: 'a failure in one arm of a concurrent group is no reason to '
+        reason:
+            'a failure in one arm of a concurrent group is no reason to '
             'cancel the others, which are still holding resources of their '
             'own -- and nothing comes back for them: the walk marks itself '
             'done either way',
@@ -228,7 +232,8 @@ void _concurrentDisposalGroup() {
       expect(
         released.indexOf('b') < released.indexOf('a'),
         isTrue,
-        reason: 'the branch finished its own reverse walk rather than '
+        reason:
+            'the branch finished its own reverse walk rather than '
             'stopping wherever the cancellation found it',
       );
     });
@@ -258,10 +263,10 @@ final class _FailingDispose
 
   @override
   ScopeDependency buildDependencies(void context) => sequential('', [
-        dep('holder', (dep) {
-          dep.dispose = () => throw Exception('holder refuses to let go');
-        }),
-      ]);
+    dep('holder', (dep) {
+      dep.dispose = () => throw Exception('holder refuses to let go');
+    }),
+  ]);
 }
 
 void _diagnosticsGroup() {
@@ -282,7 +287,8 @@ void _diagnosticsGroup() {
       expect(
         stackTrace,
         isNot(StackTrace.empty),
-        reason: 'this is the trace that reaches `buildOnError`, and a crash '
+        reason:
+            'this is the trace that reaches `buildOnError`, and a crash '
             'reporter given an empty one has nothing to work from -- the '
             'original is inside the exception, but nothing says so',
       );
@@ -301,7 +307,8 @@ void _diagnosticsGroup() {
       expect(
         reported.map((error) => '$error'),
         contains(contains('refuses to let go')),
-        reason: 'the container never re-throws what its disposal failed with, '
+        reason:
+            'the container never re-throws what its disposal failed with, '
             'so a report is the only way out; the log it used to go to alone '
             'is off by default',
       );
@@ -333,25 +340,25 @@ void _diagnosticsGroup() {
   group('a second disposal', () {
     for (final (label, build, path)
         in <(String, ScopeDependency Function(ScopeDependency), String)>[
-      ('leaf', (leaf) => leaf, 'db'),
-      (
-        'named group',
-        (leaf) => ScopeDependency.sequential('app', [leaf]),
-        'app/db',
-      ),
-      (
-        'anonymous group',
-        (leaf) => ScopeDependency.concurrent('', [leaf]),
-        'db',
-      ),
-      (
-        'nested named group',
-        (leaf) => ScopeDependency.sequential('app', [
+          ('leaf', (leaf) => leaf, 'db'),
+          (
+            'named group',
+            (leaf) => ScopeDependency.sequential('app', [leaf]),
+            'app/db',
+          ),
+          (
+            'anonymous group',
+            (leaf) => ScopeDependency.concurrent('', [leaf]),
+            'db',
+          ),
+          (
+            'nested named group',
+            (leaf) => ScopeDependency.sequential('app', [
               ScopeDependency.concurrent('storage', [leaf]),
             ]),
-        'app/storage/db',
-      ),
-    ]) {
+            'app/storage/db',
+          ),
+        ]) {
       test('receives the same wrapped failure for the $label', () async {
         final started = Completer<void>();
         final parked = Completer<void>();
@@ -431,15 +438,14 @@ void _diagnosticsGroup() {
       });
       await pumpEventQueue();
 
-      expect(
-        log,
-        ['b started'],
-        reason: 'a is below b and is released after it, never beside it',
-      );
+      expect(log, [
+        'b started',
+      ], reason: 'a is below b and is released after it, never beside it');
       expect(
         secondFinished,
         isFalse,
-        reason: 'a caller told the disposal is over while it is still running '
+        reason:
+            'a caller told the disposal is over while it is still running '
             'goes on to use what it thinks it has given back',
       );
 

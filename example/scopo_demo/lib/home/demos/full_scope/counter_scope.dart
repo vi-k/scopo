@@ -11,10 +11,7 @@ final class CounterController with ChangeNotifier {
   final Object debugSource;
   final String debugName;
 
-  CounterController({
-    required this.debugSource,
-    required this.debugName,
-  });
+  CounterController({required this.debugSource, required this.debugName});
 
   int? _count;
   int get count => _count ?? (throw StateError('Not initialized'));
@@ -48,10 +45,7 @@ final class CounterDependencies
 
   late final CounterController counterController;
 
-  CounterDependencies({
-    required this.debugSource,
-    required this.debugName,
-  });
+  CounterDependencies({required this.debugSource, required this.debugName});
 
   @override
   Future<void> dispose() async {
@@ -105,9 +99,9 @@ final class CounterScope
     required this.debugSource,
     required this.debugName,
   }) : super(
-          tag: debugName,
-          pauseAfterInitialization: const Duration(milliseconds: 1000),
-        );
+         tag: debugName,
+         pauseAfterInitialization: const Duration(milliseconds: 1000),
+       );
 
   static CounterScope paramsOf(BuildContext context) =>
       Scope.paramsOf<CounterScope, CounterDependencies, CounterState>(
@@ -118,23 +112,26 @@ final class CounterScope
   static V selectParam<V>(
     BuildContext context,
     V Function(CounterScope widget) selector,
-  ) =>
-      Scope.selectParam<CounterScope, CounterDependencies, CounterState, V>(
-        context,
-        selector,
-      );
+  ) => Scope.selectParam<CounterScope, CounterDependencies, CounterState, V>(
+    context,
+    selector,
+  );
 
-  static String? titleOf(BuildContext context) => Scope.selectParam<
-          CounterScope, CounterDependencies, CounterState, String?>(
-        context,
-        (widget) => widget.title,
-      );
+  static String? titleOf(BuildContext context) =>
+      Scope.selectParam<
+        CounterScope,
+        CounterDependencies,
+        CounterState,
+        String?
+      >(context, (widget) => widget.title);
 
-  static Widget? childOf(BuildContext context) => Scope.selectParam<
-          CounterScope, CounterDependencies, CounterState, Widget?>(
-        context,
-        (widget) => widget.childScope,
-      );
+  static Widget? childOf(BuildContext context) =>
+      Scope.selectParam<
+        CounterScope,
+        CounterDependencies,
+        CounterState,
+        Widget?
+      >(context, (widget) => widget.childScope);
 
   static CounterState of(BuildContext context) =>
       Scope.of<CounterScope, CounterDependencies, CounterState>(context);
@@ -142,11 +139,10 @@ final class CounterScope
   static V select<V>(
     BuildContext context,
     V Function(CounterState state) selector,
-  ) =>
-      Scope.select<CounterScope, CounterDependencies, CounterState, V>(
-        context,
-        selector,
-      );
+  ) => Scope.select<CounterScope, CounterDependencies, CounterState, V>(
+    context,
+    selector,
+  );
 
   static bool isInitializedOf(BuildContext context) =>
       Scope.select<CounterScope, CounterDependencies, CounterState, bool>(
@@ -190,9 +186,7 @@ final class CounterScope
     StackTrace stackTrace,
     covariant ScopeAutoDependenciesProgress? progress,
   ) {
-    return Text(
-      'Error${progress == null ? '' : ' on step $progress'}: $error',
-    );
+    return Text('Error${progress == null ? '' : ' on step $progress'}: $error');
   }
 
   @override
@@ -228,8 +222,9 @@ final class CounterState
   Widget build(BuildContext context) {
     Widget body = Center(
       child: BlinkingBox(
-        blinkingColor:
-            Theme.of(context).colorScheme.primary.withValues(alpha: 0.2),
+        blinkingColor: Theme.of(
+          context,
+        ).colorScheme.primary.withValues(alpha: 0.2),
         child: const Column(
           mainAxisSize: MainAxisSize.min,
           children: [
@@ -255,10 +250,7 @@ final class CounterState
     if (CounterScope.titleOf(context) case final title?) {
       body = Column(
         mainAxisSize: MainAxisSize.min,
-        children: [
-          Text(title),
-          body,
-        ],
+        children: [Text(title), body],
       );
     }
 
@@ -277,8 +269,9 @@ class _CounterView extends StatelessWidget {
       builder: (context, controller, count, _) {
         return Center(
           child: BlinkingBox(
-            blinkingColor:
-                Theme.of(context).colorScheme.primary.withValues(alpha: 0.2),
+            blinkingColor: Theme.of(
+              context,
+            ).colorScheme.primary.withValues(alpha: 0.2),
             child: Text('$count'),
           ),
         );
@@ -292,8 +285,10 @@ class _IncrementAction extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isInitialized =
-        CounterScope.select(context, (state) => state.isInitialized);
+    final isInitialized = CounterScope.select(
+      context,
+      (state) => state.isInitialized,
+    );
     return IconButton(
       color: Theme.of(context).colorScheme.primary,
       onPressed: !isInitialized

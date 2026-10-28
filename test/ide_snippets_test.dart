@@ -28,17 +28,18 @@ void main() {
   test('both formats describe the same set of templates', () {
     final xml = templatesFile.readAsStringSync();
 
-    final prefixes =
-        snippets.values.map((s) => (s as Map)['prefix'] as String).toSet();
-    final names = RegExp('<template name="([^"]+)"')
-        .allMatches(xml)
-        .map((m) => m.group(1)!)
+    final prefixes = snippets.values
+        .map((s) => (s as Map)['prefix'] as String)
         .toSet();
+    final names = RegExp(
+      '<template name="([^"]+)"',
+    ).allMatches(xml).map((m) => m.group(1)!).toSet();
 
     expect(
       names,
       prefixes,
-      reason: 'a template added to one format and forgotten in the other is '
+      reason:
+          'a template added to one format and forgotten in the other is '
           'exactly what this pair of files is at risk of',
     );
   });
@@ -56,18 +57,21 @@ void main() {
       expect(
         comment.group(1),
         isNot(contains('--')),
-        reason: 'XML forbids `--` inside a comment, and an editor that meets '
+        reason:
+            'XML forbids `--` inside a comment, and an editor that meets '
             'one drops the whole file',
       );
     }
 
     final ampersands = RegExp('&').allMatches(xml).length;
-    final entities =
-        RegExp(r'&(#\d+|#x[0-9a-fA-F]+|amp|lt|gt|quot|apos);').allMatches(xml);
+    final entities = RegExp(
+      r'&(#\d+|#x[0-9a-fA-F]+|amp|lt|gt|quot|apos);',
+    ).allMatches(xml);
     expect(
       ampersands - entities.length,
       0,
-      reason: 'a bare `&` is not XML either; every one of them has to open an '
+      reason:
+          'a bare `&` is not XML either; every one of them has to open an '
           'entity',
     );
   });
@@ -89,25 +93,27 @@ void main() {
 
     const genericTemplates = {'scopo-access'};
 
-    final blocks =
-        RegExp(r'<template name="([^"]+)"[\s\S]*?</template>').allMatches(xml);
+    final blocks = RegExp(
+      r'<template name="([^"]+)"[\s\S]*?</template>',
+    ).allMatches(xml);
 
     expect(blocks.length, 11, reason: 'eleven templates, one context each');
 
     for (final block in blocks) {
       final name = block.group(1)!;
-      final contexts = RegExp('<option name="(DART[A-Z_]*)"')
-          .allMatches(block.group(0)!)
-          .map((m) => m.group(1)!)
-          .toList();
+      final contexts = RegExp(
+        '<option name="(DART[A-Z_]*)"',
+      ).allMatches(block.group(0)!).map((m) => m.group(1)!).toList();
 
-      final expected =
-          genericTemplates.contains(name) ? 'DART' : 'DART_TOPLEVEL';
+      final expected = genericTemplates.contains(name)
+          ? 'DART'
+          : 'DART_TOPLEVEL';
 
       expect(
         contexts,
         [expected],
-        reason: '`$name` is offered in the wrong place: a class skeleton on '
+        reason:
+            '`$name` is offered in the wrong place: a class skeleton on '
             '`DART` turns up inside method bodies, and the accessor line on '
             'anything narrower does not turn up in a class body at all',
       );
@@ -126,13 +132,15 @@ void main() {
     expect(
       local.existsSync(),
       isTrue,
-      reason: 'the working copy of the snippets is missing; restore it with '
+      reason:
+          'the working copy of the snippets is missing; restore it with '
           '`cp ide/scopo.code-snippets .vscode/`',
     );
     expect(
       local.readAsStringSync(),
       shipped.readAsStringSync(),
-      reason: 'the snippets were edited on one side only — copy '
+      reason:
+          'the snippets were edited on one side only — copy '
           '`ide/scopo.code-snippets` over `.vscode/scopo.code-snippets`',
     );
   });
@@ -143,13 +151,15 @@ void main() {
     expect(
       xml,
       isNot(contains(r'\$')),
-      reason: r'`\$` is the VS Code escape; IntelliJ takes it literally and '
+      reason:
+          r'`\$` is the VS Code escape; IntelliJ takes it literally and '
           'would paste a backslash into the code',
     );
     expect(
       xml,
       contains(r'$$error'),
-      reason: 'the interpolation of the error branch survives as a literal '
+      reason:
+          'the interpolation of the error branch survives as a literal '
           'dollar rather than becoming a template variable',
     );
   });
@@ -173,14 +183,15 @@ void main() {
         final options = match.group(1)!.split(',');
         final wanted =
             'enum(${options.map((o) => '&quot;$o&quot;').join(',')})';
-        final block = RegExp('<template name="$prefix"[\\s\\S]*?</template>')
-            .firstMatch(xml)!
-            .group(0)!;
+        final block = RegExp(
+          '<template name="$prefix"[\\s\\S]*?</template>',
+        ).firstMatch(xml)!.group(0)!;
 
         expect(
           block,
           contains(wanted),
-          reason: '`$prefix` offers a list in VS Code and nothing in IntelliJ; '
+          reason:
+              '`$prefix` offers a list in VS Code and nothing in IntelliJ; '
               'the same list belongs there as $wanted',
         );
         checked++;
@@ -190,7 +201,8 @@ void main() {
     expect(
       checked,
       1,
-      reason: 'one stop offers a list today — the accessor class of '
+      reason:
+          'one stop offers a list today — the accessor class of '
           '`scopo-access`; a test that found none would pass for the wrong '
           'reason',
     );
@@ -203,9 +215,10 @@ void main() {
     //
     // Compared with the whitespace squeezed out of both sides. The generated
     // files are formatted by `dart format` like everything else in the suite,
-    // and the formatter is entitled to move a line break or drop the trailing
-    // space a `$0` leaves behind — neither of which changes what the editor
-    // pastes.
+    // and the formatter is entitled to move a line break, drop the trailing
+    // space a `$0` leaves behind, or — in the tall style of Dart 3.7 and up —
+    // drop the trailing comma of a list it joins onto one line. None of these
+    // changes what the editor pastes.
     for (final entry in snippets.values) {
       final snippet = entry as Map;
       final prefix = snippet['prefix'] as String;
@@ -222,13 +235,15 @@ void main() {
       expect(
         file.existsSync(),
         isTrue,
-        reason: 'a snippet was added without a skeleton to compile it: '
+        reason:
+            'a snippet was added without a skeleton to compile it: '
             'expected ${file.path}',
       );
       expect(
         _squeezed(file.readAsStringSync()),
         contains(_squeezed(_skeletonOf(snippet))),
-        reason: 'the snippet `$prefix` was changed without regenerating '
+        reason:
+            'the snippet `$prefix` was changed without regenerating '
             '${file.path}, so nothing compiles what the editor now pastes',
       );
     }
@@ -241,16 +256,17 @@ void main() {
   // check here passed -- the set of prefixes was unchanged, the XML was
   // valid, and this snippet is skipped by the skeleton comparison above.
   test('every type the access snippet offers is a class in the package', () {
-    final snippet = snippets.values
-        .cast<Map<dynamic, dynamic>>()
-        .firstWhere((s) => s['prefix'] == 'scopo-access');
+    final snippet = snippets.values.cast<Map<dynamic, dynamic>>().firstWhere(
+      (s) => s['prefix'] == 'scopo-access',
+    );
     final body = (snippet['body'] as List).cast<String>().join('\n');
     final choice = RegExp(r'\$\{\d+\|([^}|]*)\|\}').firstMatch(body);
 
     expect(
       choice,
       isNotNull,
-      reason: 'the snippet no longer offers a choice of types; if that is '
+      reason:
+          'the snippet no longer offers a choice of types; if that is '
           'deliberate, this test is what has to change with it',
     );
 
@@ -268,7 +284,8 @@ void main() {
       expect(
         sources,
         contains(RegExp('class $name<')),
-        reason: 'the access snippet offers `$name`, and the package has no '
+        reason:
+            'the access snippet offers `$name`, and the package has no '
             'such class any more',
       );
     }
@@ -304,8 +321,9 @@ void main() {
         (entry as Map)['prefix'] as String: entry,
     };
 
-    final templates =
-        RegExp(r'<template name="([^"]+)"[\s\S]*?</template>').allMatches(xml);
+    final templates = RegExp(
+      r'<template name="([^"]+)"[\s\S]*?</template>',
+    ).allMatches(xml);
     expect(templates, hasLength(byPrefix.length));
 
     for (final template in templates) {
@@ -317,7 +335,8 @@ void main() {
       expect(
         _squeezed(body),
         _squeezed(_skeletonOf(snippet!)),
-        reason: 'the live template `$name` and the snippet of the same name '
+        reason:
+            'the live template `$name` and the snippet of the same name '
             'no longer paste the same code; whichever was edited, the other '
             'was not',
       );
@@ -341,18 +360,20 @@ String _skeletonOf(Map<dynamic, dynamic> snippet) {
   return body.replaceAll(r'$0', '').replaceAll(r'\$', r'$');
 }
 
-/// The text with every run of whitespace removed, so that formatting cannot
-/// make two equal skeletons look different.
-String _squeezed(String text) => text.replaceAll(RegExp(r'\s+'), '');
+/// The text with every run of whitespace removed, and every trailing comma
+/// before a closing bracket, so that formatting cannot make two equal
+/// skeletons look different.
+String _squeezed(String text) =>
+    text.replaceAll(RegExp(r'\s+'), '').replaceAll(RegExp(r',(?=[)\]}])'), '');
 
 /// What an IntelliJ editor pastes: the XML unescaped, every variable replaced
 /// by its declared default, `$END$` dropped and `$$` read as one `$`.
 ///
 /// The mirror of [_skeletonOf], so that the two formats meet in one shape.
 String _intellijSkeletonOf(String template) {
-  final value = RegExp('<template name="[^"]+" value="([^"]*)"')
-      .firstMatch(template)!
-      .group(1)!;
+  final value = RegExp(
+    '<template name="[^"]+" value="([^"]*)"',
+  ).firstMatch(template)!.group(1)!;
 
   final defaults = <String, String>{
     for (final variable in RegExp(
@@ -396,17 +417,14 @@ String _defaultOf({required String expression, required String declared}) {
 }
 
 String _unescapeXml(String text) => text
-    .replaceAllMapped(
-      RegExp(r'&#(x[0-9a-fA-F]+|\d+);'),
-      (match) {
-        final digits = match.group(1)!;
-        final code = digits.startsWith('x')
-            ? int.parse(digits.substring(1), radix: 16)
-            : int.parse(digits);
+    .replaceAllMapped(RegExp(r'&#(x[0-9a-fA-F]+|\d+);'), (match) {
+      final digits = match.group(1)!;
+      final code = digits.startsWith('x')
+          ? int.parse(digits.substring(1), radix: 16)
+          : int.parse(digits);
 
-        return String.fromCharCode(code);
-      },
-    )
+      return String.fromCharCode(code);
+    })
     .replaceAll('&lt;', '<')
     .replaceAll('&gt;', '>')
     .replaceAll('&quot;', '"')

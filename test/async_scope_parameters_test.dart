@@ -71,19 +71,19 @@ void main() {
       tester,
     ) async {
       Widget build({required bool present}) => Directionality(
-            textDirection: TextDirection.ltr,
-            child: present
-                ? AsyncScope(
-                    pauseAfterInitialization: const Duration(seconds: 5),
-                    initScope: (context, ctx) async {},
-                    disposeScope: () {},
-                    progressBuilder: (context, progress) => const Text('init'),
-                    errorBuilder: (context, error, stackTrace, progress) =>
-                        Text('$error'),
-                    builder: (context) => const Text('ready'),
-                  )
-                : const SizedBox.shrink(),
-          );
+        textDirection: TextDirection.ltr,
+        child: present
+            ? AsyncScope(
+                pauseAfterInitialization: const Duration(seconds: 5),
+                initScope: (context, ctx) async {},
+                disposeScope: () {},
+                progressBuilder: (context, progress) => const Text('init'),
+                errorBuilder: (context, error, stackTrace, progress) =>
+                    Text('$error'),
+                builder: (context) => const Text('ready'),
+              )
+            : const SizedBox.shrink(),
+      );
 
       await tester.pumpWidget(build(present: true));
       await tester.pump();
@@ -107,31 +107,30 @@ void main() {
       var expired = false;
 
       Widget build({required bool present}) => Directionality(
-            textDirection: TextDirection.ltr,
-            child: AsyncScopeCoordinator(
-              child: present
-                  ? AsyncScope(
-                      scopeKey: 'k',
-                      scopeKeyTimeout: const Duration(days: 1),
-                      onScopeKeyTimeout: () {},
-                      initCancellationTimeout: const Duration(days: 1),
-                      onInitCancellationTimeout: () {},
-                      disposeScopeTimeout: const Duration(milliseconds: 50),
-                      onDisposeScopeTimeout: () => expired = true,
-                      waitForChildrenTimeout: const Duration(days: 1),
-                      onWaitForChildrenTimeout: () {},
-                      pauseAfterInitialization: const Duration(milliseconds: 1),
-                      initScope: (context, ctx) async {},
-                      disposeScope: () => hang.future,
-                      progressBuilder: (context, progress) =>
-                          const Text('init'),
-                      errorBuilder: (context, error, stackTrace, progress) =>
-                          Text('$error'),
-                      builder: (context) => const Text('ready'),
-                    )
-                  : const SizedBox.shrink(),
-            ),
-          );
+        textDirection: TextDirection.ltr,
+        child: AsyncScopeCoordinator(
+          child: present
+              ? AsyncScope(
+                  scopeKey: 'k',
+                  scopeKeyTimeout: const Duration(days: 1),
+                  onScopeKeyTimeout: () {},
+                  initCancellationTimeout: const Duration(days: 1),
+                  onInitCancellationTimeout: () {},
+                  disposeScopeTimeout: const Duration(milliseconds: 50),
+                  onDisposeScopeTimeout: () => expired = true,
+                  waitForChildrenTimeout: const Duration(days: 1),
+                  onWaitForChildrenTimeout: () {},
+                  pauseAfterInitialization: const Duration(milliseconds: 1),
+                  initScope: (context, ctx) async {},
+                  disposeScope: () => hang.future,
+                  progressBuilder: (context, progress) => const Text('init'),
+                  errorBuilder: (context, error, stackTrace, progress) =>
+                      Text('$error'),
+                  builder: (context) => const Text('ready'),
+                )
+              : const SizedBox.shrink(),
+        ),
+      );
 
       await tester.pumpWidget(build(present: true));
       await tester.pumpAndSettle();
@@ -194,31 +193,30 @@ void main() {
       var expired = false;
 
       Widget build({required bool present}) => Directionality(
-            textDirection: TextDirection.ltr,
-            child: AsyncScopeCoordinator(
-              child: present
-                  ? AsyncDataScope<String>(
-                      scopeKey: 'k',
-                      scopeKeyTimeout: const Duration(days: 1),
-                      onScopeKeyTimeout: () {},
-                      initCancellationTimeout: const Duration(days: 1),
-                      onInitCancellationTimeout: () {},
-                      disposeScopeTimeout: const Duration(milliseconds: 50),
-                      onDisposeScopeTimeout: () => expired = true,
-                      waitForChildrenTimeout: const Duration(days: 1),
-                      onWaitForChildrenTimeout: () {},
-                      pauseAfterInitialization: const Duration(milliseconds: 1),
-                      initData: (context, ctx) async => 'value',
-                      disposeData: (data) => hang.future,
-                      progressBuilder: (context, progress) =>
-                          const Text('init'),
-                      errorBuilder: (context, error, stackTrace, progress) =>
-                          Text('$error'),
-                      builder: (context, data) => Text('ready: $data'),
-                    )
-                  : const SizedBox.shrink(),
-            ),
-          );
+        textDirection: TextDirection.ltr,
+        child: AsyncScopeCoordinator(
+          child: present
+              ? AsyncDataScope<String>(
+                  scopeKey: 'k',
+                  scopeKeyTimeout: const Duration(days: 1),
+                  onScopeKeyTimeout: () {},
+                  initCancellationTimeout: const Duration(days: 1),
+                  onInitCancellationTimeout: () {},
+                  disposeScopeTimeout: const Duration(milliseconds: 50),
+                  onDisposeScopeTimeout: () => expired = true,
+                  waitForChildrenTimeout: const Duration(days: 1),
+                  onWaitForChildrenTimeout: () {},
+                  pauseAfterInitialization: const Duration(milliseconds: 1),
+                  initData: (context, ctx) async => 'value',
+                  disposeData: (data) => hang.future,
+                  progressBuilder: (context, progress) => const Text('init'),
+                  errorBuilder: (context, error, stackTrace, progress) =>
+                      Text('$error'),
+                  builder: (context, data) => Text('ready: $data'),
+                )
+              : const SizedBox.shrink(),
+        ),
+      );
 
       await tester.pumpWidget(build(present: true));
       await tester.pumpAndSettle();

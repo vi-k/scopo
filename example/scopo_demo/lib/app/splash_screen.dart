@@ -18,9 +18,7 @@ class SplashScreen extends StatelessWidget {
         style: const TextStyle(color: Colors.black),
         child: Padding(
           padding: const EdgeInsets.all(8),
-          child: Center(
-            child: Text(progress ?? ''),
-          ),
+          child: Center(child: Text(progress ?? '')),
         ),
       ),
     );

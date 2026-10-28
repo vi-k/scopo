@@ -30,22 +30,22 @@ final class CounterScope
       );
 
   Widget build(BuildContext context) => Center(
-        child: BlinkingBox(
-          blinkingColor: Theme.of(
-            context,
-          ).colorScheme.primary.withValues(alpha: 0.2),
-          child: Column(
+    child: BlinkingBox(
+      blinkingColor: Theme.of(
+        context,
+      ).colorScheme.primary.withValues(alpha: 0.2),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text('$ScopeWidgetCoreExample'),
+          const Row(
             mainAxisSize: MainAxisSize.min,
-            children: [
-              Text('$ScopeWidgetCoreExample'),
-              const Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [_CounterView(), _IncrementAction()],
-              ),
-            ],
+            children: [_CounterView(), _IncrementAction()],
           ),
-        ),
-      );
+        ],
+      ),
+    ),
+  );
 
   @override
   CounterScopeElement createScopeElement() => CounterScopeElement(this);
@@ -103,8 +103,8 @@ class _IncrementAction extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => IconButton(
-        color: Theme.of(context).colorScheme.primary,
-        onPressed: CounterScope.of(context).increment,
-        icon: const Icon(Icons.add_circle),
-      );
+    color: Theme.of(context).colorScheme.primary,
+    onPressed: CounterScope.of(context).increment,
+    icon: const Icon(Icons.add_circle),
+  );
 }

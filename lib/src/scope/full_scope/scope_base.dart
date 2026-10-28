@@ -6,10 +6,8 @@ part of '../scope.dart';
 /// is no type argument for it here.
 ///
 /// {@category Scope}
-typedef ScopeInitCallback<D extends ScopeDependencies> = Future<D> Function(
-  BuildContext context,
-  ScopeInitContext ctx,
-);
+typedef ScopeInitCallback<D extends ScopeDependencies> =
+    Future<D> Function(BuildContext context, ScopeInitContext ctx);
 
 /// A builder function used to display a waiting widget while the [Scope] is
 /// waiting for a [Scope.scopeKey] and [Scope.initDependencies] to send their
@@ -24,21 +22,20 @@ typedef ScopeWaitingBuilder = Widget? Function(BuildContext context);
 /// Contains optional [progress] data reported during initialization.
 ///
 /// {@category Scope}
-typedef ScopeProgressBuilder<P extends Object> = Widget Function(
-  BuildContext context,
-  P? progress,
-);
+typedef ScopeProgressBuilder<P extends Object> =
+    Widget Function(BuildContext context, P? progress);
 
 /// A builder function used to display an error widget if scope initialization
 /// fails.
 ///
 /// {@category Scope}
-typedef ScopeErrorBuilder<P extends Object> = Widget Function(
-  BuildContext context,
-  Object error,
-  StackTrace stackTrace,
-  P? progress,
-);
+typedef ScopeErrorBuilder<P extends Object> =
+    Widget Function(
+      BuildContext context,
+      Object error,
+      StackTrace stackTrace,
+      P? progress,
+    );
 
 /// A base class for creating scopes with dependency injection and state
 /// management.
@@ -47,8 +44,11 @@ typedef ScopeErrorBuilder<P extends Object> = Widget Function(
 /// handling.
 ///
 /// {@category Scope}
-abstract base class Scope<W extends Scope<W, D, S>, D extends ScopeDependencies,
-        S extends ScopeState<W, D, S>>
+abstract base class Scope<
+  W extends Scope<W, D, S>,
+  D extends ScopeDependencies,
+  S extends ScopeState<W, D, S>
+>
     extends ScopeCore<W, _ScopeElement<W, D, S>, D, S> {
   /// A key used to synchronize the initialization of the scope.
   final Object? scopeKey;
@@ -168,28 +168,28 @@ abstract base class Scope<W extends Scope<W, D, S>, D extends ScopeDependencies,
   /// Looks up and returns the parameters of the scope [W].
   ///
   /// If [listen] is true, the widget will be rebuilt when the scope changes.
-  static W paramsOf<W extends Scope<W, D, S>, D extends ScopeDependencies,
-          S extends ScopeState<W, D, S>>(
-    BuildContext context, {
-    required bool listen,
-  }) =>
-      listen
-          ? ScopeContext.select<W, _ScopeElement<W, D, S>, W>(
-              context,
-              (element) => element.widget,
-            )
-          : ScopeContext.of<W, _ScopeElement<W, D, S>>(
-              context,
-              listen: false,
-            ).widget;
+  static W paramsOf<
+    W extends Scope<W, D, S>,
+    D extends ScopeDependencies,
+    S extends ScopeState<W, D, S>
+  >(BuildContext context, {required bool listen}) => listen
+      ? ScopeContext.select<W, _ScopeElement<W, D, S>, W>(
+          context,
+          (element) => element.widget,
+        )
+      : ScopeContext.of<W, _ScopeElement<W, D, S>>(
+          context,
+          listen: false,
+        ).widget;
 
   /// Selects and returns a specific parameter of the scope [W] using the
   /// [selector] and becomes **dependent** on it.
-  static V selectParam<W extends Scope<W, D, S>, D extends ScopeDependencies,
-          S extends ScopeState<W, D, S>, V extends Object?>(
-    BuildContext context,
-    V Function(W widget) selector,
-  ) =>
+  static V selectParam<
+    W extends Scope<W, D, S>,
+    D extends ScopeDependencies,
+    S extends ScopeState<W, D, S>,
+    V extends Object?
+  >(BuildContext context, V Function(W widget) selector) =>
       ScopeContext.select<W, _ScopeElement<W, D, S>, V>(
         context,
         (element) => selector(element.widget),
@@ -204,12 +204,14 @@ abstract base class Scope<W extends Scope<W, D, S>, D extends ScopeDependencies,
   /// still initializing, failed, or taken down by `close()` answers `null`
   /// exactly as an absent scope does. [of] tells the two apart; this does
   /// not.
-  static S? maybeOf<W extends Scope<W, D, S>, D extends ScopeDependencies,
-          S extends ScopeState<W, D, S>>(BuildContext context) =>
-      ScopeContext.maybeOf<W, _ScopeElement<W, D, S>>(
-        context,
-        listen: false,
-      )?._globalStateKey.currentState;
+  static S? maybeOf<
+    W extends Scope<W, D, S>,
+    D extends ScopeDependencies,
+    S extends ScopeState<W, D, S>
+  >(BuildContext context) => ScopeContext.maybeOf<W, _ScopeElement<W, D, S>>(
+    context,
+    listen: false,
+  )?._globalStateKey.currentState;
 
   /// Finds and returns the state [S] of the scope [W] from the given
   /// [context].
@@ -221,23 +223,26 @@ abstract base class Scope<W extends Scope<W, D, S>, D extends ScopeDependencies,
   /// The message says which of the two it was, and what state the scope was
   /// in — read it from below `buildOnReady()`, or check `isInitialized`
   /// first.
-  static S of<W extends Scope<W, D, S>, D extends ScopeDependencies,
-          S extends ScopeState<W, D, S>>(BuildContext context) =>
-      ScopeContext.of<W, _ScopeElement<W, D, S>>(
-        context,
-        listen: false,
-      )._stateOrThrow;
+  static S of<
+    W extends Scope<W, D, S>,
+    D extends ScopeDependencies,
+    S extends ScopeState<W, D, S>
+  >(BuildContext context) => ScopeContext.of<W, _ScopeElement<W, D, S>>(
+    context,
+    listen: false,
+  )._stateOrThrow;
 
   /// Selects and returns a specific value from the state [S] of the scope [W]
   /// using the [selector] and becomes **dependent** on it.
   ///
   /// Reaches the state through the same door as [of], and throws on the same
   /// two conditions.
-  static V select<W extends Scope<W, D, S>, D extends ScopeDependencies,
-          S extends ScopeState<W, D, S>, V extends Object?>(
-    BuildContext context,
-    V Function(S scope) selector,
-  ) =>
+  static V select<
+    W extends Scope<W, D, S>,
+    D extends ScopeDependencies,
+    S extends ScopeState<W, D, S>,
+    V extends Object?
+  >(BuildContext context, V Function(S scope) selector) =>
       ScopeContext.select<W, _ScopeElement<W, D, S>, V>(
         context,
         (element) => selector(element._stateOrThrow),
@@ -245,8 +250,11 @@ abstract base class Scope<W extends Scope<W, D, S>, D extends ScopeDependencies,
 }
 
 /// The default element underlying [Scope].
-final class _ScopeElement<W extends Scope<W, D, S>, D extends ScopeDependencies,
-        S extends ScopeState<W, D, S>>
+final class _ScopeElement<
+  W extends Scope<W, D, S>,
+  D extends ScopeDependencies,
+  S extends ScopeState<W, D, S>
+>
     extends ScopeElementBase<W, _ScopeElement<W, D, S>, D, S> {
   _ScopeElement(super.widget);
 
@@ -262,12 +270,13 @@ final class _ScopeElement<W extends Scope<W, D, S>, D extends ScopeDependencies,
     void Function()? initCancellation,
     void Function()? disposeScope,
     void Function()? waitForChildren,
-  }) get timeoutCallbacks => (
-        scopeKey: widget.onScopeKeyTimeout,
-        initCancellation: widget.onInitCancellationTimeout,
-        disposeScope: widget.onDisposeScopeTimeout,
-        waitForChildren: widget.onWaitForChildrenTimeout,
-      );
+  })
+  get timeoutCallbacks => (
+    scopeKey: widget.onScopeKeyTimeout,
+    initCancellation: widget.onInitCancellationTimeout,
+    disposeScope: widget.onDisposeScopeTimeout,
+    waitForChildren: widget.onWaitForChildrenTimeout,
+  );
 
   @override
   Duration? get initCancellationTimeout => widget.initCancellationTimeout;
@@ -293,11 +302,7 @@ final class _ScopeElement<W extends Scope<W, D, S>, D extends ScopeDependencies,
       widget.buildOnProgress(this, progress);
 
   @override
-  Widget buildOnError(
-    Object error,
-    StackTrace stackTrace,
-    Object? progress,
-  ) =>
+  Widget buildOnError(Object error, StackTrace stackTrace, Object? progress) =>
       widget.buildOnError(this, error, stackTrace, progress);
 
   @override
@@ -315,8 +320,11 @@ final class _ScopeElement<W extends Scope<W, D, S>, D extends ScopeDependencies,
 /// Extends [ScopeCoreState] to give convenient access to the [dependencies].
 ///
 /// {@category Scope}
-abstract base class ScopeState<W extends Scope<W, D, S>,
-        D extends ScopeDependencies, S extends ScopeState<W, D, S>>
+abstract base class ScopeState<
+  W extends Scope<W, D, S>,
+  D extends ScopeDependencies,
+  S extends ScopeState<W, D, S>
+>
     extends ScopeCoreState<W, _ScopeElement<W, D, S>, D, S> {
   //
   // Overriding block
@@ -381,8 +389,11 @@ abstract base class ScopeState<W extends Scope<W, D, S>,
 /// that wants accessors under different names still writes them.
 ///
 /// {@category Scope}
-final class ScopeAccess<W extends Scope<W, D, S>, D extends ScopeDependencies,
-    S extends ScopeState<W, D, S>> {
+final class ScopeAccess<
+  W extends Scope<W, D, S>,
+  D extends ScopeDependencies,
+  S extends ScopeState<W, D, S>
+> {
   /// Creates an accessor for the scope [W].
   const ScopeAccess();
 
@@ -400,8 +411,7 @@ final class ScopeAccess<W extends Scope<W, D, S>, D extends ScopeDependencies,
   V select<V extends Object?>(
     BuildContext context,
     V Function(S state) selector,
-  ) =>
-      Scope.select<W, D, S, V>(context, selector);
+  ) => Scope.select<W, D, S, V>(context, selector);
 
   /// Returns the parameters of the scope — the scope widget itself.
   W paramsOf(BuildContext context, {required bool listen}) =>
@@ -411,6 +421,5 @@ final class ScopeAccess<W extends Scope<W, D, S>, D extends ScopeDependencies,
   V selectParam<V extends Object?>(
     BuildContext context,
     V Function(W widget) selector,
-  ) =>
-      Scope.selectParam<W, D, S, V>(context, selector);
+  ) => Scope.selectParam<W, D, S, V>(context, selector);
 }

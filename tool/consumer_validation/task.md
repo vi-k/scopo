@@ -80,7 +80,7 @@ expired limit is reported is not. Write your own meaningful widget tests,
 covering the lifecycle as well as the visible screen. Finish with green fvm
 flutter analyze and fvm flutter test. Do not add dependencies beyond the
 provided scopo, Flutter/flutter_test and packages already present in the pub
-cache. Keep Flutter 3.27.0 selected with the provided .fvmrc and SDK symlink.
+cache. Keep Flutter 3.38.1 selected with the provided .fvmrc and SDK symlink.
 
 For temporary files, from your application root set TMPDIR to $PWD/.review-tmp
 and create that directory. If using mktemp, supply an explicit template beneath

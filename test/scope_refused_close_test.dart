@@ -5,8 +5,9 @@ import 'package:scopo/scopo.dart';
 import 'utils/settle.dart';
 
 void main() {
-  testWidgets('Scope retains the ready subtree after a refused close()',
-      (tester) async {
+  testWidgets('Scope retains the ready subtree after a refused close()', (
+    tester,
+  ) async {
     final closeNow = ValueNotifier(false);
     addTearDown(closeNow.dispose);
     final state = _RefusedCloseState();
@@ -14,27 +15,27 @@ void main() {
     Object? refusal;
 
     Widget app() => MaterialApp(
-          home: _RefusedCloseScope(
-            state,
-            dependencies,
-            ListenableBuilder(
-              listenable: closeNow,
-              builder: (context, child) {
-                if (closeNow.value) {
-                  state.close().onError((error, stackTrace) {
-                    refusal = error;
-                  });
-                }
+      home: _RefusedCloseScope(
+        state,
+        dependencies,
+        ListenableBuilder(
+          listenable: closeNow,
+          builder: (context, child) {
+            if (closeNow.value) {
+              state.close().onError((error, stackTrace) {
+                refusal = error;
+              });
+            }
 
-                return const SizedBox(
-                  width: 100,
-                  height: 100,
-                  child: Text('ready'),
-                );
-              },
-            ),
-          ),
-        );
+            return const SizedBox(
+              width: 100,
+              height: 100,
+              child: Text('ready'),
+            );
+          },
+        ),
+      ),
+    );
 
     await tester.pumpWidget(app());
     await tester.pumpAndSettle();
@@ -73,8 +74,7 @@ final class _RefusedCloseScope
   Future<_Dependencies> initDependencies(
     BuildContext context,
     ScopeInitContext ctx,
-  ) async =>
-      dependencies;
+  ) async => dependencies;
 
   @override
   _RefusedCloseState createState() => state;
@@ -89,8 +89,7 @@ final class _RefusedCloseScope
     Object error,
     StackTrace stackTrace,
     Object? progress,
-  ) =>
-      const Text('error');
+  ) => const Text('error');
 
   @override
   Widget? buildOnClosing(BuildContext context) => const Text('closing');

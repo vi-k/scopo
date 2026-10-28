@@ -81,7 +81,8 @@ void main() {
       expect(
         [firstCalls, secondCalls, thirdCalls],
         [0, 0, 0],
-        reason: 'one member that was already gone is no reason to leave the '
+        reason:
+            'one member that was already gone is no reason to leave the '
             'ones after it listening',
       );
     });
@@ -164,7 +165,8 @@ void main() {
             contains('`cancel()`'),
           ),
         ),
-        reason: 'adding to a composite that is over is a mistake in the '
+        reason:
+            'adding to a composite that is over is a mistake in the '
             'caller, and it says so -- naming `cancel()`, which is what ended '
             'the composite, rather than `add()`, which is the call being '
             'refused',
@@ -176,7 +178,8 @@ void main() {
       expect(
         calls,
         0,
-        reason: 'and the subscription it was handed was cancelled before it '
+        reason:
+            'and the subscription it was handed was cancelled before it '
             'complained, so nothing is left on the listenable',
       );
     });
@@ -224,16 +227,16 @@ void main() {
       final seen = <int>[];
       var refuse = true;
 
-      final subscription = notifier.select(
-        (model) => model.value,
-        (model, value) {
-          seen.add(value);
-          if (refuse) {
-            refuse = false;
-            throw StateError('the listener of the caller failed');
-          }
-        },
-      );
+      final subscription = notifier.select((model) => model.value, (
+        model,
+        value,
+      ) {
+        seen.add(value);
+        if (refuse) {
+          refuse = false;
+          throw StateError('the listener of the caller failed');
+        }
+      });
       addTearDown(subscription.cancel);
 
       // `ChangeNotifier.notifyListeners` catches what a listener throws and
@@ -258,7 +261,8 @@ void main() {
       expect(
         seen,
         [1, 1],
-        reason: 'the next notification carries the same selected value, and '
+        reason:
+            'the next notification carries the same selected value, and '
             'it is still a change as far as this subscription is concerned',
       );
       expect(subscription.value, 1, reason: 'received this time');
@@ -277,20 +281,20 @@ void main() {
       final seen = <int>[];
       var refuse = true;
 
-      final subscription = notifier.select(
-        (model) => model.value,
-        (model, value) {
-          seen.add(value);
-          if (refuse) {
-            refuse = false;
-            // Reentrant, and it goes all the way through: the nested delivery
-            // hands `2` over and comes back before this one fails.
-            model.value = 2;
+      final subscription = notifier.select((model) => model.value, (
+        model,
+        value,
+      ) {
+        seen.add(value);
+        if (refuse) {
+          refuse = false;
+          // Reentrant, and it goes all the way through: the nested delivery
+          // hands `2` over and comes back before this one fails.
+          model.value = 2;
 
-            throw StateError('the listener of the caller failed');
-          }
-        },
-      );
+          throw StateError('the listener of the caller failed');
+        }
+      });
       addTearDown(subscription.cancel);
 
       final reported = <Object>[];
@@ -306,7 +310,8 @@ void main() {
       expect(
         subscription.value,
         2,
-        reason: 'the failure of the outer delivery is no reason to take back '
+        reason:
+            'the failure of the outer delivery is no reason to take back '
             'the inner one, which the listener did receive -- and the model '
             'says 2, so a subscription saying anything else is behind it',
       );
@@ -324,16 +329,18 @@ void main() {
     // the listener never received, and the next notification carrying it
     // filtered out as already delivered. Counting the deliveries that came
     // back says "none of them", and the value goes to where it started.
-    test('two deliveries that both failed leave the value they started from',
-        () {
-      final notifier = _Model();
-      addTearDown(notifier.dispose);
-      final seen = <int>[];
-      final refused = <int>{};
+    test(
+      'two deliveries that both failed leave the value they started from',
+      () {
+        final notifier = _Model();
+        addTearDown(notifier.dispose);
+        final seen = <int>[];
+        final refused = <int>{};
 
-      final subscription = notifier.select(
-        (model) => model.value,
-        (model, value) {
+        final subscription = notifier.select((model) => model.value, (
+          model,
+          value,
+        ) {
           seen.add(value);
           if (refused.add(value)) {
             if (value == 1) {
@@ -344,38 +351,40 @@ void main() {
 
             throw StateError('the listener of the caller failed at $value');
           }
-        },
-      );
-      addTearDown(subscription.cancel);
+        });
+        addTearDown(subscription.cancel);
 
-      final reported = <Object>[];
-      final previous = FlutterError.onError;
-      FlutterError.onError = (details) => reported.add(details.exception);
+        final reported = <Object>[];
+        final previous = FlutterError.onError;
+        FlutterError.onError = (details) => reported.add(details.exception);
 
-      notifier.value = 1;
+        notifier.value = 1;
 
-      FlutterError.onError = previous;
+        FlutterError.onError = previous;
 
-      expect(seen, [1, 2], reason: 'both were attempted, in that order');
-      expect(reported, hasLength(2), reason: 'and both failed');
-      expect(
-        subscription.value,
-        0,
-        reason: 'neither of them got through, so neither value is this '
-            "subscription's -- and 1 least of all: the nested delivery put it "
-            'back on its way out, and nobody ever received it',
-      );
+        expect(seen, [1, 2], reason: 'both were attempted, in that order');
+        expect(reported, hasLength(2), reason: 'and both failed');
+        expect(
+          subscription.value,
+          0,
+          reason:
+              'neither of them got through, so neither value is this '
+              "subscription's -- and 1 least of all: the nested delivery put "
+              'it back on its way out, and nobody ever received it',
+        );
 
-      notifier.touch();
+        notifier.touch();
 
-      expect(
-        seen,
-        [1, 2, 2],
-        reason: 'the value the model has held all along is still a change as '
-            'far as this subscription is concerned',
-      );
-      expect(subscription.value, 2, reason: 'received this time');
-    });
+        expect(
+          seen,
+          [1, 2, 2],
+          reason:
+              'the value the model has held all along is still a change as '
+              'far as this subscription is concerned',
+        );
+        expect(subscription.value, 2, reason: 'received this time');
+      },
+    );
 
     // L1 of the Fable half of the post-wave review. The guard exists in
     // `select` and nothing held it: taken away, the whole suite stayed green,
@@ -402,7 +411,8 @@ void main() {
       expect(
         calls,
         0,
-        reason: 'the subscription was taken back before this reached it, and '
+        reason:
+            'the subscription was taken back before this reached it, and '
             'a listener called after that is not something to hand to the '
             'caller',
       );
@@ -457,7 +467,8 @@ void main() {
       expect(
         notifier.isListened,
         isFalse,
-        reason: 'the caller never got a subscription, so nothing else could '
+        reason:
+            'the caller never got a subscription, so nothing else could '
             'ever take the listener back',
       );
 
@@ -567,14 +578,13 @@ void main() {
       addTearDown(second.dispose);
 
       Widget build(_Model model) => Directionality(
-            textDirection: TextDirection.ltr,
-            child: ListenableSelector<_Model, int>(
-              listenable: model,
-              selector: (model) => model.value,
-              builder: (context, listenable, value, child) =>
-                  Text('value: $value'),
-            ),
-          );
+        textDirection: TextDirection.ltr,
+        child: ListenableSelector<_Model, int>(
+          listenable: model,
+          selector: (model) => model.value,
+          builder: (context, listenable, value, child) => Text('value: $value'),
+        ),
+      );
 
       await tester.pumpWidget(build(first));
       expect(find.text('value: 0'), findsOneWidget);
@@ -598,20 +608,20 @@ void main() {
     // The callbacks used to be replaced only together with the listenable, so
     // a parent that passed a new selector over the same source kept getting
     // the previous one.
-    testWidgets('follows a new selector on the same listenable',
-        (tester) async {
+    testWidgets('follows a new selector on the same listenable', (
+      tester,
+    ) async {
       final model = _Model()..value = 2;
       addTearDown(model.dispose);
 
       Widget build(int Function(_Model model) selector) => Directionality(
-            textDirection: TextDirection.ltr,
-            child: ListenableSelector<_Model, int>(
-              listenable: model,
-              selector: selector,
-              builder: (context, listenable, value, child) =>
-                  Text('value: $value'),
-            ),
-          );
+        textDirection: TextDirection.ltr,
+        child: ListenableSelector<_Model, int>(
+          listenable: model,
+          selector: selector,
+          builder: (context, listenable, value, child) => Text('value: $value'),
+        ),
+      );
 
       await tester.pumpWidget(build((model) => model.value));
       expect(find.text('value: 2'), findsOneWidget);
@@ -644,14 +654,14 @@ void main() {
         addTearDown(model.dispose);
 
         Widget build(int Function(_Model model) selector) => Directionality(
-              textDirection: TextDirection.ltr,
-              child: ListenableSelector<_Model, int>(
-                listenable: model,
-                selector: selector,
-                builder: (context, listenable, value, child) =>
-                    Text('value: $value'),
-              ),
-            );
+          textDirection: TextDirection.ltr,
+          child: ListenableSelector<_Model, int>(
+            listenable: model,
+            selector: selector,
+            builder: (context, listenable, value, child) =>
+                Text('value: $value'),
+          ),
+        );
 
         await tester.pumpWidget(build((model) => model.value));
         expect(find.text('value: 2'), findsOneWidget);
@@ -737,14 +747,14 @@ void main() {
         addTearDown(model.dispose);
 
         Widget build(int Function(_Model) selector) => Directionality(
-              textDirection: TextDirection.ltr,
-              child: ListenableSelector<_Model, int>(
-                listenable: model,
-                selector: selector,
-                builder: (context, listenable, value, child) =>
-                    const SizedBox.shrink(),
-              ),
-            );
+          textDirection: TextDirection.ltr,
+          child: ListenableSelector<_Model, int>(
+            listenable: model,
+            selector: selector,
+            builder: (context, listenable, value, child) =>
+                const SizedBox.shrink(),
+          ),
+        );
 
         await tester.pumpWidget(build((model) => model.value));
         expect(model.isListened, isTrue, reason: 'control: it is watching');
@@ -757,7 +767,8 @@ void main() {
         expect(
           model.isListened,
           isFalse,
-          reason: 'the old subscription went first, so a selector that cannot '
+          reason:
+              'the old subscription went first, so a selector that cannot '
               'answer leaves nobody behind on the source',
         );
       },
@@ -821,7 +832,8 @@ void main() {
       expect(
         _LateListeningState.calls,
         0,
-        reason: 'the state was already going when it asked, so there is no '
+        reason:
+            'the state was already going when it asked, so there is no '
             'notifier holding that listener and nothing to notify',
       );
     });
@@ -943,9 +955,9 @@ final class _NotifyingHost extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => const Directionality(
-        textDirection: TextDirection.ltr,
-        child: _Notifying(),
-      );
+    textDirection: TextDirection.ltr,
+    child: _Notifying(),
+  );
 }
 
 final class _Notifying extends StatefulWidget {
@@ -968,9 +980,9 @@ final class _LateListeningHost extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => const Directionality(
-        textDirection: TextDirection.ltr,
-        child: _LateListening(),
-      );
+    textDirection: TextDirection.ltr,
+    child: _LateListening(),
+  );
 }
 
 final class _LateListening extends StatefulWidget {

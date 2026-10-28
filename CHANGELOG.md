@@ -1,3 +1,14 @@
+## 0.21.0
+
+* **Breaking:** the floor is Dart 3.10.0 and Flutter 3.38.1, up from Dart
+  3.6.0 and Flutter 3.27.0, and `async_job` is ^0.6.0. That release of the
+  kernel changes no API: it raises its own floor to Dart 3.10.0, which this
+  package can only follow. Flutter 3.38.1 is the first release that carries a
+  stable Dart 3.10.0: the Dart of 3.38.0 is a prerelease, which `^3.10.0` does
+  not admit. The dev dependencies move to the versions that 3.38.1 pins:
+  `fake_async` ^1.3.3 and `leak_tracker_flutter_testing` ^3.0.10. The API of
+  `scopo` is unchanged.
+
 ## 0.20.0
 
 * **Breaking:** requires `async_job` ^0.5.0, whose `JobContext` gains

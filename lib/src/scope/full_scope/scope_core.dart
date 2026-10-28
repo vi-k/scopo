@@ -5,10 +5,12 @@ part of '../scope.dart';
 ///
 /// {@category Scope}
 abstract base class ScopeCore<
-    W extends ScopeCore<W, E, D, S>,
-    E extends ScopeElementBase<W, E, D, S>,
-    D extends ScopeDependencies,
-    S extends ScopeCoreState<W, E, D, S>> extends LiteScopeCore<W, E, S> {
+  W extends ScopeCore<W, E, D, S>,
+  E extends ScopeElementBase<W, E, D, S>,
+  D extends ScopeDependencies,
+  S extends ScopeCoreState<W, E, D, S>
+>
+    extends LiteScopeCore<W, E, S> {
   /// Creates the widget half of a scope.
   const ScopeCore({
     super.key,
@@ -20,34 +22,23 @@ abstract base class ScopeCore<
   ///
   /// If [listen] is true, the widget will be rebuilt when the scope changes.
   static W paramsOf<
-          W extends ScopeCore<W, E, D, S>,
-          E extends ScopeElementBase<W, E, D, S>,
-          D extends ScopeDependencies,
-          S extends ScopeCoreState<W, E, D, S>>(
-    BuildContext context, {
-    required bool listen,
-  }) =>
-      listen
-          ? ScopeContext.select<W, E, W>(
-              context,
-              (element) => element.widget,
-            )
-          : ScopeContext.of<W, E>(
-              context,
-              listen: false,
-            ).widget;
+    W extends ScopeCore<W, E, D, S>,
+    E extends ScopeElementBase<W, E, D, S>,
+    D extends ScopeDependencies,
+    S extends ScopeCoreState<W, E, D, S>
+  >(BuildContext context, {required bool listen}) => listen
+      ? ScopeContext.select<W, E, W>(context, (element) => element.widget)
+      : ScopeContext.of<W, E>(context, listen: false).widget;
 
   /// Selects and returns a specific parameter of the scope [W] using the
   /// [selector] and becomes **dependent** on it.
   static V selectParam<
-          W extends ScopeCore<W, E, D, S>,
-          E extends ScopeElementBase<W, E, D, S>,
-          D extends ScopeDependencies,
-          S extends ScopeCoreState<W, E, D, S>,
-          V extends Object?>(
-    BuildContext context,
-    V Function(W widget) selector,
-  ) =>
+    W extends ScopeCore<W, E, D, S>,
+    E extends ScopeElementBase<W, E, D, S>,
+    D extends ScopeDependencies,
+    S extends ScopeCoreState<W, E, D, S>,
+    V extends Object?
+  >(BuildContext context, V Function(W widget) selector) =>
       ScopeContext.select<W, E, V>(
         context,
         (element) => selector(element.widget),
@@ -63,14 +54,14 @@ abstract base class ScopeCore<
   /// exactly as an absent scope does. [of] tells the two apart; this does
   /// not.
   static S? maybeOf<
-          W extends ScopeCore<W, E, D, S>,
-          E extends ScopeElementBase<W, E, D, S>,
-          D extends ScopeDependencies,
-          S extends ScopeCoreState<W, E, D, S>>(BuildContext context) =>
-      ScopeContext.maybeOf<W, E>(
-        context,
-        listen: false,
-      )?._globalStateKey.currentState;
+    W extends ScopeCore<W, E, D, S>,
+    E extends ScopeElementBase<W, E, D, S>,
+    D extends ScopeDependencies,
+    S extends ScopeCoreState<W, E, D, S>
+  >(BuildContext context) => ScopeContext.maybeOf<W, E>(
+    context,
+    listen: false,
+  )?._globalStateKey.currentState;
 
   /// Finds and returns the state [S] of the scope [W] from the given
   /// [context].
@@ -83,14 +74,12 @@ abstract base class ScopeCore<
   /// in — read it from below `buildOnReady()`, or check `isInitialized`
   /// first.
   static S of<
-          W extends ScopeCore<W, E, D, S>,
-          E extends ScopeElementBase<W, E, D, S>,
-          D extends ScopeDependencies,
-          S extends ScopeCoreState<W, E, D, S>>(BuildContext context) =>
-      ScopeContext.of<W, E>(
-        context,
-        listen: false,
-      )._stateOrThrow;
+    W extends ScopeCore<W, E, D, S>,
+    E extends ScopeElementBase<W, E, D, S>,
+    D extends ScopeDependencies,
+    S extends ScopeCoreState<W, E, D, S>
+  >(BuildContext context) =>
+      ScopeContext.of<W, E>(context, listen: false)._stateOrThrow;
 
   /// Selects and returns a specific value from the state [S] of the scope [W]
   /// using the [selector] and becomes **dependent** on it.
@@ -98,14 +87,12 @@ abstract base class ScopeCore<
   /// Reaches the state through the same door as [of], and throws on the same
   /// two conditions.
   static V select<
-          W extends ScopeCore<W, E, D, S>,
-          E extends ScopeElementBase<W, E, D, S>,
-          D extends ScopeDependencies,
-          S extends ScopeCoreState<W, E, D, S>,
-          V extends Object?>(
-    BuildContext context,
-    V Function(S scope) selector,
-  ) =>
+    W extends ScopeCore<W, E, D, S>,
+    E extends ScopeElementBase<W, E, D, S>,
+    D extends ScopeDependencies,
+    S extends ScopeCoreState<W, E, D, S>,
+    V extends Object?
+  >(BuildContext context, V Function(S scope) selector) =>
       ScopeContext.select<W, E, V>(
         context,
         (element) => selector(element._stateOrThrow),
@@ -119,10 +106,11 @@ abstract base class ScopeCore<
 ///
 /// {@category Scope}
 abstract base class ScopeElementBase<
-        W extends ScopeCore<W, E, D, S>,
-        E extends ScopeElementBase<W, E, D, S>,
-        D extends ScopeDependencies,
-        S extends ScopeCoreState<W, E, D, S>>
+  W extends ScopeCore<W, E, D, S>,
+  E extends ScopeElementBase<W, E, D, S>,
+  D extends ScopeDependencies,
+  S extends ScopeCoreState<W, E, D, S>
+>
     extends LiteScopeElementBase<W, E, S> {
   /// Creates the element of a scope.
   ScopeElementBase(super.widget);
@@ -148,11 +136,7 @@ abstract base class ScopeElementBase<
 
   /// Builds a widget to display when an error occurs during initialization.
   @override
-  Widget buildOnError(
-    Object error,
-    StackTrace stackTrace,
-    Object? progress,
-  );
+  Widget buildOnError(Object error, StackTrace stackTrace, Object? progress);
 
   /// Creates the state for this scope.
   @override
@@ -385,10 +369,12 @@ abstract base class ScopeElementBase<
 ///
 /// {@category Scope}
 abstract base class ScopeCoreState<
-    W extends ScopeCore<W, E, D, S>,
-    E extends ScopeElementBase<W, E, D, S>,
-    D extends ScopeDependencies,
-    S extends ScopeCoreState<W, E, D, S>> extends LiteScopeCoreState<W, E, S> {
+  W extends ScopeCore<W, E, D, S>,
+  E extends ScopeElementBase<W, E, D, S>,
+  D extends ScopeDependencies,
+  S extends ScopeCoreState<W, E, D, S>
+>
+    extends LiteScopeCoreState<W, E, S> {
   /// The dependency container, ready before [initState] runs.
   D get dependencies => _scopeElement.dependencies;
 

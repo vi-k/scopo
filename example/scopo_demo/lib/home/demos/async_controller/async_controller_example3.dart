@@ -44,11 +44,11 @@ class _AsyncControllerExample3State extends State<AsyncControllerExample3> {
 
   @override
   Widget build(BuildContext context) => Center(
-        child: _showScope
-            ? ProfileScope(
-                debugSource: AsyncControllerExample3,
-                debugName: '3.$_num',
-              )
-            : const Text('The scope left in the middle of its init'),
-      );
+    child: _showScope
+        ? ProfileScope(
+            debugSource: AsyncControllerExample3,
+            debugName: '3.$_num',
+          )
+        : const Text('The scope left in the middle of its init'),
+  );
 }

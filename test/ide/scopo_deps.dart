@@ -45,10 +45,7 @@ final class AppDependencies implements ScopeDependencies {
   final Database database;
   final Session session;
 
-  const AppDependencies({
-    required this.database,
-    required this.session,
-  });
+  const AppDependencies({required this.database, required this.session});
 
   static Future<AppDependencies> init(
     BuildContext context,
@@ -70,10 +67,7 @@ final class AppDependencies implements ScopeDependencies {
       discard: (value) => value.close(),
     );
 
-    final dependencies = AppDependencies(
-      database: database,
-      session: session,
-    );
+    final dependencies = AppDependencies(database: database, session: session);
     // The scope releases the container, including a late return. Remove the
     // job's registrations here so cancellation cannot release it twice.
     // No await or checkpoint between this handover and the return.

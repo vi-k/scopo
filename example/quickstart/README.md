@@ -6,7 +6,7 @@ and readiness; **Recreate scope** replaces the widget while keeping the same
 resource's asynchronous release finishes before the new acquisition starts.
 Each delay is 300 ms, within the scope's default three-second waiting limits.
 
-From the repository root, using Flutter 3.27.0 through fvm:
+From the repository root, using Flutter 3.38.1 through fvm:
 
 ```sh
 cd example/quickstart

@@ -3,8 +3,9 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:quickstart/main.dart';
 
 void main() {
-  testWidgets('loads, becomes ready, and closes before acquiring again',
-      (tester) async {
+  testWidgets('loads, becomes ready, and closes before acquiring again', (
+    tester,
+  ) async {
     LocalResource.events.clear();
     await tester.pumpWidget(const QuickstartApp());
     await tester.pump();
@@ -31,10 +32,10 @@ void main() {
 
     await tester.pumpWidget(const MaterialApp(home: SizedBox.shrink()));
     await _advance(tester);
-    expect(
-      LocalResource.events.sublist(LocalResource.events.length - 2),
-      ['closing 2', 'closed 2'],
-    );
+    expect(LocalResource.events.sublist(LocalResource.events.length - 2), [
+      'closing 2',
+      'closed 2',
+    ]);
   });
 }
 

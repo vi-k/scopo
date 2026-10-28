@@ -37,14 +37,14 @@ final class _Deps extends ScopeAutoDependencies<_Deps, void> {
 
   @override
   ScopeDependency buildDependencies(void context) => sequential('', [
-        dep('a', _both),
-        dep('b', (dep) {
-          _both(dep);
-          if (failSecond) {
-            throw Exception('b failed to initialize');
-          }
-        }),
-      ]);
+    dep('a', _both),
+    dep('b', (dep) {
+      _both(dep);
+      if (failSecond) {
+        throw Exception('b failed to initialize');
+      }
+    }),
+  ]);
 }
 
 Future<void> _init(_Deps deps) async {
@@ -66,14 +66,16 @@ void _expectUnmountBeforeDispose(List<String> log) {
     expect(
       unmount,
       isNonNegative,
-      reason: '`$name` was disposed of without ever being unmounted, and the '
+      reason:
+          '`$name` was disposed of without ever being unmounted, and the '
           'dartdoc of `unmount` promises it runs whichever way the scope '
           'goes',
     );
     expect(
       unmount,
       lessThan(log.indexOf(entry)),
-      reason: 'the promise is not just that `unmount` runs, but that it runs '
+      reason:
+          'the promise is not just that `unmount` runs, but that it runs '
           '*before* `dispose`: what it lets go of must be gone before the '
           'disposer closes what it was writing into',
     );
@@ -93,7 +95,8 @@ void main() {
       expect(
         log,
         ['unmount b', 'unmount a', 'dispose b', 'dispose a'],
-        reason: 'both halves of one teardown go the same way, and that way is '
+        reason:
+            'both halves of one teardown go the same way, and that way is '
             'the reverse of the construction: `b` was built on top of `a`, so '
             '`b` has to stop reaching the world before `a` lets go of what it '
             'holds. A forward `unmount` left `repo` subscribed to a `bus` '
@@ -116,7 +119,8 @@ void main() {
       expect(
         log,
         contains('dispose a'),
-        reason: 'the disposer of the dependency that did initialize runs -- '
+        reason:
+            'the disposer of the dependency that did initialize runs -- '
             'this is the established behaviour the promise is measured '
             'against',
       );
@@ -145,7 +149,8 @@ void main() {
       expect(
         log.where((entry) => entry.startsWith('unmount')),
         ['unmount b', 'unmount a'],
-        reason: 'the hook lets go of something -- a subscription, a listener '
+        reason:
+            'the hook lets go of something -- a subscription, a listener '
             '-- and letting go of it twice is not the same as once',
       );
     });
@@ -163,7 +168,8 @@ void main() {
       expect(
         log,
         ['unmount lonely'],
-        reason: 'the disposal is what used to drop the helper, and a '
+        reason:
+            'the disposal is what used to drop the helper, and a '
             'dependency with no disposer keeps it: without a guard of its own '
             'the hook would run again on every later pass',
       );
@@ -179,10 +185,10 @@ final class _UnmountOnly extends ScopeAutoDependencies<_UnmountOnly, void> {
 
   @override
   ScopeDependency buildDependencies(void context) => dep('lonely', (helper) {
-        helper.unmount = () {
-          log.add('unmount lonely');
-        };
-      });
+    helper.unmount = () {
+      log.add('unmount lonely');
+    };
+  });
 }
 
 Future<void> _init2(_UnmountOnly deps) async {

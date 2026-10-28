@@ -42,14 +42,18 @@ void main() {
       expect(tester.takeException(), isNull);
     });
 
-    testWidgets('Controller Core calls disposeData once on $removal',
-        (tester) async {
+    testWidgets('Controller Core calls disposeData once on $removal', (
+      tester,
+    ) async {
       final controller = _Controller();
       final disposed = <_Controller>[];
       final key = GlobalKey();
       final hostState = _ClosingState();
-      final scope =
-          _ControllerCore(key: key, controller: controller, disposed: disposed);
+      final scope = _ControllerCore(
+        key: key,
+        controller: controller,
+        disposed: disposed,
+      );
 
       await tester.pumpWidget(
         close ? _ClosingHost(hostState, child: scope) : scope,
@@ -92,8 +96,9 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
-  testWidgets('Data Core disposes accepted data before the ready branch',
-      (tester) async {
+  testWidgets('Data Core disposes accepted data before the ready branch', (
+    tester,
+  ) async {
     final disposed = <String?>[];
     final key = GlobalKey();
 
@@ -117,60 +122,65 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
-  testWidgets('Controller Core disposes accepted data before the ready branch',
-      (tester) async {
-    final controller = _Controller();
-    final disposed = <_Controller>[];
-    final key = GlobalKey();
+  testWidgets(
+    'Controller Core disposes accepted data before the ready branch',
+    (tester) async {
+      final controller = _Controller();
+      final disposed = <_Controller>[];
+      final key = GlobalKey();
 
-    await tester.pumpWidget(
-      _ControllerCore(
-        key: key,
-        controller: controller,
-        disposed: disposed,
-        pause: const Duration(seconds: 1),
-      ),
-    );
-    await tester.pump();
-    final element = key.currentContext! as _ControllerElement;
-    expect(element.hasController, isTrue);
-    expect(element.state, isNot(isA<AsyncScopeReady>()));
+      await tester.pumpWidget(
+        _ControllerCore(
+          key: key,
+          controller: controller,
+          disposed: disposed,
+          pause: const Duration(seconds: 1),
+        ),
+      );
+      await tester.pump();
+      final element = key.currentContext! as _ControllerElement;
+      expect(element.hasController, isTrue);
+      expect(element.state, isNot(isA<AsyncScopeReady>()));
 
-    await tester.pumpWidget(const SizedBox.shrink());
-    await settle(tester, until: () => false, rounds: 2);
+      await tester.pumpWidget(const SizedBox.shrink());
+      await settle(tester, until: () => false, rounds: 2);
 
-    expect(disposed, [same(controller)]);
-    expect(controller.calls, ['init', 'onUnmount', 'disposeData', 'dispose']);
-    expect(tester.takeException(), isNull);
-  });
+      expect(disposed, [same(controller)]);
+      expect(controller.calls, ['init', 'onUnmount', 'disposeData', 'dispose']);
+      expect(tester.takeException(), isNull);
+    },
+  );
 
-  testWidgets('Data Core does not call disposeData after initialization fails',
-      (tester) async {
-    final failure = StateError('init failed');
-    final disposed = <String?>[];
-    final key = GlobalKey();
+  testWidgets(
+    'Data Core does not call disposeData after initialization fails',
+    (tester) async {
+      final failure = StateError('init failed');
+      final disposed = <String?>[];
+      final key = GlobalKey();
 
-    await tester.pumpWidget(
-      _DataCore(
-        key: key,
-        init: (_) async => throw failure,
-        dispose: disposed.add,
-      ),
-    );
-    await tester.pumpAndSettle();
-    final element = key.currentContext! as _DataElement;
-    expect(element.error, same(failure));
-    expect(element.hasData, isFalse);
+      await tester.pumpWidget(
+        _DataCore(
+          key: key,
+          init: (_) async => throw failure,
+          dispose: disposed.add,
+        ),
+      );
+      await tester.pumpAndSettle();
+      final element = key.currentContext! as _DataElement;
+      expect(element.error, same(failure));
+      expect(element.hasData, isFalse);
 
-    await tester.pumpWidget(const SizedBox.shrink());
-    await settle(tester, until: () => false, rounds: 2);
+      await tester.pumpWidget(const SizedBox.shrink());
+      await settle(tester, until: () => false, rounds: 2);
 
-    expect(disposed, isEmpty);
-    expect(tester.takeException(), isNull);
-  });
+      expect(disposed, isEmpty);
+      expect(tester.takeException(), isNull);
+    },
+  );
 
-  testWidgets('Controller Core releases a failed init without disposeData',
-      (tester) async {
+  testWidgets('Controller Core releases a failed init without disposeData', (
+    tester,
+  ) async {
     final failure = StateError('init failed');
     final controller = _Controller(failure: failure);
     final disposed = <_Controller>[];
@@ -196,8 +206,9 @@ void main() {
   for (final abandon in [false, true]) {
     final arrival = abandon ? 'after teardown' : 'during cancellation';
 
-    testWidgets('Data Core releases a late value once $arrival',
-        (tester) async {
+    testWidgets('Data Core releases a late value once $arrival', (
+      tester,
+    ) async {
       final gate = Completer<String?>();
       final disposed = <String?>[];
       final key = GlobalKey();
@@ -207,8 +218,9 @@ void main() {
           key: key,
           init: (_) => gate.future,
           dispose: disposed.add,
-          cancellationTimeout:
-              abandon ? const Duration(milliseconds: 30) : null,
+          cancellationTimeout: abandon
+              ? const Duration(milliseconds: 30)
+              : null,
         ),
       );
       await tester.pump();
@@ -230,8 +242,9 @@ void main() {
       expect(tester.takeException(), isNull);
     });
 
-    testWidgets('Controller Core releases a late controller once $arrival',
-        (tester) async {
+    testWidgets('Controller Core releases a late controller once $arrival', (
+      tester,
+    ) async {
       final gate = Completer<void>();
       final controller = _Controller(initGate: gate);
       final disposed = <_Controller>[];
@@ -242,8 +255,9 @@ void main() {
           key: key,
           controller: controller,
           disposed: disposed,
-          cancellationTimeout:
-              abandon ? const Duration(milliseconds: 30) : null,
+          cancellationTimeout: abandon
+              ? const Duration(milliseconds: 30)
+              : null,
         ),
       );
       await tester.pump();
@@ -333,8 +347,13 @@ final class _Controller extends ScopeController {
   void dispose() => calls.add('dispose');
 }
 
-final class _ControllerCore extends AsyncControllerScopeCore<_ControllerCore,
-    _ControllerElement, _Controller> {
+final class _ControllerCore
+    extends
+        AsyncControllerScopeCore<
+          _ControllerCore,
+          _ControllerElement,
+          _Controller
+        > {
   final _Controller controller;
   final List<_Controller> disposed;
   final Duration? pause;
@@ -352,8 +371,13 @@ final class _ControllerCore extends AsyncControllerScopeCore<_ControllerCore,
   _ControllerElement createScopeElement() => _ControllerElement(this);
 }
 
-final class _ControllerElement extends AsyncControllerScopeElementBase<
-    _ControllerCore, _ControllerElement, _Controller> {
+final class _ControllerElement
+    extends
+        AsyncControllerScopeElementBase<
+          _ControllerCore,
+          _ControllerElement,
+          _Controller
+        > {
   _ControllerElement(super.widget);
 
   @override

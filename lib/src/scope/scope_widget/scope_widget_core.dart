@@ -2,7 +2,7 @@ part of '../scope.dart';
 
 typedef _ScopeDependency<T extends Object, V extends Object?> = (
   V,
-  V Function(T)
+  V Function(T),
 );
 
 /// The build the registrations arriving right now belong to.
@@ -92,8 +92,11 @@ enum _InitPhase {
 }
 
 /// {@category ScopeWidget}
-abstract base class ScopeWidgetCore<W extends ScopeWidgetCore<W, E>,
-    E extends ScopeWidgetElementBase<W, E>> extends ScopeInheritedWidget {
+abstract base class ScopeWidgetCore<
+  W extends ScopeWidgetCore<W, E>,
+  E extends ScopeWidgetElementBase<W, E>
+>
+    extends ScopeInheritedWidget {
   /// Creates the widget half of a scope.
   const ScopeWidgetCore({
     super.key,
@@ -114,39 +117,43 @@ abstract base class ScopeWidgetCore<W extends ScopeWidgetCore<W, E>,
 
   @override
   String toStringShort({bool showHashCode = false}) =>
-      '$W${tag == null ? showHashCode //
-          ? '(#${shortHash(this)})' : '' : '($tag)'}';
+      '$W${tag == null
+          ? showHashCode //
+                ? '(#${shortHash(this)})'
+                : ''
+          : '($tag)'}';
 
   /// The element of the nearest scope [W] above [context], or `null`.
-  static E? maybeOf<W extends ScopeWidgetCore<W, E>,
-          E extends ScopeWidgetElementBase<W, E>>(
-    BuildContext context, {
-    required bool listen,
-  }) =>
+  static E? maybeOf<
+    W extends ScopeWidgetCore<W, E>,
+    E extends ScopeWidgetElementBase<W, E>
+  >(BuildContext context, {required bool listen}) =>
       ScopeContext.maybeOf<W, E>(context, listen: listen);
 
   /// The element of the nearest scope [W] above [context].
   ///
   /// Throws when there is no such scope.
-  static E of<W extends ScopeWidgetCore<W, E>,
-          E extends ScopeWidgetElementBase<W, E>>(
+  static E
+  of<W extends ScopeWidgetCore<W, E>, E extends ScopeWidgetElementBase<W, E>>(
     BuildContext context, {
     required bool listen,
-  }) =>
-      ScopeContext.of<W, E>(context, listen: listen);
+  }) => ScopeContext.of<W, E>(context, listen: listen);
 
   /// Subscribes to one value of the scope and returns it.
-  static V select<W extends ScopeWidgetCore<W, E>,
-          E extends ScopeWidgetElementBase<W, E>, V extends Object?>(
-    BuildContext context,
-    V Function(E element) selector,
-  ) =>
+  static V select<
+    W extends ScopeWidgetCore<W, E>,
+    E extends ScopeWidgetElementBase<W, E>,
+    V extends Object?
+  >(BuildContext context, V Function(E element) selector) =>
       ScopeContext.select<W, E, V>(context, selector);
 }
 
 /// {@category ScopeWidget}
-abstract base class ScopeWidgetElementBase<W extends ScopeWidgetCore<W, E>,
-        E extends ScopeWidgetElementBase<W, E>> extends InheritedElement
+abstract base class ScopeWidgetElementBase<
+  W extends ScopeWidgetCore<W, E>,
+  E extends ScopeWidgetElementBase<W, E>
+>
+    extends InheritedElement
     implements ScopeInheritedElement<W>, ScopeObservable {
   @override
   String get debugLabel => widget.toStringShort(showHashCode: true);
@@ -642,8 +649,8 @@ abstract base class ScopeWidgetElementBase<W extends ScopeWidgetCore<W, E>,
   @override
   Element? updateChild(Element? child, Widget? newWidget, Object? newSlot) =>
       _rebuildIsNotifyOnly
-          ? child
-          : super.updateChild(child, newWidget, newSlot);
+      ? child
+      : super.updateChild(child, newWidget, newSlot);
 
   /// Runs [init] once, inside the build error boundary of
   /// [ComponentElement.performRebuild], and only then builds the subtree.

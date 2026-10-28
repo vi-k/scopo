@@ -1,6 +1,6 @@
 # example
 
-> Перевод `example/README.md` (blob `c6d816c1ac34a6061c47c8e4585d1e463ae11d30`).
+> Перевод `example/README.md` (blob `f3c61e08989030e04a3e7d209928bce39442d8ac`).
 > Правится в том же коммите, что и оригинал; проверка — `sh docs/ru/check.sh`.
 
 Полный обзор scopo —
@@ -47,18 +47,15 @@ void main() {
 final class App extends Scope<App, AppDependencies, AppState> {
   final String title;
 
-  const App({
-    super.key,
-    required this.title,
-  }) : super(pauseAfterInitialization: const Duration(milliseconds: 500));
+  const App({super.key, required this.title})
+    : super(pauseAfterInitialization: const Duration(milliseconds: 500));
 
   /// Метод инициализации зависимостей.
   @override
   Future<AppDependencies> initDependencies(
     BuildContext context,
     ScopeInitContext ctx,
-  ) =>
-      AppDependencies.init(context, ctx);
+  ) => AppDependencies.init(context, ctx);
 
   /// [App.paramsOf] даёт доступ к параметрам виджета [App] — например, к
   /// [title].
@@ -76,8 +73,7 @@ final class App extends Scope<App, AppDependencies, AppState> {
   static V selectParam<V>(
     BuildContext context,
     V Function(App widget) selector,
-  ) =>
-      Scope.selectParam<App, AppDependencies, AppState, V>(context, selector);
+  ) => Scope.selectParam<App, AppDependencies, AppState, V>(context, selector);
 
   /// [App.of] даёт доступ к [AppState].
   ///
@@ -90,8 +86,7 @@ final class App extends Scope<App, AppDependencies, AppState> {
   static V select<V>(
     BuildContext context,
     V Function(AppState state) selector,
-  ) =>
-      Scope.select<App, AppDependencies, AppState, V>(context, selector);
+  ) => Scope.select<App, AppDependencies, AppState, V>(context, selector);
 
   /// На уровне скоупа [App] приходится создавать [MaterialApp] в каждой из
   /// веток.
@@ -107,10 +102,7 @@ final class App extends Scope<App, AppDependencies, AppState> {
 
   /// Ветка, которая строится во время инициализации скоупа.
   @override
-  Widget buildOnProgress(
-    BuildContext context,
-    covariant String? progress,
-  ) =>
+  Widget buildOnProgress(BuildContext context, covariant String? progress) =>
       _app(child: SplashScreen(progress: progress));
 
   /// Ветка, которая строится, когда инициализация упала.
@@ -120,8 +112,7 @@ final class App extends Scope<App, AppDependencies, AppState> {
     Object error,
     StackTrace stackTrace,
     covariant String? progress,
-  ) =>
-      _app(child: ErrorScreen(error: error));
+  ) => _app(child: ErrorScreen(error: error));
 
   /// Виджеты, которые окажутся в дереве между [App] и [AppState].
   ///
@@ -131,8 +122,7 @@ final class App extends Scope<App, AppDependencies, AppState> {
     BuildContext context,
     AppDependencies dependencies,
     Widget child,
-  ) =>
-      _app(child: child);
+  ) => _app(child: child);
 
   /// [createState] зовут, только когда скоуп в готовом состоянии.
   @override
@@ -227,8 +217,8 @@ class ErrorScreen extends StatelessWidget {
         child: Text(
           '$error',
           style: Theme.of(context).textTheme.labelLarge?.copyWith(
-                color: Theme.of(context).colorScheme.onError,
-              ),
+            color: Theme.of(context).colorScheme.onError,
+          ),
         ),
       ),
     );

@@ -14,10 +14,7 @@ final class CounterModel with ChangeNotifier {
   final Object debugSource;
   final String debugName;
 
-  CounterModel._({
-    required this.debugSource,
-    required this.debugName,
-  });
+  CounterModel._({required this.debugSource, required this.debugName});
 
   int _count = 0;
   int get count => _count;
@@ -103,11 +100,7 @@ final class CounterScope
 
   @override
   Future<CounterModel> initData(BuildContext context, ScopeInitContext ctx) =>
-      CounterModel.init(
-        ctx,
-        debugSource: debugSource,
-        debugName: debugName,
-      );
+      CounterModel.init(ctx, debugSource: debugSource, debugName: debugName);
 
   @override
   Future<void> disposeData(CounterModel data) async {
@@ -120,10 +113,7 @@ final class CounterScope
   }
 
   @override
-  Widget buildOnProgress(
-    BuildContext context,
-    covariant Progress? progress,
-  ) {
+  Widget buildOnProgress(BuildContext context, covariant Progress? progress) {
     return Text('Initializing${progress == null ? '' : ' $progress'}');
   }
 
@@ -141,8 +131,9 @@ final class CounterScope
   Widget buildOnReady(BuildContext context, CounterModel data) {
     Widget body = Center(
       child: BlinkingBox(
-        blinkingColor:
-            Theme.of(context).colorScheme.primary.withValues(alpha: 0.2),
+        blinkingColor: Theme.of(
+          context,
+        ).colorScheme.primary.withValues(alpha: 0.2),
         child: const Column(
           mainAxisSize: MainAxisSize.min,
           children: [
@@ -168,10 +159,7 @@ final class CounterScope
     if (title case final title?) {
       body = Column(
         mainAxisSize: MainAxisSize.min,
-        children: [
-          Text(title),
-          body,
-        ],
+        children: [Text(title), body],
       );
     }
 
@@ -190,8 +178,9 @@ class _CounterView extends StatelessWidget {
       builder: (context, model, count, _) {
         return Center(
           child: BlinkingBox(
-            blinkingColor:
-                Theme.of(context).colorScheme.primary.withValues(alpha: 0.2),
+            blinkingColor: Theme.of(
+              context,
+            ).colorScheme.primary.withValues(alpha: 0.2),
             child: Text('$count'),
           ),
         );

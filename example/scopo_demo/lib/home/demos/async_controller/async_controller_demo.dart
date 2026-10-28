@@ -34,29 +34,17 @@ class _AsyncControllerDemoState extends State<AsyncControllerDemo> {
       child: Column(
         children: [
           Expanded(
-            child: AsyncControllerExample1(
-              key: ValueKey(_rebuildCounter),
-            ),
+            child: AsyncControllerExample1(key: ValueKey(_rebuildCounter)),
           ),
-          const Expanded(
-            child: ConsoleView(source: AsyncControllerExample1),
-          ),
+          const Expanded(child: ConsoleView(source: AsyncControllerExample1)),
           Expanded(
-            child: AsyncControllerExample2(
-              key: ValueKey(_rebuildCounter),
-            ),
+            child: AsyncControllerExample2(key: ValueKey(_rebuildCounter)),
           ),
-          const Expanded(
-            child: ConsoleView(source: AsyncControllerExample2),
-          ),
+          const Expanded(child: ConsoleView(source: AsyncControllerExample2)),
           Expanded(
-            child: AsyncControllerExample3(
-              key: ValueKey(_rebuildCounter),
-            ),
+            child: AsyncControllerExample3(key: ValueKey(_rebuildCounter)),
           ),
-          const Expanded(
-            child: ConsoleView(source: AsyncControllerExample3),
-          ),
+          const Expanded(child: ConsoleView(source: AsyncControllerExample3)),
           _RebuildButton(rebuild: _rebuild),
         ],
       ),

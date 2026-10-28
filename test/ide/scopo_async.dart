@@ -34,14 +34,12 @@ final class ConnectionScope extends AsyncScopeBase<ConnectionScope> {
   static AsyncScopeContext<ConnectionScope> of(
     BuildContext context, {
     required bool listen,
-  }) =>
-      AsyncScopeBase.of<ConnectionScope>(context, listen: listen);
+  }) => AsyncScopeBase.of<ConnectionScope>(context, listen: listen);
 
   static V select<V>(
     BuildContext context,
     V Function(AsyncScopeContext<ConnectionScope> context) selector,
-  ) =>
-      AsyncScopeBase.select<ConnectionScope, V>(context, selector);
+  ) => AsyncScopeBase.select<ConnectionScope, V>(context, selector);
 
   /// One value of the scope, subscribed to on its own.
   static bool isReadyOf(BuildContext context) =>
@@ -63,14 +61,14 @@ final class ConnectionScope extends AsyncScopeBase<ConnectionScope> {
   /// steps are counted.
   @override
   Widget buildOnProgress(BuildContext context, Object? progress) => Center(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const CircularProgressIndicator(),
-            Text(progress?.toString() ?? ''),
-          ],
-        ),
-      );
+    child: Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        const CircularProgressIndicator(),
+        Text(progress?.toString() ?? ''),
+      ],
+    ),
+  );
 
   /// The last progress before the failure, `null` if it failed before any.
   @override
@@ -79,8 +77,7 @@ final class ConnectionScope extends AsyncScopeBase<ConnectionScope> {
     Object error,
     StackTrace stackTrace,
     Object? progress,
-  ) =>
-      Center(child: Text(progress == null ? '$error' : '$progress: $error'));
+  ) => Center(child: Text(progress == null ? '$error' : '$progress: $error'));
 
   @override
   Widget buildOnReady(BuildContext context) => builder(context);

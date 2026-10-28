@@ -1,8 +1,10 @@
 part of '../scope.dart';
 
 /// {@category AsyncScope}
-abstract base class AsyncScopeCore<W extends AsyncScopeCore<W, E>,
-        E extends AsyncScopeElementBase<W, E>>
+abstract base class AsyncScopeCore<
+  W extends AsyncScopeCore<W, E>,
+  E extends AsyncScopeElementBase<W, E>
+>
     extends ScopeModelCore<W, E, AsyncScopeModel> {
   /// Creates the widget half of an asynchronous scope.
   const AsyncScopeCore({
@@ -12,35 +14,35 @@ abstract base class AsyncScopeCore<W extends AsyncScopeCore<W, E>,
   });
 
   /// The element of the nearest scope [W] above [context], or `null`.
-  static E? maybeOf<W extends AsyncScopeCore<W, E>,
-          E extends AsyncScopeElementBase<W, E>>(
-    BuildContext context, {
-    required bool listen,
-  }) =>
+  static E? maybeOf<
+    W extends AsyncScopeCore<W, E>,
+    E extends AsyncScopeElementBase<W, E>
+  >(BuildContext context, {required bool listen}) =>
       ScopeContext.maybeOf<W, E>(context, listen: listen);
 
   /// The element of the nearest scope [W] above [context].
   ///
   /// Throws when there is none.
   static E
-      of<W extends AsyncScopeCore<W, E>, E extends AsyncScopeElementBase<W, E>>(
+  of<W extends AsyncScopeCore<W, E>, E extends AsyncScopeElementBase<W, E>>(
     BuildContext context, {
     required bool listen,
-  }) =>
-          ScopeContext.of<W, E>(context, listen: listen);
+  }) => ScopeContext.of<W, E>(context, listen: listen);
 
   /// Subscribes to one value of the scope and returns it.
-  static V select<W extends AsyncScopeCore<W, E>,
-          E extends AsyncScopeElementBase<W, E>, V extends Object?>(
-    BuildContext context,
-    V Function(E element) selector,
-  ) =>
+  static V select<
+    W extends AsyncScopeCore<W, E>,
+    E extends AsyncScopeElementBase<W, E>,
+    V extends Object?
+  >(BuildContext context, V Function(E element) selector) =>
       ScopeContext.select<W, E, V>(context, selector);
 }
 
 /// {@category AsyncScope}
-abstract base class AsyncScopeElementBase<W extends AsyncScopeCore<W, E>,
-        E extends AsyncScopeElementBase<W, E>>
+abstract base class AsyncScopeElementBase<
+  W extends AsyncScopeCore<W, E>,
+  E extends AsyncScopeElementBase<W, E>
+>
     extends ScopeNotifierElementBase<W, E, AsyncScopeModel>
     with AsyncScopeParent
     implements AsyncScopeContext<W> {
@@ -144,26 +146,29 @@ abstract base class AsyncScopeElementBase<W extends AsyncScopeCore<W, E>,
     void Function()? initCancellation,
     void Function()? disposeScope,
     void Function()? waitForChildren,
-  }) get timeoutCallbacks => const (
-        scopeKey: null,
-        initCancellation: null,
-        disposeScope: null,
-        waitForChildren: null,
-      );
+  })
+  get timeoutCallbacks => const (
+    scopeKey: null,
+    initCancellation: null,
+    disposeScope: null,
+    waitForChildren: null,
+  );
 
   ({
     void Function()? scopeKey,
     void Function()? initCancellation,
     void Function()? disposeScope,
     void Function()? waitForChildren,
-  }) get _timeoutCallbacks => _lateTimeoutCallbacks ?? timeoutCallbacks;
+  })
+  get _timeoutCallbacks => _lateTimeoutCallbacks ?? timeoutCallbacks;
 
   ({
     void Function()? scopeKey,
     void Function()? initCancellation,
     void Function()? disposeScope,
     void Function()? waitForChildren,
-  })? _lateTimeoutCallbacks;
+  })?
+  _lateTimeoutCallbacks;
 
   /// Reports one step of the initialization.
   ///
@@ -227,11 +232,7 @@ abstract base class AsyncScopeElementBase<W extends AsyncScopeCore<W, E>,
             observer,
           );
         case Failed(:final error, :final stackTrace):
-          _settleFailure(
-            error,
-            stackTrace,
-            observer,
-          );
+          _settleFailure(error, stackTrace, observer);
       }
     } finally {
       _initJobRunning = false;
@@ -579,30 +580,25 @@ abstract base class AsyncScopeElementBase<W extends AsyncScopeCore<W, E>,
 
   @override
   bool get hasError => switch (model.state) {
-        AsyncScopeWaiting() ||
-        AsyncScopeProgress() ||
-        AsyncScopeReady() =>
-          false,
-        AsyncScopeError() => true,
-      };
+    AsyncScopeWaiting() || AsyncScopeProgress() || AsyncScopeReady() => false,
+    AsyncScopeError() => true,
+  };
 
   @override
   Object get error => switch (model.state) {
-        AsyncScopeWaiting() ||
-        AsyncScopeProgress() ||
-        AsyncScopeReady() =>
-          throw StateError('No error'),
-        AsyncScopeError(:final error) => error,
-      };
+    AsyncScopeWaiting() ||
+    AsyncScopeProgress() ||
+    AsyncScopeReady() => throw StateError('No error'),
+    AsyncScopeError(:final error) => error,
+  };
 
   @override
   StackTrace get stackTrace => switch (model.state) {
-        AsyncScopeWaiting() ||
-        AsyncScopeProgress() ||
-        AsyncScopeReady() =>
-          throw StateError('No error'),
-        AsyncScopeError(:final stackTrace) => stackTrace,
-      };
+    AsyncScopeWaiting() ||
+    AsyncScopeProgress() ||
+    AsyncScopeReady() => throw StateError('No error'),
+    AsyncScopeError(:final stackTrace) => stackTrace,
+  };
 
   /// Creates the element of an asynchronous scope.
   AsyncScopeElementBase(super.widget);
@@ -784,8 +780,10 @@ abstract base class AsyncScopeElementBase<W extends AsyncScopeCore<W, E>,
     // tree likes.
     final currentCoordinator = _acquiredCoordinator == null
         ? null
-        : ScopeWidgetCore.maybeOf<AsyncScopeCoordinator,
-            _AsyncScopeCoordinatorElement>(this, listen: false);
+        : ScopeWidgetCore.maybeOf<
+            AsyncScopeCoordinator,
+            _AsyncScopeCoordinatorElement
+          >(this, listen: false);
 
     if (currentScopeKey == _acquiredScopeKey &&
         identical(currentCoordinator, _acquiredCoordinator)) {
@@ -813,39 +811,38 @@ abstract base class AsyncScopeElementBase<W extends AsyncScopeCore<W, E>,
       hasEntry: hasEntry,
     )) {
       (null, final appeared?, hasEntry: _) => (
-          'The `scopeKey` of $name appeared after the scope had already'
-              ' initialized without one.',
-          'The key is read once, when the initialization starts, and this'
-              ' scope read none: it never took a place in any queue, and nothing'
-              ' takes one for it now. [$appeared] is not honoured -- this scope'
-              ' holds nothing, and whoever does hold [$appeared] is not keeping it'
-              ' out.',
-        ),
+        'The `scopeKey` of $name appeared after the scope had already'
+            ' initialized without one.',
+        'The key is read once, when the initialization starts, and this'
+            ' scope read none: it never took a place in any queue, and nothing'
+            ' takes one for it now. [$appeared] is not honoured -- this scope'
+            ' holds nothing, and whoever does hold [$appeared] is not keeping it'
+            ' out.',
+      ),
       (final acquired?, null, hasEntry: true) => (
-          'The `scopeKey` of $name was given up while the scope was still'
-              ' holding it.',
-          'It is holding [$acquired] in the queue of $acquiredCoordinator, and'
-              ' now claims to need no key at all. The entry stays where it is'
-              ' until the disposal releases it, so [$acquired] goes on keeping out'
-              ' the scopes this one no longer claims to exclude.',
-        ),
+        'The `scopeKey` of $name was given up while the scope was still'
+            ' holding it.',
+        'It is holding [$acquired] in the queue of $acquiredCoordinator, and'
+            ' now claims to need no key at all. The entry stays where it is'
+            ' until the disposal releases it, so [$acquired] goes on keeping out'
+            ' the scopes this one no longer claims to exclude.',
+      ),
       (final acquired?, null, hasEntry: false) => (
-          'The `scopeKey` of $name was given up after the scope had failed to'
-              ' take it.',
-          'It read [$acquired] and never entered a queue: the lookup found no'
-              ' $AsyncScopeCoordinator above the scope, which is the failure'
-              ' already reported. Nothing is held and nothing is being kept out,'
-              ' so claiming to need no key changes nothing — the key that was'
-              ' never taken is the thing to fix.',
-        ),
-      (final acquired?, final asked?, hasEntry: true) when acquired != asked =>
-        (
-          'The `scopeKey` of $name changed while the scope was holding one.',
-          'It is holding [$acquired] in the queue of $acquiredCoordinator, and'
-              ' is now asking for [$asked]. The entry cannot follow: it stays'
-              ' where it is, so [$acquired] is never released for the scope it was'
-              ' meant to keep out, and [$asked] keeps nobody out.',
-        ),
+        'The `scopeKey` of $name was given up after the scope had failed to'
+            ' take it.',
+        'It read [$acquired] and never entered a queue: the lookup found no'
+            ' $AsyncScopeCoordinator above the scope, which is the failure'
+            ' already reported. Nothing is held and nothing is being kept out,'
+            ' so claiming to need no key changes nothing — the key that was'
+            ' never taken is the thing to fix.',
+      ),
+      (final acquired?, final asked?, hasEntry: true) when acquired != asked => (
+        'The `scopeKey` of $name changed while the scope was holding one.',
+        'It is holding [$acquired] in the queue of $acquiredCoordinator, and'
+            ' is now asking for [$asked]. The entry cannot follow: it stays'
+            ' where it is, so [$acquired] is never released for the scope it was'
+            ' meant to keep out, and [$asked] keeps nobody out.',
+      ),
       (final acquired?, final asked?, hasEntry: false) when acquired != asked =>
         (
           'The `scopeKey` of $name changed after the scope had failed to take'
@@ -857,14 +854,14 @@ abstract base class AsyncScopeElementBase<W extends AsyncScopeCore<W, E>,
               ' not read another one.',
         ),
       _ => (
-          'The `$AsyncScopeCoordinator` above $name changed while the scope'
-              ' was holding a `scopeKey`.',
-          'It is holding [$_acquiredScopeKey] in the queue of'
-              ' $acquiredCoordinator, and is now under $coordinator. The entry'
-              ' cannot follow: it stays in the queue it left, so the key it holds'
-              ' there is never released, and under the new coordinator it keeps'
-              ' nobody out.',
-        ),
+        'The `$AsyncScopeCoordinator` above $name changed while the scope'
+            ' was holding a `scopeKey`.',
+        'It is holding [$_acquiredScopeKey] in the queue of'
+            ' $acquiredCoordinator, and is now under $coordinator. The entry'
+            ' cannot follow: it stays in the queue it left, so the key it holds'
+            ' there is never released, and under the new coordinator it keeps'
+            ' nobody out.',
+      ),
     };
 
     throw FlutterError.fromParts([
@@ -1195,8 +1192,9 @@ abstract base class AsyncScopeElementBase<W extends AsyncScopeCore<W, E>,
       // The app can pause after close() asked for a frame but before vsync.
       // Observe only this barrier: after it is released there is no subtree
       // left to replace, and no reason to keep the element in the binding.
-      final observer =
-          _closingFrameObserver = _ClosingFrameObserver(_ensureClosingFrame);
+      final observer = _closingFrameObserver = _ClosingFrameObserver(
+        _ensureClosingFrame,
+      );
       WidgetsBinding.instance.addObserver(observer);
       _ensureClosingFrame();
 
@@ -1645,10 +1643,8 @@ abstract base class AsyncScopeElementBase<W extends AsyncScopeCore<W, E>,
 
     if (hasChildren) {
       notifyObserver(
-        (observer) => observer.onTrace(
-          this,
-          'wait for children (count: $childrenCount)',
-        ),
+        (observer) =>
+            observer.onTrace(this, 'wait for children (count: $childrenCount)'),
       );
       await waitForChildren(
         // Passed on as it stands, never resolved here: `waitForChildren`
@@ -1680,8 +1676,9 @@ abstract base class AsyncScopeElementBase<W extends AsyncScopeCore<W, E>,
       // Register before calling user code: even a closing builder that throws
       // must not strand the teardown. finalizeTree runs before this callback,
       // so consumers and child scopes have left the old subtree by then.
-      WidgetsBinding.instance
-          .addPostFrameCallback((_) => _completeClosingFrame());
+      WidgetsBinding.instance.addPostFrameCallback(
+        (_) => _completeClosingFrame(),
+      );
       // Matching widget types and keys otherwise update the ready element in
       // place. A distinct boundary makes its State.dispose run even when both
       // builders return the same kind of widget, before its resources go away.

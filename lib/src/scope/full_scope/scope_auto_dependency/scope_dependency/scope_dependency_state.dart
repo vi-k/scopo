@@ -23,7 +23,7 @@ sealed class _ScopeDependencyWithErrors extends ScopeDependencyState {
   final List<AsyncError> _errors;
 
   _ScopeDependencyWithErrors(Object error, StackTrace stackTrace)
-      : _errors = _singleList(AsyncError(error, stackTrace));
+    : _errors = _singleList(AsyncError(error, stackTrace));
 
   const _ScopeDependencyWithErrors._(this._errors);
 
@@ -49,7 +49,7 @@ sealed class _ScopeDependencyWithErrors extends ScopeDependencyState {
     return '$description'
         '${showCount ? ' ($count ${count == 1 ? 'error' : 'errors'})' : ''}'
         '${showErrors && hasErrors ? ': ${!showCount && count == 1 //
-            ? error : errors()}' : ''}';
+                          ? error : errors()}' : ''}';
   }
 }
 
@@ -63,11 +63,11 @@ sealed class ScopeDependencyAnyFailed extends _ScopeDependencyWithErrors {
 /// {@category Scope}
 sealed class ScopeDependencyAnyCancelled extends _ScopeDependencyWithErrors {
   ScopeDependencyAnyCancelled([Object? error, StackTrace? stackTrace])
-      : super._(
-          error == null
-              ? _emptyList<AsyncError>()
-              : _singleList(AsyncError(error, stackTrace)),
-        );
+    : super._(
+        error == null
+            ? _emptyList<AsyncError>()
+            : _singleList(AsyncError(error, stackTrace)),
+      );
 
   const ScopeDependencyAnyCancelled._(super._errors) : super._();
 }
@@ -93,9 +93,7 @@ final class ScopeDependencyFailed extends ScopeDependencyAnyFailed {
 
   @override
   ScopeDependencyFailed addError(Object error, StackTrace stackTrace) =>
-      ScopeDependencyFailed._(
-        _errors.withAdded(AsyncError(error, stackTrace)),
-      );
+      ScopeDependencyFailed._(_errors.withAdded(AsyncError(error, stackTrace)));
 }
 
 /// {@category Scope}
@@ -191,8 +189,8 @@ List<T> _singleList<T>(T element) =>
 /// 2) make such lists internally identical.
 extension<T> on List<T> {
   List<T> withAdded(T element) => List.generate(
-        length + 1,
-        (i) => i < length ? this[i] : element,
-        growable: false,
-      );
+    length + 1,
+    (i) => i < length ? this[i] : element,
+    growable: false,
+  );
 }

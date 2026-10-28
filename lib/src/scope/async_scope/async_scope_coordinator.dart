@@ -12,14 +12,11 @@ part of '../scope.dart';
 /// of itself; [waitForChildren] waits for exactly those scopes.
 ///
 /// {@category AsyncScope}
-final class AsyncScopeCoordinator extends ScopeWidgetCore<AsyncScopeCoordinator,
-    _AsyncScopeCoordinatorElement> {
+final class AsyncScopeCoordinator
+    extends
+        ScopeWidgetCore<AsyncScopeCoordinator, _AsyncScopeCoordinatorElement> {
   /// Creates a coordinator over [child].
-  const AsyncScopeCoordinator({
-    super.key,
-    super.tag,
-    required super.child,
-  });
+  const AsyncScopeCoordinator({super.key, super.tag, required super.child});
 
   @override
   // ignore: library_private_types_in_public_api
@@ -36,11 +33,10 @@ final class AsyncScopeCoordinator extends ScopeWidgetCore<AsyncScopeCoordinator,
   /// failure that can happen while the entry does not yet exist stays where
   /// there is nothing to release.
   static _AsyncScopeCoordinatorElement _elementOf(BuildContext context) =>
-      ScopeWidgetCore.maybeOf<AsyncScopeCoordinator,
-          _AsyncScopeCoordinatorElement>(
-        context,
-        listen: false,
-      ) ??
+      ScopeWidgetCore.maybeOf<
+        AsyncScopeCoordinator,
+        _AsyncScopeCoordinatorElement
+      >(context, listen: false) ??
       (throw FlutterError(
         'No `$AsyncScopeCoordinator`.\n'
         'The `$AsyncScopeCoordinator` is missing in the context. Add it to'
@@ -76,25 +72,28 @@ final class AsyncScopeCoordinator extends ScopeWidgetCore<AsyncScopeCoordinator,
     BuildContext context, {
     Duration? timeout,
     void Function(TimeoutException error, StackTrace stackTrace)? onTimeout,
-  }) =>
-      _elementOf(context).waitForChildren(
-        // Resolved by `waitForChildren` below, and only there: resolving twice
-        // turns a `ScopeTimeout.none` into the `null` that means "take the
-        // default" on the way in.
-        timeout: timeout,
-        // Passed on as it stands, `null` and all. The default report of
-        // `AsyncScopeParent.waitForChildren` puts `reportName` of this element
-        // in front of the registry's message, and that is the very expression a
-        // copy here used to write out -- so the line was the same, while the
-        // report itself sat outside the one place the package reports an expiry
-        // from, and `ScopeConfig.timeoutReportsEnabled` would have missed it.
-        onTimeout: onTimeout,
-      );
+  }) => _elementOf(context).waitForChildren(
+    // Resolved by `waitForChildren` below, and only there: resolving twice
+    // turns a `ScopeTimeout.none` into the `null` that means "take the
+    // default" on the way in.
+    timeout: timeout,
+    // Passed on as it stands, `null` and all. The default report of
+    // `AsyncScopeParent.waitForChildren` puts `reportName` of this element
+    // in front of the registry's message, and that is the very expression a
+    // copy here used to write out -- so the line was the same, while the
+    // report itself sat outside the one place the package reports an expiry
+    // from, and `ScopeConfig.timeoutReportsEnabled` would have missed it.
+    onTimeout: onTimeout,
+  );
 }
 
-final class _AsyncScopeCoordinatorElement extends ScopeWidgetElementBase<
-    AsyncScopeCoordinator,
-    _AsyncScopeCoordinatorElement> with AsyncScopeParent {
+final class _AsyncScopeCoordinatorElement
+    extends
+        ScopeWidgetElementBase<
+          AsyncScopeCoordinator,
+          _AsyncScopeCoordinatorElement
+        >
+    with AsyncScopeParent {
   _AsyncScopeCoordinatorElement(super.widget);
 
   final _queues = KeyedAccessQueues();
@@ -148,6 +147,5 @@ final class _AsyncScopeCoordinatorElement extends ScopeWidgetElementBase<
     AccessEntry entry, {
     Duration? timeout,
     void Function(TimeoutException error, StackTrace stackTrace)? onTimeout,
-  }) =>
-      _queues.enter(key, entry, timeout: timeout, onTimeout: onTimeout);
+  }) => _queues.enter(key, entry, timeout: timeout, onTimeout: onTimeout);
 }

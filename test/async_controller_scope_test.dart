@@ -19,11 +19,11 @@ void main() {
 
       await controller.performDispose();
       expect(controller.mounted, isFalse);
-      expect(
-        controller.calls,
-        ['init', 'onUnmount', 'dispose'],
-        reason: 'the wrapper unmounts before it disposes',
-      );
+      expect(controller.calls, [
+        'init',
+        'onUnmount',
+        'dispose',
+      ], reason: 'the wrapper unmounts before it disposes');
     });
 
     test('the wrappers are idempotent', () async {
@@ -53,38 +53,41 @@ void main() {
       expect(
         controller.calls,
         ['init', 'onUnmount', 'dispose'],
-        reason: 'a controller that has been let go of is not brought back: '
+        reason:
+            'a controller that has been let go of is not brought back: '
             '`init` would run against what `dispose` has already released',
       );
       expect(controller.mounted, isFalse);
     });
 
-    test('a second performDispose waits for the first instead of racing it',
-        () async {
-      final gate = Completer<void>();
-      final controller = _TestController(disposeGate: gate);
-      var firstDone = false;
-      var secondDone = false;
+    test(
+      'a second performDispose waits for the first instead of racing it',
+      () async {
+        final gate = Completer<void>();
+        final controller = _TestController(disposeGate: gate);
+        var firstDone = false;
+        var secondDone = false;
 
-      await controller.performInit();
-      unawaited(controller.performDispose().then((_) => firstDone = true));
-      unawaited(controller.performDispose().then((_) => secondDone = true));
-      await pumpEventQueue();
+        await controller.performInit();
+        unawaited(controller.performDispose().then((_) => firstDone = true));
+        unawaited(controller.performDispose().then((_) => secondDone = true));
+        await pumpEventQueue();
 
-      expect(controller.calls, ['init', 'onUnmount', 'dispose']);
-      expect(firstDone, isFalse);
-      expect(
-        secondDone,
-        isFalse,
-        reason: 'the teardown it was told was over is still running',
-      );
+        expect(controller.calls, ['init', 'onUnmount', 'dispose']);
+        expect(firstDone, isFalse);
+        expect(
+          secondDone,
+          isFalse,
+          reason: 'the teardown it was told was over is still running',
+        );
 
-      gate.complete();
-      await pumpEventQueue();
+        gate.complete();
+        await pumpEventQueue();
 
-      expect(firstDone, isTrue);
-      expect(secondDone, isTrue);
-    });
+        expect(firstDone, isTrue);
+        expect(secondDone, isTrue);
+      },
+    );
 
     test('every caller of performDispose sees the same failure', () async {
       final controller = _TestController(failOnDispose: true);
@@ -95,42 +98,46 @@ void main() {
       // reaches a future nobody is listening to yet is an unhandled one.
       final outcomes = await Future.wait([
         controller.performDispose().then<Object?>(
-              (_) => null,
-              onError: (Object error) => error,
-            ),
+          (_) => null,
+          onError: (Object error) => error,
+        ),
         controller.performDispose().then<Object?>(
-              (_) => null,
-              onError: (Object error) => error,
-            ),
+          (_) => null,
+          onError: (Object error) => error,
+        ),
       ]);
 
       expect(outcomes.first, isA<StateError>());
       expect(
         outcomes.last,
         same(outcomes.first),
-        reason: 'the same failure, and not merely a failure of the same kind: '
+        reason:
+            'the same failure, and not merely a failure of the same kind: '
             'the disposal is one per controller, so a second caller is told '
             'about the disposal that happened, not about one of its own',
       );
     });
 
-    test('a controller that never initialized has nothing to unmount',
-        () async {
-      final controller = _TestController();
+    test(
+      'a controller that never initialized has nothing to unmount',
+      () async {
+        final controller = _TestController();
 
-      await controller.performDispose();
+        await controller.performDispose();
 
-      expect(
-        controller.calls,
-        ['dispose'],
-        reason: '`onUnmount` belongs to a controller that was mounted',
-      );
-    });
+        expect(
+          controller.calls,
+          ['dispose'],
+          reason: '`onUnmount` belongs to a controller that was mounted',
+        );
+      },
+    );
   });
 
   group('AsyncControllerScope', () {
-    testWidgets('builds the ready branch and tears the controller down once',
-        (tester) async {
+    testWidgets('builds the ready branch and tears the controller down once', (
+      tester,
+    ) async {
       final controller = _TestController();
 
       await tester.pumpWidget(_Host(controller: controller));
@@ -159,28 +166,28 @@ void main() {
     // the old way tears down a controller that is running behind the ready
     // branch. `pauseAfterInitialization` widens the gap to something a test
     // can stand in.
-    testWidgets(
-      'does not tear down a controller that the scope took over',
-      (tester) async {
-        final controller = _TestController();
+    testWidgets('does not tear down a controller that the scope took over', (
+      tester,
+    ) async {
+      final controller = _TestController();
 
-        await tester.pumpWidget(
-          _Host(
-            controller: controller,
-            pauseAfterInitialization: const Duration(milliseconds: 50),
-          ),
-        );
-        await tester.pumpAndSettle();
+      await tester.pumpWidget(
+        _Host(
+          controller: controller,
+          pauseAfterInitialization: const Duration(milliseconds: 50),
+        ),
+      );
+      await tester.pumpAndSettle();
 
-        expect(
-          controller.calls,
-          ['init'],
-          reason: 'the controller initialized and the scope is holding it; '
-              'nothing has released it',
-        );
-        expect(find.text('ready'), findsOneWidget);
-      },
-    );
+      expect(
+        controller.calls,
+        ['init'],
+        reason:
+            'the controller initialized and the scope is holding it; '
+            'nothing has released it',
+      );
+      expect(find.text('ready'), findsOneWidget);
+    });
 
     testWidgets('disposes of a controller whose init failed', (tester) async {
       final controller = _TestController(failOnInit: true);
@@ -200,8 +207,9 @@ void main() {
     // half of the teardown gets there -- which can be much later, or never.
     // What the scope owes the controller is the synchronous half: let go of
     // the outside world now, at the moment the scope leaves the tree.
-    testWidgets('unmounts the controller before the asynchronous teardown',
-        (tester) async {
+    testWidgets('unmounts the controller before the asynchronous teardown', (
+      tester,
+    ) async {
       final gate = Completer<void>();
       final controller = _TestController(initGate: gate);
 
@@ -215,7 +223,8 @@ void main() {
       expect(
         controller.calls,
         ['init', 'onUnmount'],
-        reason: 'the initialization is still parked on its future, and the '
+        reason:
+            'the initialization is still parked on its future, and the '
             'controller has already been told to let go',
       );
       expect(controller.mounted, isFalse);
@@ -228,8 +237,9 @@ void main() {
 
     // The same hole, reached the other way: nothing threw, the scope simply
     // left before the initialization had finished.
-    testWidgets('disposes of a controller left behind by a scope that went',
-        (tester) async {
+    testWidgets('disposes of a controller left behind by a scope that went', (
+      tester,
+    ) async {
       final gate = Completer<void>();
       final controller = _TestController(initGate: gate);
 
@@ -254,8 +264,9 @@ void main() {
     // holding the controller to release. By then the element has cleared the
     // widget it reads its parameters from, and reading one there used to
     // raise a `_TypeError` where a release belonged.
-    testWidgets('releases a controller whose init woke up after the teardown',
-        (tester) async {
+    testWidgets('releases a controller whose init woke up after the teardown', (
+      tester,
+    ) async {
       final gate = Completer<void>();
       final controller = _TestController(initGate: gate);
 
@@ -274,7 +285,8 @@ void main() {
       expect(
         tester.takeException(),
         isA<TimeoutException>(),
-        reason: 'the teardown gave up on a cancellation that cannot finish, '
+        reason:
+            'the teardown gave up on a cancellation that cannot finish, '
             'and said so',
       );
 
@@ -285,57 +297,63 @@ void main() {
       expect(
         controller.calls,
         ['init', 'onUnmount', 'dispose'],
-        reason: 'the controller is released on every path -- which is the '
+        reason:
+            'the controller is released on every path -- which is the '
             'whole promise of this family -- and this is the latest path '
             'there is',
       );
       expect(
         tester.takeException(),
         isNull,
-        reason: 'and the release is a release, not a report about a widget '
+        reason:
+            'and the release is a release, not a report about a widget '
             'the element had already let go of',
       );
     });
 
     testWidgets(
-        'the constructor form creates the controller once and hands it to the '
-        'subtree', (tester) async {
-      var created = 0;
-      late _TestController controller;
+      'the constructor form creates the controller once and hands it to the '
+      'subtree',
+      (tester) async {
+        var created = 0;
+        late _TestController controller;
 
-      await tester.pumpWidget(
-        Directionality(
-          textDirection: TextDirection.ltr,
-          child: AsyncControllerScope<_TestController>(
-            createController: (context) {
-              created++;
+        await tester.pumpWidget(
+          Directionality(
+            textDirection: TextDirection.ltr,
+            child: AsyncControllerScope<_TestController>(
+              createController: (context) {
+                created++;
 
-              return controller = _TestController();
-            },
-            progressBuilder: (context) => const Text('initializing'),
-            errorBuilder: (context, error, stackTrace) => const Text('error'),
-            builder: (context, controller) => const _Reader(),
+                return controller = _TestController();
+              },
+              progressBuilder: (context) => const Text('initializing'),
+              errorBuilder: (context, error, stackTrace) => const Text('error'),
+              builder: (context, controller) => const _Reader(),
+            ),
           ),
-        ),
-      );
-      await tester.pumpAndSettle();
+        );
+        await tester.pumpAndSettle();
 
-      expect(created, 1);
-      expect(find.text('reader: init'), findsOneWidget);
+        expect(created, 1);
+        expect(find.text('reader: init'), findsOneWidget);
 
-      await tester.pumpWidget(const SizedBox.shrink());
-      await settle(tester, until: () => controller.calls.contains('dispose'));
-    });
+        await tester.pumpWidget(const SizedBox.shrink());
+        await settle(tester, until: () => controller.calls.contains('dispose'));
+      },
+    );
 
     // The release of a controller the initialization never handed over is the
     // one wait of this package that outlives the teardown which gave the
     // widget back. Its expiry used to be built by asking that widget, and the
     // `_TypeError` that came out was reported as a failed disposal -- so the
     // expiry itself was never announced: no message, no `onTimeout`.
-    testWidgets('an expiry that outlives the teardown still names itself',
-        (tester) async {
-      ScopeConfig.defaultInitCancellationTimeout =
-          const Duration(milliseconds: 20);
+    testWidgets('an expiry that outlives the teardown still names itself', (
+      tester,
+    ) async {
+      ScopeConfig.defaultInitCancellationTimeout = const Duration(
+        milliseconds: 20,
+      );
       ScopeConfig.defaultDisposeScopeTimeout = const Duration(milliseconds: 90);
       final observer = _TimeoutRecorder();
       ScopeConfig.observer = observer;
@@ -398,14 +416,16 @@ void main() {
       expect(
         observer.timeouts,
         contains(contains("couldn't wait for its controller to be released")),
-        reason: 'the expiry names itself from the label taken while there '
+        reason:
+            'the expiry names itself from the label taken while there '
             'was still a widget to take it from',
       );
 
       expect(
         told,
         1,
-        reason: 'the callback of the consumer is called on every expiry, '
+        reason:
+            'the callback of the consumer is called on every expiry, '
             'which is what `timeoutReportsEnabled` promises about the four '
             'of them',
       );
@@ -417,7 +437,8 @@ void main() {
       expect(
         reported.whereType<TypeError>(),
         isEmpty,
-        reason: 'the callback is reached without going to a widget that is '
+        reason:
+            'the callback is reached without going to a widget that is '
             'gone',
       );
 
@@ -426,11 +447,15 @@ void main() {
       tester.takeException();
     });
 
-    testWidgets('the context answers about the controller by that name',
-        (tester) async {
+    testWidgets('the context answers about the controller by that name', (
+      tester,
+    ) async {
       late _TestController controller;
-      AsyncControllerScopeContext<AsyncControllerScope<_TestController>,
-          _TestController>? seen;
+      AsyncControllerScopeContext<
+        AsyncControllerScope<_TestController>,
+        _TestController
+      >?
+      seen;
 
       await tester.pumpWidget(
         Directionality(
@@ -461,7 +486,8 @@ void main() {
       expect(
         context.data,
         same(controller),
-        reason: 'the inherited three answer the same object, so the old way '
+        reason:
+            'the inherited three answer the same object, so the old way '
             'of reading a controller keeps working',
       );
 
@@ -477,8 +503,9 @@ void main() {
     // replaces the one the `finally` was entered for, so the failure that
     // actually broke the scope disappeared and `buildOnError` was handed the
     // secondary one instead.
-    testWidgets('shows the failure of init, not the failure of dispose',
-        (tester) async {
+    testWidgets('shows the failure of init, not the failure of dispose', (
+      tester,
+    ) async {
       final controller = _TestController(failOnInit: true, failOnDispose: true);
 
       await tester.pumpWidget(_Host(controller: controller));
@@ -510,8 +537,9 @@ void main() {
     // never reached the model and the scope showed its loading branch for
     // ever -- while `doc/async_controller_scope.md` promises the wait for
     // `dispose()` is bounded by `disposeScopeTimeout`.
-    testWidgets('gives up on a hanging dispose and still shows the failure',
-        (tester) async {
+    testWidgets('gives up on a hanging dispose and still shows the failure', (
+      tester,
+    ) async {
       final hang = Completer<void>();
       addTearDown(hang.complete);
       final controller = _TestController(failOnInit: true, disposeGate: hang);
@@ -534,7 +562,8 @@ void main() {
       expect(
         find.textContaining('init failed'),
         findsOneWidget,
-        reason: 'a teardown that never finishes must not keep the scope on '
+        reason:
+            'a teardown that never finishes must not keep the scope on '
             'its loading branch for ever',
       );
     });
@@ -570,8 +599,9 @@ void main() {
     await tester.pumpWidget(_Host(controller: controller));
     await tester.pumpAndSettle();
 
-    final shown =
-        tester.widget<Text>(find.textContaining('createController')).data!;
+    final shown = tester
+        .widget<Text>(find.textContaining('createController'))
+        .data!;
 
     expect(
       shown.split('\n').first,
@@ -579,7 +609,8 @@ void main() {
         '.createController handed over a _TestController that has already '
         'been used.',
       ),
-      reason: 'the refusal names the hook that handed the controller over, '
+      reason:
+          'the refusal names the hook that handed the controller over, '
           'which is where the mistake is -- and it says so in its first '
           'line, the summary of a `FlutterError`, rather than opening with '
           'a paragraph the reader has to get through',
@@ -603,30 +634,26 @@ void main() {
         });
 
         Widget scope(String name) => AsyncControllerScope<_TestController>(
-              key: ValueKey(name),
-              createController: (context) => controller,
-              progressBuilder: (context) => const Text('initializing'),
-              errorBuilder: (context, error, stackTrace) {
-                closeRejectedScope =
-                    () => AsyncControllerScope.of<_TestController>(
-                          context,
-                          listen: false,
-                        ).close();
+          key: ValueKey(name),
+          createController: (context) => controller,
+          progressBuilder: (context) => const Text('initializing'),
+          errorBuilder: (context, error, stackTrace) {
+            closeRejectedScope = () => AsyncControllerScope.of<_TestController>(
+              context,
+              listen: false,
+            ).close();
 
-                return Text('error: $error');
-              },
-              builder: (context, controller) => const Text('ready'),
-            );
+            return Text('error: $error');
+          },
+          builder: (context, controller) => const Text('ready'),
+        );
 
         Widget app(bool second) => Directionality(
-              textDirection: TextDirection.ltr,
-              child: Column(
-                children: [
-                  scope('first'),
-                  if (second) scope('second'),
-                ],
-              ),
-            );
+          textDirection: TextDirection.ltr,
+          child: Column(
+            children: [scope('first'), if (second) scope('second')],
+          ),
+        );
 
         await tester.pumpWidget(app(false));
         await tester.pumpAndSettle();
@@ -700,14 +727,14 @@ final class _Host extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Directionality(
-        textDirection: TextDirection.ltr,
-        child: _TestScope(
-          controller: controller,
-          disposeScopeTimeout: disposeScopeTimeout,
-          initCancellationTimeout: initCancellationTimeout,
-          pauseAfterInitialization: pauseAfterInitialization,
-        ),
-      );
+    textDirection: TextDirection.ltr,
+    child: _TestScope(
+      controller: controller,
+      disposeScopeTimeout: disposeScopeTimeout,
+      initCancellationTimeout: initCancellationTimeout,
+      pauseAfterInitialization: pauseAfterInitialization,
+    ),
+  );
 }
 
 /// Hands out a controller made outside, so the test can inspect it.
@@ -733,8 +760,7 @@ final class _TestScope
     BuildContext context,
     Object error,
     StackTrace stackTrace,
-  ) =>
-      Text('error: $error');
+  ) => Text('error: $error');
 
   @override
   Widget buildOnReady(BuildContext context, _TestController controller) =>
@@ -771,8 +797,7 @@ final class _TimeoutRecorder extends ScopeObserver {
     String what,
     TimeoutException error,
     StackTrace stackTrace,
-  ) =>
-      timeouts.add('${error.message}');
+  ) => timeouts.add('${error.message}');
 }
 
 final class _TestController extends ScopeController {

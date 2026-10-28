@@ -39,8 +39,9 @@ void main() {
   // thing that drives it accepts one, and the scope that owns a controller
   // used to refuse: its freshness check read state private to
   // `ScopeController`, which a double built by `implements` has none of.
-  testWidgets('a mocked controller is accepted by the scope that owns one',
-      (tester) async {
+  testWidgets('a mocked controller is accepted by the scope that owns one', (
+    tester,
+  ) async {
     final controller = _MockAppController();
 
     await tester.pumpWidget(

@@ -24,11 +24,7 @@ final class ApiConfig extends ScopeWidgetBase<ApiConfig> {
   /// The subtree of this scope.
   final Widget Function(BuildContext context) builder;
 
-  const ApiConfig({
-    super.key,
-    required this.apiKey,
-    required this.builder,
-  });
+  const ApiConfig({super.key, required this.apiKey, required this.builder});
 
   static ApiConfig of(BuildContext context, {required bool listen}) =>
       ScopeWidgetBase.of<ApiConfig>(context, listen: listen);
@@ -36,8 +32,7 @@ final class ApiConfig extends ScopeWidgetBase<ApiConfig> {
   static V select<V>(
     BuildContext context,
     V Function(ApiConfig widget) selector,
-  ) =>
-      ScopeWidgetBase.select<ApiConfig, V>(context, selector);
+  ) => ScopeWidgetBase.select<ApiConfig, V>(context, selector);
 
   /// One parameter, subscribed to on its own.
   static String apiKeyOf(BuildContext context) =>

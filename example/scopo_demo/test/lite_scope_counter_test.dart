@@ -28,11 +28,12 @@ void main() {
     }
 
     expect(
-      console.lines(LiteScopeExample1).where(
-            (line) => line.contains('state initialized'),
-          ),
+      console
+          .lines(LiteScopeExample1)
+          .where((line) => line.contains('state initialized')),
       isNotEmpty,
-      reason: 'the scope got all the way up, so what follows is the ordinary '
+      reason:
+          'the scope got all the way up, so what follows is the ordinary '
           'way down and not a cancellation',
     );
 

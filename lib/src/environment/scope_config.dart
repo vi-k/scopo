@@ -144,10 +144,9 @@ void notifyTimeout(
   String what,
   TimeoutException error,
   StackTrace stackTrace,
-) =>
-    notifyObserver(
-      (observer) => observer.onTimeout(target, what, error, stackTrace),
-    );
+) => notifyObserver(
+  (observer) => observer.onTimeout(target, what, error, stackTrace),
+);
 
 /// Reports an expired wait through [FlutterError.reportError].
 ///
@@ -164,11 +163,7 @@ void reportTimeout(TimeoutException error, StackTrace stackTrace) {
   }
 
   FlutterError.reportError(
-    FlutterErrorDetails(
-      exception: error,
-      stack: stackTrace,
-      library: 'scopo',
-    ),
+    FlutterErrorDetails(exception: error, stack: stackTrace, library: 'scopo'),
   );
 }
 

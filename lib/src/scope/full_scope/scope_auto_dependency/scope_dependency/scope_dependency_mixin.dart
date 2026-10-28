@@ -182,7 +182,7 @@ mixin ScopeDependencyMixin implements ScopeDependency, ScopeObservable {
   /// node itself, the name would be the leaf's own and the groups above it
   /// would be missing.
   void Function(String path, Object error, StackTrace stackTrace)?
-      _onDisposalStepFailed;
+  _onDisposalStepFailed;
 
   /// Points both entry channels of [dependency] at the given callbacks.
   ///
@@ -209,7 +209,7 @@ mixin ScopeDependencyMixin implements ScopeDependency, ScopeObservable {
     required void Function(String path) onDisposalStepStarted,
     required void Function(String path) onDisposalStepEnded,
     required void Function(String path, Object error, StackTrace stackTrace)
-        onDisposalStepFailed,
+    onDisposalStepFailed,
     required String Function(String path) pathOf,
   }) {
     if (dependency is! ScopeDependencyMixin) {
@@ -522,13 +522,13 @@ mixin ScopeDependencyMixin implements ScopeDependency, ScopeObservable {
     Object error,
     StackTrace stackTrace,
     _ScopeDependencyWithErrors Function(Object error, StackTrace stackTrace)
-        defaultState,
+    defaultState,
   ) {
     _state = switch (_state) {
       final _ScopeDependencyWithErrors state => state.addError(
-          error,
-          stackTrace,
-        ),
+        error,
+        stackTrace,
+      ),
       ScopeDependencyAnySuccess() => defaultState(error, stackTrace),
     };
   }
@@ -537,7 +537,7 @@ mixin ScopeDependencyMixin implements ScopeDependency, ScopeObservable {
     Object error,
     StackTrace stackTrace,
     ScopeDependencyAnyFailed Function(Object error, StackTrace stackTrace)
-        defaultState,
+    defaultState,
   ) {
     notifyObserver(
       (observer) =>
@@ -595,7 +595,7 @@ mixin ScopeDependencyMixin implements ScopeDependency, ScopeObservable {
     Object error,
     StackTrace stackTrace,
     ScopeDependencyAnyCancelled Function(Object error, StackTrace stackTrace)
-        defaultState,
+    defaultState,
   ) {
     notifyObserver(
       (observer) => observer.onTrace(

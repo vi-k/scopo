@@ -32,8 +32,9 @@ class _ScopeModelExample1State extends State<ScopeModelExample1> {
   Widget build(BuildContext context) {
     return Center(
       child: BlinkingBox(
-        blinkingColor:
-            Theme.of(context).colorScheme.primary.withValues(alpha: 0.2),
+        blinkingColor: Theme.of(
+          context,
+        ).colorScheme.primary.withValues(alpha: 0.2),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
@@ -60,7 +61,7 @@ class _ScopeModelExample1State extends State<ScopeModelExample1> {
 /// lifecycle.
 final class CounterScope extends ScopeModelBase<CounterScope, CounterModel> {
   const CounterScope({super.key, required CounterModel model})
-      : super.value(value: model);
+    : super.value(value: model);
 
   static int countOf(BuildContext context) =>
       ScopeModelBase.select<CounterScope, CounterModel, int>(
@@ -82,8 +83,9 @@ class _CounterView extends StatelessWidget {
     final count = CounterScope.countOf(context);
     return Center(
       child: BlinkingBox(
-        blinkingColor:
-            Theme.of(context).colorScheme.primary.withValues(alpha: 0.2),
+        blinkingColor: Theme.of(
+          context,
+        ).colorScheme.primary.withValues(alpha: 0.2),
         child: Text('$count'),
       ),
     );

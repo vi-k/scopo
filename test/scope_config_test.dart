@@ -15,8 +15,9 @@ void main() {
   // effect asserted below is the one thing that shows it: the key of the
   // scope is not handed over until its own teardown has actually finished.
   group('a removed limit', () {
-    testWidgets('really waits for a teardown that takes its time',
-        (tester) async {
+    testWidgets('really waits for a teardown that takes its time', (
+      tester,
+    ) async {
       addTearDown(ScopeConfig.reset);
       ScopeConfig.defaultDisposeScopeTimeout = null;
 
@@ -76,7 +77,8 @@ void main() {
       expect(
         log,
         isEmpty,
-        reason: 'the first teardown has not finished, and with no limit on it '
+        reason:
+            'the first teardown has not finished, and with no limit on it '
             'there is nothing else that could let the second scope in',
       );
 

@@ -32,30 +32,12 @@ class _ScopeDemoState extends State<ScopeDemo> {
       style: Theme.of(context).textTheme.bodySmall!,
       child: Column(
         children: [
-          Expanded(
-            child: ScopeExample1(
-              key: ValueKey(_rebuildCounter),
-            ),
-          ),
-          const Expanded(
-            child: ConsoleView(source: ScopeExample1),
-          ),
-          Expanded(
-            child: ScopeExample2(
-              key: ValueKey(_rebuildCounter),
-            ),
-          ),
-          const Expanded(
-            child: ConsoleView(source: ScopeExample2),
-          ),
-          Expanded(
-            child: ScopeExample3(
-              key: ValueKey(_rebuildCounter),
-            ),
-          ),
-          const Expanded(
-            child: ConsoleView(source: ScopeExample3),
-          ),
+          Expanded(child: ScopeExample1(key: ValueKey(_rebuildCounter))),
+          const Expanded(child: ConsoleView(source: ScopeExample1)),
+          Expanded(child: ScopeExample2(key: ValueKey(_rebuildCounter))),
+          const Expanded(child: ConsoleView(source: ScopeExample2)),
+          Expanded(child: ScopeExample3(key: ValueKey(_rebuildCounter))),
+          const Expanded(child: ConsoleView(source: ScopeExample3)),
           _RebuildButton(rebuild: _rebuild),
         ],
       ),

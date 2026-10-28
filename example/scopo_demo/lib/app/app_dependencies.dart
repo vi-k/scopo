@@ -85,10 +85,6 @@ final class AppDependencies implements ScopeDependencies {
   @override
   Future<void> dispose() async {
     // Every dependency is released at once: none of them holds another.
-    await [
-      httpClient.close(),
-      service.dispose(),
-      analytics.dispose(),
-    ].wait;
+    await [httpClient.close(), service.dispose(), analytics.dispose()].wait;
   }
 }

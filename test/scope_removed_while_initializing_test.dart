@@ -33,8 +33,9 @@ void main() {
   tearDown(ScopeConfig.reset);
 
   group('a scope removed while its dependencies are initializing', () {
-    testWidgets('releases what the half-built tree had already taken',
-        (tester) async {
+    testWidgets('releases what the half-built tree had already taken', (
+      tester,
+    ) async {
       final deps = _Deps();
 
       await tester.pumpWidget(_wrap(_DepScope(deps: deps)));
@@ -57,13 +58,15 @@ void main() {
       expect(
         deps.released,
         ['a'],
-        reason: 'the scope never became ready, so its own disposeScope is '
+        reason:
+            'the scope never became ready, so its own disposeScope is '
             'skipped and this is the only pass that releases the tree',
       );
     });
 
-    testWidgets('does not reach the dependencies below the one it stopped on',
-        (tester) async {
+    testWidgets('does not reach the dependencies below the one it stopped on', (
+      tester,
+    ) async {
       final deps = _Deps();
 
       await tester.pumpWidget(_wrap(_DepScope(deps: deps)));
@@ -76,7 +79,8 @@ void main() {
       expect(
         deps.started,
         ['a', 'b'],
-        reason: 'the step in flight finishes because nothing can stop it, but '
+        reason:
+            'the step in flight finishes because nothing can stop it, but '
             'the walk goes no further: a cancelled walk stops where it next '
             'asks the context, before the next child, rather than building the '
             'rest of the tree for a scope that has already left',
@@ -101,7 +105,8 @@ void main() {
           '  "b" cancelled',
           '  "c" not initialized',
         ],
-        reason: 'three different fates under a root that was walked to the '
+        reason:
+            'three different fates under a root that was walked to the '
             'end, and the dump is where a reader finds out which is which: '
             '"c" was never started, "b" was and never finished',
       );
@@ -111,8 +116,9 @@ void main() {
     // Through the widget that is a promise about the teardown as much as about
     // the container: the scope is gone, and nothing behind it may release the
     // tree on the user's behalf.
-    testWidgets('keeps the half-built tree when asked to keep it',
-        (tester) async {
+    testWidgets('keeps the half-built tree when asked to keep it', (
+      tester,
+    ) async {
       final deps = _Deps(autoDisposeOnError: false);
 
       await tester.pumpWidget(_wrap(_DepScope(deps: deps)));
@@ -125,7 +131,8 @@ void main() {
       expect(
         deps.released,
         isEmpty,
-        reason: 'the container was told to keep what it built, and the scope '
+        reason:
+            'the container was told to keep what it built, and the scope '
             'leaving the tree does not overrule that',
       );
       expect(
@@ -142,8 +149,9 @@ void main() {
   // nothing, runs to its end, and what it produced is released by the scope.
   // Which of the two it is decides what the guard has to look like.
   group('an initialization cancelled after it took something', () {
-    testWidgets('is thrown into when it waits through the context',
-        (tester) async {
+    testWidgets('is thrown into when it waits through the context', (
+      tester,
+    ) async {
       final log = <String>[];
       final gate = Completer<void>();
 
@@ -171,8 +179,7 @@ void main() {
       );
     });
 
-    testWidgets(
-        'is not thrown into when it waits on a bare await, and the '
+    testWidgets('is not thrown into when it waits on a bare await, and the '
         'scope releases what it produced instead', (tester) async {
       final log = <String>[];
       final gate = Completer<void>();
@@ -187,15 +194,17 @@ void main() {
       expect(
         log,
         ['took', 'disposeScope'],
-        reason: 'a body that asks the context nothing cannot be told '
+        reason:
+            'a body that asks the context nothing cannot be told '
             'anything, so its catch never runs -- and the value it finished '
             'producing for a scope that had gone is handed to `disposeScope` '
             'rather than left with nobody, which is where a generator left it',
       );
     });
 
-    testWidgets('does reach a finally, which can tell it from a handover',
-        (tester) async {
+    testWidgets('does reach a finally, which can tell it from a handover', (
+      tester,
+    ) async {
       final log = <String>[];
       final gate = Completer<void>();
 
@@ -212,7 +221,8 @@ void main() {
       expect(
         log,
         ['took', 'released'],
-        reason: 'the flag is set after the step, so a body thrown into at '
+        reason:
+            'the flag is set after the step, so a body thrown into at '
             'that step leaves it false -- which is exactly the case where '
             'what was taken is still the initialization`s to give back',
       );
@@ -222,25 +232,27 @@ void main() {
       final log = <String>[];
       final gate = Completer<void>()..complete();
 
-      await tester
-          .pumpWidget(_wrap(_Guarded.withFinally(log: log, gate: gate)));
+      await tester.pumpWidget(
+        _wrap(_Guarded.withFinally(log: log, gate: gate)),
+      );
       await tester.pumpAndSettle();
 
       expect(
         log,
         ['took', 'handed over'],
-        reason: 'the guard has to keep quiet once the scope is ready, or the '
+        reason:
+            'the guard has to keep quiet once the scope is ready, or the '
             'value would be released twice',
       );
 
       await tester.pumpWidget(_wrap(const SizedBox.shrink()));
       await settle(tester, until: () => log.contains('disposeScope'));
 
-      expect(
-        log,
-        ['took', 'handed over', 'disposeScope'],
-        reason: 'and from there it is the scope that releases it',
-      );
+      expect(log, [
+        'took',
+        'handed over',
+        'disposeScope',
+      ], reason: 'and from there it is the scope that releases it');
     });
 
     // The narrowest state the two can be caught in. `pauseAfterInitialization`
@@ -253,8 +265,9 @@ void main() {
     // It cannot. The body sets the flag as its last statement and returns, and
     // the scope takes the result in the microtasks that follow -- and a tree
     // can only change in a frame, which is later than any pending microtask.
-    testWidgets('says handed over while the ready branch is still held back',
-        (tester) async {
+    testWidgets('says handed over while the ready branch is still held back', (
+      tester,
+    ) async {
       final log = <String>[];
       final gate = Completer<void>()..complete();
 
@@ -275,7 +288,8 @@ void main() {
       expect(
         log,
         ['took', 'handed over', 'disposeScope'],
-        reason: 'released once, by the scope -- the guard kept quiet, and it '
+        reason:
+            'released once, by the scope -- the guard kept quiet, and it '
             'was right to',
       );
     });
@@ -293,8 +307,9 @@ void main() {
   // The guard that covers this was there, and nothing covered the guard:
   // removing it left the whole suite green.
   group('a scope removed while its state is initializing', () {
-    testWidgets('does not call onInitialized on a state that is gone',
-        (tester) async {
+    testWidgets('does not call onInitialized on a state that is gone', (
+      tester,
+    ) async {
       final gate = Completer<void>();
       final initialized = <String>[];
       addTearDown(() {
@@ -311,7 +326,8 @@ void main() {
       expect(
         initialized,
         isEmpty,
-        reason: 'the ready branch is on screen while initStateAsync runs, '
+        reason:
+            'the ready branch is on screen while initStateAsync runs, '
             'which is the whole reason this window exists',
       );
 
@@ -324,7 +340,8 @@ void main() {
       expect(
         initialized,
         isEmpty,
-        reason: 'the state is gone, so the hook that would hand it to user '
+        reason:
+            'the state is gone, so the hook that would hand it to user '
             'code is not called at all',
       );
       expect(tester.takeException(), isNull);
@@ -336,8 +353,9 @@ void main() {
     // settles, and that wait carries no limit of its own -- deliberately, since
     // on the scope layer the package is what settles it. Here the user is, so
     // what ends the wait is the limit around the step above it.
-    testWidgets('gives up on a state that never finishes initializing',
-        (tester) async {
+    testWidgets('gives up on a state that never finishes initializing', (
+      tester,
+    ) async {
       final observer = RecordingObserver();
       ScopeConfig.observer = observer;
       addTearDown(() => ScopeConfig.observer = null);
@@ -382,7 +400,8 @@ void main() {
           'timeout _StateScope its own teardown',
           'disposed _StateScope',
         ],
-        reason: 'a `LiteScope` has no second half below the state to protect, '
+        reason:
+            'a `LiteScope` has no second half below the state to protect, '
             'so the limit sits around the whole step and the expiry is '
             'reported as the teardown of the scope itself -- and the teardown '
             'ends, which is the point: without it the scope would hold its '
@@ -396,7 +415,8 @@ void main() {
       expect(
         initialized,
         isEmpty,
-        reason: 'giving up on the wait is not the same as the wait coming '
+        reason:
+            'giving up on the wait is not the same as the wait coming '
             'back: the initialization is still running, and the hook that '
             'follows it has not been reached',
       );
@@ -454,10 +474,8 @@ final class _StateScopeState
   Widget build(BuildContext context) => const SizedBox.shrink();
 }
 
-Widget _wrap(Widget child) => Directionality(
-      textDirection: TextDirection.ltr,
-      child: child,
-    );
+Widget _wrap(Widget child) =>
+    Directionality(textDirection: TextDirection.ltr, child: child);
 
 /// Dependencies whose middle step can be held open, so the tree can be caught
 /// half-built.
@@ -478,26 +496,26 @@ final class _Deps extends ScopeAutoDependencies<_Deps, BuildContext> {
   final bool _autoDisposeOnError;
 
   _Deps({bool autoDisposeOnError = true})
-      : _autoDisposeOnError = autoDisposeOnError;
+    : _autoDisposeOnError = autoDisposeOnError;
 
   @override
   bool get autoDisposeOnError => _autoDisposeOnError;
 
   @override
   ScopeDependency buildDependencies(BuildContext context) => sequential('', [
-        dep('a', (dep) {
-          started.add('a');
-          dep.dispose = () => released.add('a');
-        }),
-        dep('b', (dep) async {
-          started.add('b');
-          await gate.future;
-        }),
-        dep('c', (dep) {
-          started.add('c');
-          dep.dispose = () => released.add('c');
-        }),
-      ]);
+    dep('a', (dep) {
+      started.add('a');
+      dep.dispose = () => released.add('a');
+    }),
+    dep('b', (dep) async {
+      started.add('b');
+      await gate.future;
+    }),
+    dep('c', (dep) {
+      started.add('c');
+      dep.dispose = () => released.add('c');
+    }),
+  ]);
 }
 
 final class _DepScope extends Scope<_DepScope, _Deps, _DepScopeState> {
@@ -506,10 +524,7 @@ final class _DepScope extends Scope<_DepScope, _Deps, _DepScopeState> {
   const _DepScope({required this.deps}) : super(child: const SizedBox.shrink());
 
   @override
-  Future<_Deps> initDependencies(
-    BuildContext context,
-    ScopeInitContext ctx,
-  ) =>
+  Future<_Deps> initDependencies(BuildContext context, ScopeInitContext ctx) =>
       deps.init(context, ctx);
 
   @override
@@ -522,8 +537,7 @@ final class _DepScope extends Scope<_DepScope, _Deps, _DepScopeState> {
     Object error,
     StackTrace stackTrace,
     Object? progress,
-  ) =>
-      const SizedBox.shrink();
+  ) => const SizedBox.shrink();
 
   @override
   _DepScopeState createState() => _DepScopeState();
@@ -563,17 +577,17 @@ final class _Guarded extends AsyncScopeBase<_Guarded> {
     required this.log,
     required this.gate,
     this.waitsThroughContext = false,
-  })  : guardIsFinally = false,
-        pause = null,
-        super(child: const SizedBox.shrink());
+  }) : guardIsFinally = false,
+       pause = null,
+       super(child: const SizedBox.shrink());
 
   const _Guarded.withFinally({
     required this.log,
     required this.gate,
     this.pause,
     this.waitsThroughContext = false,
-  })  : guardIsFinally = true,
-        super(child: const SizedBox.shrink());
+  }) : guardIsFinally = true,
+       super(child: const SizedBox.shrink());
 
   @override
   Duration? get pauseAfterInitialization => pause;
@@ -625,8 +639,7 @@ final class _Guarded extends AsyncScopeBase<_Guarded> {
     Object error,
     StackTrace stackTrace,
     Object? progress,
-  ) =>
-      const SizedBox.shrink();
+  ) => const SizedBox.shrink();
 
   @override
   Widget buildOnReady(BuildContext context) => child;

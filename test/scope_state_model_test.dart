@@ -25,7 +25,8 @@ void main() {
       expect(
         notifications,
         2,
-        reason: 'the default `equals` answers false, so even a value equal to '
+        reason:
+            'the default `equals` answers false, so even a value equal to '
             'the current one counts as a change: a state that is not a value '
             'type is the common case, and silence would be the wrong default '
             'for it',
@@ -134,7 +135,8 @@ void main() {
       expect(
         caughtTrace,
         same(trace),
-        reason: 'the trace of where it actually failed, not of where it was '
+        reason:
+            'the trace of where it actually failed, not of where it was '
             'read: a reporter handed the reading site has nothing to work from',
       );
     });
@@ -181,7 +183,8 @@ void main() {
       expect(
         notifications,
         2,
-        reason: 'the value is the one from before the failure, so `equals` '
+        reason:
+            'the value is the one from before the failure, so `equals` '
             'says no change — but every listener was told the state throws, '
             'and has to be told that it no longer does',
       );

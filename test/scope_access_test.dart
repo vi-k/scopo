@@ -17,8 +17,9 @@ void main() {
   tearDown(ScopeConfig.reset);
 
   group('ScopeAccess', () {
-    testWidgets('answers what the five statics of Scope answer',
-        (tester) async {
+    testWidgets('answers what the five statics of Scope answer', (
+      tester,
+    ) async {
       late final List<Object?> pairs;
 
       await tester.pumpWidget(
@@ -79,8 +80,9 @@ void main() {
   });
 
   group('LiteScopeAccess', () {
-    testWidgets('answers what the five statics of LiteScope answer',
-        (tester) async {
+    testWidgets('answers what the five statics of LiteScope answer', (
+      tester,
+    ) async {
       late final List<Object?> pairs;
 
       await tester.pumpWidget(
@@ -128,8 +130,9 @@ void main() {
   });
 
   group('ScopeWidgetAccess', () {
-    testWidgets('answers what the three statics of ScopeWidgetBase answer',
-        (tester) async {
+    testWidgets('answers what the three statics of ScopeWidgetBase answer', (
+      tester,
+    ) async {
       late final List<Object?> pairs;
 
       await tester.pumpWidget(
@@ -177,8 +180,8 @@ void main() {
       _CountingReader.builds = 0;
 
       Widget build(String key) => _wrap(
-            _Config(apiKey: key, child: const _CountingReader(listen: true)),
-          );
+        _Config(apiKey: key, child: const _CountingReader(listen: true)),
+      );
 
       await tester.pumpWidget(build('one'));
       expect(_CountingReader.builds, 1);
@@ -193,8 +196,8 @@ void main() {
       _CountingReader.builds = 0;
 
       Widget quiet(String key) => _wrap(
-            _Config(apiKey: key, child: const _CountingReader(listen: false)),
-          );
+        _Config(apiKey: key, child: const _CountingReader(listen: false)),
+      );
 
       await tester.pumpWidget(quiet('one'));
       expect(_CountingReader.builds, 1);
@@ -203,7 +206,8 @@ void main() {
       expect(
         _CountingReader.builds,
         1,
-        reason: 'listen: false does not, and an accessor that fixed the flag '
+        reason:
+            'listen: false does not, and an accessor that fixed the flag '
             'to true would be caught right here',
       );
     });
@@ -235,10 +239,8 @@ Future<void> _settle(WidgetTester tester) async {
   }
 }
 
-Widget _wrap(Widget child) => Directionality(
-      textDirection: TextDirection.ltr,
-      child: child,
-    );
+Widget _wrap(Widget child) =>
+    Directionality(textDirection: TextDirection.ltr, child: child);
 
 //
 // Scope
@@ -262,10 +264,7 @@ final class _FullScope extends Scope<_FullScope, _Deps, _FullScopeState> {
   static const access = ScopeAccess<_FullScope, _Deps, _FullScopeState>();
 
   @override
-  Future<_Deps> initDependencies(
-    BuildContext context,
-    ScopeInitContext ctx,
-  ) =>
+  Future<_Deps> initDependencies(BuildContext context, ScopeInitContext ctx) =>
       _Deps.init(ctx);
 
   @override
@@ -281,8 +280,7 @@ final class _FullScope extends Scope<_FullScope, _Deps, _FullScopeState> {
     Object error,
     StackTrace stackTrace,
     Object? progress,
-  ) =>
-      const SizedBox.shrink();
+  ) => const SizedBox.shrink();
 }
 
 final class _FullScopeState

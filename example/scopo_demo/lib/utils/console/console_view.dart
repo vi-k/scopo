@@ -7,10 +7,7 @@ import 'console.dart';
 class ConsoleView extends StatefulWidget {
   final Object source;
 
-  const ConsoleView({
-    super.key,
-    required this.source,
-  });
+  const ConsoleView({super.key, required this.source});
 
   @override
   State<ConsoleView> createState() => _ConsoleSourceViewState();
@@ -24,12 +21,12 @@ class _ConsoleSourceViewState extends State<ConsoleView> {
   @override
   void initState() {
     super.initState();
-    _subscription = console.select(
-      (console) => console.lines(widget.source),
-      (_, __) {
-        _scrollToBottom();
-      },
-    );
+    _subscription = console.select((console) => console.lines(widget.source), (
+      _,
+      __,
+    ) {
+      _scrollToBottom();
+    });
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) {
         return;
@@ -44,9 +41,7 @@ class _ConsoleSourceViewState extends State<ConsoleView> {
       });
 
       if (_scrollController.hasClients) {
-        _scrollController.jumpTo(
-          _scrollController.position.maxScrollExtent,
-        );
+        _scrollController.jumpTo(_scrollController.position.maxScrollExtent);
       }
     });
   }
@@ -75,10 +70,9 @@ class _ConsoleSourceViewState extends State<ConsoleView> {
   @override
   Widget build(BuildContext context) {
     return DefaultTextStyle(
-      style: DefaultTextStyle.of(context).style.copyWith(
-            fontSize: 10,
-            color: Colors.blueGrey.shade200,
-          ),
+      style: DefaultTextStyle.of(
+        context,
+      ).style.copyWith(fontSize: 10, color: Colors.blueGrey.shade200),
       child: ConstrainedBox(
         constraints: const BoxConstraints(maxHeight: 80),
         child: ColoredBox(

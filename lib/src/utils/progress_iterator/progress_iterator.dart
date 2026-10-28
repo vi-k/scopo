@@ -70,8 +70,8 @@ final class Progress {
   /// that is what a release build does when it steps past the end, and
   /// [value] answers for it.
   const Progress(this.number, this.total)
-      : assert(total >= 0, 'total ($total) cannot be negative'),
-        assert(number >= 0, 'number ($number) cannot be negative');
+    : assert(total >= 0, 'total ($total) cannot be negative'),
+      assert(number >= 0, 'number ($number) cannot be negative');
 
   /// The progress as a fraction between 0 and 1, for a progress indicator.
   ///

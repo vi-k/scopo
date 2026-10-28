@@ -32,8 +32,8 @@ final class _Deps extends ScopeAutoDependencies<_Deps, void> {
 
   @override
   ScopeDependency buildDependencies(void context) => sequential('', [
-        controllerDep('player', () => player = _TestController(calls)),
-      ]);
+    controllerDep('player', () => player = _TestController(calls)),
+  ]);
 }
 
 Future<void> _init(_Deps deps) async {
@@ -100,8 +100,8 @@ final class _SlowDeps extends ScopeAutoDependencies<_SlowDeps, void> {
 
   @override
   ScopeDependency buildDependencies(void context) => sequential('', [
-        controllerDep('player', () => player = _SlowController(calls, gate)),
-      ]);
+    controllerDep('player', () => player = _SlowController(calls, gate)),
+  ]);
 }
 
 final class _FailingDeps extends ScopeAutoDependencies<_FailingDeps, void> {
@@ -112,47 +112,52 @@ final class _FailingDeps extends ScopeAutoDependencies<_FailingDeps, void> {
 
   @override
   ScopeDependency buildDependencies(void context) => sequential('', [
-        controllerDep('player', () => player = _FailingController(calls)),
-      ]);
+    controllerDep('player', () => player = _FailingController(calls)),
+  ]);
 }
 
 void main() {
   group('ScopeAutoDependencies.controllerDep', () {
-    test('runs create, performInit, performUnmount and performDispose',
-        () async {
-      final calls = <String>[];
-      final deps = _Deps(calls);
+    test(
+      'runs create, performInit, performUnmount and performDispose',
+      () async {
+        final calls = <String>[];
+        final deps = _Deps(calls);
 
-      await _init(deps);
+        await _init(deps);
 
-      expect(calls, ['init']);
-      expect(deps.player.mounted, isTrue);
+        expect(calls, ['init']);
+        expect(deps.player.mounted, isTrue);
 
-      deps.onUnmount();
-      await deps.dispose();
+        deps.onUnmount();
+        await deps.dispose();
 
-      expect(calls, ['init', 'onUnmount', 'dispose']);
-      expect(deps.player.mounted, isFalse);
-    });
+        expect(calls, ['init', 'onUnmount', 'dispose']);
+        expect(deps.player.mounted, isFalse);
+      },
+    );
 
-    test('releases the controller when its init fails, like any dep()',
-        () async {
-      final calls = <String>[];
-      final deps = _FailingDeps(calls);
+    test(
+      'releases the controller when its init fails, like any dep()',
+      () async {
+        final calls = <String>[];
+        final deps = _FailingDeps(calls);
 
-      await expectLater(
-        runScopeInit((ctx) => deps.init(null, ctx)),
-        throwsException,
-      );
+        await expectLater(
+          runScopeInit((ctx) => deps.init(null, ctx)),
+          throwsException,
+        );
 
-      expect(
-        calls,
-        ['init', 'onUnmount', 'dispose'],
-        reason: 'the handle was registered before `performInit` was '
-            'awaited, so `autoDisposeOnError` finds it and releases the '
-            'controller even though `init` never returned',
-      );
-    });
+        expect(
+          calls,
+          ['init', 'onUnmount', 'dispose'],
+          reason:
+              'the handle was registered before `performInit` was '
+              'awaited, so `autoDisposeOnError` finds it and releases the '
+              'controller even though `init` never returned',
+        );
+      },
+    );
 
     test(
       'releases the controller when the walk is cancelled mid-init',
@@ -177,7 +182,8 @@ void main() {
         expect(
           calls,
           ['init'],
-          reason: 'the walk is parked inside `performInit` -- this is the '
+          reason:
+              'the walk is parked inside `performInit` -- this is the '
               'window the whole registration order is about',
         );
 
@@ -192,7 +198,8 @@ void main() {
         expect(
           calls,
           ['init', 'init finished', 'onUnmount', 'dispose', 'cancelled'],
-          reason: 'cancelling the walk does not abandon the initializer that '
+          reason:
+              'cancelling the walk does not abandon the initializer that '
               'is already running: it finishes, and only then does the '
               'teardown of the walk unmount and dispose of what was '
               'registered. So a controller half-way through `init` is never '

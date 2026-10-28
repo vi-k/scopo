@@ -75,8 +75,9 @@ void main() {
     // The package's own counter on its own, with the phase idle and no build
     // owner behind it -- which is what a release build is left with when a
     // scope rebuilds outside a frame.
-    testWidgets('sees a rebuild of this package with nothing else running',
-        (tester) async {
+    testWidgets('sees a rebuild of this package with nothing else running', (
+      tester,
+    ) async {
       await tester.pumpWidget(const SizedBox.shrink());
 
       expect(SchedulerBinding.instance.schedulerPhase, SchedulerPhase.idle);
@@ -88,7 +89,8 @@ void main() {
         expect(
           SchedulerBinding.instance.isBuilding,
           isTrue,
-          reason: 'the counter is the half of the answer a release build '
+          reason:
+              'the counter is the half of the answer a release build '
               'keeps, so it has to be asked',
         );
       } finally {
@@ -135,8 +137,9 @@ void main() {
     // Whatever this package builds itself it can answer for, and it does, with
     // a plain field. Read directly, since `isBuilding` would say `true` from
     // the assert-only flag whether the field was ever written or not.
-    testWidgets('sees a scope of its own being rebuilt outside a frame',
-        (tester) async {
+    testWidgets('sees a scope of its own being rebuilt outside a frame', (
+      tester,
+    ) async {
       final seen = <bool>[];
 
       await tester.pumpWidget(
@@ -159,7 +162,8 @@ void main() {
       expect(
         seen,
         everyElement(isTrue),
-        reason: 'a build of the scope is a build, and saying so must not '
+        reason:
+            'a build of the scope is a build, and saying so must not '
             'depend on an assertion',
       );
 
@@ -171,7 +175,8 @@ void main() {
       expect(
         seen,
         [isTrue],
-        reason: 'the phase says nothing about this one -- it is the build '
+        reason:
+            'the phase says nothing about this one -- it is the build '
             '`runApp` drives, and the case the finding is about',
       );
       expect(
@@ -181,34 +186,38 @@ void main() {
       );
     });
 
-    testWidgets('runOutsideFrame holds an action back until the build is over',
-        (tester) async {
-      final order = <String>[];
-      late StateSetter rebuild;
+    testWidgets(
+      'runOutsideFrame holds an action back until the build is over',
+      (tester) async {
+        final order = <String>[];
+        late StateSetter rebuild;
 
-      await tester.pumpWidget(
-        StatefulBuilder(
-          builder: (context, setState) {
-            rebuild = setState;
-            SchedulerBinding.instance.runOutsideFrame(() => order.add('after'));
-            order.add('build');
+        await tester.pumpWidget(
+          StatefulBuilder(
+            builder: (context, setState) {
+              rebuild = setState;
+              SchedulerBinding.instance.runOutsideFrame(
+                () => order.add('after'),
+              );
+              order.add('build');
 
-            return const SizedBox.shrink();
-          },
-        ),
-      );
+              return const SizedBox.shrink();
+            },
+          ),
+        );
 
-      order.clear();
-      rebuild(() {});
-      tester.binding.buildOwner!.buildScope(
-        tester.element(find.byType(StatefulBuilder)),
-      );
+        order.clear();
+        rebuild(() {});
+        tester.binding.buildOwner!.buildScope(
+          tester.element(find.byType(StatefulBuilder)),
+        );
 
-      expect(order, ['build'], reason: 'not while the build is running');
+        expect(order, ['build'], reason: 'not while the build is running');
 
-      await tester.pumpAndSettle();
+        await tester.pumpAndSettle();
 
-      expect(order, ['build', 'after']);
-    });
+        expect(order, ['build', 'after']);
+      },
+    );
   });
 }

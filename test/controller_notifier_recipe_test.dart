@@ -31,8 +31,9 @@ void main() {
     await settle(tester, until: () => api.closed);
   });
 
-  testWidgets('a value the widget does not read does not rebuild it',
-      (tester) async {
+  testWidgets('a value the widget does not read does not rebuild it', (
+    tester,
+  ) async {
     final api = _Api();
     final builds = <String>[];
 
@@ -48,7 +49,8 @@ void main() {
     expect(
       builds,
       ['-', 'one'],
-      reason: 'the position changed and the title did not, and the title is '
+      reason:
+          'the position changed and the title did not, and the title is '
           'what this widget selected',
     );
 
@@ -56,8 +58,9 @@ void main() {
     await settle(tester, until: () => api.closed);
   });
 
-  testWidgets('the teardown waits for the subscription to be cancelled',
-      (tester) async {
+  testWidgets('the teardown waits for the subscription to be cancelled', (
+    tester,
+  ) async {
     final api = _Api();
     final builds = <String>[];
 
@@ -67,18 +70,19 @@ void main() {
     await tester.pumpWidget(const SizedBox.shrink());
     await settle(tester, until: () => api.closed);
 
-    expect(
-      api.log,
-      ['opened', 'unmount', 'cancelled', 'closed'],
-      reason: 'onUnmount at once, then an awaited dispose in order',
-    );
+    expect(api.log, [
+      'opened',
+      'unmount',
+      'cancelled',
+      'closed',
+    ], reason: 'onUnmount at once, then an awaited dispose in order');
   });
 }
 
 Widget _host(_Api api, List<String> builds) => Directionality(
-      textDirection: TextDirection.ltr,
-      child: _Player(api: api, builds: builds),
-    );
+  textDirection: TextDirection.ltr,
+  child: _Player(api: api, builds: builds),
+);
 
 final class _Track {
   final String title;
@@ -119,8 +123,7 @@ final class _PlayerController extends ScopeController with ChangeNotifier {
   static V select<V>(
     BuildContext context,
     V Function(_PlayerController controller) selector,
-  ) =>
-      ScopeNotifier.select<_PlayerController, V>(context, selector);
+  ) => ScopeNotifier.select<_PlayerController, V>(context, selector);
 
   String get title => _track?.title ?? '-';
 
@@ -173,8 +176,7 @@ final class _Player
     BuildContext context,
     Object error,
     StackTrace stackTrace,
-  ) =>
-      const SizedBox.shrink();
+  ) => const SizedBox.shrink();
 
   @override
   Widget buildOnReady(BuildContext context, _PlayerController controller) =>

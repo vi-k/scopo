@@ -33,29 +33,17 @@ class _AsyncDataScopeDemoState extends State<AsyncDataScopeDemo> {
       child: Column(
         children: [
           Expanded(
-            child: AsyncDataScopeExample1(
-              key: ValueKey(_rebuildCounter),
-            ),
+            child: AsyncDataScopeExample1(key: ValueKey(_rebuildCounter)),
           ),
-          const Expanded(
-            child: ConsoleView(source: AsyncDataScopeExample1),
-          ),
+          const Expanded(child: ConsoleView(source: AsyncDataScopeExample1)),
           Expanded(
-            child: AsyncDataScopeExample2(
-              key: ValueKey(_rebuildCounter),
-            ),
+            child: AsyncDataScopeExample2(key: ValueKey(_rebuildCounter)),
           ),
-          const Expanded(
-            child: ConsoleView(source: AsyncDataScopeExample2),
-          ),
+          const Expanded(child: ConsoleView(source: AsyncDataScopeExample2)),
           Expanded(
-            child: AsyncDataScopeExample3(
-              key: ValueKey(_rebuildCounter),
-            ),
+            child: AsyncDataScopeExample3(key: ValueKey(_rebuildCounter)),
           ),
-          const Expanded(
-            child: ConsoleView(source: AsyncDataScopeExample3),
-          ),
+          const Expanded(child: ConsoleView(source: AsyncDataScopeExample3)),
           _RebuildButton(rebuild: _rebuild),
         ],
       ),

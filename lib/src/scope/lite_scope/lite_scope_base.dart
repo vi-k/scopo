@@ -5,8 +5,10 @@ part of '../scope.dart';
 /// Extends [LiteScopeCore] to provide lifecycle and initialization handling.
 ///
 /// {@category LiteScope}
-abstract base class LiteScope<W extends LiteScope<W, S>,
-        S extends LiteScopeState<W, S>>
+abstract base class LiteScope<
+  W extends LiteScope<W, S>,
+  S extends LiteScopeState<W, S>
+>
     extends LiteScopeCore<W, _LiteScopeElement<W, S>, S> {
   /// A key used to synchronize the initialization of the scope.
   final Object? scopeKey;
@@ -149,13 +151,12 @@ abstract base class LiteScope<W extends LiteScope<W, S>,
     Object error,
     StackTrace stackTrace,
     Object? progress,
-  ) =>
-      throw UnimplementedError(
-        '$runtimeType overrides `initScope()` but not `buildOnError()`, and '
-        'the '
-        'initialization it never wrote a branch for has just failed with: '
-        '$error',
-      );
+  ) => throw UnimplementedError(
+    '$runtimeType overrides `initScope()` but not `buildOnError()`, and '
+    'the '
+    'initialization it never wrote a branch for has just failed with: '
+    '$error',
+  );
 
   /// Creates the state for this scope.
   S createState();
@@ -180,24 +181,23 @@ abstract base class LiteScope<W extends LiteScope<W, S>,
   static W paramsOf<W extends LiteScope<W, S>, S extends LiteScopeState<W, S>>(
     BuildContext context, {
     required bool listen,
-  }) =>
-      listen
-          ? ScopeContext.select<W, _LiteScopeElement<W, S>, W>(
-              context,
-              (element) => element.widget,
-            )
-          : ScopeContext.of<W, _LiteScopeElement<W, S>>(
-              context,
-              listen: false,
-            ).widget;
+  }) => listen
+      ? ScopeContext.select<W, _LiteScopeElement<W, S>, W>(
+          context,
+          (element) => element.widget,
+        )
+      : ScopeContext.of<W, _LiteScopeElement<W, S>>(
+          context,
+          listen: false,
+        ).widget;
 
   /// Selects and returns a specific parameter of the scope [W] using the
   /// [selector] and becomes **dependent** on it.
-  static V selectParam<W extends LiteScope<W, S>,
-          S extends LiteScopeState<W, S>, V extends Object?>(
-    BuildContext context,
-    V Function(W widget) selector,
-  ) =>
+  static V selectParam<
+    W extends LiteScope<W, S>,
+    S extends LiteScopeState<W, S>,
+    V extends Object?
+  >(BuildContext context, V Function(W widget) selector) =>
       ScopeContext.select<W, _LiteScopeElement<W, S>, V>(
         context,
         (element) => selector(element.widget),
@@ -214,11 +214,10 @@ abstract base class LiteScope<W extends LiteScope<W, S>,
   /// not.
   static S? maybeOf<W extends LiteScope<W, S>, S extends LiteScopeState<W, S>>(
     BuildContext context,
-  ) =>
-      ScopeContext.maybeOf<W, _LiteScopeElement<W, S>>(
-        context,
-        listen: false,
-      )?._globalStateKey.currentState;
+  ) => ScopeContext.maybeOf<W, _LiteScopeElement<W, S>>(
+    context,
+    listen: false,
+  )?._globalStateKey.currentState;
 
   /// Finds and returns the state [S] of the scope [W] from the given
   /// [context].
@@ -232,22 +231,21 @@ abstract base class LiteScope<W extends LiteScope<W, S>,
   /// first.
   static S of<W extends LiteScope<W, S>, S extends LiteScopeState<W, S>>(
     BuildContext context,
-  ) =>
-      ScopeContext.of<W, _LiteScopeElement<W, S>>(
-        context,
-        listen: false,
-      )._stateOrThrow;
+  ) => ScopeContext.of<W, _LiteScopeElement<W, S>>(
+    context,
+    listen: false,
+  )._stateOrThrow;
 
   /// Selects and returns a specific value from the state [S] of the scope [W]
   /// using the [selector] and becomes **dependent** on it.
   ///
   /// Reaches the state through the same door as [of], and throws on the same
   /// two conditions.
-  static V select<W extends LiteScope<W, S>, S extends LiteScopeState<W, S>,
-          V extends Object?>(
-    BuildContext context,
-    V Function(S scope) selector,
-  ) =>
+  static V select<
+    W extends LiteScope<W, S>,
+    S extends LiteScopeState<W, S>,
+    V extends Object?
+  >(BuildContext context, V Function(S scope) selector) =>
       ScopeContext.select<W, _LiteScopeElement<W, S>, V>(
         context,
         (element) => selector(element._stateOrThrow),
@@ -255,8 +253,10 @@ abstract base class LiteScope<W extends LiteScope<W, S>,
 }
 
 /// The default element underlying [LiteScope].
-final class _LiteScopeElement<W extends LiteScope<W, S>,
-        S extends LiteScopeState<W, S>>
+final class _LiteScopeElement<
+  W extends LiteScope<W, S>,
+  S extends LiteScopeState<W, S>
+>
     extends LiteScopeElementBase<W, _LiteScopeElement<W, S>, S> {
   _LiteScopeElement(super.widget);
 
@@ -272,12 +272,13 @@ final class _LiteScopeElement<W extends LiteScope<W, S>,
     void Function()? initCancellation,
     void Function()? disposeScope,
     void Function()? waitForChildren,
-  }) get timeoutCallbacks => (
-        scopeKey: widget.onScopeKeyTimeout,
-        initCancellation: widget.onInitCancellationTimeout,
-        disposeScope: widget.onDisposeScopeTimeout,
-        waitForChildren: widget.onWaitForChildrenTimeout,
-      );
+  })
+  get timeoutCallbacks => (
+    scopeKey: widget.onScopeKeyTimeout,
+    initCancellation: widget.onInitCancellationTimeout,
+    disposeScope: widget.onDisposeScopeTimeout,
+    waitForChildren: widget.onWaitForChildrenTimeout,
+  );
 
   @override
   Duration? get initCancellationTimeout => widget.initCancellationTimeout;
@@ -302,11 +303,7 @@ final class _LiteScopeElement<W extends LiteScope<W, S>,
       widget.buildOnProgress(this, progress);
 
   @override
-  Widget buildOnError(
-    Object error,
-    StackTrace stackTrace,
-    Object? progress,
-  ) =>
+  Widget buildOnError(Object error, StackTrace stackTrace, Object? progress) =>
       widget.buildOnError(this, error, stackTrace, progress);
 
   @override
@@ -324,8 +321,10 @@ final class _LiteScopeElement<W extends LiteScope<W, S>,
 /// Extends [LiteScopeCoreState].
 ///
 /// {@category LiteScope}
-abstract base class LiteScopeState<W extends LiteScope<W, S>,
-        S extends LiteScopeState<W, S>>
+abstract base class LiteScopeState<
+  W extends LiteScope<W, S>,
+  S extends LiteScopeState<W, S>
+>
     extends LiteScopeCoreState<W, _LiteScopeElement<W, S>, S> {
   //
   // Overriding block
@@ -378,8 +377,10 @@ abstract base class LiteScopeState<W extends LiteScope<W, S>,
 /// ```
 ///
 /// {@category LiteScope}
-final class LiteScopeAccess<W extends LiteScope<W, S>,
-    S extends LiteScopeState<W, S>> {
+final class LiteScopeAccess<
+  W extends LiteScope<W, S>,
+  S extends LiteScopeState<W, S>
+> {
   /// Creates an accessor for the scope [W].
   const LiteScopeAccess();
 
@@ -393,8 +394,7 @@ final class LiteScopeAccess<W extends LiteScope<W, S>,
   V select<V extends Object?>(
     BuildContext context,
     V Function(S state) selector,
-  ) =>
-      LiteScope.select<W, S, V>(context, selector);
+  ) => LiteScope.select<W, S, V>(context, selector);
 
   /// Returns the parameters of the scope — the scope widget itself.
   W paramsOf(BuildContext context, {required bool listen}) =>
@@ -404,8 +404,7 @@ final class LiteScopeAccess<W extends LiteScope<W, S>,
   V selectParam<V extends Object?>(
     BuildContext context,
     V Function(W widget) selector,
-  ) =>
-      LiteScope.selectParam<W, S, V>(context, selector);
+  ) => LiteScope.selectParam<W, S, V>(context, selector);
 }
 
 /// The refusal of a `buildOnProgress` nobody wrote.

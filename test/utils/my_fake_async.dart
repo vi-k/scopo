@@ -6,8 +6,7 @@ import 'package:fake_async/fake_async.dart';
 T myFakeAsync<T>(
   T Function(MyFakeAsync async) callback, {
   DateTime? initialTime,
-}) =>
-    MyFakeAsync(initialTime: initialTime).run(callback);
+}) => MyFakeAsync(initialTime: initialTime).run(callback);
 
 final class MyFutureResult<T extends Object?> {
   var _isDone = false;
@@ -56,7 +55,7 @@ final class MyFakeTimer {
   final Duration nextCall;
 
   MyFakeTimer(FakeAsync fakeAsync, this.duration)
-      : nextCall = fakeAsync.elapsed + duration;
+    : nextCall = fakeAsync.elapsed + duration;
 }
 
 /// The [Timer] handed to the code under test, so that a cancellation is seen.
@@ -84,7 +83,7 @@ final class MyFakeAsync {
   final List<MyFakeTimer> _pendingTimers = [];
 
   MyFakeAsync({DateTime? initialTime})
-      : _fakeAsync = FakeAsync(initialTime: initialTime);
+    : _fakeAsync = FakeAsync(initialTime: initialTime);
 
   /// See [FakeAsync.microtaskCount].
   int get microtaskCount => _fakeAsync.microtaskCount;
@@ -105,35 +104,35 @@ final class MyFakeAsync {
 
   /// See also [FakeAsync.run].
   T run<T>(T Function(MyFakeAsync myFakeAsync) callback) => _fakeAsync.run(
-        (fakeAsync) => runZoned(
-          () => callback(this),
-          zoneValues: {'myFakeAsync': this},
-          zoneSpecification: ZoneSpecification(
-            createTimer: (self, parent, zone, duration, f) {
-              final myFakeTimer = MyFakeTimer(fakeAsync, duration);
-              _pendingTimers.add(myFakeTimer);
+    (fakeAsync) => runZoned(
+      () => callback(this),
+      zoneValues: {'myFakeAsync': this},
+      zoneSpecification: ZoneSpecification(
+        createTimer: (self, parent, zone, duration, f) {
+          final myFakeTimer = MyFakeTimer(fakeAsync, duration);
+          _pendingTimers.add(myFakeTimer);
 
-              final timer = parent.createTimer(zone, duration, () {
-                _pendingTimers.remove(myFakeTimer);
-                f();
-              });
+          final timer = parent.createTimer(zone, duration, () {
+            _pendingTimers.remove(myFakeTimer);
+            f();
+          });
 
-              // Wrapped, because a timer leaves the bookkeeping two ways and
-              // only one of them passes through the callback above. A
-              // `cancel()` goes straight to the timer the parent zone made,
-              // so the record stayed behind for good: `nonPeriodicTimerCount`
-              // then over-counted, and `waitFuture` went on elapsing to a
-              // timer that would never fire again instead of saying there was
-              // no more work. Nothing in the suite cancels a timer under this
-              // helper today; a bounded wait that wins its race is what would.
-              return _MyFakeTimerHandle(
-                timer,
-                () => _pendingTimers.remove(myFakeTimer),
-              );
-            },
-          ),
-        ),
-      );
+          // Wrapped, because a timer leaves the bookkeeping two ways and
+          // only one of them passes through the callback above. A
+          // `cancel()` goes straight to the timer the parent zone made,
+          // so the record stayed behind for good: `nonPeriodicTimerCount`
+          // then over-counted, and `waitFuture` went on elapsing to a
+          // timer that would never fire again instead of saying there was
+          // no more work. Nothing in the suite cancels a timer under this
+          // helper today; a bounded wait that wins its race is what would.
+          return _MyFakeTimerHandle(
+            timer,
+            () => _pendingTimers.remove(myFakeTimer),
+          );
+        },
+      ),
+    ),
+  );
 
   /// See [FakeAsync.elapse].
   void elapse(Duration duration) {

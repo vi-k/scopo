@@ -49,9 +49,7 @@ void main() {
     // `AsyncDataScopeBase.select<W, T, V>`.
     testWidgets('select reads one part of the value', (tester) async {
       await tester.pumpWidget(
-        _Host(
-          init: (context, ctx) async => _Database('main'),
-        ),
+        _Host(init: (context, ctx) async => _Database('main')),
       );
       await tester.pumpAndSettle();
 
@@ -99,10 +97,7 @@ void main() {
       final database = _Database('main');
 
       await tester.pumpWidget(
-        _Host(
-          init: (context, ctx) async => database,
-          dispose: disposed.add,
-        ),
+        _Host(init: (context, ctx) async => database, dispose: disposed.add),
       );
       await tester.pumpAndSettle();
 
@@ -148,31 +143,30 @@ void main() {
     // it -- the model stayed as it was, the dependents heard nothing, and the
     // first value was left with nobody to release it.
 
-    testWidgets(
-      'nothing is disposed of when the data never arrived',
-      (tester) async {
-        final disposed = <_Database>[];
+    testWidgets('nothing is disposed of when the data never arrived', (
+      tester,
+    ) async {
+      final disposed = <_Database>[];
 
-        await tester.pumpWidget(
-          _Host(
-            init: (context, ctx) async {
-              ctx.progress('opening');
+      await tester.pumpWidget(
+        _Host(
+          init: (context, ctx) async {
+            ctx.progress('opening');
 
-              throw StateError('could not open');
-            },
-            dispose: disposed.add,
-          ),
-        );
-        await tester.pumpAndSettle();
+            throw StateError('could not open');
+          },
+          dispose: disposed.add,
+        ),
+      );
+      await tester.pumpAndSettle();
 
-        await tester.pumpWidget(const SizedBox.shrink());
-        // Never holds: the point is to give the disposal every chance to run
-        // and then show that it had nothing to release.
-        await settle(tester, until: () => disposed.isNotEmpty);
+      await tester.pumpWidget(const SizedBox.shrink());
+      // Never holds: the point is to give the disposal every chance to run
+      // and then show that it had nothing to release.
+      await settle(tester, until: () => disposed.isNotEmpty);
 
-        expect(disposed, isEmpty);
-      },
-    );
+      expect(disposed, isEmpty);
+    });
   });
 
   // `null` is a value like any other when `T` is nullable, and the getter used
@@ -199,7 +193,8 @@ void main() {
       expect(
         seen,
         isA<StateError>(),
-        reason: 'the scope has produced nothing yet, and `null` is not a way '
+        reason:
+            'the scope has produced nothing yet, and `null` is not a way '
             'to say so',
       );
 
@@ -207,8 +202,9 @@ void main() {
       await tester.pumpAndSettle();
     });
 
-    testWidgets('data returns the null the initialization produced',
-        (tester) async {
+    testWidgets('data returns the null the initialization produced', (
+      tester,
+    ) async {
       Object? seen = 'not read';
 
       await tester.pumpWidget(
@@ -219,18 +215,15 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      expect(
-        seen,
-        isNull,
-        reason: 'the value is there, and it is `null`',
-      );
+      expect(seen, isNull, reason: 'the value is there, and it is `null`');
     });
 
     // `dataOrNull` cannot answer this one: it is `null` on both sides of the
     // moment the value arrives. `_hasData` was kept for exactly this and was
     // only ever consulted by `data`.
-    testWidgets('hasData tells "nothing yet" from "the value is null"',
-        (tester) async {
+    testWidgets('hasData tells "nothing yet" from "the value is null"', (
+      tester,
+    ) async {
       final gate = Completer<void>();
       final seen = <bool>[];
 
@@ -261,8 +254,9 @@ void main() {
   // stands under that flag. A throw in between left the element holding a
   // value nobody would ever let go of -- and in debug there is such a throw,
   // the assert against a pause that is not a pause.
-  testWidgets('a value survives a readiness that failed on its way in',
-      (tester) async {
+  testWidgets('a value survives a readiness that failed on its way in', (
+    tester,
+  ) async {
     final released = <String>[];
 
     await tester.pumpWidget(
@@ -294,7 +288,8 @@ void main() {
     expect(
       released,
       ['the database'],
-      reason: "what the body built was already the scope's by then, so the "
+      reason:
+          "what the body built was already the scope's by then, so the "
           'teardown is the one that has to let go of it',
     );
   });
@@ -307,33 +302,30 @@ final class _Database {
 }
 
 final class _Host extends StatelessWidget {
-  final Future<_Database> Function(
-    BuildContext context,
-    ScopeInitContext ctx,
-  ) init;
+  final Future<_Database> Function(BuildContext context, ScopeInitContext ctx)
+  init;
   final void Function(_Database data)? dispose;
 
   const _Host({required this.init, this.dispose});
 
   @override
   Widget build(BuildContext context) => Directionality(
-        textDirection: TextDirection.ltr,
-        child: AsyncDataScope<_Database>(
-          initData: init,
-          disposeData: (data) => dispose?.call(data),
-          progressBuilder: (context, progress) =>
-              Text('initializing: $progress'),
-          errorBuilder: (context, error, stackTrace, progress) =>
-              Text('error: $error ($progress)'),
-          builder: (context, data) => Column(
-            children: [
-              Text('ready: ${data.name}'),
-              const _Descendant(),
-              const _Selector(),
-            ],
-          ),
-        ),
-      );
+    textDirection: TextDirection.ltr,
+    child: AsyncDataScope<_Database>(
+      initData: init,
+      disposeData: (data) => dispose?.call(data),
+      progressBuilder: (context, progress) => Text('initializing: $progress'),
+      errorBuilder: (context, error, stackTrace, progress) =>
+          Text('error: $error ($progress)'),
+      builder: (context, data) => Column(
+        children: [
+          Text('ready: ${data.name}'),
+          const _Descendant(),
+          const _Selector(),
+        ],
+      ),
+    ),
+  );
 }
 
 /// A scope over a nullable value, with a reader on each branch.
@@ -342,10 +334,8 @@ final class _Host extends StatelessWidget {
 /// the scope can be looked up from — the builders are called with the scope's
 /// own element, and a lookup walks the ancestors.
 final class _NullableHost extends StatelessWidget {
-  final Future<String?> Function(
-    BuildContext context,
-    ScopeInitContext ctx,
-  ) init;
+  final Future<String?> Function(BuildContext context, ScopeInitContext ctx)
+  init;
   final void Function(Object? data)? onInitializing;
   final void Function(Object? data)? onReady;
   final void Function(bool hasData)? onInitializingHasData;
@@ -361,17 +351,17 @@ final class _NullableHost extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Directionality(
-        textDirection: TextDirection.ltr,
-        child: AsyncDataScope<String?>(
-          initData: init,
-          disposeData: (data) {},
-          progressBuilder: (context, progress) =>
-              _NullableReader(onInitializing, onInitializingHasData),
-          errorBuilder: (context, error, stackTrace, progress) =>
-              const SizedBox.shrink(),
-          builder: (context, data) => _NullableReader(onReady, onReadyHasData),
-        ),
-      );
+    textDirection: TextDirection.ltr,
+    child: AsyncDataScope<String?>(
+      initData: init,
+      disposeData: (data) {},
+      progressBuilder: (context, progress) =>
+          _NullableReader(onInitializing, onInitializingHasData),
+      errorBuilder: (context, error, stackTrace, progress) =>
+          const SizedBox.shrink(),
+      builder: (context, data) => _NullableReader(onReady, onReadyHasData),
+    ),
+  );
 }
 
 /// Reports what `data` gave it: the value, or whatever it threw. And what

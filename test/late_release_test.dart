@@ -110,14 +110,14 @@ void main() {
 
       stopCollecting();
       expect(released, ['dispose']);
-      expect(
-        reported.map((details) => details.exception),
-        [isA<TimeoutException>()],
-      );
+      expect(reported.map((details) => details.exception), [
+        isA<TimeoutException>(),
+      ]);
     });
 
-    testWidgets('AsyncDataScope hands the value to disposeData',
-        (tester) async {
+    testWidgets('AsyncDataScope hands the value to disposeData', (
+      tester,
+    ) async {
       collect();
 
       final gate = Completer<void>();
@@ -135,11 +135,9 @@ void main() {
       await settle(tester, until: () => released.isNotEmpty);
 
       stopCollecting();
-      expect(
-        released,
-        ['main'],
-        reason: 'the value the body built too late, and no other',
-      );
+      expect(released, [
+        'main',
+      ], reason: 'the value the body built too late, and no other');
       expect(database.disposed, isTrue);
     });
 
@@ -164,8 +162,9 @@ void main() {
     // the outcome of the body goes nowhere. Both roads out, then -- the
     // observer and `FlutterError` -- and the expiry is still reported once,
     // because an expiry and a release that failed are two different events.
-    testWidgets('a release that fails is reported and does not stop the rest',
-        (tester) async {
+    testWidgets('a release that fails is reported and does not stop the rest', (
+      tester,
+    ) async {
       collect();
 
       final gate = Completer<void>();
@@ -180,11 +179,9 @@ void main() {
       await settle(tester, until: () => released.isNotEmpty);
 
       stopCollecting();
-      expect(
-        released,
-        ['dispose'],
-        reason: 'the failure of one half did not take the other with it',
-      );
+      expect(released, [
+        'dispose',
+      ], reason: 'the failure of one half did not take the other with it');
       expect(
         reported.map((details) => details.exception),
         [
@@ -206,8 +203,9 @@ void main() {
 
     // The same question of the family whose release is not caught at all: the
     // kernel names what the cleanup threw, and the scope passes it on.
-    testWidgets('a disposeScope that fails late is reported the same way',
-        (tester) async {
+    testWidgets('a disposeScope that fails late is reported the same way', (
+      tester,
+    ) async {
       collect();
 
       final gate = Completer<void>();
@@ -222,17 +220,14 @@ void main() {
       await settle(tester, until: () => released.isNotEmpty);
 
       stopCollecting();
-      expect(
-        reported.map((details) => details.exception),
-        [
-          isA<TimeoutException>(),
-          isA<StateError>().having(
-            (error) => error.message,
-            'message',
-            'late dispose failed',
-          ),
-        ],
-      );
+      expect(reported.map((details) => details.exception), [
+        isA<TimeoutException>(),
+        isA<StateError>().having(
+          (error) => error.message,
+          'message',
+          'late dispose failed',
+        ),
+      ]);
       expect(
         observer.events.last,
         'error _Async initializationCancellation Bad state: late dispose '
@@ -243,8 +238,9 @@ void main() {
     // What the whole of stage two rests on, asked directly: the element keeps
     // the widget while the job it gave up on is still running, and gives it
     // back when the job ends.
-    testWidgets('the widget is held until the job ends, and no longer',
-        (tester) async {
+    testWidgets('the widget is held until the job ends, and no longer', (
+      tester,
+    ) async {
       collect();
 
       final gate = Completer<void>();
@@ -258,8 +254,9 @@ void main() {
       );
       await tester.pump();
 
-      final element = tester.element<Element>(find.byType(_Async))
-          as AsyncScopeContext<_Async>;
+      final element =
+          tester.element<Element>(find.byType(_Async))
+              as AsyncScopeContext<_Async>;
 
       await tester.pumpWidget(const SizedBox.shrink());
       await settle(
@@ -343,8 +340,7 @@ final class _Full extends Scope<_Full, _Deps, _FullState> {
     Object error,
     StackTrace stackTrace,
     Object? progress,
-  ) =>
-      const SizedBox.shrink();
+  ) => const SizedBox.shrink();
 
   @override
   _FullState createState() => _FullState();
@@ -410,8 +406,7 @@ final class _Async extends AsyncScopeBase<_Async> {
     Object error,
     StackTrace stackTrace,
     Object? progress,
-  ) =>
-      const SizedBox.shrink();
+  ) => const SizedBox.shrink();
 
   @override
   Widget buildOnReady(BuildContext context) => const SizedBox.shrink();
@@ -457,8 +452,7 @@ final class _Data extends AsyncDataScopeBase<_Data, _Database> {
     Object error,
     StackTrace stackTrace,
     Object? progress,
-  ) =>
-      const SizedBox.shrink();
+  ) => const SizedBox.shrink();
 
   @override
   Widget buildOnReady(BuildContext context, _Database data) =>
@@ -487,7 +481,7 @@ final class _Controlled
   final List<String> released;
 
   const _Controlled({required this.gate, required this.released})
-      : super(initCancellationTimeout: _limit);
+    : super(initCancellationTimeout: _limit);
 
   @override
   _Controller createController(BuildContext context) =>
@@ -501,8 +495,7 @@ final class _Controlled
     BuildContext context,
     Object error,
     StackTrace stackTrace,
-  ) =>
-      const SizedBox.shrink();
+  ) => const SizedBox.shrink();
 
   @override
   Widget buildOnReady(BuildContext context, _Controller controller) =>
@@ -515,7 +508,7 @@ final class _Lite extends LiteScope<_Lite, _LiteState> {
   final List<String> released;
 
   const _Lite({required this.gate, required this.released})
-      : super(initCancellationTimeout: _limit);
+    : super(initCancellationTimeout: _limit);
 
   @override
   Future<void> initScope(ScopeInitContext ctx) => gate.future;

@@ -13,8 +13,11 @@ part of '../../scope.dart';
 /// reads scopes above it, `void` when it needs nothing.
 ///
 /// {@category Scope}
-abstract class ScopeAutoDependencies<T extends ScopeAutoDependencies<T, C>,
-    C extends Object?> implements ScopeDependencies, ScopeObservable {
+abstract class ScopeAutoDependencies<
+  T extends ScopeAutoDependencies<T, C>,
+  C extends Object?
+>
+    implements ScopeDependencies, ScopeObservable {
   @override
   String get debugLabel => '$T(#${shortHash(this)})';
 
@@ -60,13 +63,13 @@ abstract class ScopeAutoDependencies<T extends ScopeAutoDependencies<T, C>,
       // stood.
       _ when _disposalIsOver(root) => _root = _rebuildAfterDisposal(context),
       _ => throw StateError(
-          '$T has already been initialized (${root.stateToString()}) and has'
-          ' not been disposed of. Dispose of it before initializing it again:'
-          ' a second `init()` builds the tree afresh and runs every'
-          ' initializer over the same container, whose fields the first run'
-          ' has already assigned — and where that run is still holding'
-          ' something, nothing would ever release it.',
-        ),
+        '$T has already been initialized (${root.stateToString()}) and has'
+        ' not been disposed of. Dispose of it before initializing it again:'
+        ' a second `init()` builds the tree afresh and runs every'
+        ' initializer over the same container, whose fields the first run'
+        ' has already assigned — and where that run is still holding'
+        ' something, nothing would ever release it.',
+      ),
     };
 
     // The one place the root's entry channels are set. `_root` is assigned
@@ -241,7 +244,8 @@ abstract class ScopeAutoDependencies<T extends ScopeAutoDependencies<T, C>,
       error.name,
       error.error,
       error.stackTrace,
-      hint: 'this is a second `init()` over the same container, and a '
+      hint:
+          'this is a second `init()` over the same container, and a '
           '`late final` field an earlier run assigned refuses the second '
           'assignment. Declare it `late`, or initialize a fresh container. '
           'The `Scope` topic says what `late final` costs here.',
@@ -537,9 +541,9 @@ abstract class ScopeAutoDependencies<T extends ScopeAutoDependencies<T, C>,
       final afterCancelling = autoDisposeOnError
           ? 'cancelling it releases what it had built'
           : 'cancelling it unmounts what it had built and '
-              'leaves the rest of it standing, this container having turned '
-              '`autoDisposeOnError` off, so dispose of it once the '
-              'cancellation has come back';
+                'leaves the rest of it standing, this container having turned '
+                '`autoDisposeOnError` off, so dispose of it once the '
+                'cancellation has come back';
 
       throw StateError(
         '$T is initializing right now, and a `dispose()` started here would '
@@ -636,9 +640,7 @@ abstract class ScopeAutoDependencies<T extends ScopeAutoDependencies<T, C>,
         // sent this exit from inside the walk, and reporting it again here
         // would double every step of a disposal the container drove itself.
         if (dependencies is! ScopeDependencyMixin) {
-          notifyObserver(
-            (observer) => observer.onDisposalProgress(this, path),
-          );
+          notifyObserver((observer) => observer.onDisposalProgress(this, path));
         }
       });
       // ignore: avoid_catching_errors
@@ -667,8 +669,7 @@ abstract class ScopeAutoDependencies<T extends ScopeAutoDependencies<T, C>,
   ScopeDependency dep(
     String name,
     FutureOr<void> Function(ScopeDependencyHandle) init,
-  ) =>
-      ScopeDependency(name, init);
+  ) => ScopeDependency(name, init);
 
   /// A single dependency backed by a [ScopeController].
   ///
@@ -686,14 +687,13 @@ abstract class ScopeAutoDependencies<T extends ScopeAutoDependencies<T, C>,
   ScopeDependency controllerDep<S extends ScopeController>(
     String name,
     S Function() create,
-  ) =>
-      dep(name, (handle) async {
-        final controller = create();
-        handle
-          ..unmount = controller.performUnmount
-          ..dispose = controller.performDispose;
-        await controller.performInit();
-      });
+  ) => dep(name, (handle) async {
+    final controller = create();
+    handle
+      ..unmount = controller.performUnmount
+      ..dispose = controller.performDispose;
+    await controller.performInit();
+  });
 
   /// A group whose children are initialized one after another.
   ///
@@ -703,8 +703,7 @@ abstract class ScopeAutoDependencies<T extends ScopeAutoDependencies<T, C>,
   ScopeDependency sequential(
     String name,
     Iterable<ScopeDependency> dependencies,
-  ) =>
-      ScopeDependency.sequential(name, dependencies);
+  ) => ScopeDependency.sequential(name, dependencies);
 
   /// A group whose children are initialized in parallel.
   ///
@@ -715,8 +714,7 @@ abstract class ScopeAutoDependencies<T extends ScopeAutoDependencies<T, C>,
   ScopeDependency concurrent(
     String name,
     Iterable<ScopeDependency> dependencies,
-  ) =>
-      ScopeDependency.concurrent(name, dependencies);
+  ) => ScopeDependency.concurrent(name, dependencies);
 
   /// Walks the tree depth-first.
   Iterable<ScopeDependencyInfo> flattenDependencies() sync* {
@@ -751,8 +749,8 @@ abstract class ScopeAutoDependencies<T extends ScopeAutoDependencies<T, C>,
       flattenDependencies().where(
         (info) => switch (info.dependency.state) {
           final _ScopeDependencyWithErrors state => state.errors().any(
-                (e) => e.error is! ScopeDependencyException,
-              ),
+            (e) => e.error is! ScopeDependencyException,
+          ),
           ScopeDependencyAnySuccess() => false,
         },
       );

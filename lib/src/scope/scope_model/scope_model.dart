@@ -2,7 +2,8 @@ part of '../scope.dart';
 
 /// {@category ScopeModel}
 final class ScopeModel<M extends Object>
-    extends ScopeModelBase<ScopeModel<M>, M> with _ScopeModelMixin<M> {
+    extends ScopeModelBase<ScopeModel<M>, M>
+    with _ScopeModelMixin<M> {
   @override
   final Widget Function(BuildContext context) builder;
 
@@ -41,10 +42,7 @@ final class ScopeModel<M extends Object>
   /// The model of the nearest `ScopeModel<M>`.
   ///
   /// Throws when there is no such scope above [context].
-  static M of<M extends Object>(
-    BuildContext context, {
-    required bool listen,
-  }) =>
+  static M of<M extends Object>(BuildContext context, {required bool listen}) =>
       ScopeContext.of<ScopeModel<M>, ScopeModelContext<ScopeModel<M>, M>>(
         context,
         listen: listen,
@@ -57,9 +55,9 @@ final class ScopeModel<M extends Object>
     BuildContext context,
     V Function(M model) selector,
   ) =>
-      ScopeContext.select<ScopeModel<M>, ScopeModelContext<ScopeModel<M>, M>,
-          V>(
-        context,
-        (context) => selector(context.model),
-      );
+      ScopeContext.select<
+        ScopeModel<M>,
+        ScopeModelContext<ScopeModel<M>, M>,
+        V
+      >(context, (context) => selector(context.model));
 }

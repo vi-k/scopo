@@ -24,16 +24,9 @@ final class ScreenScope extends LiteScope<ScreenScope, ScreenScopeState> {
   /// The subtree of this scope.
   final Widget Function(BuildContext context) builder;
 
-  const ScreenScope({
-    super.key,
-    required this.title,
-    required this.builder,
-  });
+  const ScreenScope({super.key, required this.title, required this.builder});
 
-  static ScreenScope paramsOf(
-    BuildContext context, {
-    required bool listen,
-  }) =>
+  static ScreenScope paramsOf(BuildContext context, {required bool listen}) =>
       LiteScope.paramsOf<ScreenScope, ScreenScopeState>(
         context,
         listen: listen,
@@ -42,11 +35,10 @@ final class ScreenScope extends LiteScope<ScreenScope, ScreenScopeState> {
   static V selectParam<V>(
     BuildContext context,
     V Function(ScreenScope widget) selector,
-  ) =>
-      LiteScope.selectParam<ScreenScope, ScreenScopeState, V>(
-        context,
-        selector,
-      );
+  ) => LiteScope.selectParam<ScreenScope, ScreenScopeState, V>(
+    context,
+    selector,
+  );
 
   /// One parameter, subscribed to on its own.
   static String titleOf(BuildContext context) =>
@@ -58,11 +50,7 @@ final class ScreenScope extends LiteScope<ScreenScope, ScreenScopeState> {
   static V select<V>(
     BuildContext context,
     V Function(ScreenScopeState state) selector,
-  ) =>
-      LiteScope.select<ScreenScope, ScreenScopeState, V>(
-        context,
-        selector,
-      );
+  ) => LiteScope.select<ScreenScope, ScreenScopeState, V>(context, selector);
 
   /// One value of the state, subscribed to on its own.
   static int counterOf(BuildContext context) =>

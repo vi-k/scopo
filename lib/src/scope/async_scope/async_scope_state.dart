@@ -59,6 +59,7 @@ final class AsyncScopeError extends AsyncScopeState {
   AsyncScopeError(this.error, this.stackTrace, {this.progress});
 
   @override
-  String toString() => '$AsyncScopeError($error, $stackTrace'
+  String toString() =>
+      '$AsyncScopeError($error, $stackTrace'
       '${progress == null ? '' : ', progress: $progress'})';
 }

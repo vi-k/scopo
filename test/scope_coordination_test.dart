@@ -98,28 +98,30 @@ void main() {
       third.exit();
     });
 
-    test('cancelling stops the wait but keeps the place in the queue',
-        () async {
-      final queues = KeyedAccessQueues();
-      final first = AccessEntry('first');
-      final second = AccessEntry('second');
+    test(
+      'cancelling stops the wait but keeps the place in the queue',
+      () async {
+        final queues = KeyedAccessQueues();
+        final first = AccessEntry('first');
+        final second = AccessEntry('second');
 
-      await queues.enter('key', first);
-      final secondEntered = queues.enter('key', second);
-      await pumpEvents();
+        await queues.enter('key', first);
+        final secondEntered = queues.enter('key', second);
+        await pumpEvents();
 
-      second.cancel();
-      await secondEntered.timeout(const Duration(seconds: 1));
+        second.cancel();
+        await secondEntered.timeout(const Duration(seconds: 1));
 
-      expect(second.isCancelled, isTrue);
-      expect(second.isWaiting, isFalse);
-      expect(second.isCompleted, isFalse, reason: 'exit() is still required');
-      expect(queues.length, 1);
+        expect(second.isCancelled, isTrue);
+        expect(second.isWaiting, isFalse);
+        expect(second.isCompleted, isFalse, reason: 'exit() is still required');
+        expect(queues.length, 1);
 
-      first.exit();
-      second.exit();
-      expect(queues.length, 0);
-    });
+        first.exit();
+        second.exit();
+        expect(queues.length, 0);
+      },
+    );
 
     test('a timeout reports and lets the entry in anyway', () async {
       final queues = KeyedAccessQueues();
@@ -157,7 +159,8 @@ void main() {
       expect(
         queues.length,
         1,
-        reason: 'a timed-out entry keeps its slot, so exit() is still'
+        reason:
+            'a timed-out entry keeps its slot, so exit() is still'
             ' required',
       );
     });
@@ -230,7 +233,8 @@ void main() {
       expect(
         reported,
         isNull,
-        reason: 'the key was free when the limit ran out, so the wait it '
+        reason:
+            'the key was free when the limit ran out, so the wait it '
             'bounded had already succeeded',
       );
       expect(newcomerIsIn, isTrue);
@@ -261,7 +265,8 @@ void main() {
         expect(
           expired,
           isFalse,
-          reason: 'a fake clock reaches no timer of the root zone, and this '
+          reason:
+              'a fake clock reaches no timer of the root zone, and this '
               'limit is one',
         );
       });
@@ -319,13 +324,15 @@ void main() {
       expect(
         reported,
         isNotNull,
-        reason: 'the expiry is the news here, and it survives a name that '
+        reason:
+            'the expiry is the news here, and it survives a name that '
             'cannot be written',
       );
       expect(
         '${reported!.message}',
         contains('this key cannot name itself'),
-        reason: 'and what went wrong with the name is said in its place, '
+        reason:
+            'and what went wrong with the name is said in its place, '
             'rather than raised where nobody can catch it',
       );
       expect(reported!.duration, _limit);
@@ -422,68 +429,73 @@ void main() {
     // once while `.wait` carries the news to the wait itself a hop or two
     // later. The expiry was raised and the one line able to name the culprit
     // was blank.
-    test('the report names the children unfinished when the limit expired',
-        () async {
-      final registry = ChildRegistry();
-      final held = heldMicrotasks();
-      final child = registry.registerChild('slow');
-      TimeoutException? reported;
+    test(
+      'the report names the children unfinished when the limit expired',
+      () async {
+        final registry = ChildRegistry();
+        final held = heldMicrotasks();
+        final child = registry.registerChild('slow');
+        TimeoutException? reported;
 
-      held.run((_) {
-        unawaited(
-          registry.waitForChildren(
-            timeout: _limit,
-            onTimeout: (error, _) => reported = error,
-          ),
+        held.run((_) {
+          unawaited(
+            registry.waitForChildren(
+              timeout: _limit,
+              onTimeout: (error, _) => reported = error,
+            ),
+          );
+        });
+        await waitOutTheLimit();
+
+        // At the wire: the limit has run out, its report has not been written.
+        child.unregister();
+        held.flushMicrotasks();
+
+        expect(reported, isNotNull, reason: 'the limit did run out');
+        expect(
+          reported!.message,
+          "couldn't wait for the children to complete: [slow not completed]",
         );
-      });
-      await waitOutTheLimit();
-
-      // At the wire: the limit has run out, its report has not been written.
-      child.unregister();
-      held.flushMicrotasks();
-
-      expect(reported, isNotNull, reason: 'the limit did run out');
-      expect(
-        reported!.message,
-        "couldn't wait for the children to complete: [slow not completed]",
-      );
-    });
+      },
+    );
 
     // The other side of the same moment: every child was finished when the
     // limit ran out, and only the news of it was still on its way. A report
     // there would be an expiry that never happened.
-    test('children that all finished before the limit expired report nothing',
-        () async {
-      final registry = ChildRegistry();
-      final held = heldMicrotasks();
-      final child = registry.registerChild('slow');
-      TimeoutException? reported;
-      var done = false;
+    test(
+      'children that all finished before the limit expired report nothing',
+      () async {
+        final registry = ChildRegistry();
+        final held = heldMicrotasks();
+        final child = registry.registerChild('slow');
+        TimeoutException? reported;
+        var done = false;
 
-      held.run((_) {
-        unawaited(
-          registry
-              .waitForChildren(
-                timeout: _limit,
-                onTimeout: (error, _) => reported = error,
-              )
-              .then((_) => done = true),
+        held.run((_) {
+          unawaited(
+            registry
+                .waitForChildren(
+                  timeout: _limit,
+                  onTimeout: (error, _) => reported = error,
+                )
+                .then((_) => done = true),
+          );
+        });
+
+        child.unregister();
+        await waitOutTheLimit();
+        held.flushMicrotasks();
+
+        expect(
+          reported,
+          isNull,
+          reason:
+              'nothing was pending when the limit ran out, so the wait it '
+              'bounded had already succeeded',
         );
-      });
-
-      child.unregister();
-      await waitOutTheLimit();
-      held.flushMicrotasks();
-
-      expect(
-        reported,
-        isNull,
-        reason: 'nothing was pending when the limit ran out, so the wait it '
-            'bounded had already succeeded',
-      );
-      expect(done, isTrue, reason: 'the wait still ends');
-    });
+        expect(done, isTrue, reason: 'the wait still ends');
+      },
+    );
 
     // The same question as for the queue above, and the same answer: the limit
     // of this wait is a timer of the root zone, so a fake clock cannot reach
@@ -503,7 +515,8 @@ void main() {
         expect(
           expired,
           isFalse,
-          reason: 'a fake clock reaches no timer of the root zone, and this '
+          reason:
+              'a fake clock reaches no timer of the root zone, and this '
               'limit is one',
         );
       });
@@ -565,32 +578,35 @@ void main() {
       expect(registry.hasChildren, isFalse);
     });
 
-    test('an onTimeout that throws still gives up on the children left',
-        () async {
-      final registry = ChildRegistry()..registerChild('slow');
-      Object? escaped;
+    test(
+      'an onTimeout that throws still gives up on the children left',
+      () async {
+        final registry = ChildRegistry()..registerChild('slow');
+        Object? escaped;
 
-      unawaited(
-        registry
-            .waitForChildren(
-          timeout: _limit,
-          onTimeout: (_, __) => throw StateError('reporting failed'),
-        )
-            .catchError((Object error) {
-          escaped = error;
-        }),
-      );
+        unawaited(
+          registry
+              .waitForChildren(
+                timeout: _limit,
+                onTimeout: (_, __) => throw StateError('reporting failed'),
+              )
+              .catchError((Object error) {
+                escaped = error;
+              }),
+        );
 
-      await waitOutTheLimit();
+        await waitOutTheLimit();
 
-      expect(escaped, isA<StateError>(), reason: 'the failure is not hidden');
-      expect(
-        registry.hasChildren,
-        isFalse,
-        reason: 'a reporter that throws must not leave the registry holding '
-            'entries the expired wait already gave up on',
-      );
-    });
+        expect(escaped, isA<StateError>(), reason: 'the failure is not hidden');
+        expect(
+          registry.hasChildren,
+          isFalse,
+          reason:
+              'a reporter that throws must not leave the registry holding '
+              'entries the expired wait already gave up on',
+        );
+      },
+    );
   });
 }
 

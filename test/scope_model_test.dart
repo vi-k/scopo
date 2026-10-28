@@ -17,22 +17,22 @@ void main() {
       var createAttempts = 0;
 
       Widget buildTree() => Directionality(
-            textDirection: TextDirection.ltr,
-            child: ScopeModel<_Model>(
-              key: scopeKey,
-              create: (context) {
-                createAttempts++;
+        textDirection: TextDirection.ltr,
+        child: ScopeModel<_Model>(
+          key: scopeKey,
+          create: (context) {
+            createAttempts++;
 
-                throw StateError('controlled create failure');
-              },
-              dispose: disposed.add,
-              builder: (context) {
-                final model = ScopeModel.of<_Model>(context, listen: false);
+            throw StateError('controlled create failure');
+          },
+          dispose: disposed.add,
+          builder: (context) {
+            final model = ScopeModel.of<_Model>(context, listen: false);
 
-                return Text('name: ${model.name}');
-              },
-            ),
-          );
+            return Text('name: ${model.name}');
+          },
+        ),
+      );
 
       await tester.pumpWidget(buildTree());
 
@@ -82,25 +82,25 @@ void main() {
         var failCreate = true;
 
         Widget buildTree() => Directionality(
-              textDirection: TextDirection.ltr,
-              child: ScopeModel<_Model>(
-                key: scopeKey,
-                create: (context) {
-                  createAttempts++;
-                  if (failCreate) {
-                    throw StateError('controlled create failure');
-                  }
+          textDirection: TextDirection.ltr,
+          child: ScopeModel<_Model>(
+            key: scopeKey,
+            create: (context) {
+              createAttempts++;
+              if (failCreate) {
+                throw StateError('controlled create failure');
+              }
 
-                  return _Model('recovered after removal');
-                },
-                dispose: disposed.add,
-                builder: (context) {
-                  final model = ScopeModel.of<_Model>(context, listen: false);
+              return _Model('recovered after removal');
+            },
+            dispose: disposed.add,
+            builder: (context) {
+              final model = ScopeModel.of<_Model>(context, listen: false);
 
-                  return Text('name: ${model.name}');
-                },
-              ),
-            );
+              return Text('name: ${model.name}');
+            },
+          ),
+        );
 
         await tester.pumpWidget(buildTree());
 
@@ -153,13 +153,14 @@ void main() {
           child: ScopeModel<_Session>.value(
             value: session,
             builder: (context) => ScopeModel<_Repository>(
-              create: (context) => _Repository(
-                ScopeModel.of<_Session>(context, listen: false),
-              ),
+              create: (context) =>
+                  _Repository(ScopeModel.of<_Session>(context, listen: false)),
               dispose: (repository) {},
               builder: (context) {
-                final repository =
-                    ScopeModel.of<_Repository>(context, listen: false);
+                final repository = ScopeModel.of<_Repository>(
+                  context,
+                  listen: false,
+                );
 
                 return Text('session: ${repository.session.name}');
               },
@@ -337,7 +338,8 @@ void main() {
         expect(
           owned.single.disposeCount,
           1,
-          reason: 'the scope that owned a model was replaced, so it released '
+          reason:
+              'the scope that owned a model was replaced, so it released '
               'what it owned',
         );
       });
@@ -348,9 +350,7 @@ void main() {
     ) async {
       final model = _Model('alice');
 
-      await tester.pumpWidget(
-        _Host(create: (context) => model, revision: 1),
-      );
+      await tester.pumpWidget(_Host(create: (context) => model, revision: 1));
       await tester.pumpAndSettle();
 
       final nameBuilds = _NameText.buildCount;
@@ -360,9 +360,7 @@ void main() {
       // `ScopeModel` widget itself is rebuilt, and the selector is what keeps
       // the unchanged ones out of that.
       model.name = 'bob';
-      await tester.pumpWidget(
-        _Host(create: (context) => model, revision: 2),
-      );
+      await tester.pumpWidget(_Host(create: (context) => model, revision: 2));
 
       expect(find.text('name: bob'), findsOneWidget);
       expect(
@@ -466,21 +464,21 @@ final class _Host extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Directionality(
-        textDirection: TextDirection.ltr,
-        child: ScopeModel<_Model>(
-          create: create,
-          dispose: dispose ?? (model) {},
-          builder: (context) =>
-              child ??
-              Column(
-                children: [
-                  const _NameText(),
-                  const _AgeText(),
-                  Text('revision: $revision'),
-                ],
-              ),
-        ),
-      );
+    textDirection: TextDirection.ltr,
+    child: ScopeModel<_Model>(
+      create: create,
+      dispose: dispose ?? (model) {},
+      builder: (context) =>
+          child ??
+          Column(
+            children: [
+              const _NameText(),
+              const _AgeText(),
+              Text('revision: $revision'),
+            ],
+          ),
+    ),
+  );
 }
 
 /// A scope handed a model it does not own.
@@ -491,12 +489,12 @@ final class _ValueHost extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Directionality(
-        textDirection: TextDirection.ltr,
-        child: ScopeModel<_Model>.value(
-          value: model,
-          builder: (context) => const _NameText(),
-        ),
-      );
+    textDirection: TextDirection.ltr,
+    child: ScopeModel<_Model>.value(
+      value: model,
+      builder: (context) => const _NameText(),
+    ),
+  );
 }
 
 /// One host that can be either mode, so a rebuild can try to switch between
@@ -510,26 +508,26 @@ final class _ModeHost extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Directionality(
-        textDirection: TextDirection.ltr,
-        child: external != null
-            ? ScopeModel<_Model>.value(
-                key: scopeKey,
-                // A final field is not promoted across the check above.
-                value: external!,
-                builder: (context) => const _NameText(),
-              )
-            : ScopeModel<_Model>(
-                key: scopeKey,
-                create: (context) {
-                  final model = _Model('alice');
-                  created?.call(model);
+    textDirection: TextDirection.ltr,
+    child: external != null
+        ? ScopeModel<_Model>.value(
+            key: scopeKey,
+            // A final field is not promoted across the check above.
+            value: external!,
+            builder: (context) => const _NameText(),
+          )
+        : ScopeModel<_Model>(
+            key: scopeKey,
+            create: (context) {
+              final model = _Model('alice');
+              created?.call(model);
 
-                  return model;
-                },
-                dispose: (model) => model.dispose(),
-                builder: (context) => const _NameText(),
-              ),
-      );
+              return model;
+            },
+            dispose: (model) => model.dispose(),
+            builder: (context) => const _NameText(),
+          ),
+  );
 }
 
 final class _NameText extends StatelessWidget {

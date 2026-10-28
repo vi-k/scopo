@@ -28,9 +28,9 @@ void main() {
                         try {
                           final state =
                               ScopeNotifier.select<_RecoverableCounter, int>(
-                            context,
-                            (model) => model.state,
-                          );
+                                context,
+                                (model) => model.state,
+                              );
 
                           return Text('state: $state');
                         } on Exception {
@@ -48,9 +48,9 @@ void main() {
                       constantBuilds++;
                       final constant =
                           ScopeNotifier.select<_RecoverableCounter, int>(
-                        context,
-                        (model) => model.constant,
-                      );
+                            context,
+                            (model) => model.constant,
+                          );
 
                       return Text('constant: $constant');
                     },

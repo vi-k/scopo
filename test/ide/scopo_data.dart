@@ -40,10 +40,7 @@ final class DbScope extends AsyncDataScopeBase<DbScope, Database> {
   /// to follow should be a `Listenable` with a `ScopeNotifier` under this
   /// scope, or should expose a stream.
   static Database of(BuildContext context) =>
-      AsyncDataScopeBase.of<DbScope, Database>(
-        context,
-        listen: false,
-      ).data;
+      AsyncDataScopeBase.of<DbScope, Database>(context, listen: false).data;
 
   // No `select` here on purpose. It would subscribe to the state of the
   // scope — `hasData`, `isInitialized` — and a widget under the ready
@@ -69,8 +66,7 @@ final class DbScope extends AsyncDataScopeBase<DbScope, Database> {
     Object error,
     StackTrace stackTrace,
     Object? progress,
-  ) =>
-      Center(child: Text('$error'));
+  ) => Center(child: Text('$error'));
 
   @override
   Widget buildOnReady(BuildContext context, Database data) =>

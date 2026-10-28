@@ -32,30 +32,12 @@ class _AsyncScopeDemoState extends State<AsyncScopeDemo> {
       style: Theme.of(context).textTheme.bodySmall!,
       child: Column(
         children: [
-          Expanded(
-            child: AsyncScopeExample1(
-              key: ValueKey(_rebuildCounter),
-            ),
-          ),
-          const Expanded(
-            child: ConsoleView(source: AsyncScopeExample1),
-          ),
-          Expanded(
-            child: AsyncScopeExample2(
-              key: ValueKey(_rebuildCounter),
-            ),
-          ),
-          const Expanded(
-            child: ConsoleView(source: AsyncScopeExample2),
-          ),
-          Expanded(
-            child: AsyncScopeExample3(
-              key: ValueKey(_rebuildCounter),
-            ),
-          ),
-          const Expanded(
-            child: ConsoleView(source: AsyncScopeExample3),
-          ),
+          Expanded(child: AsyncScopeExample1(key: ValueKey(_rebuildCounter))),
+          const Expanded(child: ConsoleView(source: AsyncScopeExample1)),
+          Expanded(child: AsyncScopeExample2(key: ValueKey(_rebuildCounter))),
+          const Expanded(child: ConsoleView(source: AsyncScopeExample2)),
+          Expanded(child: AsyncScopeExample3(key: ValueKey(_rebuildCounter))),
+          const Expanded(child: ConsoleView(source: AsyncScopeExample3)),
           _RebuildButton(rebuild: _rebuild),
         ],
       ),

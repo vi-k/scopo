@@ -15,8 +15,9 @@ import 'utils/settle.dart';
 /// reads exactly like its neighbours.
 void main() {
   group('LiteScope', () {
-    testWidgets('drives the hooks of the widget and of the state it makes',
-        (tester) async {
+    testWidgets('drives the hooks of the widget and of the state it makes', (
+      tester,
+    ) async {
       final log = <String>[];
 
       await tester.pumpWidget(_wrap(_Lite(log: log)));
@@ -31,7 +32,8 @@ void main() {
           'state.initStateAsync',
           'state.build',
         ],
-        reason: 'every one of these is a separate line of forwarding in the '
+        reason:
+            'every one of these is a separate line of forwarding in the '
             'facade element, and the branches are shown in the order the '
             'states arrive -- the waiting branch first of all, because the '
             'asynchronous phase starts only after the build that would show '
@@ -47,13 +49,15 @@ void main() {
       expect(
         log.sublist(5),
         ['state.onUnmount', 'state.disposeStateAsync'],
-        reason: 'the teardown reaches the state through the facade too, and '
+        reason:
+            'the teardown reaches the state through the facade too, and '
             'the synchronous half comes first',
       );
     });
 
-    testWidgets('wraps the ready branch with what wrapState returns',
-        (tester) async {
+    testWidgets('wraps the ready branch with what wrapState returns', (
+      tester,
+    ) async {
       final log = <String>[];
 
       await tester.pumpWidget(_wrap(_Lite(log: log)));
@@ -62,7 +66,8 @@ void main() {
       expect(
         find.byType(_Wrapper),
         findsOneWidget,
-        reason: 'wrapState is the documented way to put a widget around the '
+        reason:
+            'wrapState is the documented way to put a widget around the '
             'ready branch alone, and a facade that never calls it leaves a '
             'public hook that quietly does nothing',
       );
@@ -79,8 +84,9 @@ void main() {
       );
     });
 
-    testWidgets('is found from below, by state and by parameters',
-        (tester) async {
+    testWidgets('is found from below, by state and by parameters', (
+      tester,
+    ) async {
       final seen = <String, Object?>{};
       final log = <String>[];
 
@@ -92,8 +98,9 @@ void main() {
             body: Builder(
               builder: (context) {
                 seen['of'] = LiteScope.of<_Lite, _LiteState>(context).answer;
-                seen['maybeOf'] =
-                    LiteScope.maybeOf<_Lite, _LiteState>(context)?.answer;
+                seen['maybeOf'] = LiteScope.maybeOf<_Lite, _LiteState>(
+                  context,
+                )?.answer;
                 seen['paramsOf'] = LiteScope.paramsOf<_Lite, _LiteState>(
                   context,
                   listen: false,
@@ -104,9 +111,9 @@ void main() {
                 );
                 seen['selectParam'] =
                     LiteScope.selectParam<_Lite, _LiteState, String>(
-                  context,
-                  (widget) => widget.label,
-                );
+                      context,
+                      (widget) => widget.label,
+                    );
 
                 return const SizedBox.shrink();
               },
@@ -131,8 +138,9 @@ void main() {
       );
     });
 
-    testWidgets('answers null from maybeOf where there is no such scope',
-        (tester) async {
+    testWidgets('answers null from maybeOf where there is no such scope', (
+      tester,
+    ) async {
       _LiteState? seen;
       var asked = false;
 
@@ -160,37 +168,40 @@ void main() {
     // screen. What they throw has to say which method is missing — a bare
     // `UnimplementedError` names neither the method nor the scope — and it has
     // to name the method by the name it actually has.
-    testWidgets('says which builder is missing when initScope() is overridden',
-        (tester) async {
-      await tester.pumpWidget(_wrap(const _HalfWritten()));
-      await tester.pump();
+    testWidgets(
+      'says which builder is missing when initScope() is overridden',
+      (tester) async {
+        await tester.pumpWidget(_wrap(const _HalfWritten()));
+        await tester.pump();
 
-      expect(
-        tester.takeException(),
-        isA<UnimplementedError>().having(
-          (error) => error.message,
-          'message',
-          allOf(
-            contains('buildOnProgress'),
-            contains('initScope()'),
-            contains('_HalfWritten'),
+        expect(
+          tester.takeException(),
+          isA<UnimplementedError>().having(
+            (error) => error.message,
+            'message',
+            allOf(
+              contains('buildOnProgress'),
+              contains('initScope()'),
+              contains('_HalfWritten'),
+            ),
           ),
-        ),
-      );
+        );
 
-      // The scope is still on the tree, and its teardown is asynchronous:
-      // ending here would leave the notifier undisposed, which the leak
-      // tracker reports as a leak of the package rather than of the test.
-      await tester.pumpWidget(const SizedBox.shrink());
-      await settle(tester, until: () => false, rounds: 5);
-    });
+        // The scope is still on the tree, and its teardown is asynchronous:
+        // ending here would leave the notifier undisposed, which the leak
+        // tracker reports as a leak of the package rather than of the test.
+        await tester.pumpWidget(const SizedBox.shrink());
+        await settle(tester, until: () => false, rounds: 5);
+      },
+    );
 
     // The same for the error branch, with one thing more to carry: the
     // failure the scope was about to show. Left out, it is lost — the screen
     // gets the missing-builder error and the reason the scope failed at all
     // goes with it.
-    testWidgets('says which builder is missing, and why it was needed',
-        (tester) async {
+    testWidgets('says which builder is missing, and why it was needed', (
+      tester,
+    ) async {
       await tester.pumpWidget(_wrap(const _HalfWritten(failing: true)));
       await tester.pump();
 
@@ -216,8 +227,9 @@ void main() {
   // `Scope` had zero callers in the whole run. Two of the review's unnoticed
   // mutations lived right here.
   group('Scope', () {
-    testWidgets('is found from below, by state, dependencies and parameters',
-        (tester) async {
+    testWidgets('is found from below, by state, dependencies and parameters', (
+      tester,
+    ) async {
       final seen = <String, Object?>{};
       final log = <String>[];
 
@@ -234,24 +246,23 @@ void main() {
                 seen['maybeOf'] = Scope.maybeOf<_Full, _FullDeps, _FullState>(
                   context,
                 )?.answer;
-                seen['dependencies'] =
-                    Scope.of<_Full, _FullDeps, _FullState>(context)
-                        .dependencies
-                        .value;
+                seen['dependencies'] = Scope.of<_Full, _FullDeps, _FullState>(
+                  context,
+                ).dependencies.value;
                 seen['paramsOf'] = Scope.paramsOf<_Full, _FullDeps, _FullState>(
                   context,
                   listen: false,
                 ).label;
                 seen['select'] =
                     Scope.select<_Full, _FullDeps, _FullState, String>(
-                  context,
-                  (state) => state.answer,
-                );
+                      context,
+                      (state) => state.answer,
+                    );
                 seen['selectParam'] =
                     Scope.selectParam<_Full, _FullDeps, _FullState, String>(
-                  context,
-                  (widget) => widget.label,
-                );
+                      context,
+                      (widget) => widget.label,
+                    );
 
                 return const SizedBox.shrink();
               },
@@ -285,19 +296,20 @@ void main() {
     // rebuilt by its parent along with everything else -- the test passes
     // whether the subscription exists or not, which was checked by running it
     // against a `paramsOf` that ignores `listen`.
-    testWidgets('paramsOf with listen: true hears a scope rebuilt above it',
-        (tester) async {
+    testWidgets('paramsOf with listen: true hears a scope rebuilt above it', (
+      tester,
+    ) async {
       final log = <String>[];
       _ParamsReader.builds = 0;
 
       Widget build(String label, String other) => _wrap(
-            _Full(
-              log: log,
-              label: label,
-              other: other,
-              body: const _ParamsReader(),
-            ),
-          );
+        _Full(
+          log: log,
+          label: label,
+          other: other,
+          body: const _ParamsReader(),
+        ),
+      );
 
       await tester.pumpWidget(build('first', 'x'));
       await tester.pumpAndSettle();
@@ -309,7 +321,8 @@ void main() {
       expect(
         _ParamsReader.builds,
         2,
-        reason: 'the reader asked to listen, so a scope rebuilt with other '
+        reason:
+            'the reader asked to listen, so a scope rebuilt with other '
             'parameters has to reach it',
       );
 
@@ -322,19 +335,20 @@ void main() {
 
     // `selectParam` is the narrow form: it subscribes to one parameter, and a
     // change to any other is none of its business.
-    testWidgets('selectParam hears the parameter it selected, and no other',
-        (tester) async {
+    testWidgets('selectParam hears the parameter it selected, and no other', (
+      tester,
+    ) async {
       final log = <String>[];
       _SelectParamReader.builds = 0;
 
       Widget build(String label, String other) => _wrap(
-            _Full(
-              log: log,
-              label: label,
-              other: other,
-              body: const _SelectParamReader(),
-            ),
-          );
+        _Full(
+          log: log,
+          label: label,
+          other: other,
+          body: const _SelectParamReader(),
+        ),
+      );
 
       await tester.pumpWidget(build('first', 'x'));
       await tester.pumpAndSettle();
@@ -359,8 +373,9 @@ void main() {
       );
     });
 
-    testWidgets('answers null from maybeOf where there is no such scope',
-        (tester) async {
+    testWidgets('answers null from maybeOf where there is no such scope', (
+      tester,
+    ) async {
       _FullState? seen;
       var asked = false;
 
@@ -392,8 +407,10 @@ void main() {
             value: 'above',
             child: Builder(
               builder: (context) {
-                seen =
-                    ScopeWidgetBase.of<_Params>(context, listen: false).value;
+                seen = ScopeWidgetBase.of<_Params>(
+                  context,
+                  listen: false,
+                ).value;
 
                 return const SizedBox.shrink();
               },
@@ -405,20 +422,16 @@ void main() {
       expect(seen, 'above');
     });
 
-    testWidgets('rebuilds a dependent when the parameter it selected changes',
-        (tester) async {
+    testWidgets('rebuilds a dependent when the parameter it selected changes', (
+      tester,
+    ) async {
       _Reader.builds = 0;
 
       // The dependent is `const`, so it is the same widget on every pump:
       // anything that rebuilds it came from the scope rather than from a
       // parent handing it a new instance of itself.
-      Widget build(String value, String other) => _wrap(
-            _Params(
-              value: value,
-              other: other,
-              child: const _Reader(),
-            ),
-          );
+      Widget build(String value, String other) =>
+          _wrap(_Params(value: value, other: other, child: const _Reader()));
 
       await tester.pumpWidget(build('a', 'x'));
       expect(_Reader.builds, 1);
@@ -436,10 +449,8 @@ void main() {
   });
 }
 
-Widget _wrap(Widget child) => Directionality(
-      textDirection: TextDirection.ltr,
-      child: child,
-    );
+Widget _wrap(Widget child) =>
+    Directionality(textDirection: TextDirection.ltr, child: child);
 
 /// A scope built on the public facade, reporting every hook it is asked for.
 final class _Lite extends LiteScope<_Lite, _LiteState> {
@@ -479,8 +490,7 @@ final class _Lite extends LiteScope<_Lite, _LiteState> {
     Object error,
     StackTrace stackTrace,
     Object? progress,
-  ) =>
-      Text('error: $error');
+  ) => Text('error: $error');
 
   @override
   Widget wrapState(BuildContext context, Widget child) =>
@@ -524,7 +534,7 @@ final class _HalfWritten extends LiteScope<_HalfWritten, _HalfWrittenState> {
   final bool failing;
 
   const _HalfWritten({this.failing = false})
-      : super(child: const SizedBox.shrink());
+    : super(child: const SizedBox.shrink());
 
   @override
   Future<void> initScope(ScopeInitContext ctx) async {
@@ -570,8 +580,7 @@ final class _Full extends Scope<_Full, _FullDeps, _FullState> {
   Future<_FullDeps> initDependencies(
     BuildContext context,
     ScopeInitContext ctx,
-  ) =>
-      Future.value(_FullDeps());
+  ) => Future.value(_FullDeps());
 
   @override
   Widget buildOnProgress(BuildContext context, Object? progress) =>
@@ -583,8 +592,7 @@ final class _Full extends Scope<_Full, _FullDeps, _FullState> {
     Object error,
     StackTrace stackTrace,
     Object? progress,
-  ) =>
-      Text('$error');
+  ) => Text('$error');
 
   @override
   _FullState createState() => _FullState();
@@ -676,11 +684,7 @@ final class _Params extends ScopeWidgetBase<_Params> {
   final String value;
   final String other;
 
-  const _Params({
-    required this.value,
-    required super.child,
-    this.other = '',
-  });
+  const _Params({required this.value, required super.child, this.other = ''});
 
   @override
   Widget build(BuildContext context) => child;

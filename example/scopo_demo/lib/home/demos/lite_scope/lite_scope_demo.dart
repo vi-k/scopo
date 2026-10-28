@@ -32,30 +32,12 @@ class _LiteScopeDemoState extends State<LiteScopeDemo> {
       style: Theme.of(context).textTheme.bodySmall!,
       child: Column(
         children: [
-          Expanded(
-            child: LiteScopeExample1(
-              key: ValueKey(_rebuildCounter),
-            ),
-          ),
-          const Expanded(
-            child: ConsoleView(source: LiteScopeExample1),
-          ),
-          Expanded(
-            child: LiteScopeExample2(
-              key: ValueKey(_rebuildCounter),
-            ),
-          ),
-          const Expanded(
-            child: ConsoleView(source: LiteScopeExample2),
-          ),
-          Expanded(
-            child: LiteScopeExample3(
-              key: ValueKey(_rebuildCounter),
-            ),
-          ),
-          const Expanded(
-            child: ConsoleView(source: LiteScopeExample3),
-          ),
+          Expanded(child: LiteScopeExample1(key: ValueKey(_rebuildCounter))),
+          const Expanded(child: ConsoleView(source: LiteScopeExample1)),
+          Expanded(child: LiteScopeExample2(key: ValueKey(_rebuildCounter))),
+          const Expanded(child: ConsoleView(source: LiteScopeExample2)),
+          Expanded(child: LiteScopeExample3(key: ValueKey(_rebuildCounter))),
+          const Expanded(child: ConsoleView(source: LiteScopeExample3)),
           _RebuildButton(rebuild: _rebuild),
         ],
       ),

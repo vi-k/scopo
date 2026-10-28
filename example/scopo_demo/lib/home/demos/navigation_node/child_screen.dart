@@ -18,11 +18,7 @@ final class ChildScreen extends LiteScope<ChildScreen, ChildScreenState> {
 
   @override
   Widget? buildOnWaiting(BuildContext context) {
-    return const Scaffold(
-      body: Center(
-        child: Text('Waiting…'),
-      ),
-    );
+    return const Scaffold(body: Center(child: Text('Waiting…')));
   }
 
   static ChildScreenState of(BuildContext context) {
@@ -52,10 +48,7 @@ final class ChildScreenState
         child: Center(
           child: Column(
             mainAxisSize: MainAxisSize.min,
-            children: [
-              CounterView(),
-              SizedBox(height: 20),
-            ],
+            children: [CounterView(), SizedBox(height: 20)],
           ),
         ),
       ),

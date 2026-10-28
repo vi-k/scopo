@@ -8,11 +8,7 @@
 /// ```dart
 /// throwIfDisposed(object, object.isDisposed, 'dispose');
 /// ```
-void throwIfDisposed(
-  Object object,
-  bool isDisposed,
-  String disposeMethod,
-) {
+void throwIfDisposed(Object object, bool isDisposed, String disposeMethod) {
   if (isDisposed) {
     final runtimeTypeStr = '${object.runtimeType}';
     throw StateError(

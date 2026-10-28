@@ -6,8 +6,7 @@ import 'utils/settle.dart';
 
 void main() {
   for (final close in [false, true]) {
-    testWidgets(
-        'Child ticker owner disposes before its mixin '
+    testWidgets('Child ticker owner disposes before its mixin '
         '(close=$close)', (tester) async {
       final state = _AnimationScopeState();
       await tester.pumpWidget(_app(_AnimationScope(state)));
@@ -15,8 +14,9 @@ void main() {
         tester,
         until: () => find.byType(_AnimatedMark).evaluate().isNotEmpty,
       );
-      final owner =
-          tester.state<_AnimatedMarkState>(find.byType(_AnimatedMark));
+      final owner = tester.state<_AnimatedMarkState>(
+        find.byType(_AnimatedMark),
+      );
       await tester.pump(const Duration(milliseconds: 10));
       expect(owner.controller.isAnimating, isTrue);
 
@@ -40,8 +40,7 @@ void main() {
   }
 
   for (final single in [true, false]) {
-    testWidgets(
-        'Scope ticker mixin checks before onUnmount '
+    testWidgets('Scope ticker mixin checks before onUnmount '
         '(single=$single)', (tester) async {
       final state = single ? _SingleTickerState() : _MultiTickerState();
       await tester.pumpWidget(_app(_UnsafeScope(state)));
@@ -126,9 +125,9 @@ class _AnimatedMarkState extends State<_AnimatedMark>
 
   @override
   Widget build(BuildContext context) => FadeTransition(
-        opacity: controller,
-        child: const SizedBox(width: 20, height: 20),
-      );
+    opacity: controller,
+    child: const SizedBox(width: 20, height: 20),
+  );
 }
 
 final class _UnsafeScope extends LiteScope<_UnsafeScope, _UnsafeState> {

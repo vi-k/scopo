@@ -37,41 +37,40 @@ void main() {
         isA<StateError>(),
         reason: 'the failure is still reported',
       );
-      expect(
-        disposed,
-        ['holder'],
-        reason: 'the hook is user code; the teardown behind it is not',
-      );
+      expect(disposed, [
+        'holder',
+      ], reason: 'the hook is user code; the teardown behind it is not');
     });
 
     // The `scopeKey` is what the leak costs someone else: an entry nobody
     // releases parks every later scope on that key behind it. The successor's
     // own limit is set beyond anything this test can advance, so an expiry
     // cannot be what let it in.
-    testWidgets('releases its scopeKey after a failing onUnmount',
-        (tester) async {
+    testWidgets('releases its scopeKey after a failing onUnmount', (
+      tester,
+    ) async {
       final disposed = <String>[];
 
       Widget build({required bool holder, required bool successor}) => _wrap(
-            Column(
-              children: [
-                if (holder)
-                  _Async(
-                    label: 'holder',
-                    scopeKey: 'shared',
-                    failOnUnmount: true,
-                    disposed: disposed,
-                  ),
-                if (successor)
-                  _Async(
-                    label: 'successor',
-                    scopeKey: 'shared',
-                    scopeKeyTimeout: const Duration(days: 1),
-                    disposed: disposed,
-                  ),
-              ],
-            ),
-          );
+        Column(
+          children: [
+            if (holder)
+              _Async(
+                label: 'holder',
+                scopeKey: 'shared',
+                failOnUnmount: true,
+                disposed: disposed,
+              ),
+            if (successor)
+              _Async(
+                label: 'successor',
+                scopeKey: 'shared',
+                scopeKeyTimeout: const Duration(days: 1),
+                disposed: disposed,
+              ),
+          ],
+        ),
+      );
 
       await tester.pumpWidget(build(holder: true, successor: false));
       await tester.pumpAndSettle();
@@ -96,8 +95,7 @@ void main() {
     // `initCancellationTimeout` -- and the expiry runs user code one step
     // before the block that gives the key back, exactly like the two other
     // expiries do.
-    testWidgets(
-        'releases its scopeKey after a failing '
+    testWidgets('releases its scopeKey after a failing '
         'onInitCancellationTimeout', (tester) async {
       final disposed = <String>[];
 
@@ -113,28 +111,28 @@ void main() {
       addTearDown(() => FlutterError.onError = previousOnError);
 
       Widget build({required bool holder, required bool successor}) => _wrap(
-            Column(
-              children: [
-                if (holder)
-                  _Async(
-                    label: 'holder',
-                    scopeKey: 'shared',
-                    initGate: hang,
-                    initCancellationTimeout: const Duration(milliseconds: 50),
-                    onInitCancellationTimeout: () =>
-                        throw StateError('onInitCancellationTimeout failed'),
-                    disposed: disposed,
-                  ),
-                if (successor)
-                  _Async(
-                    label: 'successor',
-                    scopeKey: 'shared',
-                    scopeKeyTimeout: const Duration(days: 1),
-                    disposed: disposed,
-                  ),
-              ],
-            ),
-          );
+        Column(
+          children: [
+            if (holder)
+              _Async(
+                label: 'holder',
+                scopeKey: 'shared',
+                initGate: hang,
+                initCancellationTimeout: const Duration(milliseconds: 50),
+                onInitCancellationTimeout: () =>
+                    throw StateError('onInitCancellationTimeout failed'),
+                disposed: disposed,
+              ),
+            if (successor)
+              _Async(
+                label: 'successor',
+                scopeKey: 'shared',
+                scopeKeyTimeout: const Duration(days: 1),
+                disposed: disposed,
+              ),
+          ],
+        ),
+      );
 
       await tester.pumpWidget(build(holder: true, successor: false));
       await tester.pumpAndSettle();
@@ -178,8 +176,9 @@ void main() {
     // `disposeScope` is the scope's own release, and it is user code twice
     // over: it can hang, and the expiry of the wait for it can fail. Neither
     // may keep the key of a scope that has already left the tree.
-    testWidgets('releases its scopeKey after a failing onDisposeScopeTimeout',
-        (tester) async {
+    testWidgets('releases its scopeKey after a failing onDisposeScopeTimeout', (
+      tester,
+    ) async {
       final disposed = <String>[];
       // A teardown failure with nobody to be handed to leaves through
       // `FlutterError.reportError`, and `takeException` collapses several of
@@ -194,28 +193,28 @@ void main() {
       final hang = Completer<void>();
 
       Widget build({required bool holder, required bool successor}) => _wrap(
-            Column(
-              children: [
-                if (holder)
-                  _Async(
-                    label: 'holder',
-                    scopeKey: 'shared',
-                    disposeGate: hang,
-                    disposeScopeTimeout: const Duration(milliseconds: 50),
-                    onDisposeScopeTimeout: () =>
-                        throw StateError('onDisposeScopeTimeout failed'),
-                    disposed: disposed,
-                  ),
-                if (successor)
-                  _Async(
-                    label: 'successor',
-                    scopeKey: 'shared',
-                    scopeKeyTimeout: const Duration(days: 1),
-                    disposed: disposed,
-                  ),
-              ],
-            ),
-          );
+        Column(
+          children: [
+            if (holder)
+              _Async(
+                label: 'holder',
+                scopeKey: 'shared',
+                disposeGate: hang,
+                disposeScopeTimeout: const Duration(milliseconds: 50),
+                onDisposeScopeTimeout: () =>
+                    throw StateError('onDisposeScopeTimeout failed'),
+                disposed: disposed,
+              ),
+            if (successor)
+              _Async(
+                label: 'successor',
+                scopeKey: 'shared',
+                scopeKeyTimeout: const Duration(days: 1),
+                disposed: disposed,
+              ),
+          ],
+        ),
+      );
 
       await tester.pumpWidget(build(holder: true, successor: false));
       await tester.pumpAndSettle();
@@ -231,7 +230,8 @@ void main() {
       expect(
         errors,
         [isA<TimeoutException>(), isA<StateError>()],
-        reason: 'the expiry itself, and then what the callback made of it -- '
+        reason:
+            'the expiry itself, and then what the callback made of it -- '
             'the second used to leave as an uncaught error of the zone',
       );
       expect(
@@ -255,8 +255,9 @@ void main() {
     // long afterwards has no caller left to raise at -- so the one way out it
     // has is a report. Without it the failure would be lost in silence, which
     // is the one outcome this whole file exists to prevent.
-    testWidgets('reports a teardown that fails after it was given up on',
-        (tester) async {
+    testWidgets('reports a teardown that fails after it was given up on', (
+      tester,
+    ) async {
       final disposed = <String>[];
       final hang = Completer<void>();
       final reported = <FlutterErrorDetails>[];
@@ -315,7 +316,8 @@ void main() {
             'the teardown fell over at last',
           ),
         ],
-        reason: 'nobody is waiting for this future any more, so a report is '
+        reason:
+            'nobody is waiting for this future any more, so a report is '
             'the only way the failure reaches anyone at all',
       );
       expect(disposed, isEmpty, reason: 'it never got as far as releasing');
@@ -338,7 +340,8 @@ void main() {
           'disposed _Async',
           abandonedFailure,
         ],
-        reason: 'the observer hears the abandoned failure itself, under the '
+        reason:
+            'the observer hears the abandoned failure itself, under the '
             'label the scope had while it still had a widget',
       );
     });
@@ -346,8 +349,9 @@ void main() {
     // The expiry callback runs while the scope still holds everything: its
     // entry with the parent, its key, its model. It is reached from the
     // disposal itself, one step before the block that gives all of that back.
-    testWidgets('disposes of itself after a failing onWaitForChildrenTimeout',
-        (tester) async {
+    testWidgets('disposes of itself after a failing onWaitForChildrenTimeout', (
+      tester,
+    ) async {
       final disposed = <String>[];
       final childGate = Completer<void>();
       // A teardown failure with nobody to be handed to leaves through
@@ -387,11 +391,10 @@ void main() {
       // `expect` is collected instead of ending the test, and the run hangs.
       FlutterError.onError = previousOnError;
 
-      expect(
-        errors,
-        [isA<TimeoutException>(), isA<StateError>()],
-        reason: 'the expiry itself, and then what the callback made of it',
-      );
+      expect(errors, [
+        isA<TimeoutException>(),
+        isA<StateError>(),
+      ], reason: 'the expiry itself, and then what the callback made of it');
       expect(
         disposed,
         contains('parent'),
@@ -408,8 +411,9 @@ void main() {
     // a log line that is off by default. Two of the four failing is an
     // ordinary path, not a contrived one: the wait for the children expired,
     // and the scope's own release fell over behind it.
-    testWidgets('reports the second failure of a disposal that failed twice',
-        (tester) async {
+    testWidgets('reports the second failure of a disposal that failed twice', (
+      tester,
+    ) async {
       final disposed = <String>[];
       final childGate = Completer<void>();
       // Everything the teardown reports, in order: the failures with nobody to
@@ -482,8 +486,9 @@ void main() {
     // has already been cleared. A throw out of `unmount()` therefore does not
     // reach a caller who can do something about it -- it ends the loop, and
     // every scope behind the one that threw is left mounted for good.
-    testWidgets('disposes of the siblings of a scope that failed to unmount',
-        (tester) async {
+    testWidgets('disposes of the siblings of a scope that failed to unmount', (
+      tester,
+    ) async {
       final disposed = <String>[];
 
       await tester.pumpWidget(
@@ -510,7 +515,8 @@ void main() {
       expect(
         disposed,
         unorderedEquals(['a', 'b', 'c']),
-        reason: 'the neighbours of a scope whose hook threw are not the '
+        reason:
+            'the neighbours of a scope whose hook threw are not the '
             'audience of that failure, and the teardown they are owed is not '
             "the failing scope's to cancel",
       );
@@ -528,11 +534,9 @@ void main() {
       await settle(tester, until: () => disposed.isNotEmpty);
 
       expect(tester.takeException(), isA<StateError>());
-      expect(
-        disposed,
-        ['data'],
-        reason: 'the value the scope produced is released either way',
-      );
+      expect(disposed, [
+        'data',
+      ], reason: 'the value the scope produced is released either way');
     });
   });
 
@@ -541,8 +545,9 @@ void main() {
   // covered by its own suite; these two are the ordinary one -- a controller
   // that was handed over, used, and then failed on its way out.
   group('AsyncControllerScope', () {
-    testWidgets('releases its controller after a failing onUnmount',
-        (tester) async {
+    testWidgets('releases its controller after a failing onUnmount', (
+      tester,
+    ) async {
       final controller = _Controller(failOnUnmount: true);
 
       await tester.pumpWidget(_wrap(_Controlled(controller: controller)));
@@ -559,7 +564,8 @@ void main() {
       expect(
         controller.calls,
         ['init', 'onUnmount', 'dispose'],
-        reason: 'the hook is user code; releasing the controller behind it is '
+        reason:
+            'the hook is user code; releasing the controller behind it is '
             'the whole promise of the family, and a synchronous half that '
             'threw is no reason to break it',
       );
@@ -568,8 +574,9 @@ void main() {
     // The other half: a release that fails is still a scope that has to give
     // back what it was lent. `dispose()` is the last thing the controller is
     // asked for, and the key is handed back after it.
-    testWidgets('releases its scopeKey after a failing controller dispose',
-        (tester) async {
+    testWidgets('releases its scopeKey after a failing controller dispose', (
+      tester,
+    ) async {
       final controller = _Controller(failOnDispose: true);
       final disposed = <String>[];
       // A teardown failure with nobody to be handed to leaves through
@@ -582,36 +589,29 @@ void main() {
       addTearDown(() => FlutterError.onError = previousOnError);
 
       Widget build({required bool holder, required bool successor}) => _wrap(
-            Column(
-              children: [
-                if (holder)
-                  _Controlled(controller: controller, scopeKey: 'shared'),
-                if (successor)
-                  _Async(
-                    label: 'successor',
-                    scopeKey: 'shared',
-                    scopeKeyTimeout: const Duration(days: 1),
-                    disposed: disposed,
-                  ),
-              ],
-            ),
-          );
+        Column(
+          children: [
+            if (holder) _Controlled(controller: controller, scopeKey: 'shared'),
+            if (successor)
+              _Async(
+                label: 'successor',
+                scopeKey: 'shared',
+                scopeKeyTimeout: const Duration(days: 1),
+                disposed: disposed,
+              ),
+          ],
+        ),
+      );
 
       // See the `onWaitForChildrenTimeout` test: a disposal that re-throws
       // does so on a discarded future.
-      await runZonedGuarded(
-        () async {
-          await tester.pumpWidget(build(holder: true, successor: false));
-          await tester.pumpAndSettle();
+      await runZonedGuarded(() async {
+        await tester.pumpWidget(build(holder: true, successor: false));
+        await tester.pumpAndSettle();
 
-          await tester.pumpWidget(build(holder: false, successor: false));
-          await settle(
-            tester,
-            until: () => controller.calls.contains('dispose'),
-          );
-        },
-        (error, stackTrace) => errors.add(error),
-      );
+        await tester.pumpWidget(build(holder: false, successor: false));
+        await settle(tester, until: () => controller.calls.contains('dispose'));
+      }, (error, stackTrace) => errors.add(error));
 
       expect(
         errors.single,
@@ -636,8 +636,9 @@ void main() {
     // ran, so `performDispose()` runs `onUnmount` itself -- and used to stop
     // there when it threw, with `_disposeCompleter` already installed, so no
     // second attempt was possible either.
-    testWidgets('releases a controller whose init and onUnmount both failed',
-        (tester) async {
+    testWidgets('releases a controller whose init and onUnmount both failed', (
+      tester,
+    ) async {
       final controller = _Controller(failOnInit: true, failOnUnmount: true);
 
       await tester.pumpWidget(_wrap(_Controlled(controller: controller)));
@@ -651,7 +652,8 @@ void main() {
       expect(
         controller.calls,
         ['init', 'onUnmount', 'dispose'],
-        reason: '`dispose` is documented to run on every path, including the '
+        reason:
+            '`dispose` is documented to run on every path, including the '
             'one where `init` failed halfway -- which is the path it is most '
             'likely to be asked for on',
       );
@@ -666,42 +668,45 @@ void main() {
     // that never finished, the teardown gave up on the whole of `disposeScope`
     // -- container included -- and went on to give the `scopeKey` back. The
     // dependencies stayed held with nothing left to release them.
-    testWidgets('disposes of its dependencies after a state that never returns',
-        (tester) async {
-      final log = <String>[];
-      final hang = Completer<void>();
-      addTearDown(() {
-        if (!hang.isCompleted) {
-          hang.complete();
-        }
-      });
+    testWidgets(
+      'disposes of its dependencies after a state that never returns',
+      (tester) async {
+        final log = <String>[];
+        final hang = Completer<void>();
+        addTearDown(() {
+          if (!hang.isCompleted) {
+            hang.complete();
+          }
+        });
 
-      await tester.pumpWidget(
-        _wrap(
-          _PlainDepScope(
-            log: log,
-            stateDisposeGate: hang,
-            disposeScopeTimeout: const Duration(milliseconds: 50),
+        await tester.pumpWidget(
+          _wrap(
+            _PlainDepScope(
+              log: log,
+              stateDisposeGate: hang,
+              disposeScopeTimeout: const Duration(milliseconds: 50),
+            ),
           ),
-        ),
-      );
-      await tester.pumpAndSettle();
+        );
+        await tester.pumpAndSettle();
 
-      await tester.pumpWidget(_wrap(const SizedBox.shrink()));
-      await settle(tester, until: () => log.contains('dispose deps'));
+        await tester.pumpWidget(_wrap(const SizedBox.shrink()));
+        await settle(tester, until: () => log.contains('dispose deps'));
 
-      expect(
-        tester.takeException(),
-        isA<TimeoutException>(),
-        reason: 'the expiry of the state half is still reported',
-      );
-      expect(
-        log,
-        ['unmount deps', 'dispose deps'],
-        reason: 'giving up on the state is not giving up on the container: '
-            'the second step is bounded on its own and still runs',
-      );
-    });
+        expect(
+          tester.takeException(),
+          isA<TimeoutException>(),
+          reason: 'the expiry of the state half is still reported',
+        );
+        expect(
+          log,
+          ['unmount deps', 'dispose deps'],
+          reason:
+              'giving up on the state is not giving up on the container: '
+              'the second step is bounded on its own and still runs',
+        );
+      },
+    );
 
     // The same limit, reached the other way. A state hangs its half of the
     // teardown not only through a `disposeStateAsync` that never returns: the
@@ -710,77 +715,85 @@ void main() {
     // step one `await` earlier -- before there is anything to dispose of at
     // all. That wait carries no limit of its own; the one that ends it is the
     // limit around the step, and nothing reached it this way.
-    testWidgets('disposes of its dependencies after a state still initializing',
-        (tester) async {
-      final log = <String>[];
-      final hang = Completer<void>();
-      addTearDown(() {
-        if (!hang.isCompleted) {
-          hang.complete();
-        }
-      });
+    testWidgets(
+      'disposes of its dependencies after a state still initializing',
+      (tester) async {
+        final log = <String>[];
+        final hang = Completer<void>();
+        addTearDown(() {
+          if (!hang.isCompleted) {
+            hang.complete();
+          }
+        });
 
-      await tester.pumpWidget(
-        _wrap(
-          _PlainDepScope(
-            log: log,
-            stateInitGate: hang,
-            disposeScopeTimeout: const Duration(milliseconds: 50),
+        await tester.pumpWidget(
+          _wrap(
+            _PlainDepScope(
+              log: log,
+              stateInitGate: hang,
+              disposeScopeTimeout: const Duration(milliseconds: 50),
+            ),
           ),
-        ),
-      );
-      await tester.pumpAndSettle();
+        );
+        await tester.pumpAndSettle();
 
-      await tester.pumpWidget(_wrap(const SizedBox.shrink()));
-      await settle(tester, until: () => log.contains('dispose deps'));
+        await tester.pumpWidget(_wrap(const SizedBox.shrink()));
+        await settle(tester, until: () => log.contains('dispose deps'));
 
-      final exception = tester.takeException();
-      expect(exception, isA<TimeoutException>());
-      expect(
-        exception.toString(),
-        contains('its state to be disposed of'),
-        reason: 'the half given up on is the one belonging to the state, and '
-            'the message says which of the two it was',
-      );
-      expect(
-        log,
-        ['unmount deps', 'dispose deps'],
-        reason: 'a state that never finished initializing is no more a reason '
-            'to leave the dependencies holding what they took than a state '
-            'that never finished releasing',
-      );
-    });
+        final exception = tester.takeException();
+        expect(exception, isA<TimeoutException>());
+        expect(
+          exception.toString(),
+          contains('its state to be disposed of'),
+          reason:
+              'the half given up on is the one belonging to the state, and '
+              'the message says which of the two it was',
+        );
+        expect(
+          log,
+          ['unmount deps', 'dispose deps'],
+          reason:
+              'a state that never finished initializing is no more a reason '
+              'to leave the dependencies holding what they took than a state '
+              'that never finished releasing',
+        );
+      },
+    );
 
     // `unmount` on a dependency is the one hook that runs synchronously, in
     // the middle of the element leaving the tree. A failure there used to stop
     // the walk over the siblings and skip the base teardown behind it, so
     // nothing was ever disposed of.
-    testWidgets('unmounts and disposes of every dependency after a failing one',
-        (tester) async {
-      final log = <String>[];
+    testWidgets(
+      'unmounts and disposes of every dependency after a failing one',
+      (tester) async {
+        final log = <String>[];
 
-      await tester.pumpWidget(_wrap(_DepScope(log: log, failOnUnmount: 'a')));
-      await tester.pumpAndSettle();
+        await tester.pumpWidget(_wrap(_DepScope(log: log, failOnUnmount: 'a')));
+        await tester.pumpAndSettle();
 
-      await tester.pumpWidget(_wrap(const SizedBox.shrink()));
-      await settle(tester, until: () => log.contains('dispose a'));
+        await tester.pumpWidget(_wrap(const SizedBox.shrink()));
+        await settle(tester, until: () => log.contains('dispose a'));
 
-      expect(tester.takeException(), isA<StateError>());
-      expect(
-        log,
-        containsAll(['unmount a', 'unmount b', 'dispose b', 'dispose a']),
-        reason: 'one hook that failed is no reason to keep the rest of the '
-            'dependencies holding what they took',
-      );
-    });
+        expect(tester.takeException(), isA<StateError>());
+        expect(
+          log,
+          containsAll(['unmount a', 'unmount b', 'dispose b', 'dispose a']),
+          reason:
+              'one hook that failed is no reason to keep the rest of the '
+              'dependencies holding what they took',
+        );
+      },
+    );
 
     // The synchronous half of the teardown, and the same rule as the
     // asynchronous half below: a state that failed to drop what it holds is
     // still a state whose dependencies are holding theirs, and `onUnmount` is
     // the only place they are dropped -- it runs once, and a scope that got
     // this far never comes back for a second attempt.
-    testWidgets('unmounts its dependencies after a failing state unmount',
-        (tester) async {
+    testWidgets('unmounts its dependencies after a failing state unmount', (
+      tester,
+    ) async {
       final log = <String>[];
 
       await tester.pumpWidget(
@@ -799,14 +812,16 @@ void main() {
       expect(
         log,
         containsAll(['unmount b', 'unmount a']),
-        reason: 'the state failed to let go of its own synchronously; the '
+        reason:
+            'the state failed to let go of its own synchronously; the '
             'dependencies still have to let go of theirs, and this is the '
             'only pass that does it',
       );
     });
 
-    testWidgets('disposes of its dependencies after a failing state disposal',
-        (tester) async {
+    testWidgets('disposes of its dependencies after a failing state disposal', (
+      tester,
+    ) async {
       final log = <String>[];
       // A teardown failure with nobody to be handed to leaves through
       // `FlutterError.reportError`, and `takeException` collapses several of
@@ -819,18 +834,15 @@ void main() {
 
       // See the `onWaitForChildrenTimeout` test: a disposal that re-throws
       // does so on a discarded future.
-      await runZonedGuarded(
-        () async {
-          await tester.pumpWidget(
-            _wrap(_DepScope(log: log, failOnStateDispose: true)),
-          );
-          await tester.pumpAndSettle();
+      await runZonedGuarded(() async {
+        await tester.pumpWidget(
+          _wrap(_DepScope(log: log, failOnStateDispose: true)),
+        );
+        await tester.pumpAndSettle();
 
-          await tester.pumpWidget(_wrap(const SizedBox.shrink()));
-          await settle(tester, until: () => log.contains('dispose a'));
-        },
-        (error, stackTrace) => errors.add(error),
-      );
+        await tester.pumpWidget(_wrap(const SizedBox.shrink()));
+        await settle(tester, until: () => log.contains('dispose a'));
+      }, (error, stackTrace) => errors.add(error));
 
       expect(
         errors.single,
@@ -840,7 +852,8 @@ void main() {
       expect(
         log,
         containsAll(['dispose b', 'dispose a']),
-        reason: 'the state failed to let go of its own; the dependencies '
+        reason:
+            'the state failed to let go of its own; the dependencies '
             'still have to let go of theirs',
       );
     });
@@ -864,49 +877,51 @@ void main() {
     // container that can hand a failure to the state above it is a
     // hand-written one.
     testWidgets(
-        'reports the failure of the state and of the dependencies behind it',
-        (tester) async {
-      final log = <String>[];
-      final reported = <FlutterErrorDetails>[];
-      final previousOnError = FlutterError.onError;
-      FlutterError.onError = reported.add;
-      addTearDown(() => FlutterError.onError = previousOnError);
+      'reports the failure of the state and of the dependencies behind it',
+      (tester) async {
+        final log = <String>[];
+        final reported = <FlutterErrorDetails>[];
+        final previousOnError = FlutterError.onError;
+        FlutterError.onError = reported.add;
+        addTearDown(() => FlutterError.onError = previousOnError);
 
-      await tester.pumpWidget(
-        _wrap(
-          _PlainDepScope(
-            log: log,
-            failOnStateUnmount: true,
-            failOnDepsUnmount: true,
+        await tester.pumpWidget(
+          _wrap(
+            _PlainDepScope(
+              log: log,
+              failOnStateUnmount: true,
+              failOnDepsUnmount: true,
+            ),
           ),
-        ),
-      );
-      await tester.pumpAndSettle();
+        );
+        await tester.pumpAndSettle();
 
-      await tester.pumpWidget(_wrap(const SizedBox.shrink()));
-      await settle(tester, until: () => log.contains('dispose deps'));
+        await tester.pumpWidget(_wrap(const SizedBox.shrink()));
+        await settle(tester, until: () => log.contains('dispose deps'));
 
-      // See the test above: put back before the assertions, or a failing
-      // `expect` is collected instead of ending the test.
-      FlutterError.onError = previousOnError;
+        // See the test above: put back before the assertions, or a failing
+        // `expect` is collected instead of ending the test.
+        FlutterError.onError = previousOnError;
 
-      expect(
-        reported
-            .where((details) => details.library == 'scopo')
-            .map((details) => details.exception)
-            .whereType<StateError>()
-            .map((error) => error.message),
-        containsAll([
-          'the state failed to unmount itself',
-          'the dependencies failed to unmount',
-        ]),
-        reason: 'a teardown that could not give something back has to say so '
-            'about each half, and say it itself: raised at the loop that is '
-            'unmounting the batch, the first failure would be reported by the '
-            'framework and would cost every scope behind this one its own '
-            'teardown',
-      );
-    });
+        expect(
+          reported
+              .where((details) => details.library == 'scopo')
+              .map((details) => details.exception)
+              .whereType<StateError>()
+              .map((error) => error.message),
+          containsAll([
+            'the state failed to unmount itself',
+            'the dependencies failed to unmount',
+          ]),
+          reason:
+              'a teardown that could not give something back has to say so '
+              'about each half, and say it itself: raised at the loop that is '
+              'unmounting the batch, the first failure would be reported by '
+              'the framework and would cost every scope behind this one its '
+              'own teardown',
+        );
+      },
+    );
 
     // The report the test above checks is only one of the two channels the
     // package promises. `ScopeConfig.observer` is the other, and the second
@@ -914,65 +929,68 @@ void main() {
     // `onError` for the failure that leaves through the throw, and the one
     // behind it went to `FlutterError.reportError` alone.
     testWidgets(
-        'reports both unmount failures to the observer, not just the one that '
-        'throws', (tester) async {
-      final log = <String>[];
-      final observer = RecordingObserver();
-      ScopeConfig.observer = observer;
-      addTearDown(() => ScopeConfig.observer = null);
+      'reports both unmount failures to the observer, not just the one that '
+      'throws',
+      (tester) async {
+        final log = <String>[];
+        final observer = RecordingObserver();
+        ScopeConfig.observer = observer;
+        addTearDown(() => ScopeConfig.observer = null);
 
-      final previousOnError = FlutterError.onError;
-      FlutterError.onError = (_) {};
-      addTearDown(() => FlutterError.onError = previousOnError);
+        final previousOnError = FlutterError.onError;
+        FlutterError.onError = (_) {};
+        addTearDown(() => FlutterError.onError = previousOnError);
 
-      await tester.pumpWidget(
-        _wrap(
-          _PlainDepScope(
-            log: log,
-            failOnStateUnmount: true,
-            failOnDepsUnmount: true,
+        await tester.pumpWidget(
+          _wrap(
+            _PlainDepScope(
+              log: log,
+              failOnStateUnmount: true,
+              failOnDepsUnmount: true,
+            ),
           ),
-        ),
-      );
-      await tester.pumpAndSettle();
+        );
+        await tester.pumpAndSettle();
 
-      await tester.pumpWidget(_wrap(const SizedBox.shrink()));
-      await settle(tester, until: () => log.contains('dispose deps'));
+        await tester.pumpWidget(_wrap(const SizedBox.shrink()));
+        await settle(tester, until: () => log.contains('dispose deps'));
 
-      FlutterError.onError = previousOnError;
+        FlutterError.onError = previousOnError;
 
-      const stateFailed =
-          'error _PlainDepScope unmount Bad state: the state failed to '
-          'unmount itself';
-      const depsFailed =
-          'error _PlainDepScope unmount Bad state: the dependencies failed '
-          'to unmount';
+        const stateFailed =
+            'error _PlainDepScope unmount Bad state: the state failed to '
+            'unmount itself';
+        const depsFailed =
+            'error _PlainDepScope unmount Bad state: the dependencies failed '
+            'to unmount';
 
-      expect(
-        observer.events.where((event) => event.contains('unmount')),
-        containsAll([stateFailed, depsFailed]),
-        reason: 'both halves of the teardown failed, and an observer counting '
-            'what a scope could not give back needs both',
-      );
-    });
+        expect(
+          observer.events.where((event) => event.contains('unmount')),
+          containsAll([stateFailed, depsFailed]),
+          reason:
+              'both halves of the teardown failed, and an observer counting '
+              'what a scope could not give back needs both',
+        );
+      },
+    );
 
     // The same in the asynchronous half. Here the first failure does reach the
     // observer already -- `_performAsyncDispose` guards that stage itself --
     // so what is missing is the second alone.
     testWidgets(
-        'reports both disposal failures to the observer, not just the one '
-        'that throws', (tester) async {
-      final log = <String>[];
-      final observer = RecordingObserver();
-      ScopeConfig.observer = observer;
-      addTearDown(() => ScopeConfig.observer = null);
+      'reports both disposal failures to the observer, not just the one '
+      'that throws',
+      (tester) async {
+        final log = <String>[];
+        final observer = RecordingObserver();
+        ScopeConfig.observer = observer;
+        addTearDown(() => ScopeConfig.observer = null);
 
-      final previousOnError = FlutterError.onError;
-      FlutterError.onError = (_) {};
-      addTearDown(() => FlutterError.onError = previousOnError);
+        final previousOnError = FlutterError.onError;
+        FlutterError.onError = (_) {};
+        addTearDown(() => FlutterError.onError = previousOnError);
 
-      await runZonedGuarded(
-        () async {
+        await runZonedGuarded(() async {
           await tester.pumpWidget(
             _wrap(
               _PlainDepScope(
@@ -986,81 +1004,84 @@ void main() {
 
           await tester.pumpWidget(_wrap(const SizedBox.shrink()));
           await settle(tester, until: () => log.contains('dispose deps'));
-        },
-        (_, __) {},
-      );
+        }, (_, __) {});
 
-      FlutterError.onError = previousOnError;
+        FlutterError.onError = previousOnError;
 
-      const stateFailed =
-          'error _PlainDepScope disposal Bad state: the state failed to '
-          'dispose of itself';
-      const depsFailed =
-          'error _PlainDepScope disposal Bad state: the dependencies failed '
-          'to dispose';
+        const stateFailed =
+            'error _PlainDepScope disposal Bad state: the state failed to '
+            'dispose of itself';
+        const depsFailed =
+            'error _PlainDepScope disposal Bad state: the dependencies failed '
+            'to dispose';
 
-      expect(
-        observer.events.where((event) => event.contains('disposal')),
-        containsAll([stateFailed, depsFailed]),
-        reason: 'the second failure leaves through a report, and the observer '
-            'is one of the two channels that report goes to',
-      );
-    });
+        expect(
+          observer.events.where((event) => event.contains('disposal')),
+          containsAll([stateFailed, depsFailed]),
+          reason:
+              'the second failure leaves through a report, and the observer '
+              'is one of the two channels that report goes to',
+        );
+      },
+    );
 
     // The same rule in the asynchronous half, where the two failures are told
     // apart by where they end up: the first on the discarded future the
     // disposal runs on, the second in a report.
     testWidgets(
-        'keeps the failure of the state when the dependencies fail to dispose '
-        'behind it', (tester) async {
-      final log = <String>[];
-      // Everything the teardown reports, in order: the failures with nobody to
-      // be handed to have always come this way, and since the one that *does*
-      // have a caller no longer raises into the zone on this path, it arrives
-      // here too.
-      final reported = <FlutterErrorDetails>[];
-      final previousOnError = FlutterError.onError;
-      FlutterError.onError = reported.add;
-      addTearDown(() => FlutterError.onError = previousOnError);
-      Iterable<Object> errors() => reported.map((details) => details.exception);
+      'keeps the failure of the state when the dependencies fail to dispose '
+      'behind it',
+      (tester) async {
+        final log = <String>[];
+        // Everything the teardown reports, in order: the failures with nobody
+        // to be handed to have always come this way, and since the one that
+        // *does* have a caller no longer raises into the zone on this path, it
+        // arrives here too.
+        final reported = <FlutterErrorDetails>[];
+        final previousOnError = FlutterError.onError;
+        FlutterError.onError = reported.add;
+        addTearDown(() => FlutterError.onError = previousOnError);
+        Iterable<Object> errors() =>
+            reported.map((details) => details.exception);
 
-      await tester.pumpWidget(
-        _wrap(
-          _PlainDepScope(
-            log: log,
-            failOnStateDispose: true,
-            failOnDepsDispose: true,
+        await tester.pumpWidget(
+          _wrap(
+            _PlainDepScope(
+              log: log,
+              failOnStateDispose: true,
+              failOnDepsDispose: true,
+            ),
           ),
-        ),
-      );
-      await tester.pumpAndSettle();
+        );
+        await tester.pumpAndSettle();
 
-      // The report of the first failure is the last thing the disposal does,
-      // after the block that gives back what the scope was lent: waiting for
-      // it is waiting for the whole teardown, model included.
-      await tester.pumpWidget(_wrap(const SizedBox.shrink()));
-      await settle(tester, until: () => errors().length == 2);
+        // The report of the first failure is the last thing the disposal does,
+        // after the block that gives back what the scope was lent: waiting for
+        // it is waiting for the whole teardown, model included.
+        await tester.pumpWidget(_wrap(const SizedBox.shrink()));
+        await settle(tester, until: () => errors().length == 2);
 
-      FlutterError.onError = previousOnError;
+        FlutterError.onError = previousOnError;
 
-      expect(
-        errors().whereType<StateError>().map((error) => error.message),
-        // The order of the *reports*, not of the failures: the second is
-        // reported the moment it happens, the first waits for the end of the
-        // teardown, since it is the one the teardown carries out.
-        [
-          'the dependencies failed to dispose',
-          'the state failed to dispose of itself',
-        ],
-        reason: 'both halves failed, and a teardown that could not give '
-            'something back has to say so about each',
-      );
-      expect(
-        log,
-        ['unmount deps', 'dispose deps'],
-        reason: 'a failing state is no reason to skip either half',
-      );
-    });
+        expect(
+          errors().whereType<StateError>().map((error) => error.message),
+          // The order of the *reports*, not of the failures: the second is
+          // reported the moment it happens, the first waits for the end of the
+          // teardown, since it is the one the teardown carries out.
+          [
+            'the dependencies failed to dispose',
+            'the state failed to dispose of itself',
+          ],
+          reason:
+              'both halves failed, and a teardown that could not give '
+              'something back has to say so about each',
+        );
+        expect(log, [
+          'unmount deps',
+          'dispose deps',
+        ], reason: 'a failing state is no reason to skip either half');
+      },
+    );
   });
 
   // A `tag` is an object of the application's, and every label this package
@@ -1068,8 +1089,9 @@ void main() {
   // teardown, to keep it for a wait that outlives the widget -- and both read
   // it before the teardown they are about to run.
   group('a tag that cannot name itself', () {
-    testWidgets('does not stop a scope from disposing of itself',
-        (tester) async {
+    testWidgets('does not stop a scope from disposing of itself', (
+      tester,
+    ) async {
       final tag = _ThrowingTag();
       var disposed = false;
       final reported = <Object>[];
@@ -1103,7 +1125,8 @@ void main() {
       expect(
         disposed,
         isTrue,
-        reason: 'the label is a diagnostic, and a diagnostic that failed is '
+        reason:
+            'the label is a diagnostic, and a diagnostic that failed is '
             'no reason to walk away from the teardown behind it: the '
             'scopeKey, the registration with the parent and disposeScope all '
             'stand after that line',
@@ -1115,8 +1138,9 @@ void main() {
       );
     });
 
-    testWidgets('does not strand what unmounts behind a coordinator',
-        (tester) async {
+    testWidgets('does not strand what unmounts behind a coordinator', (
+      tester,
+    ) async {
       final tag = _ThrowingTag();
       var disposed = false;
       final reported = <Object>[];
@@ -1137,10 +1161,8 @@ void main() {
             progressBuilder: (context, progress) => const Text('loading'),
             errorBuilder: (context, error, stackTrace, progress) =>
                 const Text('failed'),
-            builder: (context) => AsyncScopeCoordinator(
-              tag: tag,
-              child: const Text('ready'),
-            ),
+            builder: (context) =>
+                AsyncScopeCoordinator(tag: tag, child: const Text('ready')),
           ),
         ),
       );
@@ -1160,7 +1182,8 @@ void main() {
       expect(
         disposed,
         isTrue,
-        reason: 'the scope above the coordinator is in the same batch, and '
+        reason:
+            'the scope above the coordinator is in the same batch, and '
             'the batch is walked without a net',
       );
       expect(
@@ -1190,9 +1213,9 @@ final class _ThrowingTag {
 }
 
 Widget _wrap(Widget child) => Directionality(
-      textDirection: TextDirection.ltr,
-      child: AsyncScopeCoordinator(child: child),
-    );
+  textDirection: TextDirection.ltr,
+  child: AsyncScopeCoordinator(child: child),
+);
 
 /// How many [_Async] scopes have finished initializing.
 int _readyCount(WidgetTester tester) => tester
@@ -1267,8 +1290,7 @@ final class _Async extends AsyncScopeBase<_Async> {
     Object error,
     StackTrace stackTrace,
     Object? progress,
-  ) =>
-      const SizedBox.shrink();
+  ) => const SizedBox.shrink();
 
   @override
   Widget buildOnReady(BuildContext context) => child;
@@ -1279,7 +1301,7 @@ final class _AsyncData extends AsyncDataScopeBase<_AsyncData, String> {
   final List<String> disposed;
 
   const _AsyncData({required this.disposed})
-      : super(child: const SizedBox.shrink());
+    : super(child: const SizedBox.shrink());
 
   @override
   Future<String> initData(BuildContext context, ScopeInitContext ctx) async =>
@@ -1303,8 +1325,7 @@ final class _AsyncData extends AsyncDataScopeBase<_AsyncData, String> {
     Object error,
     StackTrace stackTrace,
     Object? progress,
-  ) =>
-      const SizedBox.shrink();
+  ) => const SizedBox.shrink();
 
   @override
   Widget buildOnReady(BuildContext context, String data) => child;
@@ -1317,7 +1338,7 @@ final class _Controlled
   final _Controller controller;
 
   const _Controlled({required this.controller, super.scopeKey})
-      : super(child: const SizedBox.shrink());
+    : super(child: const SizedBox.shrink());
 
   @override
   _Controller createController(BuildContext context) => controller;
@@ -1330,8 +1351,7 @@ final class _Controlled
     BuildContext context,
     Object error,
     StackTrace stackTrace,
-  ) =>
-      const SizedBox.shrink();
+  ) => const SizedBox.shrink();
 
   @override
   Widget buildOnReady(BuildContext context, _Controller controller) => child;
@@ -1390,10 +1410,7 @@ final class _DepScope extends Scope<_DepScope, _Deps, _DepScopeState> {
   }) : super(child: const SizedBox.shrink());
 
   @override
-  Future<_Deps> initDependencies(
-    BuildContext context,
-    ScopeInitContext ctx,
-  ) =>
+  Future<_Deps> initDependencies(BuildContext context, ScopeInitContext ctx) =>
       _Deps(log: log, failOnUnmount: failOnUnmount).init(context, ctx);
 
   @override
@@ -1406,8 +1423,7 @@ final class _DepScope extends Scope<_DepScope, _Deps, _DepScopeState> {
     Object error,
     StackTrace stackTrace,
     Object? progress,
-  ) =>
-      const SizedBox.shrink();
+  ) => const SizedBox.shrink();
 
   @override
   _DepScopeState createState() => _DepScopeState();
@@ -1432,10 +1448,8 @@ final class _Deps extends ScopeAutoDependencies<_Deps, BuildContext> {
       };
 
   @override
-  ScopeDependency buildDependencies(BuildContext context) => sequential('', [
-        dep('a', _init('a')),
-        dep('b', _init('b')),
-      ]);
+  ScopeDependency buildDependencies(BuildContext context) =>
+      sequential('', [dep('a', _init('a')), dep('b', _init('b'))]);
 }
 
 final class _DepScopeState
@@ -1503,14 +1517,13 @@ final class _PlainDepScope
   Future<_PlainDeps> initDependencies(
     BuildContext context,
     ScopeInitContext ctx,
-  ) =>
-      Future.value(
-        _PlainDeps(
-          log: log,
-          failOnUnmount: failOnDepsUnmount,
-          failOnDispose: failOnDepsDispose,
-        ),
-      );
+  ) => Future.value(
+    _PlainDeps(
+      log: log,
+      failOnUnmount: failOnDepsUnmount,
+      failOnDispose: failOnDepsDispose,
+    ),
+  );
 
   @override
   Widget buildOnProgress(BuildContext context, Object? progress) =>
@@ -1522,8 +1535,7 @@ final class _PlainDepScope
     Object error,
     StackTrace stackTrace,
     Object? progress,
-  ) =>
-      const SizedBox.shrink();
+  ) => const SizedBox.shrink();
 
   @override
   _PlainDepScopeState createState() => _PlainDepScopeState();

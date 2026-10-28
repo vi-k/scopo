@@ -11,10 +11,7 @@ final class CounterController with ChangeNotifier {
   final Object debugSource;
   final String debugName;
 
-  CounterController({
-    required this.debugSource,
-    required this.debugName,
-  });
+  CounterController({required this.debugSource, required this.debugName});
 
   int? _count;
   int get count => _count ?? (throw StateError('Not initialized'));
@@ -57,27 +54,20 @@ final class CounterScope extends LiteScope<CounterScope, CounterState> {
   }) : super(tag: debugName);
 
   static CounterScope paramsOf(BuildContext context) =>
-      LiteScope.paramsOf<CounterScope, CounterState>(
-        context,
-        listen: false,
-      );
+      LiteScope.paramsOf<CounterScope, CounterState>(context, listen: false);
 
   static V selectParam<V>(
     BuildContext context,
     V Function(CounterScope widget) selector, {
     bool listen = true,
-  }) =>
-      listen
-          ? LiteScope.selectParam<CounterScope, CounterState, V>(
-              context,
-              selector,
-            )
-          : selector(
-              LiteScope.paramsOf<CounterScope, CounterState>(
-                context,
-                listen: false,
-              ),
-            );
+  }) => listen
+      ? LiteScope.selectParam<CounterScope, CounterState, V>(context, selector)
+      : selector(
+          LiteScope.paramsOf<CounterScope, CounterState>(
+            context,
+            listen: false,
+          ),
+        );
 
   static String? titleOf(BuildContext context) =>
       LiteScope.selectParam<CounterScope, CounterState, String?>(
@@ -97,11 +87,7 @@ final class CounterScope extends LiteScope<CounterScope, CounterState> {
   static V select<V>(
     BuildContext context,
     V Function(CounterState state) selector,
-  ) =>
-      LiteScope.select<CounterScope, CounterState, V>(
-        context,
-        selector,
-      );
+  ) => LiteScope.select<CounterScope, CounterState, V>(context, selector);
 
   static bool isInitializedOf(BuildContext context) =>
       LiteScope.select<CounterScope, CounterState, bool>(
@@ -169,15 +155,14 @@ final class CounterState extends LiteScopeState<CounterScope, CounterState> {
   Widget build(BuildContext context) {
     // The state object exists before its asynchronous fields are ready.
     if (!CounterScope.isInitializedOf(context)) {
-      return const Center(
-        child: Text('State initializing…'),
-      );
+      return const Center(child: Text('State initializing…'));
     }
 
     Widget body = Center(
       child: BlinkingBox(
-        blinkingColor:
-            Theme.of(context).colorScheme.primary.withValues(alpha: 0.2),
+        blinkingColor: Theme.of(
+          context,
+        ).colorScheme.primary.withValues(alpha: 0.2),
         child: const Column(
           mainAxisSize: MainAxisSize.min,
           children: [
@@ -203,10 +188,7 @@ final class CounterState extends LiteScopeState<CounterScope, CounterState> {
     if (CounterScope.titleOf(context) case final title?) {
       body = Column(
         mainAxisSize: MainAxisSize.min,
-        children: [
-          Text(title),
-          body,
-        ],
+        children: [Text(title), body],
       );
     }
 
@@ -225,8 +207,9 @@ class _CounterView extends StatelessWidget {
       builder: (context, controller, count, _) {
         return Center(
           child: BlinkingBox(
-            blinkingColor:
-                Theme.of(context).colorScheme.primary.withValues(alpha: 0.2),
+            blinkingColor: Theme.of(
+              context,
+            ).colorScheme.primary.withValues(alpha: 0.2),
             child: Text('$count'),
           ),
         );

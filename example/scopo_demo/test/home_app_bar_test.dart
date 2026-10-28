@@ -19,9 +19,8 @@ void main() {
               sharedPreferences: preferences,
               prefix: 'theme.',
             ),
-            builder: (context) => Scaffold(
-              appBar: HomeAppBar(context, withTabs: false),
-            ),
+            builder: (context) =>
+                Scaffold(appBar: HomeAppBar(context, withTabs: false)),
           ),
         ),
       );

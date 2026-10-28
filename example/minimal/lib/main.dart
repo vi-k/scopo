@@ -24,18 +24,15 @@ void main() {
 final class App extends Scope<App, AppDependencies, AppState> {
   final String title;
 
-  const App({
-    super.key,
-    required this.title,
-  }) : super(pauseAfterInitialization: const Duration(milliseconds: 500));
+  const App({super.key, required this.title})
+    : super(pauseAfterInitialization: const Duration(milliseconds: 500));
 
   /// Dependencies initialization method.
   @override
   Future<AppDependencies> initDependencies(
     BuildContext context,
     ScopeInitContext ctx,
-  ) =>
-      AppDependencies.init(context, ctx);
+  ) => AppDependencies.init(context, ctx);
 
   /// [App.paramsOf] provides access to the [App] widget parameters, such as
   /// [title].
@@ -54,8 +51,7 @@ final class App extends Scope<App, AppDependencies, AppState> {
   static V selectParam<V>(
     BuildContext context,
     V Function(App widget) selector,
-  ) =>
-      Scope.selectParam<App, AppDependencies, AppState, V>(context, selector);
+  ) => Scope.selectParam<App, AppDependencies, AppState, V>(context, selector);
 
   /// [App.of] provides access to the [AppState].
   ///
@@ -68,8 +64,7 @@ final class App extends Scope<App, AppDependencies, AppState> {
   static V select<V>(
     BuildContext context,
     V Function(AppState state) selector,
-  ) =>
-      Scope.select<App, AppDependencies, AppState, V>(context, selector);
+  ) => Scope.select<App, AppDependencies, AppState, V>(context, selector);
 
   /// At the [App] scope level, we need to create [MaterialApp] in each of the
   /// branches.
@@ -85,10 +80,7 @@ final class App extends Scope<App, AppDependencies, AppState> {
 
   /// A branch that is created during scope initialization.
   @override
-  Widget buildOnProgress(
-    BuildContext context,
-    covariant String? progress,
-  ) =>
+  Widget buildOnProgress(BuildContext context, covariant String? progress) =>
       _app(child: SplashScreen(progress: progress));
 
   /// A branch that is created when an initialization error occurs.
@@ -98,8 +90,7 @@ final class App extends Scope<App, AppDependencies, AppState> {
     Object error,
     StackTrace stackTrace,
     covariant String? progress,
-  ) =>
-      _app(child: ErrorScreen(error: error));
+  ) => _app(child: ErrorScreen(error: error));
 
   /// Widgets that will be placed in the widget-tree between [App] and
   /// [AppState].
@@ -110,8 +101,7 @@ final class App extends Scope<App, AppDependencies, AppState> {
     BuildContext context,
     AppDependencies dependencies,
     Widget child,
-  ) =>
-      _app(child: child);
+  ) => _app(child: child);
 
   /// [createState] is only called when the scope is in ready state.
   @override
@@ -207,8 +197,8 @@ class ErrorScreen extends StatelessWidget {
         child: Text(
           '$error',
           style: Theme.of(context).textTheme.labelLarge?.copyWith(
-                color: Theme.of(context).colorScheme.onError,
-              ),
+            color: Theme.of(context).colorScheme.onError,
+          ),
         ),
       ),
     );

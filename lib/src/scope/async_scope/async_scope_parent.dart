@@ -94,8 +94,10 @@ mixin AsyncScopeParent on Diagnosticable implements ScopeObservable {
       // the natural way -- this would otherwise be the one wait in the
       // package that can hang for ever, while the same method on
       // [AsyncScopeCoordinator] gives up on time.
-      timeout:
-          resolveTimeout(timeout, ScopeConfig.defaultWaitForChildrenTimeout),
+      timeout: resolveTimeout(
+        timeout,
+        ScopeConfig.defaultWaitForChildrenTimeout,
+      ),
       onTimeout: (error, stackTrace) {
         // Before the caller's handler and independent of it: a custom
         // [onTimeout] replaces the default *report*, not the reporting of the
@@ -112,8 +114,10 @@ mixin AsyncScopeParent on Diagnosticable implements ScopeObservable {
         // have carried rather than one missing the name of the parent it
         // asked -- and the observer, whose record has to read away from the
         // event that carried it, gets the same one.
-        final named =
-            TimeoutException('$name ${error.message}', error.duration);
+        final named = TimeoutException(
+          '$name ${error.message}',
+          error.duration,
+        );
         notifyTimeout(this, 'its child scopes', named, stackTrace);
 
         if (onTimeout != null) {

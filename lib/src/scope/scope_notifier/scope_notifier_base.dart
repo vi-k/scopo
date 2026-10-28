@@ -1,8 +1,10 @@
 part of '../scope.dart';
 
 /// {@category ScopeNotifier}
-abstract base class ScopeNotifierBase<W extends ScopeNotifierBase<W, M>,
-        M extends Listenable>
+abstract base class ScopeNotifierBase<
+  W extends ScopeNotifierBase<W, M>,
+  M extends Listenable
+>
     extends ScopeNotifierCore<W, _ScopeNotifierElement<W, M>, M>
     with _ScopeModelBaseMixin<M> {
   @override
@@ -24,8 +26,8 @@ abstract base class ScopeNotifierBase<W extends ScopeNotifierBase<W, M>,
     required M Function(BuildContext context) this.create,
     required this.dispose,
     super.child, // Not used by default. You can use it at your own discretion.
-  })  : hasValue = false,
-        value = null;
+  }) : hasValue = false,
+       value = null;
 
   /// Creates a scope over a model somebody else owns.
   ///
@@ -36,13 +38,10 @@ abstract base class ScopeNotifierBase<W extends ScopeNotifierBase<W, M>,
   /// the subscription taken in `init()` -- so a `null` used to compile and
   /// then fail on a bare null check, naming neither the scope nor the
   /// parameter.
-  const ScopeNotifierBase.value({
-    super.key,
-    super.tag,
-    required M this.value,
-  })  : hasValue = true,
-        create = null,
-        dispose = null;
+  const ScopeNotifierBase.value({super.key, super.tag, required M this.value})
+    : hasValue = true,
+      create = null,
+      dispose = null;
 
   @override
   // ignore: library_private_types_in_public_api
@@ -54,42 +53,36 @@ abstract base class ScopeNotifierBase<W extends ScopeNotifierBase<W, M>,
 
   /// The context of the nearest scope [W], or `null` if there is none.
   static ScopeModelContext<W, M>?
-      maybeOf<W extends ScopeNotifierBase<W, M>, M extends Listenable>(
+  maybeOf<W extends ScopeNotifierBase<W, M>, M extends Listenable>(
     BuildContext context, {
     required bool listen,
   }) =>
-          ScopeContext.maybeOf<W, ScopeModelContext<W, M>>(
-            context,
-            listen: listen,
-          );
+      ScopeContext.maybeOf<W, ScopeModelContext<W, M>>(context, listen: listen);
 
   /// The context of the nearest scope [W].
   ///
   /// Throws when there is no such scope above [context].
   static ScopeModelContext<W, M>
-      of<W extends ScopeNotifierBase<W, M>, M extends Listenable>(
+  of<W extends ScopeNotifierBase<W, M>, M extends Listenable>(
     BuildContext context, {
     required bool listen,
-  }) =>
-          ScopeContext.of<W, ScopeModelContext<W, M>>(
-            context,
-            listen: listen,
-          );
+  }) => ScopeContext.of<W, ScopeModelContext<W, M>>(context, listen: listen);
 
   /// Subscribes to one value of the scope and returns it.
-  static V select<W extends ScopeNotifierBase<W, M>, M extends Listenable,
-          V extends Object?>(
+  static V select<
+    W extends ScopeNotifierBase<W, M>,
+    M extends Listenable,
+    V extends Object?
+  >(
     BuildContext context,
     V Function(ScopeModelContext<W, M> context) selector,
-  ) =>
-      ScopeContext.select<W, ScopeModelContext<W, M>, V>(
-        context,
-        selector,
-      );
+  ) => ScopeContext.select<W, ScopeModelContext<W, M>, V>(context, selector);
 }
 
-final class _ScopeNotifierElement<W extends ScopeNotifierBase<W, M>,
-        M extends Listenable>
+final class _ScopeNotifierElement<
+  W extends ScopeNotifierBase<W, M>,
+  M extends Listenable
+>
     extends ScopeNotifierElementBase<W, _ScopeNotifierElement<W, M>, M>
     with _ScopeModelElementMixin<W, M> {
   _ScopeNotifierElement(super.widget);
@@ -141,8 +134,10 @@ final class _ScopeNotifierElement<W extends ScopeNotifierBase<W, M>,
 /// ```
 ///
 /// {@category ScopeNotifier}
-final class ScopeNotifierAccess<W extends ScopeNotifierBase<W, M>,
-    M extends Listenable> {
+final class ScopeNotifierAccess<
+  W extends ScopeNotifierBase<W, M>,
+  M extends Listenable
+> {
   /// Creates an accessor for the scope [W].
   const ScopeNotifierAccess();
 
@@ -154,13 +149,11 @@ final class ScopeNotifierAccess<W extends ScopeNotifierBase<W, M>,
   ScopeModelContext<W, M>? maybeOf(
     BuildContext context, {
     required bool listen,
-  }) =>
-      ScopeNotifierBase.maybeOf<W, M>(context, listen: listen);
+  }) => ScopeNotifierBase.maybeOf<W, M>(context, listen: listen);
 
   /// Selects a value from the scope context and **subscribes** to it.
   V select<V extends Object?>(
     BuildContext context,
     V Function(ScopeModelContext<W, M> context) selector,
-  ) =>
-      ScopeNotifierBase.select<W, M, V>(context, selector);
+  ) => ScopeNotifierBase.select<W, M, V>(context, selector);
 }

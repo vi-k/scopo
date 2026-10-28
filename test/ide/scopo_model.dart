@@ -27,10 +27,10 @@ final class UserScope extends ScopeModelBase<UserScope, UserModel> {
   final Widget Function(BuildContext context) builder;
 
   UserScope({super.key, required this.builder})
-      : super(
-          create: (context) => UserModel(),
-          dispose: (model) => model.dispose(),
-        );
+    : super(
+        create: (context) => UserModel(),
+        dispose: (model) => model.dispose(),
+      );
 
   /// Over a model somebody else owns. Delete whichever of the two this
   /// scope does not need.
@@ -43,20 +43,12 @@ final class UserScope extends ScopeModelBase<UserScope, UserModel> {
   static ScopeModelContext<UserScope, UserModel> of(
     BuildContext context, {
     required bool listen,
-  }) =>
-      ScopeModelBase.of<UserScope, UserModel>(
-        context,
-        listen: listen,
-      );
+  }) => ScopeModelBase.of<UserScope, UserModel>(context, listen: listen);
 
   static V select<V>(
     BuildContext context,
     V Function(ScopeModelContext<UserScope, UserModel> context) selector,
-  ) =>
-      ScopeModelBase.select<UserScope, UserModel, V>(
-        context,
-        selector,
-      );
+  ) => ScopeModelBase.select<UserScope, UserModel, V>(context, selector);
 
   /// One value of the model, subscribed to on its own.
   ///

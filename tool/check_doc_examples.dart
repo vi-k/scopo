@@ -162,7 +162,7 @@ Future<void> main(List<String> arguments) async {
 name: scopo_doc_examples
 publish_to: none
 environment:
-  sdk: ^3.6.0
+  sdk: ^3.10.0
 dependencies:
   flutter:
     sdk: flutter

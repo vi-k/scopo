@@ -8,8 +8,9 @@ import 'package:scopo_demo/utils/console/console.dart';
 /// This checks that the demo really shows it, since the console is all the
 /// demo has to say it with.
 void main() {
-  testWidgets('the abandoned controller is unmounted and disposed of',
-      (tester) async {
+  testWidgets('the abandoned controller is unmounted and disposed of', (
+    tester,
+  ) async {
     console.clearAll();
 
     await tester.pumpWidget(

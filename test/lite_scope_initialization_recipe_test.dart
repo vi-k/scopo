@@ -8,8 +8,9 @@ import 'package:scopo/scopo.dart';
 import 'utils/settle.dart';
 
 void main() {
-  testWidgets('the documented initialization recipe reaches the ready screen',
-      (tester) async {
+  testWidgets('the documented initialization recipe reaches the ready screen', (
+    tester,
+  ) async {
     final title = Completer<String>();
     addTearDown(() async {
       await tester.pumpWidget(const SizedBox.shrink());
@@ -40,16 +41,18 @@ void main() {
         .split('```dart\n')[1]
         .split('```')
         .first;
-    final source = File('test/lite_scope_initialization_recipe_test.dart')
-        .readAsStringSync();
+    final source = File(
+      'test/lite_scope_initialization_recipe_test.dart',
+    ).readAsStringSync();
     expect(
       recipe,
       source.substring(source.indexOf('\nfinal class TitleScope ') + 1),
     );
   });
 
-  testWidgets('initialization without setState leaves the own build loading',
-      (tester) async {
+  testWidgets('initialization without setState leaves the own build loading', (
+    tester,
+  ) async {
     final title = Completer<String>();
     addTearDown(() async {
       await tester.pumpWidget(const SizedBox.shrink());

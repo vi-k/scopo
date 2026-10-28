@@ -386,8 +386,7 @@ final class ScopeCompositeObserver extends ScopeObserver {
     ScopeErrorRoute route,
     Object error,
     StackTrace? stackTrace,
-  ) =>
-      _each((o) => o.onError(target, phase, route, error, stackTrace));
+  ) => _each((o) => o.onError(target, phase, route, error, stackTrace));
 
   @override
   void onTimeout(
@@ -395,8 +394,7 @@ final class ScopeCompositeObserver extends ScopeObserver {
     String what,
     TimeoutException error,
     StackTrace stackTrace,
-  ) =>
-      _each((o) => o.onTimeout(target, what, error, stackTrace));
+  ) => _each((o) => o.onTimeout(target, what, error, stackTrace));
 
   @override
   void onTrace(ScopeObservable target, String message) =>
@@ -411,10 +409,7 @@ final class ScopeCompositeObserver extends ScopeObserver {
 /// {@category debug}
 final class ScopePrintObserver extends ScopeObserver {
   /// Creates an observer printing through [output].
-  const ScopePrintObserver({
-    this.output = print,
-    this.trace = false,
-  });
+  const ScopePrintObserver({this.output = print, this.trace = false});
 
   /// Where a line goes; `print` by default.
   final void Function(String line) output;
@@ -487,8 +482,7 @@ final class ScopePrintObserver extends ScopeObserver {
     String what,
     TimeoutException error,
     StackTrace stackTrace,
-  ) =>
-      _write(target, 'gave up waiting for $what: ${error.message}');
+  ) => _write(target, 'gave up waiting for $what: ${error.message}');
 
   @override
   void onTrace(ScopeObservable target, String message) {
@@ -515,12 +509,11 @@ final class ScopePrintObserver extends ScopeObserver {
 /// the `'<phrase> failed'` shape it does not fit, it stands as the whole
 /// message.
 String _failureMessage(ScopePhase phase) => switch (phase) {
-      ScopePhase.initialization => 'initialization failed',
-      ScopePhase.initializationCancellation =>
-        'initialization cancellation failed',
-      ScopePhase.build => 'build failed',
-      ScopePhase.preparationForDisposal => 'preparation for disposal failed',
-      ScopePhase.unmount => 'unmount failed',
-      ScopePhase.disposal => 'disposal failed',
-      ScopePhase.abandonedWait => 'an abandoned wait ended in a failure',
-    };
+  ScopePhase.initialization => 'initialization failed',
+  ScopePhase.initializationCancellation => 'initialization cancellation failed',
+  ScopePhase.build => 'build failed',
+  ScopePhase.preparationForDisposal => 'preparation for disposal failed',
+  ScopePhase.unmount => 'unmount failed',
+  ScopePhase.disposal => 'disposal failed',
+  ScopePhase.abandonedWait => 'an abandoned wait ended in a failure',
+};

@@ -22,7 +22,8 @@ abstract interface class ScopeStateWithErrorModel<S extends Object>
 
 /// {@category ScopeNotifier}
 class ScopeStateWithErrorNotifier<S extends Object>
-    extends ScopeStateNotifier<S> implements ScopeStateWithErrorModel<S> {
+    extends ScopeStateNotifier<S>
+    implements ScopeStateWithErrorModel<S> {
   (Object, StackTrace)? _error;
 
   /// Creates a notifier holding `initialState` and no error.
@@ -33,10 +34,10 @@ class ScopeStateWithErrorNotifier<S extends Object>
 
   @override
   S get state => switch (_error) {
-        null => super.state,
-        (final Object error, final StackTrace stackTrace) =>
-          Error.throwWithStackTrace(error, stackTrace),
-      };
+    null => super.state,
+    (final Object error, final StackTrace stackTrace) =>
+      Error.throwWithStackTrace(error, stackTrace),
+  };
 
   @override
   Object get error => _error?.$1 ?? (throw StateError('No error'));
@@ -92,11 +93,10 @@ class ScopeStateWithErrorNotifier<S extends Object>
 
 /// {@category ScopeNotifier}
 class ScopeStateWithErrorModelView<S extends Object>
-    extends ScopeStateModelView<S> implements ScopeStateWithErrorModel<S> {
+    extends ScopeStateModelView<S>
+    implements ScopeStateWithErrorModel<S> {
   /// Wraps a notifier into a read-only view of it.
-  ScopeStateWithErrorModelView(
-    ScopeStateWithErrorNotifier<S> super.notifier,
-  );
+  ScopeStateWithErrorModelView(ScopeStateWithErrorNotifier<S> super.notifier);
 
   @override
   ScopeStateWithErrorNotifier<S> get _notifier =>

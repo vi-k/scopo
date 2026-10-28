@@ -1,8 +1,11 @@
 part of '../scope.dart';
 
 /// {@category AsyncDataScope}
-abstract interface class AsyncDataScopeContext<W extends ScopeInheritedWidget,
-    T extends Object?> implements AsyncScopeContext<W> {
+abstract interface class AsyncDataScopeContext<
+  W extends ScopeInheritedWidget,
+  T extends Object?
+>
+    implements AsyncScopeContext<W> {
   /// The value the initialization produced.
   ///
   /// Throws a [StateError] until there is one; [dataOrNull] is the safe read,

@@ -2,7 +2,8 @@ part of '../scope.dart';
 
 /// {@category ScopeNotifier}
 final class ScopeNotifier<M extends Listenable>
-    extends ScopeNotifierBase<ScopeNotifier<M>, M> with _ScopeModelMixin<M> {
+    extends ScopeNotifierBase<ScopeNotifier<M>, M>
+    with _ScopeModelMixin<M> {
   @override
   final Widget Function(BuildContext context) builder;
 
@@ -31,11 +32,11 @@ final class ScopeNotifier<M extends Listenable>
     BuildContext context, {
     required bool listen,
   }) =>
-      ScopeContext.maybeOf<ScopeNotifier<M>,
-          ScopeModelContext<ScopeNotifier<M>, M>>(
-        context,
-        listen: listen,
-      )?.model;
+      ScopeContext.maybeOf<
+            ScopeNotifier<M>,
+            ScopeModelContext<ScopeNotifier<M>, M>
+          >(context, listen: listen)
+          ?.model;
 
   /// The model of the nearest `ScopeNotifier<M>`.
   ///
@@ -57,9 +58,9 @@ final class ScopeNotifier<M extends Listenable>
     BuildContext context,
     V Function(M model) selector,
   ) =>
-      ScopeContext.select<ScopeNotifier<M>,
-          ScopeModelContext<ScopeNotifier<M>, M>, V>(
-        context,
-        (context) => selector(context.model),
-      );
+      ScopeContext.select<
+        ScopeNotifier<M>,
+        ScopeModelContext<ScopeNotifier<M>, M>,
+        V
+      >(context, (context) => selector(context.model));
 }

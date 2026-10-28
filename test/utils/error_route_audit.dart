@@ -30,8 +30,8 @@ final class RouteAudit {
   void install() {
     assert(!_installed, 'The audit is already installed.');
     _previous = FlutterError.onError;
-    FlutterError.onError =
-        (details) => _seen.add((SeenIn.flutterError, details.exception));
+    FlutterError.onError = (details) =>
+        _seen.add((SeenIn.flutterError, details.exception));
     _installed = true;
     addTearDown(uninstall);
   }
@@ -62,18 +62,15 @@ final class RouteAudit {
   Future<void> runGuarded(Future<void> Function() body) {
     final done = Completer<void>();
     unawaited(
-      runZonedGuarded(
-        () async {
-          try {
-            await body();
-            done.complete();
-            // ignore: avoid_catching_errors
-          } on Object catch (error, stackTrace) {
-            done.completeError(error, stackTrace);
-          }
-        },
-        zoneError,
-      ),
+      runZonedGuarded(() async {
+        try {
+          await body();
+          done.complete();
+          // ignore: avoid_catching_errors
+        } on Object catch (error, stackTrace) {
+          done.completeError(error, stackTrace);
+        }
+      }, zoneError),
     );
 
     return done.future;
@@ -81,9 +78,9 @@ final class RouteAudit {
 
   /// The errors that reached [channel], in order.
   List<Object> seenIn(SeenIn channel) => [
-        for (final (seenIn, error) in _seen)
-          if (seenIn == channel) error,
-      ];
+    for (final (seenIn, error) in _seen)
+      if (seenIn == channel) error,
+  ];
 
   /// Fails the test unless every entry of [routes] matches what was seen.
   ///
@@ -113,8 +110,7 @@ final class RouteAudit {
       final (wantReports, wantZone) = switch (route) {
         ScopeErrorRoute.observer ||
         ScopeErrorRoute.caller ||
-        ScopeErrorRoute.cancellation =>
-          (0, 0),
+        ScopeErrorRoute.cancellation => (0, 0),
         ScopeErrorRoute.flutterError => (1, 0),
         ScopeErrorRoute.zone => (0, 1),
       };

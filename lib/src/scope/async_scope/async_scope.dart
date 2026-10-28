@@ -10,7 +10,7 @@ final class AsyncScope extends AsyncScopeBase<AsyncScope> {
 
   /// What [initScope] was given.
   final Future<void> Function(BuildContext context, ScopeInitContext ctx)
-      _initScope;
+  _initScope;
 
   /// What [onUnmount] was given, if anything.
   final void Function()? _onUnmount;
@@ -37,7 +37,8 @@ final class AsyncScope extends AsyncScopeBase<AsyncScope> {
     Object error,
     StackTrace stackTrace,
     Object? progress,
-  ) errorBuilder;
+  )
+  errorBuilder;
 
   /// Built while the scope is closing, and after its release has finished.
   ///
@@ -67,7 +68,7 @@ final class AsyncScope extends AsyncScopeBase<AsyncScope> {
     super.pauseAfterInitialization,
     void Function(BuildContext context)? onMount,
     required Future<void> Function(BuildContext context, ScopeInitContext ctx)
-        initScope,
+    initScope,
     void Function()? onUnmount,
     required FutureOr<void> Function() disposeScope,
     this.waitingBuilder,
@@ -75,10 +76,10 @@ final class AsyncScope extends AsyncScopeBase<AsyncScope> {
     required this.progressBuilder,
     required this.builder,
     required this.errorBuilder,
-  })  : _onMount = onMount,
-        _initScope = initScope,
-        _onUnmount = onUnmount,
-        _disposeScope = disposeScope;
+  }) : _onMount = onMount,
+       _initScope = initScope,
+       _onUnmount = onUnmount,
+       _disposeScope = disposeScope;
 
   @override
   void onMount(BuildContext context) => _onMount?.call(context);
@@ -109,8 +110,7 @@ final class AsyncScope extends AsyncScopeBase<AsyncScope> {
     Object error,
     StackTrace stackTrace,
     Object? progress,
-  ) =>
-      errorBuilder(context, error, stackTrace, progress);
+  ) => errorBuilder(context, error, stackTrace, progress);
 
   @override
   Widget buildOnReady(BuildContext context) => builder(context);
@@ -119,11 +119,10 @@ final class AsyncScope extends AsyncScopeBase<AsyncScope> {
   static AsyncScopeContext<AsyncScope>? maybeOf(
     BuildContext context, {
     required bool listen,
-  }) =>
-      ScopeContext.maybeOf<AsyncScope, AsyncScopeContext<AsyncScope>>(
-        context,
-        listen: listen,
-      );
+  }) => ScopeContext.maybeOf<AsyncScope, AsyncScopeContext<AsyncScope>>(
+    context,
+    listen: listen,
+  );
 
   /// The nearest [AsyncScope] above [context].
   ///
@@ -131,19 +130,17 @@ final class AsyncScope extends AsyncScopeBase<AsyncScope> {
   static AsyncScopeContext<AsyncScope> of(
     BuildContext context, {
     required bool listen,
-  }) =>
-      ScopeContext.of<AsyncScope, AsyncScopeContext<AsyncScope>>(
-        context,
-        listen: listen,
-      );
+  }) => ScopeContext.of<AsyncScope, AsyncScopeContext<AsyncScope>>(
+    context,
+    listen: listen,
+  );
 
   /// Subscribes to one value of the scope and returns it.
   static V select<V extends Object?>(
     BuildContext context,
     V Function(AsyncScopeContext<AsyncScope> context) selector,
-  ) =>
-      ScopeContext.select<AsyncScope, AsyncScopeContext<AsyncScope>, V>(
-        context,
-        selector,
-      );
+  ) => ScopeContext.select<AsyncScope, AsyncScopeContext<AsyncScope>, V>(
+    context,
+    selector,
+  );
 }

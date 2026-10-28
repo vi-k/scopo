@@ -24,32 +24,36 @@ void main() {
     expect(closed, ['session', 'database']);
   });
 
-  test('scopo-deps awaits each close once in reverse acquisition order',
-      () async {
-    final closed = <String>[];
-    final dependencies = snippet.AppDependencies(
-      session: snippet.Session(
-        onClose: () async {
-          closed.add('session start');
-          await Future<void>.delayed(Duration.zero);
-          closed.add('session end');
-        },
-      ),
-      database: snippet.Database(
-        onClose: () async {
-          closed.add('database start');
-          await Future<void>.delayed(Duration.zero);
-          closed.add('database end');
-        },
-      ),
-    );
+  test(
+    'scopo-deps awaits each close once in reverse acquisition order',
+    () async {
+      final closed = <String>[];
+      final dependencies = snippet.AppDependencies(
+        session: snippet.Session(
+          onClose: () async {
+            closed.add('session start');
+            await Future<void>.delayed(Duration.zero);
+            closed.add('session end');
+          },
+        ),
+        database: snippet.Database(
+          onClose: () async {
+            closed.add('database start');
+            await Future<void>.delayed(Duration.zero);
+            closed.add('database end');
+          },
+        ),
+      );
 
-    await dependencies.dispose();
-    expect(
-      closed,
-      ['session start', 'session end', 'database start', 'database end'],
-    );
-  });
+      await dependencies.dispose();
+      expect(closed, [
+        'session start',
+        'session end',
+        'database start',
+        'database end',
+      ]);
+    },
+  );
 
   test('scopo-deps propagates a database disposal failure', () async {
     final failure = StateError('database close failed');

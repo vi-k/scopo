@@ -149,8 +149,9 @@ void main() {
       await tester.pump();
       await tester.pump();
 
-      final scope =
-          tester.element<_PausedScopeElement>(find.byType(_PausedScope));
+      final scope = tester.element<_PausedScopeElement>(
+        find.byType(_PausedScope),
+      );
 
       expect(
         scope.state,
@@ -173,13 +174,15 @@ void main() {
       await tester.pump();
       await tester.pump();
 
-      final scope =
-          tester.element<_PausedScopeElement>(find.byType(_PausedScope));
+      final scope = tester.element<_PausedScopeElement>(
+        find.byType(_PausedScope),
+      );
 
       expect(
         scope.state,
         isA<AsyncScopeReady>(),
-        reason: 'no delay is scheduled at all, so the ready state applies at '
+        reason:
+            'no delay is scheduled at all, so the ready state applies at '
             'the next frame',
       );
     });
@@ -212,9 +215,9 @@ final class _PausedHost extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Directionality(
-        textDirection: TextDirection.ltr,
-        child: _PausedScope(pause: pause),
-      );
+    textDirection: TextDirection.ltr,
+    child: _PausedScope(pause: pause),
+  );
 }
 
 final class _PausedScope

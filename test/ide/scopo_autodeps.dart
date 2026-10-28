@@ -30,11 +30,11 @@ final class AppDependencies
 
   @override
   ScopeDependency buildDependencies(BuildContext context) => sequential('', [
-        dep('database', (dep) async {
-          database = await Database.open();
-          // Registered before the next await: whatever this step took is
-          // given back even if a later one fails or is cancelled.
-          dep.dispose = database.close;
-        }),
-      ]);
+    dep('database', (dep) async {
+      database = await Database.open();
+      // Registered before the next await: whatever this step took is
+      // given back even if a later one fails or is cancelled.
+      dep.dispose = database.close;
+    }),
+  ]);
 }

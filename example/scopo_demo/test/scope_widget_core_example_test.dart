@@ -6,9 +6,7 @@ void main() {
   testWidgets('ScopeWidgetCore example increments its element-owned count', (
     tester,
   ) async {
-    await tester.pumpWidget(
-      const MaterialApp(home: ScopeWidgetCoreExample()),
-    );
+    await tester.pumpWidget(const MaterialApp(home: ScopeWidgetCoreExample()));
 
     expect(find.text('0'), findsOneWidget);
 

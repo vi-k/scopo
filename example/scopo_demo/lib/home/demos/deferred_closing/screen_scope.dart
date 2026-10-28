@@ -14,53 +14,51 @@ final class ScreenDependencies
 
   @override
   ScopeDependency buildDependencies(BuildContext context) => sequential('', [
-        dep('1', (dep) async {
-          console.log(ScreenScope, 'initialize 1');
-          await Future<void>.delayed(const Duration(milliseconds: 200));
-          dep.dispose = () async {
-            console.log(ScreenScope, 'dispose 1');
-            await Future<void>.delayed(const Duration(milliseconds: 1000));
-          };
-        }),
-        dep('2', (dep) async {
-          console.log(ScreenScope, 'initialize 2');
-          await Future<void>.delayed(const Duration(milliseconds: 200));
-          dep.dispose = () async {
-            console.log(ScreenScope, 'dispose 2');
-            await Future<void>.delayed(const Duration(milliseconds: 1000));
-          };
-        }),
-        dep('3', (dep) async {
-          console.log(ScreenScope, 'initialize 3');
-          await Future<void>.delayed(const Duration(milliseconds: 200));
-          dep.dispose = () async {
-            console.log(ScreenScope, 'dispose 3');
-            await Future<void>.delayed(const Duration(milliseconds: 1000));
-          };
-        }),
-        dep('4', (dep) async {
-          console.log(ScreenScope, 'initialize 4');
-          await Future<void>.delayed(const Duration(milliseconds: 200));
-          dep.dispose = () async {
-            console.log(ScreenScope, 'dispose 4');
-            await Future<void>.delayed(const Duration(milliseconds: 1000));
-          };
-        }),
-      ]);
+    dep('1', (dep) async {
+      console.log(ScreenScope, 'initialize 1');
+      await Future<void>.delayed(const Duration(milliseconds: 200));
+      dep.dispose = () async {
+        console.log(ScreenScope, 'dispose 1');
+        await Future<void>.delayed(const Duration(milliseconds: 1000));
+      };
+    }),
+    dep('2', (dep) async {
+      console.log(ScreenScope, 'initialize 2');
+      await Future<void>.delayed(const Duration(milliseconds: 200));
+      dep.dispose = () async {
+        console.log(ScreenScope, 'dispose 2');
+        await Future<void>.delayed(const Duration(milliseconds: 1000));
+      };
+    }),
+    dep('3', (dep) async {
+      console.log(ScreenScope, 'initialize 3');
+      await Future<void>.delayed(const Duration(milliseconds: 200));
+      dep.dispose = () async {
+        console.log(ScreenScope, 'dispose 3');
+        await Future<void>.delayed(const Duration(milliseconds: 1000));
+      };
+    }),
+    dep('4', (dep) async {
+      console.log(ScreenScope, 'initialize 4');
+      await Future<void>.delayed(const Duration(milliseconds: 200));
+      dep.dispose = () async {
+        console.log(ScreenScope, 'dispose 4');
+        await Future<void>.delayed(const Duration(milliseconds: 1000));
+      };
+    }),
+  ]);
 }
 
 /// A full screen scope whose navigation pop awaits `close()` and whose
 /// closing branch overlays a frozen image of the removed ready subtree.
 final class ScreenScope
     extends Scope<ScreenScope, ScreenDependencies, ScreenState> {
-  const ScreenScope({
-    super.key,
-    super.scopeKey,
-  }) : super(
-          pauseAfterInitialization: const Duration(milliseconds: 200),
-          // Four sequential one-second releases need more than the default 3s.
-          disposeScopeTimeout: const Duration(seconds: 10),
-        );
+  const ScreenScope({super.key, super.scopeKey})
+    : super(
+        pauseAfterInitialization: const Duration(milliseconds: 200),
+        // Four sequential one-second releases need more than the default 3s.
+        disposeScopeTimeout: const Duration(seconds: 10),
+      );
 
   static ScreenState of(BuildContext context) =>
       Scope.of<ScreenScope, ScreenDependencies, ScreenState>(context);
@@ -69,8 +67,7 @@ final class ScreenScope
   Future<ScreenDependencies> initDependencies(
     BuildContext context,
     ScopeInitContext ctx,
-  ) =>
-      ScreenDependencies().init(context, ctx);
+  ) => ScreenDependencies().init(context, ctx);
 
   Widget _wrap({required Widget child}) {
     return Scaffold(
@@ -115,19 +112,16 @@ final class ScreenScope
     BuildContext context,
     ScreenDependencies dependencies,
     Widget child,
-  ) =>
-      NavigationNode(
-        onPop: (context, result) async {
-          console.log(ScreenScope, 'close');
-          // Keep the route mounted until dependencies and state finish disposing.
-          await ScreenScope.of(context).close();
-          console.log(ScreenScope, 'closed');
-          return true;
-        },
-        child: _wrap(
-          child: child,
-        ),
-      );
+  ) => NavigationNode(
+    onPop: (context, result) async {
+      console.log(ScreenScope, 'close');
+      // Keep the route mounted until dependencies and state finish disposing.
+      await ScreenScope.of(context).close();
+      console.log(ScreenScope, 'closed');
+      return true;
+    },
+    child: _wrap(child: child),
+  );
 
   @override
   ScreenState createState() => ScreenState();
@@ -144,9 +138,7 @@ final class ScreenScope
               decoration: BoxDecoration(
                 color: Theme.of(context).colorScheme.tertiary,
                 borderRadius: BorderRadius.circular(8),
-                boxShadow: const [
-                  BoxShadow(blurRadius: 2),
-                ],
+                boxShadow: const [BoxShadow(blurRadius: 2)],
               ),
               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
               child: Text(
@@ -159,9 +151,7 @@ final class ScreenScope
               ),
             ),
           ),
-          const Center(
-            child: CircularProgressIndicator.adaptive(),
-          ),
+          const Center(child: CircularProgressIndicator.adaptive()),
         ],
       ),
     );

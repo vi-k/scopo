@@ -46,24 +46,31 @@ final class CounterScope
         listen: false,
       ).model;
 
-  static int countOf(BuildContext context) => ScopeNotifierCore.select<
-      CounterScope,
-      CounterScopeElement,
-      CounterModel,
-      int>(context, (context) => context.model.count);
+  static int countOf(BuildContext context) =>
+      ScopeNotifierCore.select<
+        CounterScope,
+        CounterScopeElement,
+        CounterModel,
+        int
+      >(context, (context) => context.model.count);
 
   static V select<V>(
     BuildContext context,
     V Function(ScopeModelContext<CounterScope, CounterModel> context) selector,
   ) =>
-      ScopeNotifierCore.select<CounterScope, CounterScopeElement, CounterModel,
-          V>(context, (context) => selector(context));
+      ScopeNotifierCore.select<
+        CounterScope,
+        CounterScopeElement,
+        CounterModel,
+        V
+      >(context, (context) => selector(context));
 
   Widget build(BuildContext context) {
     return Center(
       child: BlinkingBox(
-        blinkingColor:
-            Theme.of(context).colorScheme.primary.withValues(alpha: 0.2),
+        blinkingColor: Theme.of(
+          context,
+        ).colorScheme.primary.withValues(alpha: 0.2),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
@@ -83,8 +90,13 @@ final class CounterScope
 }
 
 /// Owns the notifier and unsubscribes the scope from it before disposing it.
-final class CounterScopeElement extends ScopeNotifierElementBase<CounterScope,
-    CounterScopeElement, CounterModel> {
+final class CounterScopeElement
+    extends
+        ScopeNotifierElementBase<
+          CounterScope,
+          CounterScopeElement,
+          CounterModel
+        > {
   final _CounterModelImpl _model = _CounterModelImpl();
 
   CounterScopeElement(super.widget);
@@ -111,8 +123,9 @@ class _CounterView extends StatelessWidget {
     final count = CounterScope.countOf(context);
     return Center(
       child: BlinkingBox(
-        blinkingColor:
-            Theme.of(context).colorScheme.primary.withValues(alpha: 0.2),
+        blinkingColor: Theme.of(
+          context,
+        ).colorScheme.primary.withValues(alpha: 0.2),
         child: Text('$count'),
       ),
     );

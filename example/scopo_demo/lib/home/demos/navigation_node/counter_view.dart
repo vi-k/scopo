@@ -13,10 +13,7 @@ class CounterView extends StatelessWidget {
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
-        Text(
-          CounterScope.titleOf(context),
-          textAlign: TextAlign.center,
-        ),
+        Text(CounterScope.titleOf(context), textAlign: TextAlign.center),
         const Row(
           mainAxisSize: MainAxisSize.min,
           children: [_CounterView(), _IncrementAction()],
@@ -34,8 +31,9 @@ class _CounterView extends StatelessWidget {
     final count = CounterScope.countOf(context);
     return Center(
       child: BlinkingBox(
-        blinkingColor:
-            Theme.of(context).colorScheme.primary.withValues(alpha: 0.2),
+        blinkingColor: Theme.of(
+          context,
+        ).colorScheme.primary.withValues(alpha: 0.2),
         child: Text('$count'),
       ),
     );

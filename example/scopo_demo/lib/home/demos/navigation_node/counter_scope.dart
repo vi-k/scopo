@@ -16,15 +16,8 @@ final class CounterModel with ChangeNotifier {
 final class CounterScope extends ScopeNotifierBase<CounterScope, CounterModel> {
   final String title;
 
-  CounterScope({
-    super.key,
-    super.tag,
-    required this.title,
-    super.child,
-  }) : super(
-          create: (_) => CounterModel(),
-          dispose: (model) => model.dispose(),
-        );
+  CounterScope({super.key, super.tag, required this.title, super.child})
+    : super(create: (_) => CounterModel(), dispose: (model) => model.dispose());
 
   static String titleOf(BuildContext context, {bool listen = true}) => listen
       ? ScopeNotifierBase.select<CounterScope, CounterModel, String>(

@@ -99,12 +99,12 @@ final class _NullWidget extends Widget {
 
   @override
   Element createElement() => throw UnimplementedError(
-        'A scope built the placeholder `child` of `ScopeInheritedWidget`. A '
-        'scope builds its own subtree through `buildChild()`; the `child` it '
-        'is constructed with is used only by a family that reads it, and this '
-        'is the default nobody passed one for. Pass a `child` to the scope, or '
-        'return the subtree from `buildChild()`.',
-      );
+    'A scope built the placeholder `child` of `ScopeInheritedWidget`. A '
+    'scope builds its own subtree through `buildChild()`; the `child` it '
+    'is constructed with is used only by a family that reads it, and this '
+    'is the default nobody passed one for. Pass a `child` to the scope, or '
+    'return the subtree from `buildChild()`.',
+  );
 }
 
 /// The element whose initialization hook is running right now.
@@ -145,8 +145,7 @@ abstract interface class ScopeContext<W extends ScopeInheritedWidget> {
   static C? maybeOf<W extends ScopeInheritedWidget, C extends ScopeContext<W>>(
     BuildContext context, {
     required bool listen,
-  }) =>
-      _find<W, C, void>(context, listen: listen)?.$1;
+  }) => _find<W, C, void>(context, listen: listen)?.$1;
 
   /// The context of the nearest scope [W] above [context].
   ///
@@ -154,29 +153,28 @@ abstract interface class ScopeContext<W extends ScopeInheritedWidget> {
   static C of<W extends ScopeInheritedWidget, C extends ScopeContext<W>>(
     BuildContext context, {
     required bool listen,
-  }) =>
-      _find<W, C, void>(context, listen: listen)?.$1 ?? _throwNotFound<W>();
+  }) => _find<W, C, void>(context, listen: listen)?.$1 ?? _throwNotFound<W>();
 
   /// Subscribes to one value of the scope and returns it.
   ///
   /// The caller is rebuilt only when `selector` returns something different
   /// from what it returned during its last build. Throws when there is no
   /// such scope.
-  static V select<W extends ScopeInheritedWidget, C extends ScopeContext<W>,
-          V extends Object?>(
-    BuildContext context,
-    V Function(C context) selector,
-  ) =>
+  static V select<
+    W extends ScopeInheritedWidget,
+    C extends ScopeContext<W>,
+    V extends Object?
+  >(BuildContext context, V Function(C context) selector) =>
       (_find<W, C, V>(context, listen: true, selector: selector) ??
-              _throwNotFound<W>())
-          .$2 as V;
+                  _throwNotFound<W>())
+              .$2
+          as V;
 
-  static (C, V?)? _find<W extends ScopeInheritedWidget,
-      C extends ScopeContext<W>, V extends Object?>(
-    BuildContext context, {
-    required bool listen,
-    V Function(C)? selector,
-  }) {
+  static (C, V?)? _find<
+    W extends ScopeInheritedWidget,
+    C extends ScopeContext<W>,
+    V extends Object?
+  >(BuildContext context, {required bool listen, V Function(C)? selector}) {
     assert(() {
       if (listen && identical(context, _debugInitializingElement)) {
         throw FlutterError.fromParts(<DiagnosticsNode>[

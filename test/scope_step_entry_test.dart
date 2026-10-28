@@ -20,21 +20,23 @@ void main() {
   });
 
   group('the entry into a step', () {
-    test('is announced before the step is done, in a sequential group',
-        () async {
-      final dependencies = _Sequential();
+    test(
+      'is announced before the step is done, in a sequential group',
+      () async {
+        final dependencies = _Sequential();
 
-      await runScopeInit((ctx) => dependencies.init(null, ctx));
+        await runScopeInit((ctx) => dependencies.init(null, ctx));
 
-      expect(observer.events, [
-        'init _Sequential',
-        'step _Sequential a',
-        'progress _Sequential a (1/2)',
-        'step _Sequential b',
-        'progress _Sequential b (2/2)',
-        'ready _Sequential',
-      ]);
-    });
+        expect(observer.events, [
+          'init _Sequential',
+          'step _Sequential a',
+          'progress _Sequential a (1/2)',
+          'step _Sequential b',
+          'progress _Sequential b (2/2)',
+          'ready _Sequential',
+        ]);
+      },
+    );
 
     // The promise the whole change is made of: the mark is on the way out
     // before the initializer awaits anything, so a step that never comes back
@@ -58,8 +60,7 @@ void main() {
       expect(observer.events.last, 'ready _Parked');
     });
 
-    test(
-        'arrives for every arm of a concurrent group before any of them '
+    test('arrives for every arm of a concurrent group before any of them '
         'finishes', () async {
       final first = Completer<void>();
       final second = Completer<void>();
@@ -170,38 +171,45 @@ void main() {
     // yields nothing, though, and announcing its entry would have invented a
     // step that never came back: exactly the false positive the pair is read
     // for.
-    test('is not announced for a dependency that registered only unmount',
-        () async {
-      final dependencies = _UnmountOnly();
+    test(
+      'is not announced for a dependency that registered only unmount',
+      () async {
+        final dependencies = _UnmountOnly();
 
-      await runScopeInit((ctx) => dependencies.init(null, ctx));
-      dependencies.onUnmount();
-      await dependencies.dispose();
+        await runScopeInit((ctx) => dependencies.init(null, ctx));
+        dependencies.onUnmount();
+        await dependencies.dispose();
 
-      expect(
-        observer.events.where((event) => event.contains('listener')),
-        ['step _UnmountOnly listener', 'progress _UnmountOnly listener (1/1)'],
-        reason: 'the initialization has both halves, the disposal neither',
-      );
-    });
+        expect(
+          observer.events.where((event) => event.contains('listener')),
+          [
+            'step _UnmountOnly listener',
+            'progress _UnmountOnly listener (1/1)',
+          ],
+          reason: 'the initialization has both halves, the disposal neither',
+        );
+      },
+    );
 
     // The breaking half of the change: a release used to be reported through
     // `onProgress` as a bare `String`, which made that hook mean two different
     // things at two different points of the lifecycle.
-    test('reports the release through onDisposalProgress, not onProgress',
-        () async {
-      final dependencies = _Disposing();
+    test(
+      'reports the release through onDisposalProgress, not onProgress',
+      () async {
+        final dependencies = _Disposing();
 
-      await runScopeInit((ctx) => dependencies.init(null, ctx));
-      observer.events.clear();
-      await dependencies.dispose();
+        await runScopeInit((ctx) => dependencies.init(null, ctx));
+        observer.events.clear();
+        await dependencies.dispose();
 
-      expect(
-        observer.events.where((event) => event.startsWith('progress ')),
-        isEmpty,
-        reason: 'a disposal reports nothing through onProgress any more',
-      );
-    });
+        expect(
+          observer.events.where((event) => event.startsWith('progress ')),
+          isEmpty,
+          reason: 'a disposal reports nothing through onProgress any more',
+        );
+      },
+    );
   });
 
   group('the pairs under strain', () {
@@ -209,8 +217,7 @@ void main() {
     // to stand alone -- which is exactly what a reader takes for a release
     // that hung, so it had better be the truth and not an accident of the
     // walk giving up early on its siblings.
-    test(
-        'a release that throws leaves its entry unmatched and the rest of '
+    test('a release that throws leaves its entry unmatched and the rest of '
         'the walk running', () async {
       final dependencies = _FailingDisposer();
 
@@ -266,26 +273,29 @@ void main() {
       );
     });
 
-    test('a dependency of the caller own making still reports its release',
-        () async {
-      final dependencies = _Foreign();
+    test(
+      'a dependency of the caller own making still reports its release',
+      () async {
+        final dependencies = _Foreign();
 
-      await runScopeInit((ctx) => dependencies.init(null, ctx));
-      observer.events.clear();
-      await dependencies.dispose();
+        await runScopeInit((ctx) => dependencies.init(null, ctx));
+        observer.events.clear();
+        await dependencies.dispose();
 
-      expect(
-        observer.events,
-        [
-          'dispose _Foreign',
-          'disposal progress _Foreign foreign',
-          'disposed _Foreign',
-        ],
-        reason: 'the release arrives, the entry does not: a dependency that '
-            'is not a ScopeDependencyMixin has nowhere to take the callback '
-            'from, and the release travels the public stream instead',
-      );
-    });
+        expect(
+          observer.events,
+          [
+            'dispose _Foreign',
+            'disposal progress _Foreign foreign',
+            'disposed _Foreign',
+          ],
+          reason:
+              'the release arrives, the entry does not: a dependency that '
+              'is not a ScopeDependencyMixin has nowhere to take the callback '
+              'from, and the release travels the public stream instead',
+        );
+      },
+    );
   });
 
   // R5: the pair used to hold only while the container drove the walk. The
@@ -294,28 +304,30 @@ void main() {
   // subscribed. Anyone else driving -- and the walk is public -- left the
   // container hearing entries and nothing behind them.
   group('the pair holds whoever drives the walk', () {
-    test('when the walk is driven by hand and the container is never asked',
-        () async {
-      final dependencies = _TwoDisposers();
+    test(
+      'when the walk is driven by hand and the container is never asked',
+      () async {
+        final dependencies = _TwoDisposers();
 
-      await runScopeInit((ctx) => dependencies.init(null, ctx));
-      observer.events.clear();
+        await runScopeInit((ctx) => dependencies.init(null, ctx));
+        observer.events.clear();
 
-      final byHand = <String>[];
-      await dependencies.root.dispose(byHand.add);
+        final byHand = <String>[];
+        await dependencies.root.dispose(byHand.add);
 
-      expect(
-        observer.events,
-        [
-          'disposal step _TwoDisposers b',
-          'disposal progress _TwoDisposers b',
-          'disposal step _TwoDisposers a',
-          'disposal progress _TwoDisposers a',
-        ],
-        reason: 'both halves arrive, outside any onDispose/onDisposed',
-      );
-      expect(byHand, ['b', 'a'], reason: 'the driver still gets the paths');
-    });
+        expect(
+          observer.events,
+          [
+            'disposal step _TwoDisposers b',
+            'disposal progress _TwoDisposers b',
+            'disposal step _TwoDisposers a',
+            'disposal progress _TwoDisposers a',
+          ],
+          reason: 'both halves arrive, outside any onDispose/onDisposed',
+        );
+        expect(byHand, ['b', 'a'], reason: 'the driver still gets the paths');
+      },
+    );
 
     test('when the container joins a walk driven by hand', () async {
       final parked = Completer<void>();
@@ -361,7 +373,8 @@ void main() {
           'disposal progress _ForeignChild outer/own',
           'disposed _ForeignChild',
         ],
-        reason: 'the foreign child has no channel of its own, so the group '
+        reason:
+            'the foreign child has no channel of its own, so the group '
             'speaks its exit; its entry stays unannounced, as it always was',
       );
     });
@@ -388,14 +401,16 @@ void main() {
       observer.events.clear();
       await dependencies.dispose();
 
-      final walk =
-          observer.events.where((e) => e.startsWith('disposal ')).toList();
+      final walk = observer.events
+          .where((e) => e.startsWith('disposal '))
+          .toList();
 
       expect(walk, hasLength(4), reason: 'two arms, two halves each');
       for (final arm in ['a', 'b']) {
         final entry = walk.indexOf('disposal step _ConcurrentDisposers $arm');
-        final exit =
-            walk.indexOf('disposal progress _ConcurrentDisposers $arm');
+        final exit = walk.indexOf(
+          'disposal progress _ConcurrentDisposers $arm',
+        );
         expect(entry, isNonNegative, reason: '$arm was announced');
         expect(
           exit,
@@ -415,8 +430,9 @@ void main() {
       observer.events.clear();
       await dependencies.dispose();
 
-      final walk =
-          observer.events.where((e) => e.startsWith('disposal ')).toList();
+      final walk = observer.events
+          .where((e) => e.startsWith('disposal '))
+          .toList();
 
       expect(
         walk,
@@ -441,8 +457,7 @@ void main() {
     // stopped without an error, without an exit and without an end. The
     // sequential group makes the same call inside the `try` of its walk and
     // has always been right.
-    test(
-        'carries a foreign arm of a concurrent group that throws before '
+    test('carries a foreign arm of a concurrent group that throws before '
         'returning its stream', () async {
       final dependencies = _SyncFailingForeignInConcurrent();
 
@@ -468,13 +483,15 @@ void main() {
           'disposal step _SyncFailingForeignInConcurrent g/own',
           'disposal progress _SyncFailingForeignInConcurrent g/own',
         ]),
-        reason: 'the failure ends the foreign arm, and the arm beside it is '
+        reason:
+            'the failure ends the foreign arm, and the arm beside it is '
             'released as if nothing had happened',
       );
       expect(
         observer.events.last,
         'disposed _SyncFailingForeignInConcurrent',
-        reason: 'the walk reaches its end at all, which is the whole of this '
+        reason:
+            'the walk reaches its end at all, which is the whole of this '
             'test: it used to stop here for good',
       );
       expect(reported.single, isA<ScopeDependencyException>());
@@ -483,25 +500,27 @@ void main() {
     // The same throw on the way in, where the merge is the same one. A
     // sequential group lets it travel the stream to the listener, which is
     // what the container is waiting on; the concurrent group swallowed it.
-    test('carries a foreign arm that throws before returning its init stream',
-        () async {
-      final dependencies = _SyncFailingInitInConcurrent();
+    test(
+      'carries a foreign arm that throws before returning its init stream',
+      () async {
+        final dependencies = _SyncFailingInitInConcurrent();
 
-      final failure = await runScopeInit((ctx) => dependencies.init(null, ctx))
-          .then<Object?>((_) => null)
-          .onError<Object>((error, _) => error);
+        final failure = await runScopeInit(
+          (ctx) => dependencies.init(null, ctx),
+        ).then<Object?>((_) => null).onError<Object>((error, _) => error);
 
-      expect(
-        failure,
-        isA<ScopeDependencyException>(),
-        reason: 'the initialization fails rather than never answering',
-      );
-      expect(
-        observer.events.last,
-        'disposed _SyncFailingInitInConcurrent',
-        reason: 'and the container lets go of the arm that did start',
-      );
-    });
+        expect(
+          failure,
+          isA<ScopeDependencyException>(),
+          reason: 'the initialization fails rather than never answering',
+        );
+        expect(
+          observer.events.last,
+          'disposed _SyncFailingInitInConcurrent',
+          reason: 'and the container lets go of the arm that did start',
+        );
+      },
+    );
 
     test('says nothing on a second dispose after the walk is over', () async {
       final dependencies = _TwoDisposers();
@@ -550,7 +569,8 @@ void main() {
       expect(
         reported.single,
         isA<ScopeDependencyException>(),
-        reason: 'the failed step is reported where it fails, however the '
+        reason:
+            'the failed step is reported where it fails, however the '
             'walk was started',
       );
     });
@@ -562,76 +582,84 @@ void main() {
     // root spoken for by the container -- and only the first was held by a
     // test: both of the other two could be deleted whole and the suite stayed
     // green. The three tests below hold the two that were loose.
-    test('carries the failure of a foreign child, announced by its group',
-        () async {
-      final dependencies = _FailingForeignChild();
+    test(
+      'carries the failure of a foreign child, announced by its group',
+      () async {
+        final dependencies = _FailingForeignChild();
 
-      await runScopeInit((ctx) => dependencies.init(null, ctx));
-      observer.events.clear();
+        await runScopeInit((ctx) => dependencies.init(null, ctx));
+        observer.events.clear();
 
-      final reported = <Object>[];
-      final previous = FlutterError.onError;
-      FlutterError.onError = (details) => reported.add(details.exception);
+        final reported = <Object>[];
+        final previous = FlutterError.onError;
+        FlutterError.onError = (details) => reported.add(details.exception);
 
-      await dependencies.dispose();
+        await dependencies.dispose();
 
-      // Back before the expectations, not in a tear-down: a handler of our own
-      // collects the `TestFailure` of a failing `expect` too, and the run then
-      // hangs instead of going red.
-      FlutterError.onError = previous;
+        // Back before the expectations, not in a tear-down: a handler of our
+        // own collects the `TestFailure` of a failing `expect` too, and the run
+        // then hangs instead of going red.
+        FlutterError.onError = previous;
 
-      const failure = 'error _FailingForeignChild disposal outer/foreign: '
-          'Bad state: foreign boom';
+        const failure =
+            'error _FailingForeignChild disposal outer/foreign: '
+            'Bad state: foreign boom';
 
-      expect(
-        observer.events,
-        [
-          'dispose _FailingForeignChild',
-          failure,
-          'disposal step _FailingForeignChild outer/own',
-          'disposal progress _FailingForeignChild outer/own',
-          'disposed _FailingForeignChild',
-        ],
-        reason: 'the failure ends the foreign step in place of the exit it '
-            'would have had, and the child below it is still released',
-      );
-      expect(
-        reported.single,
-        isA<ScopeDependencyException>(),
-        reason: 'the container reports the failed step where it fails, under '
-            'the name the observer was given, and not a second time when the '
-            'group above lets it out of the walk under a name of its own',
-      );
-    });
+        expect(
+          observer.events,
+          [
+            'dispose _FailingForeignChild',
+            failure,
+            'disposal step _FailingForeignChild outer/own',
+            'disposal progress _FailingForeignChild outer/own',
+            'disposed _FailingForeignChild',
+          ],
+          reason:
+              'the failure ends the foreign step in place of the exit it '
+              'would have had, and the child below it is still released',
+        );
+        expect(
+          reported.single,
+          isA<ScopeDependencyException>(),
+          reason:
+              'the container reports the failed step where it fails, under '
+              'the name the observer was given, and not a second time when the '
+              'group above lets it out of the walk under a name of its own',
+        );
+      },
+    );
 
-    test('carries the failure of a foreign root, announced by the container',
-        () async {
-      final dependencies = _FailingForeignRoot();
+    test(
+      'carries the failure of a foreign root, announced by the container',
+      () async {
+        final dependencies = _FailingForeignRoot();
 
-      await runScopeInit((ctx) => dependencies.init(null, ctx));
-      observer.events.clear();
+        await runScopeInit((ctx) => dependencies.init(null, ctx));
+        observer.events.clear();
 
-      final reported = <Object>[];
-      final previous = FlutterError.onError;
-      FlutterError.onError = (details) => reported.add(details.exception);
+        final reported = <Object>[];
+        final previous = FlutterError.onError;
+        FlutterError.onError = (details) => reported.add(details.exception);
 
-      await dependencies.dispose();
+        await dependencies.dispose();
 
-      FlutterError.onError = previous;
+        FlutterError.onError = previous;
 
-      expect(
-        observer.events,
-        [
-          'dispose _FailingForeignRoot',
-          'error _FailingForeignRoot disposal foreign: Bad state: foreign boom',
-          'disposed _FailingForeignRoot',
-        ],
-        reason: 'a root of the caller own making has no channel to announce '
-            'from, so the container speaks its failure -- naming it, the way '
-            'the other two senders name theirs',
-      );
-      expect(reported.single, isA<StateError>());
-    });
+        expect(
+          observer.events,
+          [
+            'dispose _FailingForeignRoot',
+            'error _FailingForeignRoot disposal foreign: Bad state: foreign boom',
+            'disposed _FailingForeignRoot',
+          ],
+          reason:
+              'a root of the caller own making has no channel to announce '
+              'from, so the container speaks its failure -- naming it, the way '
+              'the other two senders name theirs',
+        );
+        expect(reported.single, isA<StateError>());
+      },
+    );
 
     // The contract half of the same weak point, and the one that was not a
     // gap in the tests but a gap in the code: `dispose()` is a public
@@ -664,7 +692,8 @@ void main() {
         expect(
           failure,
           isNotNull,
-          reason: 'the walk cannot go on without knowing which branches to '
+          reason:
+              'the walk cannot go on without knowing which branches to '
               'run, and a walk that neither ends nor says why is the one '
               'outcome nobody can act on',
         );
@@ -701,50 +730,56 @@ void main() {
         expect(
           failure,
           isNotNull,
-          reason: 'a walk that neither ends nor says why is the one outcome '
+          reason:
+              'a walk that neither ends nor says why is the one outcome '
               'nobody can act on',
         );
         expect(
           log,
           ['own ran'],
-          reason: 'the branch in front of it had already been subscribed, and '
+          reason:
+              'the branch in front of it had already been subscribed, and '
               'letting go of it is what makes the failure answerable',
         );
       },
       timeout: const Timeout(Duration(seconds: 10)),
     );
 
-    test('carries a foreign root that throws before returning its stream',
-        () async {
-      final dependencies = _SyncFailingForeignRoot();
+    test(
+      'carries a foreign root that throws before returning its stream',
+      () async {
+        final dependencies = _SyncFailingForeignRoot();
 
-      await runScopeInit((ctx) => dependencies.init(null, ctx));
-      observer.events.clear();
+        await runScopeInit((ctx) => dependencies.init(null, ctx));
+        observer.events.clear();
 
-      final reported = <Object>[];
-      final previous = FlutterError.onError;
-      FlutterError.onError = (details) => reported.add(details.exception);
+        final reported = <Object>[];
+        final previous = FlutterError.onError;
+        FlutterError.onError = (details) => reported.add(details.exception);
 
-      await dependencies.dispose();
+        await dependencies.dispose();
 
-      FlutterError.onError = previous;
+        FlutterError.onError = previous;
 
-      const failure = 'error _SyncFailingForeignRoot disposal foreign: '
-          'Bad state: sync foreign boom';
+        const failure =
+            'error _SyncFailingForeignRoot disposal foreign: '
+            'Bad state: sync foreign boom';
 
-      expect(
-        observer.events,
-        [
-          'dispose _SyncFailingForeignRoot',
-          failure,
-          'disposed _SyncFailingForeignRoot',
-        ],
-        reason: 'a throw that arrives before the stream does travels the same '
-            'channel as one that arrives through it, and closes the pair it '
-            'was opened beside',
-      );
-      expect(reported.single, isA<StateError>());
-    });
+        expect(
+          observer.events,
+          [
+            'dispose _SyncFailingForeignRoot',
+            failure,
+            'disposed _SyncFailingForeignRoot',
+          ],
+          reason:
+              'a throw that arrives before the stream does travels the same '
+              'channel as one that arrives through it, and closes the pair it '
+              'was opened beside',
+        );
+        expect(reported.single, isA<StateError>());
+      },
+    );
 
     // Not the design's "a tree built and then disposed of before `init`":
     // that one is unreachable through a container, because `init` is an
@@ -799,9 +834,9 @@ void main() {
 final class _Sequential extends ScopeAutoDependencies<_Sequential, void> {
   @override
   ScopeDependency buildDependencies(void context) => sequential('', [
-        dep('a', (handle) async {}),
-        dep('b', (handle) async {}),
-      ]);
+    dep('a', (handle) async {}),
+    dep('b', (handle) async {}),
+  ]);
 }
 
 final class _Parked extends ScopeAutoDependencies<_Parked, void> {
@@ -822,21 +857,19 @@ final class _Concurrent extends ScopeAutoDependencies<_Concurrent, void> {
 
   @override
   ScopeDependency buildDependencies(void context) => concurrent('group', [
-        dep('a', (handle) => _first.future),
-        dep('b', (handle) => _second.future),
-      ]);
+    dep('a', (handle) => _first.future),
+    dep('b', (handle) => _second.future),
+  ]);
 }
 
 final class _Nested extends ScopeAutoDependencies<_Nested, void> {
   @override
   ScopeDependency buildDependencies(void context) => sequential('', [
-        sequential('storage', [
-          dep('db', (handle) async {}),
-          concurrent('', [
-            dep('cache', (handle) async {}),
-          ]),
-        ]),
-      ]);
+    sequential('storage', [
+      dep('db', (handle) async {}),
+      concurrent('', [dep('cache', (handle) async {})]),
+    ]),
+  ]);
 }
 
 final class _Failing extends ScopeAutoDependencies<_Failing, void> {
@@ -848,13 +881,13 @@ final class _Failing extends ScopeAutoDependencies<_Failing, void> {
 final class _Disposing extends ScopeAutoDependencies<_Disposing, void> {
   @override
   ScopeDependency buildDependencies(void context) => sequential('storage', [
-        dep('db', (handle) async {
-          handle.dispose = () async {};
-        }),
-        dep('cache', (handle) async {
-          handle.dispose = () async {};
-        }),
-      ]);
+    dep('db', (handle) async {
+      handle.dispose = () async {};
+    }),
+    dep('cache', (handle) async {
+      handle.dispose = () async {};
+    }),
+  ]);
 }
 
 final class _UnmountOnly extends ScopeAutoDependencies<_UnmountOnly, void> {
@@ -869,13 +902,13 @@ final class _FailingDisposer
     extends ScopeAutoDependencies<_FailingDisposer, void> {
   @override
   ScopeDependency buildDependencies(void context) => sequential('storage', [
-        dep('db', (handle) async {
-          handle.dispose = () async {};
-        }),
-        dep('cache', (handle) async {
-          handle.dispose = () async => throw StateError('boom');
-        }),
-      ]);
+    dep('db', (handle) async {
+      handle.dispose = () async {};
+    }),
+    dep('cache', (handle) async {
+      handle.dispose = () async => throw StateError('boom');
+    }),
+  ]);
 }
 
 final class _Foreign extends ScopeAutoDependencies<_Foreign, void> {
@@ -988,11 +1021,11 @@ final class _FailingForeignChild
     extends ScopeAutoDependencies<_FailingForeignChild, void> {
   @override
   ScopeDependency buildDependencies(void context) => sequential('outer', [
-        dep('own', (handle) async {
-          handle.dispose = () async {};
-        }),
-        _FailingForeignDependency(),
-      ]);
+    dep('own', (handle) async {
+      handle.dispose = () async {};
+    }),
+    _FailingForeignDependency(),
+  ]);
 }
 
 /// The same, with an initialization that throws before it waits for anything.
@@ -1006,22 +1039,22 @@ final class _SyncFailingForeignInConcurrent
     extends ScopeAutoDependencies<_SyncFailingForeignInConcurrent, void> {
   @override
   ScopeDependency buildDependencies(void context) => concurrent('g', [
-        dep('own', (handle) async {
-          handle.dispose = () async {};
-        }),
-        _SyncFailingForeignDependency(),
-      ]);
+    dep('own', (handle) async {
+      handle.dispose = () async {};
+    }),
+    _SyncFailingForeignDependency(),
+  ]);
 }
 
 final class _SyncFailingInitInConcurrent
     extends ScopeAutoDependencies<_SyncFailingInitInConcurrent, void> {
   @override
   ScopeDependency buildDependencies(void context) => concurrent('g', [
-        dep('own', (handle) async {
-          handle.dispose = () async {};
-        }),
-        _SyncFailingInitForeignDependency(),
-      ]);
+    dep('own', (handle) async {
+      handle.dispose = () async {};
+    }),
+    _SyncFailingInitForeignDependency(),
+  ]);
 }
 
 final class _FakeObservable implements ScopeObservable {
@@ -1034,13 +1067,13 @@ final class _FakeObservable implements ScopeObservable {
 final class _TwoDisposers extends ScopeAutoDependencies<_TwoDisposers, void> {
   @override
   ScopeDependency buildDependencies(void context) => sequential('', [
-        dep('a', (handle) async {
-          handle.dispose = () async {};
-        }),
-        dep('b', (handle) async {
-          handle.dispose = () async {};
-        }),
-      ]);
+    dep('a', (handle) async {
+      handle.dispose = () async {};
+    }),
+    dep('b', (handle) async {
+      handle.dispose = () async {};
+    }),
+  ]);
 }
 
 final class _ParkedDisposer
@@ -1051,23 +1084,23 @@ final class _ParkedDisposer
 
   @override
   ScopeDependency buildDependencies(void context) => sequential('', [
-        dep('a', (handle) async {
-          handle.dispose = () async {};
-        }),
-        dep('b', (handle) async {
-          handle.dispose = () => _parked.future;
-        }),
-      ]);
+    dep('a', (handle) async {
+      handle.dispose = () async {};
+    }),
+    dep('b', (handle) async {
+      handle.dispose = () => _parked.future;
+    }),
+  ]);
 }
 
 final class _ForeignChild extends ScopeAutoDependencies<_ForeignChild, void> {
   @override
   ScopeDependency buildDependencies(void context) => sequential('outer', [
-        dep('own', (handle) async {
-          handle.dispose = () async {};
-        }),
-        _ForeignDependency(),
-      ]);
+    dep('own', (handle) async {
+      handle.dispose = () async {};
+    }),
+    _ForeignDependency(),
+  ]);
 }
 
 final class _RootLeaf extends ScopeAutoDependencies<_RootLeaf, void> {
@@ -1082,22 +1115,22 @@ final class _ConcurrentDisposers
     extends ScopeAutoDependencies<_ConcurrentDisposers, void> {
   @override
   ScopeDependency buildDependencies(void context) => concurrent('', [
-        dep('a', (handle) async {
-          handle.dispose = () async {};
-        }),
-        dep('b', (handle) async {
-          handle.dispose = () async {};
-        }),
-      ]);
+    dep('a', (handle) async {
+      handle.dispose = () async {};
+    }),
+    dep('b', (handle) async {
+      handle.dispose = () async {};
+    }),
+  ]);
 }
 
 final class _ForeignInConcurrent
     extends ScopeAutoDependencies<_ForeignInConcurrent, void> {
   @override
   ScopeDependency buildDependencies(void context) => concurrent('g', [
-        dep('own', (handle) async {
-          handle.dispose = () async {};
-        }),
-        _ForeignDependency(),
-      ]);
+    dep('own', (handle) async {
+      handle.dispose = () async {};
+    }),
+    _ForeignDependency(),
+  ]);
 }

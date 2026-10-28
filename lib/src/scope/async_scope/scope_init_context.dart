@@ -268,7 +268,6 @@ final class _ScopeInitObserver extends JobObserver with JobAnswerer {
   }
 
   @override
-  void onLog(Job<Object?> job, Object? message) => notifyObserver(
-        (observer) => observer.onTrace(_scope, '$message'),
-      );
+  void onLog(Job<Object?> job, Object? message) =>
+      notifyObserver((observer) => observer.onTrace(_scope, '$message'));
 }

@@ -20,28 +20,32 @@ void main() {
   /// is read by as many people as one in a topic. `CHANGELOG.md` ships too.
   /// What is skipped under `example` is what is not published from it --
   /// build output and the tool's own cache.
-  Iterable<File> publishedMarkdown() => <FileSystemEntity>[
-        File('README.md'),
-        File('CHANGELOG.md'),
-        File('ide/README.md'),
-        ...Directory('doc').listSync(),
-        ...Directory('example').listSync(recursive: true),
-        ...Directory('docs/ru').listSync(recursive: true),
-      ].whereType<File>().where((file) => file.path.endsWith('.md')).where(
+  Iterable<File> publishedMarkdown() =>
+      <FileSystemEntity>[
+            File('README.md'),
+            File('CHANGELOG.md'),
+            File('ide/README.md'),
+            ...Directory('doc').listSync(),
+            ...Directory('example').listSync(recursive: true),
+            ...Directory('docs/ru').listSync(recursive: true),
+          ]
+          .whereType<File>()
+          .where((file) => file.path.endsWith('.md'))
+          .where(
             (file) =>
                 !file.path.contains('/build/') &&
                 !file.path.contains('/.dart_tool/'),
           );
 
-// The command that copies the templates out of pub-cache takes the newest
-// version it finds there, and it takes it with `sort`. A plain `sort` is
-// lexicographic, so it puts `scopo-0.9.6` after `scopo-0.13.0` and the copy
-// comes from a version that may have no `ide/` in it at all. Found once and
-// fixed in the four places it was known to be in -- and the same two
-// commands stood on in the `base` topic, which is the page the README sends
-// the reader to for the details, until another review found them. A list
-// written by hand is what let that happen twice, so this asks every file
-// that carries the command instead.
+  // The command that copies the templates out of pub-cache takes the newest
+  // version it finds there, and it takes it with `sort`. A plain `sort` is
+  // lexicographic, so it puts `scopo-0.9.6` after `scopo-0.13.0` and the copy
+  // comes from a version that may have no `ide/` in it at all. Found once and
+  // fixed in the four places it was known to be in -- and the same two
+  // commands stood on in the `base` topic, which is the page the README sends
+  // the reader to for the details, until another review found them. A list
+  // written by hand is what let that happen twice, so this asks every file
+  // that carries the command instead.
   test('every copy of the install command sorts versions numerically', () {
     final markdown = publishedMarkdown();
 
@@ -54,14 +58,16 @@ void main() {
     expect(
       commands,
       hasLength(greaterThan(4)),
-      reason: 'a check over nothing passes for nothing: the command is in the '
+      reason:
+          'a check over nothing passes for nothing: the command is in the '
           'README, in the `base` topic, in `ide/README.md`, and in the Russian '
           'mirror of each',
     );
     expect(
       commands.where((command) => !command.contains('| sort -V |')),
       isEmpty,
-      reason: 'a plain `sort` is lexicographic: it puts `scopo-0.9.6` after '
+      reason:
+          'a plain `sort` is lexicographic: it puts `scopo-0.9.6` after '
           '`scopo-0.13.0`, and the copy then comes from a version with no '
           '`ide/` in it',
     );
@@ -82,7 +88,8 @@ void main() {
     expect(
       topics,
       hasLength(4),
-      reason: 'a check over nothing passes for nothing: two topics and the '
+      reason:
+          'a check over nothing passes for nothing: two topics and the '
           'Russian mirror of each',
     );
 
@@ -96,7 +103,8 @@ void main() {
     expect(
       stale,
       isEmpty,
-      reason: 'these two take `disposeScope:` and `disposeData:`; a reader who '
+      reason:
+          'these two take `disposeScope:` and `disposeData:`; a reader who '
           "copies `dispose:` gets \"The named parameter 'dispose' isn't "
           'defined"',
     );
@@ -121,10 +129,11 @@ void main() {
   // `LiteScopeCoreState` alone, which is the one class of the four nobody is
   // told to extend. Left without a doc comment the override inherits the base
   // text, and `public_member_api_docs` does not ask for one on an override.
-  test('the overriding blocks inherit their contract rather than shadow it',
-      () {
-    final declaration =
-        RegExp(r'^\s*FutureOr<void> (initStateAsync|disposeStateAsync)\(\)');
+  test('the overriding blocks inherit their contract '
+      'rather than shadow it', () {
+    final declaration = RegExp(
+      r'^\s*FutureOr<void> (initStateAsync|disposeStateAsync)\(\)',
+    );
 
     // Walks up from the declaration, past however many annotations stand
     // between it and whatever is above them. Asking only the line directly
@@ -162,13 +171,15 @@ void main() {
     expect(
       read.isOverride,
       isTrue,
-      reason: 'an annotation between `@override` and the declaration does not '
+      reason:
+          'an annotation between `@override` and the declaration does not '
           'stop it from being an override',
     );
     expect(
       read.isShadowed,
       isTrue,
-      reason: 'nor does it stop the doc above from replacing the inherited '
+      reason:
+          'nor does it stop the doc above from replacing the inherited '
           'text on the page, which is the whole of what this asks',
     );
 
@@ -202,14 +213,16 @@ void main() {
     expect(
       overrides,
       hasLength(6),
-      reason: 'a check over nothing passes for nothing: three classes '
+      reason:
+          'a check over nothing passes for nothing: three classes '
           're-declare both hooks, and the two base declarations carry no '
           '`@override`',
     );
     expect(
       shadowed,
       isEmpty,
-      reason: 'a doc comment on an override replaces the inherited text on the '
+      reason:
+          'a doc comment on an override replaces the inherited text on the '
           'page rather than adding to it, and the contract lives in the base',
     );
   });
@@ -233,7 +246,8 @@ void main() {
     expect(
       stale,
       isEmpty,
-      reason: 'a reader who copies this gets '
+      reason:
+          'a reader who copies this gets '
           "\"The named parameter 'init' isn't defined\"",
     );
 
@@ -241,7 +255,8 @@ void main() {
     expect(
       RegExp('initScope:').hasMatch(text) && RegExp('initData:').hasMatch(text),
       isTrue,
-      reason: 'a check over nothing passes for nothing: both names the '
+      reason:
+          'a check over nothing passes for nothing: both names the '
           'fragments should be using are in these files',
     );
   });

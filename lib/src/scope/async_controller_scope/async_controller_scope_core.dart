@@ -2,9 +2,11 @@ part of '../scope.dart';
 
 /// {@category AsyncControllerScope}
 abstract base class AsyncControllerScopeCore<
-    W extends AsyncControllerScopeCore<W, E, C>,
-    E extends AsyncControllerScopeElementBase<W, E, C>,
-    C extends ScopeController> extends AsyncDataScopeCore<W, E, C> {
+  W extends AsyncControllerScopeCore<W, E, C>,
+  E extends AsyncControllerScopeElementBase<W, E, C>,
+  C extends ScopeController
+>
+    extends AsyncDataScopeCore<W, E, C> {
   /// Creates the widget half of a scope owning a controller.
   const AsyncControllerScopeCore({
     super.key,
@@ -20,43 +22,39 @@ abstract base class AsyncControllerScopeCore<
   /// with this family's type arguments works but is not something to have to
   /// find out.
   static E? maybeOf<
-          W extends AsyncControllerScopeCore<W, E, C>,
-          E extends AsyncControllerScopeElementBase<W, E, C>,
-          C extends ScopeController>(
-    BuildContext context, {
-    required bool listen,
-  }) =>
+    W extends AsyncControllerScopeCore<W, E, C>,
+    E extends AsyncControllerScopeElementBase<W, E, C>,
+    C extends ScopeController
+  >(BuildContext context, {required bool listen}) =>
       ScopeContext.maybeOf<W, E>(context, listen: listen);
 
   /// The element of the nearest scope [W] above [context].
   ///
   /// Throws when there is none.
   static E of<
-          W extends AsyncControllerScopeCore<W, E, C>,
-          E extends AsyncControllerScopeElementBase<W, E, C>,
-          C extends ScopeController>(
-    BuildContext context, {
-    required bool listen,
-  }) =>
+    W extends AsyncControllerScopeCore<W, E, C>,
+    E extends AsyncControllerScopeElementBase<W, E, C>,
+    C extends ScopeController
+  >(BuildContext context, {required bool listen}) =>
       ScopeContext.of<W, E>(context, listen: listen);
 
   /// Subscribes to one value of the scope and returns it.
   static V select<
-          W extends AsyncControllerScopeCore<W, E, C>,
-          E extends AsyncControllerScopeElementBase<W, E, C>,
-          C extends ScopeController,
-          V extends Object?>(
-    BuildContext context,
-    V Function(E element) selector,
-  ) =>
+    W extends AsyncControllerScopeCore<W, E, C>,
+    E extends AsyncControllerScopeElementBase<W, E, C>,
+    C extends ScopeController,
+    V extends Object?
+  >(BuildContext context, V Function(E element) selector) =>
       ScopeContext.select<W, E, V>(context, selector);
 }
 
 /// {@category AsyncControllerScope}
 abstract base class AsyncControllerScopeElementBase<
-        W extends AsyncControllerScopeCore<W, E, C>,
-        E extends AsyncControllerScopeElementBase<W, E, C>,
-        C extends ScopeController> extends AsyncDataScopeElementBase<W, E, C>
+  W extends AsyncControllerScopeCore<W, E, C>,
+  E extends AsyncControllerScopeElementBase<W, E, C>,
+  C extends ScopeController
+>
+    extends AsyncDataScopeElementBase<W, E, C>
     implements AsyncControllerScopeContext<W, C> {
   /// Creates the element of a scope owning a controller.
   AsyncControllerScopeElementBase(super.widget);

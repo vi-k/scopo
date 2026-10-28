@@ -2,9 +2,11 @@
 #
 # Every step below is one of the commands the regimen requires before a merge,
 # in the regimen's order, on the toolchain the package declares as its floor:
-# Flutter 3.27.0, which carries Dart 3.6.0. Locally that version comes from
-# `fvm`; here the action pins the same number directly, so `flutter` and `dart`
-# on the PATH are already the right ones and no `fvm` prefix is needed.
+# Flutter 3.38.1, which carries Dart 3.10.0. Not 3.38.0: its Dart is
+# `3.10.0-290.4.beta`, and `sdk: ^3.10.0` does not admit a prerelease. Locally
+# that version comes from `fvm`; here the action pins the same number directly,
+# so `flutter` and `dart` on the PATH are already the right ones and no `fvm`
+# prefix is needed.
 name: gate
 
 on:
@@ -32,7 +34,7 @@ jobs:
 
       - uses: subosito/flutter-action@v2
         with:
-          flutter-version: 3.27.0
+          flutter-version: 3.38.1
           channel: stable
           cache: true
 

@@ -23,8 +23,7 @@ class CounterScope extends StatefulWidget {
   static V select<V>(
     BuildContext context,
     V Function(CounterScopeState state) selector,
-  ) =>
-      ScopeNotifier.select<CounterScopeState, V>(context, selector);
+  ) => ScopeNotifier.select<CounterScopeState, V>(context, selector);
 
   @override
   State<CounterScope> createState() => CounterScopeState();
@@ -47,8 +46,9 @@ class CounterScopeState extends State<CounterScope> with StateAsNotifier {
       value: this,
       builder: (context) => Center(
         child: BlinkingBox(
-          blinkingColor:
-              Theme.of(context).colorScheme.primary.withValues(alpha: 0.2),
+          blinkingColor: Theme.of(
+            context,
+          ).colorScheme.primary.withValues(alpha: 0.2),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
@@ -73,8 +73,9 @@ class _CounterView extends StatelessWidget {
     final count = CounterScope.select<int>(context, (state) => state.count);
     return Center(
       child: BlinkingBox(
-        blinkingColor:
-            Theme.of(context).colorScheme.primary.withValues(alpha: 0.2),
+        blinkingColor: Theme.of(
+          context,
+        ).colorScheme.primary.withValues(alpha: 0.2),
         child: Text('$count'),
       ),
     );
