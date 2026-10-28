@@ -70,8 +70,8 @@ sdk». `async_job` 0.6.0 вышел 2026-10-28 и API не меняет: его 
 починен выше); четыре `analyze` — `No issues found!`; format — 130 файлов,
 0 changed; dartdoc — 0 warnings, 0 errors; переводы актуальны: **17**;
 `tool/check_doc_examples.dart` — 113 PASS, 0 FAIL, 8 SKIP; quickstart **1**;
-демо **10**; публикационный dry-run — на закоммиченном дереве, число
-в `docs/handoff.md`.
+демо **10**; публикационный dry-run на закоммиченном дереве (`7f6fb91`) —
+0 warnings.
 
 ## Что осталось
 

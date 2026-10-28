@@ -176,8 +176,8 @@ CI: `.github/workflows/ci.yml`, `gate` на полу, `ceiling` на stable
 подъём пола, в копии): **825 тестов**; демо **10**, quickstart **1**; четыре
 `analyze` — `No issues found!`; format — 130 файлов, 0 changed; dartdoc —
 0 warnings, 0 errors; переводы актуальны: **17**;
-`tool/check_doc_examples.dart` — 113 PASS, 0 FAIL; публикационный dry-run —
-на закоммиченном дереве, число ниже в отчёте сессии. Тесты комплекта
+`tool/check_doc_examples.dart` — 113 PASS, 0 FAIL; публикационный dry-run
+на закоммиченном дереве (`7f6fb91`) — 0 warnings. Тесты комплекта
 `tool/consumer_validation` не прогонялись. Выпуск 0.20.0 прошёл тот же гейт
 на 3.27.0 с теми же числами.
 
