@@ -114,32 +114,26 @@ class HomeAppBar extends AppBar {
     : super(
         title: const Text('scopo demo'),
         actions: [
-          // The long press hangs on a `GestureDetector` rather than on
-          // `IconButton.onLongPress`: that parameter arrived in Flutter 3.29
-          // and the package floor is 3.27. The tooltip is a widget above the
-          // detector rather than `IconButton.tooltip`, which would put a
-          // `Tooltip` — a long press of its own — *below* it: the deeper
-          // recognizer starts its timer first, takes the arena and the reset
-          // never runs. `home_app_bar_test.dart` holds that order.
-          Tooltip(
-            message: 'Long tap for the system theme',
-            child: GestureDetector(
-              onLongPress: () {
-                ThemeManager.of(context, listen: false).resetBrightness();
-              },
-              child: IconButton(
-                onPressed: () {
-                  ThemeManager.of(context, listen: false).toggleBrightness();
-                },
-                icon: Icon(switch (ThemeManager.select(
-                  context,
-                  (m) => m.brightness,
-                )) {
-                  Brightness.dark => Icons.light_mode,
-                  Brightness.light => Icons.dark_mode,
-                }),
-              ),
-            ),
+          // `tooltip` wraps the button in a `Tooltip` from outside, so the
+          // tooltip's own long press sits *above* the button's: the deeper
+          // recognizer starts its timer first, takes the arena, and the long
+          // press resets the theme rather than showing the hint.
+          // `home_app_bar_test.dart` holds that order.
+          IconButton(
+            tooltip: 'Long tap for the system theme',
+            onPressed: () {
+              ThemeManager.of(context, listen: false).toggleBrightness();
+            },
+            onLongPress: () {
+              ThemeManager.of(context, listen: false).resetBrightness();
+            },
+            icon: Icon(switch (ThemeManager.select(
+              context,
+              (m) => m.brightness,
+            )) {
+              Brightness.dark => Icons.light_mode,
+              Brightness.light => Icons.dark_mode,
+            }),
           ),
         ],
         bottom: withTabs

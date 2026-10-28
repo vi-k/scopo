@@ -34,12 +34,12 @@ void main() {
 
       expect(find.byIcon(Icons.light_mode), findsOneWidget);
 
-      // The long press is what `IconButton.onLongPress` would have carried from
-      // Flutter 3.29 on; below that floor it hangs on a `GestureDetector`
-      // above the button, so this asks whether the wrapping still works. The
-      // reset also has to be the only thing that runs: the long-press
+      // The button carries a tooltip, and a tooltip answers a long press too:
+      // this asks whether the press still reaches `IconButton.onLongPress`.
+      // The reset also has to be the only thing that runs: the long-press
       // recognizer takes the arena at its deadline, and the button's tap is
       // rejected rather than fired on the release.
+      expect(find.byTooltip('Long tap for the system theme'), findsOneWidget);
       await tester.longPress(find.byIcon(Icons.light_mode));
       await tester.pump();
 
