@@ -58,7 +58,8 @@ done
 # каталогам в одну строку («Contains the root `App` scope and global
 # dependencies»), а не документы, которые читают. §7 они не нарушают —
 # написаны по-английски, как и требуется от публичных артефактов. Решение
-# владельца, 2026-08-29; найдено пятым ревью (`2026-08-28[2]`, P3-13).
+# владельца, 2026-08-29; найдено пятым ревью
+# (`2026-08-28-project-review.md`, P3-13).
 for source in README.md doc/*.md example/README.md example/*/README.md \
               ide/README.md; do
   translation="docs/ru/$source"

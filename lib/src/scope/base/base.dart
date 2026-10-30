@@ -29,7 +29,7 @@ part of '../scope.dart';
 /// `Builder` around the item -- which is better code anyway, since a change
 /// then wakes the one item instead of the whole list. Both shapes were
 /// measured before this was narrowed:
-/// `docs/records/2026-09-22[3]-lazy-registration-report.md`.
+/// `docs/records/2026-09/2026-09-22-lazy-registration-report.md`.
 ///
 /// None of this reaches release. `debugDoingBuild` and
 /// `RenderObject.debugActiveLayout` are both set inside `assert(() {…}())`, so

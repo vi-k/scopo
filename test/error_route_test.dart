@@ -1223,7 +1223,7 @@ void main() {
   // the outcome. For that one the route is
   // `observer`, and it stays final: an answer that comes later does not send
   // it to `FlutterError` after all while an observer is there to have heard
-  // it. That is 1a of `2026-10-24[3]-observer-error-route-design.md`.
+  // it. That is 1a of `2026-10-24-observer-error-route-design.md`.
   group('the observer of the initialization job', () {
     /// The routes announced for [error], by identity.
     List<(String, ScopePhase, ScopeErrorRoute, Object)> routesOf(

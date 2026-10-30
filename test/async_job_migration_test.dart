@@ -383,7 +383,7 @@ void main() {
       // a `TestFailure` raised while the handler is ours goes into this list
       // instead of to the runner, and the suite then hangs rather than saying
       // what broke. See the fix of L2 in
-      // `docs/records/2026-09-09[5]-post-wave-review.md`.
+      // `docs/records/2026-09/2026-09-09-claude-post-wave-review.md`.
       final reported = <Object>[];
       final previous = FlutterError.onError;
       void collect() =>
@@ -434,7 +434,7 @@ void main() {
       // outcome of the parent becomes a cancellation, and the failure has
       // nobody left to reach. The kernel says so once -- and that used to be
       // the red line. Under 1a of
-      // `2026-10-24[3]-observer-error-route-design.md` it is not: the observer
+      // `2026-10-24-observer-error-route-design.md` it is not: the observer
       // heard the child's failure with `ScopeErrorRoute.observer`, that route
       // is final, and an application whose crash reporter forwards `observer`
       // has the one report already. The observer has heard it, and saying it
@@ -1086,7 +1086,7 @@ void main() {
   // told the object with `ScopeErrorRoute.observer` when the body settled.
   // The observer is not told it a second time -- it has heard the object --
   // and that is the leftover of 1a in
-  // `2026-10-24[3]-observer-error-route-design.md`.
+  // `2026-10-24-observer-error-route-design.md`.
   testWidgets(
     'with an observer, the late unattended rethrow of an already-announced '
     'object still reaches FlutterError',
