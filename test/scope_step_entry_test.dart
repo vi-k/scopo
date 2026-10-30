@@ -195,7 +195,7 @@ void main() {
     // `onProgress` as a bare `String`, which made that hook mean two different
     // things at two different points of the lifecycle.
     test(
-      'reports the release through onDisposalProgress, not onProgress',
+      'reports the release through onDisposalStepFinished, not onProgress',
       () async {
         final dependencies = _Disposing();
 
@@ -323,7 +323,8 @@ void main() {
             'disposal step _TwoDisposers a',
             'disposal progress _TwoDisposers a',
           ],
-          reason: 'both halves arrive, outside any onDispose/onDisposed',
+          reason:
+              'both halves arrive, outside any onDisposalStarted/onDisposed',
         );
         expect(byHand, ['b', 'a'], reason: 'the driver still gets the paths');
       },
@@ -804,7 +805,7 @@ void main() {
     ScopeCompositeObserver([first, second])
       ..onStepStarted(target, 'storage/db')
       ..onDisposalStepStarted(target, 'storage/db')
-      ..onDisposalProgress(target, 'storage/db');
+      ..onDisposalStepFinished(target, 'storage/db');
 
     expect(first.events, [
       'step AppDeps storage/db',
@@ -821,7 +822,7 @@ void main() {
     ScopePrintObserver(output: lines.add)
       ..onStepStarted(container, 'storage/db')
       ..onDisposalStepStarted(container, 'storage/db')
-      ..onDisposalProgress(container, 'storage/db');
+      ..onDisposalStepFinished(container, 'storage/db');
 
     expect(lines, [
       'scopo | AppDeps(#1a2b) | initialize storage/db…',

@@ -1,6 +1,6 @@
 # scopo
 
-> Перевод `README.md` (blob `1c2099e013ed07a49e643c7c6138f7acba3198fc`).
+> Перевод `README.md` (blob `4d3886107b3a00034d7dfb7c44d5816eb9e944a0`).
 > Правится в том же коммите, что и оригинал; проверка — `sh docs/ru/check.sh`.
 
 [![pub version](https://img.shields.io/pub/v/scopo)](https://pub.dev/packages/scopo)
@@ -846,18 +846,19 @@ class CloseDatabaseButton extends StatelessWidget {
 ## Наблюдение и настройка
 
 Пакет молчит, пока не присвоен `ScopeConfig.observer`. У `ScopeObserver`
-по хуку на событие жизненного цикла — `onInit`, `onStepStarted`, `onProgress`,
-`onReady`, `onCancelled`, `onDispose`, `onDisposalStepStarted`,
-`onDisposalProgress`, `onDisposed`, `onError`, `onTimeout`, `onTrace`, — и все
-они пустые, так что наследник переопределяет только нужное.
-`ScopePrintObserver` едет в комплекте и пишет по строке на событие.
+по хуку на событие жизненного цикла — `onInitStarted`, `onStepStarted`,
+`onProgress`, `onInitialized`, `onCancelled`, `onDisposalStarted`,
+`onDisposalStepStarted`, `onDisposalStepFinished`, `onDisposed`, `onError`,
+`onTimeout`, `onTrace`, — и все они пустые, так что наследник переопределяет
+только нужное. `ScopePrintObserver` едет в комплекте и пишет по строке
+на событие.
 
 Контейнер зависимостей отчитывается о каждом своём шаге дважды: `onStepStarted`
 с путём шага — изнутри шага и до того, как тот чего-либо дождётся, — и затем
 `onProgress`, когда шаг сделан. Пара и делает зависший старт читаемым:
 последний объявленный путь, за которым ничего не последовало, и есть шаг,
-который не вернулся. `onDisposalStepStarted`/`onDisposalProgress` — та же пара
-для разбора. Целиком — в теме `debug`.
+который не вернулся. `onDisposalStepStarted`/`onDisposalStepFinished` — та же
+пара для разбора. Целиком — в теме `debug`.
 
 ```dart
 void main() {
@@ -897,10 +898,10 @@ void main() {
 на повторы, пропадут именно они.
 
 `onError` говорит, где какой, в своём `route` — `ScopeErrorRoute`, который
-называет, куда ещё уходит отказ: `observer` (больше никуда), `flutterError`,
-`zone`, `caller` (код, вызвавший `close()`) или `cancellation` (это вовсе
-не отказ), — и к вызову хука маршрут окончателен. Передавайте дальше `observer`
-и больше ничего:
+называет, куда ещё уходит отказ: `observerOnly` (больше никуда),
+`flutterError`, `zone`, `caller` (код, вызвавший `close()`) или `cancellation`
+(это вовсе не отказ), — и к вызову хука маршрут окончателен. Передавайте дальше
+`observerOnly` и больше ничего:
 
 ```dart
 final class CrashReporter extends ScopeObserver {
@@ -914,7 +915,7 @@ final class CrashReporter extends ScopeObserver {
     Object error,
     StackTrace? stackTrace,
   ) {
-    if (route != ScopeErrorRoute.observer) return;
+    if (route != ScopeErrorRoute.observerOnly) return;
 
     crashlytics.recordError(error, stackTrace, reason: phase.name);
   }

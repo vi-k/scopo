@@ -61,7 +61,7 @@ enum ScopePhase {
 /// `FlutterError.onError` and the zone, and at its own observer. Some failures
 /// reach both, and some reach the observer alone. The route says which, at
 /// the moment of the call, and it is final: an observer that forwards to a
-/// crash reporter forwards [observer] and leaves the rest to whoever else
+/// crash reporter forwards [observerOnly] and leaves the rest to whoever else
 /// already has them.
 ///
 /// More values may be added later, so a `switch` over this enum wants a
@@ -80,7 +80,7 @@ enum ScopeErrorRoute {
   /// failure was ignored. Without an observer, or with one whose hook threw,
   /// the one nobody read goes to [FlutterError.reportError] instead; the
   /// ignored one goes nowhere.
-  observer,
+  observerOnly,
 
   /// [FlutterError.reportError], either from the package itself or from
   /// Flutter's build error boundary.
@@ -139,7 +139,7 @@ class ScopeObserver {
   const ScopeObserver();
 
   /// An initialization has begun.
-  void onInit(ScopeObservable target) {}
+  void onInitStarted(ScopeObservable target) {}
 
   /// One step of an initialization has begun; [path] names it.
   ///
@@ -169,31 +169,34 @@ class ScopeObserver {
   void onProgress(ScopeObservable target, Object? progress) {}
 
   /// An initialization has finished successfully.
-  void onReady(ScopeObservable target) {}
+  ///
+  /// For a scope this comes before it is ready: the ready state reaches it
+  /// after the next frame, or after its `pauseAfterInitialization`.
+  void onInitialized(ScopeObservable target) {}
 
   /// An initialization was cancelled before it finished.
   ///
-  /// Not always preceded by [onInit]. A scope still queued for its `scopeKey`
-  /// when it is taken off the tree never started an initialization of its
-  /// own, so there was nothing to announce; the cancellation arrives on its
-  /// own.
+  /// Not always preceded by [onInitStarted]. A scope still queued for its
+  /// `scopeKey` when it is taken off the tree never started an initialization
+  /// of its own, so there was nothing to announce; the cancellation arrives on
+  /// its own.
   void onCancelled(ScopeObservable target) {}
 
   /// A teardown has begun.
   ///
   /// [onDisposed] always follows. Not always sent, though: for a structural
-  /// family (no initialization phase of its own), the pair belongs to a
-  /// scope that announced [onInit], so one whose `init()` threw or never ran
+  /// family (no initialization phase of its own), the pair belongs to a scope
+  /// that announced [onInitStarted], so one whose `init()` threw or never ran
   /// reports neither half, even though its teardown still runs.
-  void onDispose(ScopeObservable target) {}
+  void onDisposalStarted(ScopeObservable target) {}
 
   /// One step of a disposal has begun; [path] names it.
   ///
   /// The disposal half of [onStepStarted], and the other half of
-  /// [onDisposalProgress]. Sent only for a dependency that has something to
+  /// [onDisposalStepFinished]. Sent only for a dependency that has something to
   /// release: one that registered nothing, or only an `unmount`, has no
   /// asynchronous release to run and is walked past in silence. So every path
-  /// announced here is one [onDisposalProgress] is due for.
+  /// announced here is one [onDisposalStepFinished] is due for.
   ///
   /// An entry has three ends, and only two of them are events: the exit, an
   /// [onError] carrying [ScopePhase.disposal], and silence. So an entry with
@@ -201,7 +204,7 @@ class ScopeObserver {
   /// never came back, which looks the same and is the point of the pair.
   ///
   /// All three travel with the entry, from the walk itself, so they hold
-  /// however the disposal was started — see [onDisposalProgress].
+  /// however the disposal was started — see [onDisposalStepFinished].
   void onDisposalStepStarted(ScopeObservable target, String path) {}
 
   /// One step of a disposal is done; [path] names the dependency released.
@@ -228,27 +231,27 @@ class ScopeObserver {
   /// One walk, one observer: [ScopeConfig.observer] is read afresh for each
   /// event, so replacing it while a disposer is parked hands the entry to the
   /// old observer and the exit to the new one.
-  void onDisposalProgress(ScopeObservable target, String path) {}
+  void onDisposalStepFinished(ScopeObservable target, String path) {}
 
   /// A teardown has finished.
   ///
-  /// The scope is gone, which is not the same as everything it held having
-  /// come back: a teardown that failed reports [onError] with
-  /// [ScopePhase.disposal] and then this, so the pair with [onDispose] closes
-  /// whichever way the teardown went.
+  /// The scope is gone, which is not the same as everything it held having come
+  /// back: a teardown that failed reports [onError] with [ScopePhase.disposal]
+  /// and then this, so the pair with [onDisposalStarted] closes whichever way
+  /// the teardown went.
   void onDisposed(ScopeObservable target) {}
 
   /// Something failed; [phase] says what was running.
   ///
-  /// Not always preceded by [onInit]. The synchronous `init()` hook runs
+  /// Not always preceded by [onInitStarted]. The synchronous `init()` hook runs
   /// before either kind of family has announced anything, so a hook that
   /// threw reports [ScopePhase.initialization] on its own — and for a
   /// structural family (no phase of its own) that one event is the scope's
   /// whole recording, since the teardown pair belongs to a scope that
-  /// announced [onInit].
+  /// announced [onInitStarted].
   ///
   /// [route] says where else the failure goes, and is final when this is
-  /// called: forward [ScopeErrorRoute.observer] to a crash reporter and
+  /// called: forward [ScopeErrorRoute.observerOnly] to a crash reporter and
   /// nothing else, and every failure is reported once.
   void onError(
     ScopeObservable target,
@@ -363,7 +366,8 @@ final class ScopeCompositeObserver extends ScopeObserver {
   }
 
   @override
-  void onInit(ScopeObservable target) => _each((o) => o.onInit(target));
+  void onInitStarted(ScopeObservable target) =>
+      _each((o) => o.onInitStarted(target));
 
   @override
   void onStepStarted(ScopeObservable target, String path) =>
@@ -374,22 +378,24 @@ final class ScopeCompositeObserver extends ScopeObserver {
       _each((o) => o.onProgress(target, progress));
 
   @override
-  void onReady(ScopeObservable target) => _each((o) => o.onReady(target));
+  void onInitialized(ScopeObservable target) =>
+      _each((o) => o.onInitialized(target));
 
   @override
   void onCancelled(ScopeObservable target) =>
       _each((o) => o.onCancelled(target));
 
   @override
-  void onDispose(ScopeObservable target) => _each((o) => o.onDispose(target));
+  void onDisposalStarted(ScopeObservable target) =>
+      _each((o) => o.onDisposalStarted(target));
 
   @override
   void onDisposalStepStarted(ScopeObservable target, String path) =>
       _each((o) => o.onDisposalStepStarted(target, path));
 
   @override
-  void onDisposalProgress(ScopeObservable target, String path) =>
-      _each((o) => o.onDisposalProgress(target, path));
+  void onDisposalStepFinished(ScopeObservable target, String path) =>
+      _each((o) => o.onDisposalStepFinished(target, path));
 
   @override
   void onDisposed(ScopeObservable target) => _each((o) => o.onDisposed(target));
@@ -436,7 +442,7 @@ final class ScopePrintObserver extends ScopeObserver {
       output('scopo | ${target.debugLabel} | $message');
 
   @override
-  void onInit(ScopeObservable target) => _write(target, 'initialize…');
+  void onInitStarted(ScopeObservable target) => _write(target, 'initialize…');
 
   // The ellipsis says "begun" here as it does on the two lines above and
   // below it, so the pair reads `initialize db…` / `progress: db (1/3)`.
@@ -449,21 +455,21 @@ final class ScopePrintObserver extends ScopeObserver {
       _write(target, 'progress: $progress');
 
   @override
-  void onReady(ScopeObservable target) => _write(target, 'initialized');
+  void onInitialized(ScopeObservable target) => _write(target, 'initialized');
 
   @override
   void onCancelled(ScopeObservable target) =>
       _write(target, 'initialization cancelled');
 
   @override
-  void onDispose(ScopeObservable target) => _write(target, 'dispose…');
+  void onDisposalStarted(ScopeObservable target) => _write(target, 'dispose…');
 
   @override
   void onDisposalStepStarted(ScopeObservable target, String path) =>
       _write(target, 'dispose $path…');
 
   @override
-  void onDisposalProgress(ScopeObservable target, String path) =>
+  void onDisposalStepFinished(ScopeObservable target, String path) =>
       _write(target, 'disposed $path');
 
   @override

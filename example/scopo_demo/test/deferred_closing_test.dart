@@ -11,7 +11,7 @@ final class _DisposalObserver extends ScopeObserver {
   final timeouts = <TimeoutException>[];
 
   @override
-  void onDisposalProgress(ScopeObservable target, String path) {
+  void onDisposalStepFinished(ScopeObservable target, String path) {
     completedSteps.add(path);
   }
 

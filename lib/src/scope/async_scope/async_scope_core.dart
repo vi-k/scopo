@@ -331,7 +331,7 @@ abstract base class AsyncScopeElementBase<
         });
     }
 
-    notifyObserver((observer) => observer.onReady(this));
+    notifyObserver((observer) => observer.onInitialized(this));
     if (!_initCompleter.isCompleted) {
       _initCompleter.complete();
     }
@@ -347,7 +347,7 @@ abstract base class AsyncScopeElementBase<
       error,
       stackTrace,
       ScopePhase.initialization,
-      ScopeErrorRoute.observer,
+      ScopeErrorRoute.observerOnly,
     );
 
     // No guard for "the scope is already ready" here, and that is a property
@@ -1032,7 +1032,7 @@ abstract base class AsyncScopeElementBase<
         }
       }
 
-      notifyObserver((observer) => observer.onInit(this));
+      notifyObserver((observer) => observer.onInitStarted(this));
       final initObserver = _ScopeInitObserver(this);
       final job = _initJob = ScopeInitJob<void>(
         runInitBody,
@@ -1256,15 +1256,14 @@ abstract base class AsyncScopeElementBase<
     _pauseTimer?.cancel();
     _pauseTimer = null;
 
-    // Before the stages rather than between the second and the third, which
-    // is where it used to be. A pair an observer counts with has to close
-    // around everything the teardown does, and two of the four stages happen
-    // in front of it: `onError` for the unmount and for the preparation,
-    // `onCancelled`, and two `onTimeout` all used to arrive before the
-    // teardown they belong to had been announced at all. An observer pairing
-    // `onDispose` with `onDisposed` saw them as belonging to whatever came
-    // before.
-    notifyObserver((observer) => observer.onDispose(this));
+    // Before the stages rather than between the second and the third, which is
+    // where it used to be. A pair an observer counts with has to close around
+    // everything the teardown does, and two of the four stages happen in front
+    // of it: `onError` for the unmount and for the preparation, `onCancelled`,
+    // and two `onTimeout` all used to arrive before the teardown they belong to
+    // had been announced at all. An observer pairing `onDisposalStarted` with
+    // `onDisposed` saw them as belonging to whatever came before.
+    notifyObserver((observer) => observer.onDisposalStarted(this));
 
     // Four stages, each guarded on its own rather than chained: every one of
     // them reaches user code, and a failure in one is never a reason to skip

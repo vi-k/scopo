@@ -35,7 +35,7 @@ final class CrashReporter extends ScopeObserver {
     StackTrace? stackTrace,
   ) {
     // Any other route: somebody else has the failure, or it is no failure.
-    if (route != ScopeErrorRoute.observer) return;
+    if (route != ScopeErrorRoute.observerOnly) return;
 
     crashlytics.recordError(
       error,
@@ -87,14 +87,14 @@ fails" below.
 
 | hook | what happened |
 | ---------------------------- | ----------------------------------------- |
-| `onInit(target)` | an initialization has begun |
+| `onInitStarted(target)` | an initialization has begun |
 | `onStepStarted(target, path)` | one step of it has begun |
 | `onProgress(target, progress)` | one step of it is done |
-| `onReady(target)` | it finished successfully |
+| `onInitialized(target)` | it finished successfully |
 | `onCancelled(target)` | it was cancelled before it finished |
-| `onDispose(target)` | a teardown has begun |
+| `onDisposalStarted(target)` | a teardown has begun |
 | `onDisposalStepStarted(target, path)` | one step of it has begun |
-| `onDisposalProgress(target, path)` | one step of it is done |
+| `onDisposalStepFinished(target, path)` | one step of it is done |
 | `onDisposed(target)` | a teardown has finished |
 | `onError(target, phase, route, error, stackTrace)` | something failed |
 | `onTimeout(target, what, error, stackTrace)` | a bounded wait expired |
@@ -102,63 +102,64 @@ fails" below.
 
 Four of them are the dependency container's steps — `onStepStarted` and
 `onProgress` for an initialization, `onDisposalStepStarted` and
-`onDisposalProgress` for a teardown — and they are two pairs: an entry and an
-exit for each half of its lifecycle. Both entries are sent from inside the step
-and before it awaits anything, which is what makes the pairs worth reading —
-see "The last entry with no exit" below. `onProgress` is the one of the four
-that a scope sends as well, on its own account; the other three come from a
-container and nowhere else.
+`onDisposalStepFinished` for a teardown — and they are two pairs: an entry and
+an exit for each half of its lifecycle. Both entries are sent from inside the
+step and before it awaits anything, which is what makes the pairs worth
+reading — see "The last entry with no exit" below. `onProgress` is the one of
+the four that a scope sends as well, on its own account; the other three come
+from a container and nowhere else.
 
 ### Who sends them
 
 A family with no initialization phase of its own — `ScopeWidget`, `ScopeModel`,
-`ScopeNotifier`, `AsyncScopeCoordinator` — reports `onInit` when its element is
-initialized, and `onDispose`/`onDisposed` as a pair around its teardown. That
-is all such a scope has to say when it works; one whose `init()` throws says
-`onError` with `ScopePhase.initialization` and nothing else. Before this
-reporting existed it said nothing at all: its lifecycle was visible only to a
-debugger.
+`ScopeNotifier`, `AsyncScopeCoordinator` — reports `onInitStarted` when its
+element is initialized, and `onDisposalStarted`/`onDisposed` as a pair around
+its teardown. That is all such a scope has to say when it works; one whose
+`init()` throws says `onError` with `ScopePhase.initialization` and nothing
+else. Before this reporting existed it said nothing at all: its lifecycle was
+visible only to a debugger.
 
 A family that runs an initialization — everything built on the asynchronous
 element: `AsyncScope`, `AsyncDataScope`, `AsyncControllerScope`, `LiteScope`
 and `Scope` — reports that phase instead, in the detail the phase has:
-`onInit`, then `onProgress` per step, then `onReady` or `onCancelled`; and, on
-the way out, `onDispose` and `onDisposed`. Nothing reports both halves — the
-structural pair is suppressed for these families, so a `LiteScope` produces one
-`onInit`, not two.
+`onInitStarted`, then `onProgress` per step, then `onInitialized` or
+`onCancelled`; and, on the way out, `onDisposalStarted` and `onDisposed`.
+Nothing reports both halves — the structural pair is suppressed for these
+families, so a `LiteScope` produces one `onInitStarted`, not two.
 
 Three things that order does not say, and all three matter to an observer that
 pairs events up:
 
-- **`onCancelled` does not always follow an `onInit`.** A scope still queued
-  for its `scopeKey` when it is taken off the tree never started an
+- **`onCancelled` does not always follow an `onInitStarted`.** A scope still
+  queued for its `scopeKey` when it is taken off the tree never started an
   initialization of its own, so there was nothing to announce: its whole
-  recording is `onCancelled`, `onDispose`, `onDisposed`. The cancellation
-  genuinely happens in the queue, before the initialization this family would
-  otherwise report;
-- **`onDispose` and `onDisposed` always come as a pair.** `onDispose` is sent
-  by every teardown, including one of a scope that never became ready and has
-  nothing of its own to release, and `onDisposed` is sent even when the
-  teardown failed — after the `onError` that says so, not instead of it. So a
-  leak counter or a span tracker that opens on one and closes on the other
-  stays balanced whichever way the scope went;
-- **for a family with no phase of its own, that same pair requires the `onInit`
-  that would open it.** `ScopeWidget`, `ScopeModel`, `ScopeNotifier` and
-  `AsyncScopeCoordinator` report `onDispose`/`onDisposed` only for an element
-  whose `init()` succeeded; one that threw, or never ran, reports neither
-  half — nothing was announced as open, so nothing is announced as closed, even
-  though the element still tears itself down internally. This is the one point
-  where the two kinds of family differ: the phase-reporting families above can
-  still close a teardown that opened with no `onInit` at all, as the previous
-  bullet shows. The failure itself is not lost either way — `init()` is the one
-  hook both kinds run before anything else, and a throw from it reports
-  `onError` with `ScopePhase.initialization` for both.
+  recording is `onCancelled`, `onDisposalStarted`, `onDisposed`. The
+  cancellation genuinely happens in the queue, before the initialization this
+  family would otherwise report;
+- **`onDisposalStarted` and `onDisposed` always come as a pair.**
+  `onDisposalStarted` is sent by every teardown, including one of a scope that
+  never became ready and has nothing of its own to release, and `onDisposed` is
+  sent even when the teardown failed — after the `onError` that says so, not
+  instead of it. So a leak counter or a span tracker that opens on one and
+  closes on the other stays balanced whichever way the scope went;
+- **for a family with no phase of its own, that same pair requires the
+  `onInitStarted` that would open it.** `ScopeWidget`, `ScopeModel`,
+  `ScopeNotifier` and `AsyncScopeCoordinator` report
+  `onDisposalStarted`/`onDisposed` only for an element whose `init()`
+  succeeded; one that threw, or never ran, reports neither half — nothing was
+  announced as open, so nothing is announced as closed, even though the element
+  still tears itself down internally. This is the one point where the two kinds
+  of family differ: the phase-reporting families above can still close a
+  teardown that opened with no `onInitStarted` at all, as the previous bullet
+  shows. The failure itself is not lost either way — `init()` is the one hook
+  both kinds run before anything else, and a throw from it reports `onError`
+  with `ScopePhase.initialization` for both.
 
 The container of automatic dependencies of a `Scope` reports its own lifecycle
-under its own label, beside the scope that owns it: `onInit`, then
-`onStepStarted`/`onProgress` per dependency initialized, `onReady` or
-`onCancelled`, and then `onDispose`,
-`onDisposalStepStarted`/`onDisposalProgress` per dependency released,
+under its own label, beside the scope that owns it: `onInitStarted`, then
+`onStepStarted`/`onProgress` per dependency initialized, `onInitialized` or
+`onCancelled`, and then `onDisposalStarted`,
+`onDisposalStepStarted`/`onDisposalStepFinished` per dependency released,
 `onDisposed`.
 
 A single dependency sends nothing but `onTrace`: the two points where it
@@ -186,7 +187,7 @@ recording says so: `progress` counts what finished, and the step after
 has several steps in flight at once, and the number of the last completed one
 says nothing about which of them is stuck.
 
-`onDisposalStepStarted` and `onDisposalProgress` are the same pair for the
+`onDisposalStepStarted` and `onDisposalStepFinished` are the same pair for the
 teardown, and are read the same way.
 
 Two things the pairs promise, and one they do not:
@@ -218,7 +219,7 @@ running, or never came back.
 The disposal pair holds **whoever drives the walk.** Disposing of the tree by
 hand is a supported thing to do, and a container can also join a walk already
 running rather than start a second one; in both cases the container is not the
-one receiving the paths. `onDisposalProgress` is sent when the disposer has
+one receiving the paths. `onDisposalStepFinished` is sent when the disposer has
 returned, not when the path reaches a callback, so the pair survives all three.
 The disposal walk cannot be cancelled; every release is awaited.
 
@@ -244,8 +245,8 @@ Wrapping the two in a common type would have meant inventing a third.
 **A disposal is not one of them.** It used to be — the bare `String` path of
 the dependency just released arrived here too — and that left one hook meaning
 two different things at two different points of the lifecycle, told apart by
-the type of a value. It has `onDisposalProgress` of its own now. See "Coming
-from 0.12.x" below.
+the type of a value. It has `onDisposalStepFinished` of its own now. See
+"Coming from 0.12.x" below.
 
 **The entry marks arrive once, not twice.** `onProgress` reaches the scope as
 well as the container because the container forwards it to `ctx.progress`.
@@ -330,16 +331,16 @@ goes, and it is known by the time `onError` is called:
 
 | `ScopeErrorRoute` | who else has the failure | for instance |
 | --- | --- | --- |
-| `observer` | nobody: the observer is the only one told | an `initScope` that threw, a `Cancelled` included, or an `initDependencies` that threw; a failure of a child job that the body caught, or that nobody read |
+| `observerOnly` | nobody: the observer is the only one told | an `initScope` that threw, a `Cancelled` included, or an `initDependencies` that threw; a failure of a child job that the body caught, or that nobody read |
 | `flutterError` | `FlutterError.onError`, through a report of the package or of Flutter's build error boundary | a build or a synchronous `init()` that threw; a teardown failure with no caller left; a late release; a failed cleanup, callback or late work of the initialization job |
 | `zone` | the zone the scope runs in, as an uncaught error | an `initStateAsync` of a `LiteScopeState` or a `ScopeState` that threw; an `AsyncScope` that failed before its initialization started |
 | `caller` | the code that called `close()`: its `Future` completes with the failure | the first failure of a teardown that `close()` began |
 | `cancellation` | nobody, since it is not a failure | a `Cancelled` thrown by a cleanup or a callback of the initialization job, or by a disposal step of a dependency tree; an error that `Job.isCancellationError` names on a cancelled job |
 
-So a crash reporter forwards `ScopeErrorRoute.observer` and nothing else, as
-`CrashReporter` above does, and each failure is reported once. `caller` is your
-own code: whatever called `close()` is handed the failure, and reports it if it
-wants to. The enum can grow too, and a `switch` over it wants a `default`
+So a crash reporter forwards `ScopeErrorRoute.observerOnly` and nothing else,
+as `CrashReporter` above does, and each failure is reported once. `caller` is
+your own code: whatever called `close()` is handed the failure, and reports it
+if it wants to. The enum can grow too, and a `switch` over it wants a `default`
 branch.
 
 Leaving `ScopeConfig.observer` at `null` hides no failure completely. An
@@ -370,7 +371,7 @@ not tell the whole story:
   comes once the child has ended. A `child.ignoreFailure()` your code calls in
   between — after the failure, before the child ends — takes that report away.
   The failure then reaches the observer alone, under a route that says
-  otherwise, and a crash reporter that forwards `observer` never sees it;
+  otherwise, and a crash reporter that forwards `observerOnly` never sees it;
 - **two failures that end alike, and two routes.** When the body of an
   initialization fails while a cleanup it registered is still running, and the
   scope is taken off the tree before that cleanup ends, the cancellation takes
@@ -378,33 +379,35 @@ not tell the whole story:
   `ScopePhase.initializationCancellation`, and is reported — or `cancellation`,
   and is not, when `Job.isCancellationError` names it. A failure of a child job
   that the body let out, covered by the cancellation the same way, says
-  `observer`, with `ScopePhase.initialization`: the observer heard it from the
-  child before anything was settled, was told that it goes nowhere else, and it
-  is not reported, unless the body takes it up again after its cancellation
-  (the next case). Forwarded by route, each is reported once — but a log or a
-  test that expects both in `FlutterError.onError` finds only the first there;
+  `observerOnly`, with `ScopePhase.initialization`: the observer heard it from
+  the child before anything was settled, was told that it goes nowhere else,
+  and it is not reported, unless the body takes it up again after its
+  cancellation (the next case). Forwarded by route, each is reported once — but
+  a log or a test that expects both in `FlutterError.onError` finds only the
+  first there;
 - **one object that fails twice.** The package tells failures apart by
   identity, so a `const` exception — `throw const NetworkUnavailable()` — or a
   cached error thrown again is one failure to it, however many times it is
   thrown. The observer hears it once, with the first route. When a failure of a
-  child job said `observer` and the same object then fails a cleanup, a
+  child job said `observerOnly` and the same object then fails a cleanup, a
   callback or late work of the initialization job, or the body itself after the
   scope was taken off the tree — reading the child, or throwing again what it
   caught — whether it is the same failure thrown again or a second one, it is
   reported through `FlutterError.reportError` as well, and the observer is not
   told again. A duplicate is better than a loss: a crash reporter that forwards
-  `observer` and listens at `FlutterError.onError` gets that failure from both;
+  `observerOnly` and listens at `FlutterError.onError` gets that failure from
+  both;
 - **an observer is there even when it does nothing.** A failure of a child job
-  that nobody read says `observer` and is kept out of `FlutterError` whenever
-  `ScopeConfig.observer` is set, short of the case above: the package does not
-  look behind it, and an observer that drops what it hears keeps the failure
-  out the same way, and then nobody has it. A `ScopeCompositeObserver` with
-  nobody inside is told apart: the package takes it for no observer at all.
-  With `ScopeConfig.observer` at `null` the failure is reported, and so it is
-  when the `onError` of the observer throws: that observer has heard nothing. A
-  `ScopeCompositeObserver` one of whose observers throws has heard nothing
-  either: the failure is reported, and an observer in it that did hear it and
-  also listens at `FlutterError.onError` gets it twice.
+  that nobody read says `observerOnly` and is kept out of `FlutterError`
+  whenever `ScopeConfig.observer` is set, short of the case above: the package
+  does not look behind it, and an observer that drops what it hears keeps the
+  failure out the same way, and then nobody has it. A `ScopeCompositeObserver`
+  with nobody inside is told apart: the package takes it for no observer at
+  all. With `ScopeConfig.observer` at `null` the failure is reported, and so it
+  is when the `onError` of the observer throws: that observer has heard
+  nothing. A `ScopeCompositeObserver` one of whose observers throws has heard
+  nothing either: the failure is reported, and an observer in it that did hear
+  it and also listens at `FlutterError.onError` gets it twice.
 
 ### What `onTimeout` covers
 
@@ -481,7 +484,7 @@ final class ScopeAnalytics extends ScopeObserver {
   const ScopeAnalytics();
 
   @override
-  void onReady(ScopeObservable target) {
+  void onInitialized(ScopeObservable target) {
     if (target case ScopeInheritedElement(:final widget)) {
       analytics.logEvent('scope_ready', {'type': '${widget.runtimeType}'});
     }
@@ -697,11 +700,11 @@ final class RecordingObserver extends ScopeObserver {
   final events = <String>[];
 
   @override
-  void onInit(ScopeObservable target) =>
+  void onInitStarted(ScopeObservable target) =>
       events.add('init ${target.debugLabel}');
 
   @override
-  void onReady(ScopeObservable target) =>
+  void onInitialized(ScopeObservable target) =>
       events.add('ready ${target.debugLabel}');
 
   @override
@@ -755,12 +758,29 @@ for the setup of a real application, and
 [example/scopo_demo](https://github.com/vi-k/scopo/tree/main/example/scopo_demo)
 for a demo that shows every lifecycle call of every scope family side by side.
 
+## Coming from 0.21.x
+
+Four hooks and one route have new names, so that each pair of hooks reads the
+same way — what began and what finished:
+
+| 0.21.x | now |
+|---|---|
+| `onInit` | `onInitStarted` |
+| `onReady` | `onInitialized` |
+| `onDispose` | `onDisposalStarted` |
+| `onDisposalProgress` | `onDisposalStepFinished` |
+| `ScopeErrorRoute.observer` | `ScopeErrorRoute.observerOnly` |
+
+The events themselves have not changed. An override marked `@override` names
+the old hook in a compile error; one written without `@override` keeps
+compiling and is no longer called, so search for the old names as well.
+
 ## Coming from 0.12.x
 
 **A dependency container no longer reports its disposal through `onProgress`.**
-The release of each dependency arrives at `onDisposalProgress(target, path)`
-instead, and the step it belongs to is announced ahead of it by
-`onDisposalStepStarted(target, path)`.
+The release of each dependency arrives at
+`onDisposalStepFinished(target, path)` instead, and the step it belongs to is
+announced ahead of it by `onDisposalStepStarted(target, path)`.
 
 An existing `onProgress` override keeps compiling, which is the awkward part of
 this one: it still overrides a method that still exists — it just stops being
@@ -787,7 +807,7 @@ final class AfterObserver extends ScopeObserver {
       log('built $progress');
 
   @override
-  void onDisposalProgress(ScopeObservable target, String path) =>
+  void onDisposalStepFinished(ScopeObservable target, String path) =>
       log('released $path');
 }
 ```
@@ -798,7 +818,7 @@ were changed with it; an observer of your own is the only thing to look at.
 **One way this release can fail a build rather than go quiet.** Three names are
 added to `ScopeObserver`, and Dart has no overloading: a subclass that already
 has a member of its own called `onStepStarted`, `onDisposalStepStarted` or
-`onDisposalProgress` now declares an invalid override. Rare — they are not
+`onDisposalStepFinished` now declares an invalid override. Rare — they are not
 obvious names for a helper — but it is a compile error rather than a change of
 behaviour, so the analyzer names it and renaming your member settles it.
 

@@ -84,7 +84,7 @@ final class RouteAudit {
 
   /// Fails the test unless every entry of [routes] matches what was seen.
   ///
-  /// `observer`, `cancellation` and `caller` must have reached neither
+  /// `observerOnly`, `cancellation` and `caller` must have reached neither
   /// channel; `flutterError` exactly one `FlutterError` report and no zone
   /// error; `zone` exactly one zone error and no report. An error is matched
   /// by identity, with itself or with the error a [ScopeDependencyException]
@@ -108,7 +108,7 @@ final class RouteAudit {
       // Exhaustive on purpose: a route added later has to be given its rule
       // here before any test of it can pass.
       final (wantReports, wantZone) = switch (route) {
-        ScopeErrorRoute.observer ||
+        ScopeErrorRoute.observerOnly ||
         ScopeErrorRoute.caller ||
         ScopeErrorRoute.cancellation => (0, 0),
         ScopeErrorRoute.flutterError => (1, 0),

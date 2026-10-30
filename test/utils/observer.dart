@@ -50,7 +50,8 @@ final class RecordingObserver extends ScopeObserver {
   RecordingObserver({this.trace = false});
 
   @override
-  void onInit(ScopeObservable target) => events.add('init ${_label(target)}');
+  void onInitStarted(ScopeObservable target) =>
+      events.add('init ${_label(target)}');
 
   @override
   void onStepStarted(ScopeObservable target, String path) =>
@@ -61,14 +62,15 @@ final class RecordingObserver extends ScopeObserver {
       events.add('progress ${_label(target)} $progress');
 
   @override
-  void onReady(ScopeObservable target) => events.add('ready ${_label(target)}');
+  void onInitialized(ScopeObservable target) =>
+      events.add('ready ${_label(target)}');
 
   @override
   void onCancelled(ScopeObservable target) =>
       events.add('cancelled ${_label(target)}');
 
   @override
-  void onDispose(ScopeObservable target) =>
+  void onDisposalStarted(ScopeObservable target) =>
       events.add('dispose ${_label(target)}');
 
   @override
@@ -76,7 +78,7 @@ final class RecordingObserver extends ScopeObserver {
       events.add('disposal step ${_label(target)} $path');
 
   @override
-  void onDisposalProgress(ScopeObservable target, String path) =>
+  void onDisposalStepFinished(ScopeObservable target, String path) =>
       events.add('disposal progress ${_label(target)} $path');
 
   @override

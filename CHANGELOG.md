@@ -19,16 +19,25 @@
   `ListenableSelector` take `shouldNotify:` instead of `compare:`, with the
   same sign as before and as `ScopeStateNotifier.shouldNotify`: `true` means
   the value changed. `ScopeDependencyException.name` is `path`, which is what
-  it always held. `runOutsideFrame` is `runOutsideBuild`: it waits for a
-  build, not for a frame. `ScopeWidgetElementBase.autoSelfDependence` is
+  it always held. `runOutsideFrame` is `runOutsideBuild`: it waits for a build,
+  not for a frame. `ScopeWidgetElementBase.autoSelfDependence` is
   `rebuildsOnNotify`, and `ScopeAutoDependencies.autoDisposeOnError` is
   `disposesOnError`.
+* **Breaking:** the hooks of `ScopeObserver` come in pairs that read the same
+  way — what began and what finished. `onInit` is `onInitStarted`, `onReady` is
+  `onInitialized`, `onDispose` is `onDisposalStarted` and `onDisposalProgress`
+  is `onDisposalStepFinished`; `onDisposed` stays. `onReady` arrived before the
+  scope was ready, and `onDispose` and `onDisposed` differed by one letter.
+  `ScopeErrorRoute.observer` is `observerOnly`: every route reaches the
+  observer, and this one reaches nobody else. An override without `@override`
+  keeps compiling under the old name and is no longer called. The migration
+  table is in `doc/debug.md`.
 * `LiteScope.of` and `Scope.of` called above a scope with no state yet advise
   `maybeOf`, which answers `null` there, instead of an `isInitialized` that a
   caller below the scope could not reach.
-* `ScopePhase.preparationForDisposal` is documented as what it is: reading
-  the scope's `debugLabel` and timeout callbacks and giving up the wait for
-  its `scopeKey`, not "the synchronous half of the teardown".
+* `ScopePhase.preparationForDisposal` is documented as what it is: reading the
+  scope's `debugLabel` and timeout callbacks and giving up the wait for its
+  `scopeKey`, not "the synchronous half of the teardown".
   `ScopeDependencyExtension.isCancelled` says that only an initialization is
   ever cancelled. A `ScopeDependencyHandle` read after its dependency was
   disposed throws "dependency already disposed" instead of naming a "helper".

@@ -128,12 +128,12 @@ final class _ScopeInitObserver extends JobObserver with JobAnswerer {
   final _announced = Set<Object>.identity();
 
   // What the scope observer was told goes nowhere else, while there was an
-  // observer to tell. The route is final when it is announced, so an answer
-  // the kernel asks for afterwards -- for a child failure nobody read, told
-  // as [JobErrorAnswer.later] -- does not send the same error to
-  // `FlutterError` after all: a crash reporter that forwards
-  // [ScopeErrorRoute.observer] has it already. Without an observer nobody has
-  // heard it, and the red line is all there is.
+  // observer to tell. The route is final when it is announced, so an answer the
+  // kernel asks for afterwards -- for a child failure nobody read, told as
+  // [JobErrorAnswer.later] -- does not send the same error to `FlutterError`
+  // after all: a crash reporter that forwards [ScopeErrorRoute.observerOnly]
+  // has it already. Without an observer nobody has heard it, and the red line
+  // is all there is.
   final _observerOnly = Set<Object>.identity();
 
   _ScopeInitObserver(this._scope);
@@ -212,8 +212,8 @@ final class _ScopeInitObserver extends JobObserver with JobAnswerer {
         : switch (answer) {
             JobErrorAnswer.cancellation => ScopeErrorRoute.cancellation,
             JobErrorAnswer.answered => ScopeErrorRoute.flutterError,
-            JobErrorAnswer.later => ScopeErrorRoute.observer,
-            JobErrorAnswer.never => ScopeErrorRoute.observer,
+            JobErrorAnswer.later => ScopeErrorRoute.observerOnly,
+            JobErrorAnswer.never => ScopeErrorRoute.observerOnly,
           };
     _announce(error, stackTrace, phase, route);
   }
@@ -285,7 +285,7 @@ final class _ScopeInitObserver extends JobObserver with JobAnswerer {
   /// Tells the scope observer, and remembers having told it.
   ///
   /// [route] is final: an error the observer heard as
-  /// [ScopeErrorRoute.observer] is remembered in [_observerOnly], and
+  /// [ScopeErrorRoute.observerOnly] is remembered in [_observerOnly], and
   /// [onUnanswered] keeps it out of `FlutterError`. Heard, not only sent: an
   /// observer whose hook threw, or whose call was refused as recursive, has
   /// heard nothing, and the error is reported as if there were none.
@@ -299,7 +299,9 @@ final class _ScopeInitObserver extends JobObserver with JobAnswerer {
     final heard = notifyObserver(
       (observer) => observer.onError(_scope, phase, route, error, stackTrace),
     );
-    if (heard && route == ScopeErrorRoute.observer) _observerOnly.add(error);
+    if (heard && route == ScopeErrorRoute.observerOnly) {
+      _observerOnly.add(error);
+    }
   }
 
   @override

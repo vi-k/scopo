@@ -833,18 +833,19 @@ its closing branch. The topics have the details, under `close()`.
 ## Observing and configuration
 
 The package says nothing until `ScopeConfig.observer` is assigned. A
-`ScopeObserver` has one hook per lifecycle event — `onInit`, `onStepStarted`,
-`onProgress`, `onReady`, `onCancelled`, `onDispose`, `onDisposalStepStarted`,
-`onDisposalProgress`, `onDisposed`, `onError`, `onTimeout`, `onTrace` — all of
-them empty, so a subclass overrides only what it needs. `ScopePrintObserver`
-comes with the package and writes a line per event.
+`ScopeObserver` has one hook per lifecycle event — `onInitStarted`,
+`onStepStarted`, `onProgress`, `onInitialized`, `onCancelled`,
+`onDisposalStarted`, `onDisposalStepStarted`, `onDisposalStepFinished`,
+`onDisposed`, `onError`, `onTimeout`, `onTrace` — all of them empty, so a
+subclass overrides only what it needs. `ScopePrintObserver` comes with the
+package and writes a line per event.
 
 A dependency container reports each of its steps twice: `onStepStarted` with
 the path of the step, from inside it and before it awaits anything, and then
 `onProgress` once that step is done. The pair is what makes a hung start
 readable — the last path announced with nothing behind it is the step that
-never came back — and `onDisposalStepStarted`/`onDisposalProgress` are the same
-pair for the teardown. The `debug` topic has the whole of it.
+never came back — and `onDisposalStepStarted`/`onDisposalStepFinished` are the
+same pair for the teardown. The `debug` topic has the whole of it.
 
 ```dart
 void main() {
@@ -884,10 +885,10 @@ and the observer is the only one told. Dropping the failures that look like
 repeats loses those.
 
 `onError` says which is which in its `route`, a `ScopeErrorRoute` that names
-where else the failure goes — `observer` (nowhere else), `flutterError`,
+where else the failure goes — `observerOnly` (nowhere else), `flutterError`,
 `zone`, `caller` (the code that called `close()`) or `cancellation` (no failure
-at all) — and is final when the hook is called. Forward `observer` and nothing
-else:
+at all) — and is final when the hook is called. Forward `observerOnly` and
+nothing else:
 
 ```dart
 final class CrashReporter extends ScopeObserver {
@@ -901,7 +902,7 @@ final class CrashReporter extends ScopeObserver {
     Object error,
     StackTrace? stackTrace,
   ) {
-    if (route != ScopeErrorRoute.observer) return;
+    if (route != ScopeErrorRoute.observerOnly) return;
 
     crashlytics.recordError(error, stackTrace, reason: phase.name);
   }

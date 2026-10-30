@@ -152,7 +152,7 @@ void main() {
       ]);
 
       final target = _Target();
-      notifyObserver((observer) => observer.onInit(target));
+      notifyObserver((observer) => observer.onInitStarted(target));
       notifyObserver((observer) => observer.onTrace(target, 'a step'));
 
       expect(first.events, ['init target', 'trace target a step']);
@@ -181,7 +181,7 @@ void main() {
       ]);
 
       final target = _Target();
-      notifyObserver((observer) => observer.onReady(target));
+      notifyObserver((observer) => observer.onInitialized(target));
 
       FlutterError.onError = previousOnError;
 
@@ -207,7 +207,9 @@ void main() {
       ]);
 
       final target = _Target();
-      final heard = notifyObserver((observer) => observer.onReady(target));
+      final heard = notifyObserver(
+        (observer) => observer.onInitialized(target),
+      );
 
       FlutterError.onError = previousOnError;
 
@@ -232,9 +234,10 @@ void main() {
       // `LiteScope` -- `_CounterScope`'s family -- is built on
       // `AsyncScopeElementBase`: its `initScope()` defaults to an immediate
       // `AsyncScopeReady()`, same as a bare `AsyncScope`. `reportsOwnLifecycle`
-      // is therefore `true`, so the single `onInit` below is the asynchronous
-      // phase's own -- the structural pair `ScopeWidgetElementBase` fires for
-      // every other family is suppressed here, not doubled with it.
+      // is therefore `true`, so the single `onInitStarted` below is the
+      // asynchronous phase's own -- the structural pair
+      // `ScopeWidgetElementBase` fires for every other family is suppressed
+      // here, not doubled with it.
       expect(observer.events, ['init _CounterScope', 'ready _CounterScope']);
 
       await tester.pumpWidget(const SizedBox());
@@ -270,8 +273,9 @@ void main() {
       // `ScopeWidgetBase` -- `_PlainScope`'s family -- goes no further than
       // `ScopeWidgetElementBase` itself: it runs no initialization of its own,
       // so `reportsOwnLifecycle` keeps its default `false` and this is the bare
-      // reporting `ScopeWidgetElementBase` gives every such family: `onInit`,
-      // then `onDispose` and `onDisposed` as a pair around the teardown.
+      // reporting `ScopeWidgetElementBase` gives every such family:
+      // `onInitStarted`, then `onDisposalStarted` and `onDisposed` as a pair
+      // around the teardown.
       expect(observer.events, ['init _PlainScope']);
 
       await tester.pumpWidget(const SizedBox());
@@ -298,9 +302,9 @@ void main() {
       expect(tester.takeException(), isA<StateError>());
 
       // `init()` threw before `_initPhase` ever reached `done`, so `build()`
-      // never sent `onInit` -- and the teardown pair belongs to a scope that
-      // announced one: `unmountScope()`/`dispose()` still run internally (the
-      // "symmetry, not success" comment on `unmount()`), but nothing is
+      // never sent `onInitStarted` -- and the teardown pair belongs to a scope
+      // that announced one: `unmountScope()`/`dispose()` still run internally
+      // (the "symmetry, not success" comment on `unmount()`), but nothing is
       // reported for a teardown nobody was told had opened. The failure itself
       // is reported, and it is the whole of what this scope has to say.
       expect(observer.events, [
@@ -313,8 +317,8 @@ void main() {
         observer.events,
         ['error _FailingInitScope initialization Bad state: init failed'],
         reason:
-            'no onInit was ever sent, so the teardown reports no '
-            'onDispose/onDisposed either',
+            'no onInitStarted was ever sent, so the teardown reports no '
+            'onDisposalStarted/onDisposed either',
       );
     },
   );
@@ -348,10 +352,10 @@ void main() {
 
     // The teardown pair follows all the same, and that is the difference
     // between the two kinds of family: a phase-reporting one closes
-    // `onDispose`/`onDisposed` whichever way the scope went, while the
-    // structural one above reports neither half without an `onInit` of its
-    // own. What is absent here is `onCancelled`: there was no initialization
-    // to cancel.
+    // `onDisposalStarted`/`onDisposed` whichever way the scope went, while the
+    // structural one above reports neither half without an `onInitStarted` of
+    // its own. What is absent here is `onCancelled`: there was no
+    // initialization to cancel.
     expect(observer.events, [
       'error _FailingInitAsyncScope initialization Bad state: init failed',
       'dispose _FailingInitAsyncScope',
@@ -674,7 +678,9 @@ void main() {
 
     ScopeConfig.observer = _NestingObserver();
 
-    notifyObserver((observer) => observer.onInit(const _FakeObservable()));
+    notifyObserver(
+      (observer) => observer.onInitStarted(const _FakeObservable()),
+    );
 
     expect(
       errors,
@@ -863,7 +869,7 @@ void main() {
       observer.events,
       eventsAfterClose,
       reason:
-          'no second onDispose/onDisposed for a teardown that already '
+          'no second onDisposalStarted/onDisposed for a teardown that already '
           'ran',
     );
   });
@@ -1052,11 +1058,12 @@ void main() {
   });
 
   // The one path on which a scope is cancelled without ever having reported
-  // an `onInit`: it never got as far as subscribing to its own
+  // an `onInitStarted`: it never got as far as subscribing to its own
   // initialization, because it was still queued behind another scope on the
   // same `scopeKey` when it was taken off the tree.
   testWidgets(
-    'a scope cancelled while queued for its scopeKey reports no onInit at all',
+    'a scope cancelled while queued for its scopeKey reports no onInitStarted '
+    'at all',
     (tester) async {
       final holderGate = Completer<void>();
       addTearDown(() {
@@ -1197,8 +1204,8 @@ void main() {
     const scope = _FakeObservable('CounterScope(#4e0b7)');
 
     ScopePrintObserver(output: lines.add)
-      ..onInit(scope)
-      ..onReady(scope)
+      ..onInitStarted(scope)
+      ..onInitialized(scope)
       ..onTrace(scope, 'wait for access to [key]');
 
     expect(lines, [
@@ -1231,7 +1238,7 @@ void main() {
     ScopePrintObserver(output: lines.add)
       ..onProgress(scope, 'dep1 (1/2)')
       ..onCancelled(scope)
-      ..onDispose(scope)
+      ..onDisposalStarted(scope)
       ..onDisposed(scope)
       ..onTimeout(
         scope,
@@ -1260,7 +1267,7 @@ void main() {
     ScopePrintObserver(output: lines.add).onError(
       scope,
       ScopePhase.initialization,
-      ScopeErrorRoute.observer,
+      ScopeErrorRoute.observerOnly,
       StateError('no network'),
       stackTrace,
     );
@@ -1352,7 +1359,7 @@ void main() {
     final lines = <String>[];
     final group = ScopeDependency.sequential('', const []) as ScopeObservable;
 
-    ScopePrintObserver(output: lines.add).onInit(group);
+    ScopePrintObserver(output: lines.add).onInitStarted(group);
 
     expect(lines, ['scopo | [group] | initialize…']);
   });
@@ -1640,7 +1647,7 @@ final class _PlainScope extends ScopeWidgetBase<_PlainScope> {
   Widget build(BuildContext context) => child;
 }
 
-/// A scope whose `init()` throws before it can announce `onInit`.
+/// A scope whose `init()` throws before it can announce `onInitStarted`.
 final class _FailingInitScope
     extends ScopeWidgetCore<_FailingInitScope, _FailingInitScopeElement> {
   const _FailingInitScope();
@@ -1794,18 +1801,19 @@ Widget _parent({required Widget child, Duration? waitForChildrenTimeout}) =>
 /// Fails every hook it is asked for.
 final class _ThrowingObserver extends ScopeObserver {
   @override
-  void onInit(ScopeObservable target) => throw StateError('observer failed');
+  void onInitStarted(ScopeObservable target) =>
+      throw StateError('observer failed');
 }
 
-/// Produces a second scope event from [onInit] -- the shape [notifyObserver]
-/// itself refuses to recurse into, rather than one that reaches it through a
-/// second build. A build reentrant enough to test that path would have to
-/// fight the framework's own build-scope lock first, and that lock -- not
-/// [notifyObserver]'s -- is what a widget-tree version of this test would
-/// actually be exercising.
+/// Produces a second scope event from [onInitStarted] -- the shape
+/// [notifyObserver] itself refuses to recurse into, rather than one that
+/// reaches it through a second build. A build reentrant enough to test that
+/// path would have to fight the framework's own build-scope lock first, and
+/// that lock -- not [notifyObserver]'s -- is what a widget-tree version of this
+/// test would actually be exercising.
 final class _NestingObserver extends ScopeObserver {
   @override
-  void onInit(ScopeObservable target) =>
+  void onInitStarted(ScopeObservable target) =>
       notifyObserver((observer) => observer.onDisposed(target));
 }
 
@@ -1928,9 +1936,9 @@ final class _MarkingObserver extends ScopeObserver {
   const _MarkingObserver(this.order, this.name, this.inner);
 
   @override
-  void onInit(ScopeObservable target) {
+  void onInitStarted(ScopeObservable target) {
     order.add(name);
-    inner.onInit(target);
+    inner.onInitStarted(target);
   }
 
   @override
@@ -1945,5 +1953,6 @@ final class _ThrowingOnReadyObserver extends ScopeObserver {
   const _ThrowingOnReadyObserver();
 
   @override
-  void onReady(ScopeObservable target) => throw StateError('observer failed');
+  void onInitialized(ScopeObservable target) =>
+      throw StateError('observer failed');
 }

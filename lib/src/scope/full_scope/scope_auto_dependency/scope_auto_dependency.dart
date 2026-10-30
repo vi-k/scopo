@@ -84,8 +84,9 @@ abstract class ScopeAutoDependencies<
       onDisposalStepStarted: (path) => notifyObserver(
         (observer) => observer.onDisposalStepStarted(this, path),
       ),
-      onDisposalStepEnded: (path) =>
-          notifyObserver((observer) => observer.onDisposalProgress(this, path)),
+      onDisposalStepEnded: (path) => notifyObserver(
+        (observer) => observer.onDisposalStepFinished(this, path),
+      ),
       onDisposalStepFailed: _reportFailedStep,
       // The root of a container is where a path stops growing: whatever it is
       // handed is already spelled the way the whole tree spells it.
@@ -296,7 +297,7 @@ abstract class ScopeAutoDependencies<
 
     _initializing = true;
     try {
-      notifyObserver((observer) => observer.onInit(this));
+      notifyObserver((observer) => observer.onInitStarted(this));
 
       // An ordinary call now, with the cancellation travelling inside `ctx`
       // rather than as the cancellation of a subscription: the walk stops
@@ -326,7 +327,7 @@ abstract class ScopeAutoDependencies<
           'driving the tree by hand is the only one who can see it.',
         );
       }
-      notifyObserver((observer) => observer.onReady(this));
+      notifyObserver((observer) => observer.onInitialized(this));
 
       return this as T;
     } finally {
@@ -631,7 +632,7 @@ abstract class ScopeAutoDependencies<
       );
     }
 
-    notifyObserver((observer) => observer.onDispose(this));
+    notifyObserver((observer) => observer.onDisposalStarted(this));
     try {
       await dependencies.dispose((path) {
         // Only for a root of the caller's own making, which has no channel
@@ -639,7 +640,9 @@ abstract class ScopeAutoDependencies<
         // sent this exit from inside the walk, and reporting it again here
         // would double every step of a disposal the container drove itself.
         if (dependencies is! _ScopeDependencyMixin) {
-          notifyObserver((observer) => observer.onDisposalProgress(this, path));
+          notifyObserver(
+            (observer) => observer.onDisposalStepFinished(this, path),
+          );
         }
       });
       // ignore: avoid_catching_errors

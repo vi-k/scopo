@@ -433,12 +433,12 @@ void main() {
       // Now the cover: the tree goes while the cleanup is parked, so the
       // outcome of the parent becomes a cancellation, and the failure has
       // nobody left to reach. The kernel says so once -- and that used to be
-      // the red line. Under 1a of
-      // `2026-10-24-observer-error-route-design.md` it is not: the observer
-      // heard the child's failure with `ScopeErrorRoute.observer`, that route
-      // is final, and an application whose crash reporter forwards `observer`
-      // has the one report already. The observer has heard it, and saying it
-      // there again is what the wave of 2026-09-07 existed to stop.
+      // the red line. Under 1a of `2026-10-24-observer-error-route-design.md`
+      // it is not: the observer heard the child's failure with
+      // `ScopeErrorRoute.observerOnly`, that route is final, and an application
+      // whose crash reporter forwards `observerOnly` has the one report
+      // already. The observer has heard it, and saying it there again is what
+      // the wave of 2026-09-07 existed to stop.
       collect();
       await tester.pumpWidget(_wrap(const SizedBox.shrink()));
       cleanup.complete();
@@ -452,7 +452,7 @@ void main() {
       );
       expect(
         observer.routes,
-        [ScopeErrorRoute.observer],
+        [ScopeErrorRoute.observerOnly],
         reason: 'and that line is the one a crash reporter forwards',
       );
       expect(
@@ -1083,7 +1083,7 @@ void main() {
   // separate failure that shares a `const` object, and losing that one is
   // worse than reporting this one twice: so the late throw, which the kernel
   // answers for at once, reaches `FlutterError` although the observer was
-  // told the object with `ScopeErrorRoute.observer` when the body settled.
+  // told the object with `ScopeErrorRoute.observerOnly` when the body settled.
   // The observer is not told it a second time -- it has heard the object --
   // and that is the leftover of 1a in
   // `2026-10-24-observer-error-route-design.md`.
@@ -1122,7 +1122,7 @@ void main() {
       expect(find.text('failed'), findsOneWidget);
       expect(observer.errors, [same(failure)]);
       expect(observer.phases, [ScopePhase.initialization]);
-      expect(observer.routes, [ScopeErrorRoute.observer]);
+      expect(observer.routes, [ScopeErrorRoute.observerOnly]);
       expect(tester.takeException(), isNull);
 
       background.complete();
@@ -1140,7 +1140,7 @@ void main() {
       // object.
       expect(observer.errors, [same(failure)]);
       expect(observer.phases, [ScopePhase.initialization]);
-      expect(observer.routes, [ScopeErrorRoute.observer]);
+      expect(observer.routes, [ScopeErrorRoute.observerOnly]);
       expect(tester.takeException(), isNull);
     },
   );

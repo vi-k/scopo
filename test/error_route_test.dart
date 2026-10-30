@@ -240,7 +240,7 @@ void main() {
 
       audit.verify(observer.routes);
       expect(observer.routes.single.$2, ScopePhase.initialization);
-      expect(observer.routes.single.$3, ScopeErrorRoute.observer);
+      expect(observer.routes.single.$3, ScopeErrorRoute.observerOnly);
 
       await takeDown(tester, 'AsyncScope');
     });
@@ -253,7 +253,7 @@ void main() {
 
       audit.verify(observer.routes);
       expect(observer.routes.single.$2, ScopePhase.initialization);
-      expect(observer.routes.single.$3, ScopeErrorRoute.observer);
+      expect(observer.routes.single.$3, ScopeErrorRoute.observerOnly);
 
       await takeDown(tester, '_Full');
     });
@@ -275,7 +275,7 @@ void main() {
 
       audit.verify(observer.routes);
       expect(observer.routes.single.$2, ScopePhase.initialization);
-      expect(observer.routes.single.$3, ScopeErrorRoute.observer);
+      expect(observer.routes.single.$3, ScopeErrorRoute.observerOnly);
 
       await takeDown(tester, 'AsyncScope');
     });
@@ -1335,7 +1335,7 @@ void main() {
 
       audit.verify(observer.routes);
       expect(routesOf(failure).single.$2, ScopePhase.initialization);
-      expect(routesOf(failure).single.$3, ScopeErrorRoute.observer);
+      expect(routesOf(failure).single.$3, ScopeErrorRoute.observerOnly);
       expect(audit.seenIn(SeenIn.flutterError), isEmpty);
 
       await takeDown(tester, 'AsyncScope');
@@ -1358,7 +1358,7 @@ void main() {
 
       audit.verify(observer.routes);
       expect(routesOf(failure).single.$2, ScopePhase.initialization);
-      expect(routesOf(failure).single.$3, ScopeErrorRoute.observer);
+      expect(routesOf(failure).single.$3, ScopeErrorRoute.observerOnly);
       expect(
         audit.seenIn(SeenIn.flutterError),
         isEmpty,
@@ -1402,7 +1402,7 @@ void main() {
         await tester.pumpAndSettle();
         audit.uninstall();
 
-        expect(routesOf(const _Boom()).single.$3, ScopeErrorRoute.observer);
+        expect(routesOf(const _Boom()).single.$3, ScopeErrorRoute.observerOnly);
         expect(
           audit.seenIn(SeenIn.flutterError),
           [same(const _Boom())],
@@ -1464,7 +1464,7 @@ void main() {
       await tester.pumpAndSettle();
 
       audit.verify(observer.routes);
-      expect(routesOf(failure).single.$3, ScopeErrorRoute.observer);
+      expect(routesOf(failure).single.$3, ScopeErrorRoute.observerOnly);
       expect(audit.seenIn(SeenIn.flutterError), isEmpty);
 
       await takeDown(tester, 'AsyncScope');
@@ -1614,7 +1614,7 @@ void main() {
 
         expect(
           inside.routes.where((r) => identical(r.$4, failure)).single.$3,
-          ScopeErrorRoute.observer,
+          ScopeErrorRoute.observerOnly,
         );
         final reported = audit.seenIn(SeenIn.flutterError);
         expect(
@@ -1655,7 +1655,7 @@ void main() {
           ),
         );
         await tester.pumpAndSettle();
-        expect(routesOf(failure).single.$3, ScopeErrorRoute.observer);
+        expect(routesOf(failure).single.$3, ScopeErrorRoute.observerOnly);
         expect(
           audit.seenIn(SeenIn.flutterError),
           isEmpty,
@@ -1671,7 +1671,7 @@ void main() {
         );
         audit.uninstall();
 
-        expect(routesOf(failure).single.$3, ScopeErrorRoute.observer);
+        expect(routesOf(failure).single.$3, ScopeErrorRoute.observerOnly);
         expect(
           audit.seenIn(SeenIn.flutterError).where((e) => identical(e, failure)),
           hasLength(1),

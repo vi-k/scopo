@@ -329,9 +329,10 @@ void main() {
         observer.events,
         [
           // `_wrap` puts the scope under a coordinator, which reports the
-          // structural events of a family with no phase of its own: `onInit`
-          // when it initializes, then `onDispose`/`onDisposed` around its
-          // teardown. It stays on the tree here, so only `onInit` shows.
+          // structural events of a family with no phase of its own:
+          // `onInitStarted` when it initializes, then
+          // `onDisposalStarted`/`onDisposed` around its teardown. It stays on
+          // the tree here, so only `onInitStarted` shows.
           'init AsyncScopeCoordinator',
           'init _Async',
           'ready _Async',

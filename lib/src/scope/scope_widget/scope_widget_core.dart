@@ -212,14 +212,14 @@ abstract base class ScopeWidgetElementBase<
 
   @override
   void unmount() {
-    // The observer's pair belongs to a scope that announced `onInit`: an
+    // The observer's pair belongs to a scope that announced `onInitStarted`: an
     // `init()` that threw, or one that never ran, reports neither half of
     // it, even though the teardown below still runs for it -- see the next
     // comment.
     final reportsTeardown = !reportsOwnLifecycle && _didInit;
 
     if (reportsTeardown) {
-      notifyObserver((observer) => observer.onDispose(this));
+      notifyObserver((observer) => observer.onDisposalStarted(this));
     }
 
     // Symmetry, not success: an attempt that failed halfway may still have
@@ -276,12 +276,12 @@ abstract base class ScopeWidgetElementBase<
   ///
   /// It runs from the `finally` of [unmount], outside the guard around the
   /// [unmountScope] beside it, so its failure used to reach the framework and
-  /// no further — while the `onDispose`/`onDisposed` pair closed around it as
-  /// if the teardown had gone through. For a `ScopeModel` that failure is the
-  /// `dispose` callback of a public parameter, which is user code by
+  /// no further — while the `onDisposalStarted`/`onDisposed` pair closed around
+  /// it as if the teardown had gone through. For a `ScopeModel` that failure is
+  /// the `dispose` callback of a public parameter, which is user code by
   /// definition. Reported rather than re-thrown, for the reason given beside
-  /// the guard above: the only caller left is the loop that is unmounting
-  /// every other scope of the same batch.
+  /// the guard above: the only caller left is the loop that is unmounting every
+  /// other scope of the same batch.
   void _disposeReportingFailure() {
     try {
       dispose();
@@ -707,7 +707,7 @@ abstract base class ScopeWidgetElementBase<
 
       _initPhase = _InitPhase.done;
       if (!reportsOwnLifecycle) {
-        notifyObserver((observer) => observer.onInit(this));
+        notifyObserver((observer) => observer.onInitStarted(this));
       }
     } else if (_initFailure case (final error, final stackTrace)) {
       // There is no scope to build on. Raising the original failure again --
