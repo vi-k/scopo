@@ -1101,15 +1101,14 @@ void main() {
           hasLength(2),
           reason:
               'the group of the new tree fails before it reaches any '
-              'child, so no step reports it: the container is the only one '
-              'that does',
+              'child, and reports that as its own failed step',
         );
+        // No `audit.verify`: both failures carry the one `const` object, and
+        // the audit tells failures apart by what they carry.
         expect(
           observer.routes,
-          hasLength(1),
-          reason:
-              'nor is the observer told of it: the one route it has is the '
-              'step of the first tree',
+          hasLength(2),
+          reason: 'the step of the first tree, and the group of the second',
         );
       },
     );
@@ -1159,50 +1158,62 @@ void main() {
           audit.seenIn(SeenIn.flutterError).where(carriesBoom),
           hasLength(2),
           reason:
-              'the group fails before it reaches any child, so no step '
-              'reports it: the container is the only one that does',
+              'the group fails before it reaches any child, and reports '
+              'that as its own failed step',
         );
       },
     );
 
-    // Pins "a group that fails behind another failure" in the routes list of
-    // `doc/debug.md`.
-    test(
-      'a group that fails behind another failure: only the first is told',
-      () async {
-        const boom = _Boom();
-        final dependencies = _Steps(
-          (deps) => deps.sequential('', [
-            deps.sequential('inner', [_RefusingForeign(Exception('refused'))]),
-            deps.dep('leaf', (handle) {
-              handle.dispose = () => throw boom;
-            }),
-          ]),
-        );
-        await runScopeInit((ctx) => dependencies.init(null, ctx));
-        audit.install();
+    // A group that fails before it reaches any child reports that failure as
+    // its own failed step: it has no caller left to be raised at when another
+    // failure leaves the walk ahead of it.
+    test('a group that fails behind another failure: both are told', () async {
+      const boom = _Boom();
+      final refused = Exception('refused');
+      final dependencies = _Steps(
+        (deps) => deps.sequential('', [
+          deps.sequential('inner', [_RefusingForeign(refused)]),
+          deps.dep('leaf', (handle) {
+            handle.dispose = () => throw boom;
+          }),
+        ]),
+      );
+      await runScopeInit((ctx) => dependencies.init(null, ctx));
+      audit.install();
 
-        await dependencies.dispose().onError((_, __) {});
-        audit.uninstall();
+      await dependencies.dispose().onError((_, __) {});
+      audit.uninstall();
 
-        expect(observer.routes, hasLength(1), reason: 'the step of the leaf');
-        expect(observer.routes.single.$3, ScopeErrorRoute.flutterError);
-        bool carriesBoom(Object e) =>
-            e is ScopeDependencyException && identical(e.error, boom);
-        expect(audit.seenIn(SeenIn.flutterError), hasLength(1));
-        expect(
-          audit.seenIn(SeenIn.flutterError).single,
-          predicate(carriesBoom),
-        );
-        expect(
-          dependencies.flattenDependenciesWithErrors().map((i) => i.dependency),
-          contains(
-            isA<ScopeDependency>().having((d) => d.name, 'name', 'inner'),
-          ),
-          reason: 'the failure of the group is kept in the state of the tree',
-        );
-      },
-    );
+      bool Function(Object) carries(Object error) =>
+          (e) => e is ScopeDependencyException && identical(e.error, error);
+      audit.verify(observer.routes);
+      expect(observer.routes, hasLength(2));
+      expect(
+        observer.routes.map((r) => r.$3),
+        everyElement(ScopeErrorRoute.flutterError),
+      );
+      expect(
+        observer.routes.map((r) => r.$4),
+        containsAll([predicate(carries(boom)), predicate(carries(refused))]),
+      );
+      expect(
+        observer.routes
+            .map((r) => r.$4)
+            .whereType<ScopeDependencyException>()
+            .map((e) => e.name),
+        containsAll(['leaf', 'inner']),
+      );
+      expect(audit.seenIn(SeenIn.flutterError), hasLength(2));
+      expect(
+        audit.seenIn(SeenIn.flutterError).where(carries(refused)),
+        hasLength(1),
+      );
+      expect(
+        dependencies.flattenDependenciesWithErrors().map((i) => i.dependency),
+        contains(isA<ScopeDependency>().having((d) => d.name, 'name', 'inner')),
+        reason: 'the failure of the group is kept in the state of the tree',
+      );
+    });
   });
 
   // The kernel hands this observer errors of two roads. One asks for an
@@ -1527,13 +1538,23 @@ void main() {
       expect(routesOf(failure).single.$3, ScopeErrorRoute.flutterError);
     });
 
-    // Pins "an observer is there even when it does nothing" in the routes
-    // list of `doc/debug.md`.
-    testWidgets(
-      'a child failure nobody read, with an empty composite observer: '
-      'nothing in FlutterError',
-      (tester) async {
-        ScopeConfig.observer = const ScopeCompositeObserver([]);
+    // An empty composite, or one made only of empty composites, hands the
+    // failure to nobody, so it has heard nothing: the failure is reported as
+    // it is with `ScopeConfig.observer` at `null`.
+    for (final (what, empty) in [
+      ('an empty composite', const ScopeCompositeObserver([])),
+      (
+        'a composite of empty composites',
+        const ScopeCompositeObserver([
+          ScopeCompositeObserver([]),
+          ScopeCompositeObserver([]),
+        ]),
+      ),
+    ]) {
+      testWidgets('a child failure nobody read, with $what: FlutterError', (
+        tester,
+      ) async {
+        ScopeConfig.observer = empty;
         final failure = StateError('child failed, and nobody looked');
         var thrown = false;
         audit.install();
@@ -1557,14 +1578,12 @@ void main() {
 
         expect(thrown, isTrue);
         expect(
-          audit.seenIn(SeenIn.flutterError),
-          isEmpty,
-          reason:
-              'an observer is set, so the route said `observer` -- to an '
-              'observer that hands it to nobody',
+          audit.seenIn(SeenIn.flutterError).where((e) => identical(e, failure)),
+          hasLength(1),
+          reason: 'nobody inside the composite heard it',
         );
-      },
-    );
+      });
+    }
 
     // A composite is no more heard than the observers inside it: one of them
     // threw -- the crash reporter, say -- so the failure is reported as it is
@@ -1660,48 +1679,49 @@ void main() {
       },
     );
 
-    // Pins "a failure your app calls a cancellation, raised before the
-    // cancellation" in the routes list of `doc/debug.md`.
-    testWidgets(
-      'a body failure the filter names, covered by a cancellation: no '
-      'onError at all',
-      (tester) async {
-        Job.isCancellationError = (error) => error is _Boom;
-        addTearDown(() => Job.isCancellationError = null);
-        final cleanup = Completer<void>();
-        audit.install();
+    // The app's `Job.isCancellationError` names the failure, so nobody reports
+    // it -- but it did happen before the cancellation, and the observer hears
+    // of it as what the app calls it: a cancellation.
+    testWidgets('a body failure the filter names, covered by a cancellation: '
+        'cancellation', (tester) async {
+      Job.isCancellationError = (error) => error is _Boom;
+      addTearDown(() => Job.isCancellationError = null);
+      final cleanup = Completer<void>();
+      audit.install();
 
-        await audit.runGuarded(() async {
-          await tester.pumpWidget(
-            _app(
-              _asyncScope(
-                initScope: (context, ctx) async {
-                  ctx.onDispose(() => cleanup.future);
-                  throw const _Boom();
-                },
-              ),
+      await audit.runGuarded(() async {
+        await tester.pumpWidget(
+          _app(
+            _asyncScope(
+              initScope: (context, ctx) async {
+                ctx.onDispose(() => cleanup.future);
+                throw const _Boom();
+              },
             ),
-          );
-          await tester.pumpAndSettle();
-          await tester.pumpWidget(_app(const SizedBox.shrink()));
-          cleanup.complete();
-          await settle(
-            tester,
-            until: () => observer.events.contains('disposed AsyncScope'),
-          );
-        });
-        // Nothing more is due once the teardown is over: give it a fair chance
-        // all the same, and look again.
-        await settle(tester, until: () => false, rounds: 5);
-        audit.uninstall();
+          ),
+        );
+        await tester.pumpAndSettle();
+        await tester.pumpWidget(_app(const SizedBox.shrink()));
+        cleanup.complete();
+        await settle(
+          tester,
+          until: () => observer.events.contains('disposed AsyncScope'),
+        );
+      });
+      // Nothing more is due once the teardown is over: give it a fair chance
+      // all the same, and look again.
+      await settle(tester, until: () => false, rounds: 5);
+      audit.uninstall();
 
-        expect(observer.events, contains('disposed AsyncScope'));
-        expect(observer.events, contains('cancelled AsyncScope'));
-        expect(observer.routes, isEmpty);
-        expect(audit.seenIn(SeenIn.flutterError), isEmpty);
-        expect(audit.seenIn(SeenIn.zone), isEmpty);
-      },
-    );
+      expect(observer.events, contains('disposed AsyncScope'));
+      expect(observer.events, contains('cancelled AsyncScope'));
+      expect(observer.routes, hasLength(1));
+      expect(observer.routes.single.$2, ScopePhase.initializationCancellation);
+      expect(observer.routes.single.$3, ScopeErrorRoute.cancellation);
+      expect(observer.routes.single.$4, isA<_Boom>());
+      expect(audit.seenIn(SeenIn.flutterError), isEmpty);
+      expect(audit.seenIn(SeenIn.zone), isEmpty);
+    });
 
     // Pins "`ignoreFailure()` called late on a cancelled child" in the routes
     // list of `doc/debug.md`: with the late `ignoreFailure()` the route says

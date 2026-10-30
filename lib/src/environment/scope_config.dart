@@ -179,10 +179,12 @@ void reportTimeout(TimeoutException error, StackTrace stackTrace) {
 /// second entry is refused and reported, once per refused call.
 ///
 /// Returns whether the observer heard the call: `false` without an observer,
-/// for a refused call and for a hook that threw.
+/// for a [ScopeCompositeObserver] with nobody inside, for a refused call and
+/// for a hook that threw.
 bool notifyObserver(void Function(ScopeObserver observer) call) {
   final observer = ScopeConfig.observer;
-  if (observer == null) {
+  if (observer == null ||
+      (observer is ScopeCompositeObserver && observer._isEmpty)) {
     return false;
   }
 

@@ -43,6 +43,7 @@ final class ScopeInitJob<T> extends JobBase<T> implements DeferredJob<T> {
   // Identifies the body failure carried by the outcome. For the root and
   // group-arm jobs, their owners report it when they settle that outcome.
   Object? _bodyError;
+  StackTrace? _bodyStackTrace;
 
   // _ScopeDependencyConcurrent marks its arms: it carries the first failure
   // upwards and announces the others. The observer leaves those reports to
@@ -74,8 +75,9 @@ final class ScopeInitJob<T> extends JobBase<T> implements DeferredJob<T> {
   Future<T> execute(JobContextBase ctx) async {
     try {
       return await _body(ctx as ScopeInitContext);
-    } on Object catch (error) {
+    } on Object catch (error, stackTrace) {
       _bodyError = error;
+      _bodyStackTrace = stackTrace;
       rethrow;
     }
   }
@@ -185,9 +187,9 @@ final class _ScopeInitObserver extends JobObserver with JobAnswerer {
       // over, and then the failure has nobody -- which is when the kernel
       // hands it to [onUnanswered], where it is told after all. Unless the
       // app's `Job.isCancellationError` names it: then the kernel asks
-      // nobody, this hook is not called again, and the scope observer never
-      // hears of the failure at all. A gap left as it is, and described in the
-      // debug topic.
+      // nobody, this hook is not called again, and the element tells the
+      // observer once the outcome is settled -- see
+      // [_announceNamedBodyFailure].
       return;
     }
 
@@ -244,6 +246,39 @@ final class _ScopeInitObserver extends JobObserver with JobAnswerer {
         stack: stackTrace,
         library: 'scopo',
       ),
+    );
+  }
+
+  /// Tells the observer of a body failure of [job] that the cancellation
+  /// took the outcome from and the app's `Job.isCancellationError` names.
+  ///
+  /// [onError] stood aside for it, and the kernel hands such a failure to
+  /// nobody, [onUnanswered] included. It did happen, before the cancellation,
+  /// so the observer hears of it, with the route the app chose for it.
+  /// A failure the filter does not name has reached [onUnanswered] by the
+  /// time the outcome is settled, and [_announce] keeps it from being told
+  /// twice; a `Cancelled` the body threw is the cancellation itself.
+  void _announceNamedBodyFailure(ScopeInitJob<Object?> job) {
+    final error = job._bodyError;
+    if (error == null || error is Cancelled || _announced.contains(error)) {
+      return;
+    }
+
+    bool named;
+    try {
+      named = Job.isCancellationError?.call(error) ?? false;
+      // ignore: avoid_catching_errors
+    } on Object {
+      // The kernel asked the same filter and has dealt with its failure.
+      named = false;
+    }
+    if (!named) return;
+
+    _announce(
+      error,
+      job._bodyStackTrace ?? StackTrace.empty,
+      ScopePhase.initializationCancellation,
+      ScopeErrorRoute.cancellation,
     );
   }
 

@@ -145,15 +145,28 @@ abstract base class ScopeDependencyGroup with ScopeDependencyMixin {
   /// Skipping them is right — there is nothing to run — but skipping them in
   /// silence left them saying `initialized` after the tree had been torn down.
   /// See [ScopeDependencyMixin._markNothingToDispose].
+  ///
+  /// A child of somebody else's making may throw from its
+  /// [ScopeDependency.disposalRequired], and then the group fails before it
+  /// reaches any child. That failure is this group's own failed step, and is
+  /// announced as one: no step below it will, and when another failure has
+  /// left the walk first, the one this raises has no caller left to be
+  /// raised at, so the state of the tree used to be all that had it.
   List<ScopeDependency> _disposalOrder() {
     final order = <ScopeDependency>[];
 
-    for (final dependency in _dependencies.reversed) {
-      if (dependency.disposalRequired) {
-        order.add(dependency);
-      } else if (dependency is ScopeDependencyMixin) {
-        dependency._markNothingToDispose();
+    try {
+      for (final dependency in _dependencies.reversed) {
+        if (dependency.disposalRequired) {
+          order.add(dependency);
+        } else if (dependency is ScopeDependencyMixin) {
+          dependency._markNothingToDispose();
+        }
       }
+      // ignore: avoid_catching_errors
+    } on Object catch (error, stackTrace) {
+      _onDisposalStepFailed?.call(name, error, stackTrace);
+      rethrow;
     }
 
     return order;

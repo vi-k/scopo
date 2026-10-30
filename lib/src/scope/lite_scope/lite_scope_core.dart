@@ -599,6 +599,15 @@ abstract base class LiteScopeCoreState<
       // above; run after the frame, it throws into the scheduler, which
       // reports it to `FlutterError`. The flag is still set when the action
       // runs at once, and cleared by the time a post-frame callback does.
+      //
+      // As things stand it is always the second. This state is created by
+      // `buildOnReady`, inside the scope element's own `performRebuild`, and
+      // that rebuild is counted by `beginScopeRebuild` -- so `isBuilding`
+      // says `true` here in a release build as well as in debug, and no test
+      // reaches the first branch. It is kept rather than folded into a fixed
+      // route: the route follows from where the callback runs, and a later
+      // way of building the state outside that rebuild must not be able to
+      // make it lie.
       var runsNow = true;
       SchedulerBinding.instance.runOutsideFrame(
         () => _completeInit(

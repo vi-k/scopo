@@ -216,7 +216,10 @@ abstract base class AsyncScopeElementBase<
           // report: the adapter stood aside for the root outcome, and the
           // kernel hands that failure to its `onUnanswered` hook. Other
           // failures are announced by the adapter or the dependency group.
-          break;
+          // The one the kernel hands nobody is a failure the app's
+          // `Job.isCancellationError` names, and the observer hears of it
+          // here, under the name the app gave it.
+          observer._announceNamedBodyFailure(job);
         case Cancelled():
           // Nobody here asked for it, so the initialization ended without ever
           // becoming ready -- a failed one, whichever way it ended. Asked the

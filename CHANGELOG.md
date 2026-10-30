@@ -1,3 +1,21 @@
+## 0.21.2
+
+* A group of an automatic dependency tree that fails before it reaches any
+  child — a dependency of your own making whose `disposalRequired` throws —
+  reports that as a failed step of its own: `onError` hears it with
+  `ScopeErrorRoute.flutterError`, and it is reported once through
+  `FlutterError.reportError`. Behind another failure of the same walk it used
+  to be kept only in the state of the tree, and the observer was never told of
+  it.
+* A body failure of an initialization that a cancellation took the outcome
+  from, and that `Job.isCancellationError` names, reaches `onError` with
+  `ScopeErrorRoute.cancellation` and `ScopePhase.initializationCancellation`.
+  `onError` used not to be called for it at all.
+* A `ScopeCompositeObserver` with no observer inside, or only empty composites,
+  counts as no observer: a failure of a child job that nobody read is reported
+  through `FlutterError.reportError`, as it is with `ScopeConfig.observer` at
+  `null`, instead of being handed to nobody.
+
 ## 0.21.1
 
 * The package now describes itself by what it is for — asynchronous resources

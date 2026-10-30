@@ -491,10 +491,10 @@ two reports. A step that fails with `Cancelled` is not reported. A successful
 `await close()` does not mean that every automatic dependency was released
 successfully. Every failed step remains available in
 `flattenDependenciesWithErrors()` and through `ScopeConfig.observer.onError`. A
-group that fails before it reaches any child is no step, and the observer is
-not told of it. It is reported when it is the first failure of the walk; behind
-another failure it is kept only in the state of the tree, in
-`flattenDependenciesWithErrors()`.
+group that fails before it reaches any child — a dependency of your own making
+whose `disposalRequired` throws — reports that as a failed step of its own: it
+is reported once, and the observer is told, whether or not another failure of
+the walk came first.
 
 `close()` starts that same teardown while the scope is still on screen: the
 ready subtree is frozen into a screenshot, `buildOnClosing` is shown on top of

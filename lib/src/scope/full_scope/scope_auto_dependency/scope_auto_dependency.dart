@@ -578,8 +578,10 @@ abstract class ScopeAutoDependencies<
       // goes on past a failed step and lets out the first failure it saw,
       // under a name the nodes on the way up have built afresh -- which is
       // why what it carries is what is looked up. A failure that never
-      // passed through a step -- one a group raised before reaching any child
-      // -- is not found here and is reported below.
+      // passed through a step is not found here and is reported below. A
+      // group that fell over before it reached any child has passed through
+      // one as well: it reports that failure as a step of its own before
+      // raising it.
       if (_reportedSteps.contains(carried)) {
         return;
       }
@@ -588,10 +590,7 @@ abstract class ScopeAutoDependencies<
       // same terms as the exit below. A root of the package's own making
       // announces the failures of its steps from inside the walk, where they
       // happen and beside the entries they end -- and those were looked up
-      // above. What is left from such a root is a failure of a group that
-      // fell over before it reached any child, which no step announced; the
-      // observer is not told of it here either, and only the report below
-      // goes out.
+      // above, a group that fell over before it reached any child included.
       if (dependencies is! ScopeDependencyMixin) {
         notifyObserver(
           (observer) => observer.onError(

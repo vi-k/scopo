@@ -309,6 +309,11 @@ class ScopeObserver {
 /// one can be thrown. Called by hand, outside the package, the composite
 /// throws what its first failing observer threw.
 ///
+/// An empty composite, or one made only of empty composites, hears nothing,
+/// and the package treats it as no observer at all: a failure meant only for
+/// the observer goes to [FlutterError], as it does with
+/// [ScopeConfig.observer] at `null`.
+///
 /// {@category debug}
 final class ScopeCompositeObserver extends ScopeObserver {
   /// The observers this one stands in front of, asked in order.
@@ -316,6 +321,12 @@ final class ScopeCompositeObserver extends ScopeObserver {
 
   /// Creates an observer that forwards to each of [observers].
   const ScopeCompositeObserver(this.observers);
+
+  /// Whether no observer is left once the composites are opened: asked
+  /// at every call, since [observers] may be a list that changes.
+  bool get _isEmpty => observers.every(
+    (observer) => observer is ScopeCompositeObserver && observer._isEmpty,
+  );
 
   /// Runs [call] on every observer, guarded one at a time, and throws the
   /// first failure once they have all been asked.
