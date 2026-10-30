@@ -495,7 +495,7 @@ final class _CountingDependency implements ScopeDependency {
   final String name = 'counted';
 
   @override
-  final int count = 1;
+  final int stepCount = 1;
 
   @override
   ScopeDependencyState get state => _state;

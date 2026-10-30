@@ -2396,7 +2396,7 @@ final class _RefusingForeign implements ScopeDependency {
   String get name => 'refusing';
 
   @override
-  int get count => 1;
+  int get stepCount => 1;
 
   @override
   ScopeDependencyState get state => const ScopeDependencyInitialized();
@@ -2439,7 +2439,7 @@ final class _HoldingForeign implements ScopeDependency {
   String get name => 'holding';
 
   @override
-  int get count => 1;
+  int get stepCount => 1;
 
   @override
   ScopeDependencyState get state => const ScopeDependencyInitialized();
@@ -2478,7 +2478,7 @@ final class _ForeignRoot implements ScopeDependency {
   String get name => 'foreign';
 
   @override
-  int get count => 1;
+  int get stepCount => 1;
 
   @override
   ScopeDependencyState get state => _state;

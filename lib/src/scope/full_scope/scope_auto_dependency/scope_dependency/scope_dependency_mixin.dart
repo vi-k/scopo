@@ -58,7 +58,7 @@ mixin _ScopeDependencyMixin implements ScopeDependency, ScopeObservable {
   /// over always said [ScopeDependencyDisposed]. It cannot any more: a
   /// dependency that collected errors keeps them, so a group that was disposed
   /// of *because* something under it failed still says
-  /// [ScopeDependencyFailed]. Kept apart from the state, so
+  /// [ScopeDependencyInitFailed]. Kept apart from the state, so
   /// [ScopeDependency.disposalRequired] can still tell a disposal that is due
   /// from one that is done.
   bool _isDisposalDone = false;
@@ -242,12 +242,12 @@ mixin _ScopeDependencyMixin implements ScopeDependency, ScopeObservable {
   /// [ScopeDependencyCancelled]. Cancellation is cooperative: this method
   /// does not interrupt a bare `await` inside [_runInit].
   ///
-  /// Another error is recorded as [ScopeDependencyFailed] and passed on in a
-  /// [ScopeDependencyException]. An exception from a child is recorded too;
-  /// its path is prefixed with this dependency's name, if nonempty, before
-  /// it is rethrown.
-  /// If the job is already cancelled, the error is recorded in the cancelled
-  /// state instead, and [Cancelled] is thrown so the cancellation goes on.
+  /// Another error is recorded as [ScopeDependencyInitFailed] and passed on in
+  /// a [ScopeDependencyException]. An exception from a child is recorded too;
+  /// its path is prefixed with this dependency's name, if nonempty, before it
+  /// is rethrown. If the job is already cancelled, the error is recorded in the
+  /// cancelled state instead, and [Cancelled] is thrown so the cancellation
+  /// goes on.
   @override
   Future<void> init(
     ScopeInitContext ctx,
@@ -317,7 +317,7 @@ mixin _ScopeDependencyMixin implements ScopeDependency, ScopeObservable {
         // [ScopeDependencyException] that carries the path.
         _handleInitializationError(error, stackTrace);
       }
-      if (_state is! ScopeDependencyFailed) {
+      if (_state is! ScopeDependencyInitFailed) {
         _state = const ScopeDependencyInitialized();
       }
     } finally {
@@ -338,7 +338,7 @@ mixin _ScopeDependencyMixin implements ScopeDependency, ScopeObservable {
   /// [ScopeDependencyDisposed] says nothing at all, and the error list is the
   /// only record of what went wrong. A group is disposed of *because*
   /// something under it failed — [ScopeDependencyGroup.disposalRequired]
-  /// covers [ScopeDependencyFailed] — so overwriting its state threw that
+  /// covers [ScopeDependencyInitFailed] — so overwriting its state threw that
   /// record away exactly where it was needed, and with the default
   /// [ScopeAutoDependencies.disposesOnError] that happened before the
   /// caller ever saw it. A failed *leaf* keeps its errors by the same rule, and
@@ -430,15 +430,16 @@ mixin _ScopeDependencyMixin implements ScopeDependency, ScopeObservable {
     // Whether the walk got to its end, however it got there.
     //
     // The state cannot answer this, and used to be asked: anything other than
-    // [ScopeDependencyInitialized] was read as "the walk finished". That
-    // holds for a walk that finished, and it is wrong for a tree a caller
-    // leads by hand after an initialization went wrong -- one in
-    // [ScopeDependencyFailed] or [ScopeDependencyCancelled]. Stopped halfway,
-    // each of those said it was done: [ScopeDependencyGroup.disposalRequired]
-    // then answered `false`, the children the walk never reached went on
-    // holding what they took, and `_prepareDependencies` built a new tree
-    // over the top of them without a word. Only the one that started from
-    // `Initialized` was ever accounted for.
+    // [ScopeDependencyInitialized] was read as "the walk finished". That holds
+    // for a walk that finished, and it is wrong for a tree a caller leads by
+    // hand after an initialization went wrong -- one in
+    // [ScopeDependencyInitFailed] or [ScopeDependencyCancelled]. Stopped
+    // halfway, each of those said it was done:
+    // [ScopeDependencyGroup.disposalRequired] then answered `false`, the
+    // children the walk never reached went on holding what they took, and
+    // `_prepareDependencies` built a new tree over the top of them without a
+    // word. Only the one that started from `Initialized` was ever accounted
+    // for.
     var walkEnded = false;
 
     try {
@@ -528,14 +529,14 @@ mixin _ScopeDependencyMixin implements ScopeDependency, ScopeObservable {
         error,
         stackTrace,
       ),
-      ScopeDependencyAnySuccess() => defaultState(error, stackTrace),
+      _ScopeDependencyAnySuccess() => defaultState(error, stackTrace),
     };
   }
 
   void _handleError(
     Object error,
     StackTrace stackTrace,
-    ScopeDependencyAnyFailed Function(Object error, StackTrace stackTrace)
+    _ScopeDependencyAnyFailed Function(Object error, StackTrace stackTrace)
     defaultState,
   ) {
     notifyObserver(
@@ -576,7 +577,7 @@ mixin _ScopeDependencyMixin implements ScopeDependency, ScopeObservable {
   }
 
   void _handleInitializationError(Object error, StackTrace stackTrace) {
-    _handleError(error, stackTrace, ScopeDependencyFailed.new);
+    _handleError(error, stackTrace, ScopeDependencyInitFailed.new);
   }
 
   void _handleDisposalError(Object error, StackTrace stackTrace) {
@@ -593,7 +594,7 @@ mixin _ScopeDependencyMixin implements ScopeDependency, ScopeObservable {
   void _handlePostCancelError(
     Object error,
     StackTrace stackTrace,
-    ScopeDependencyAnyCancelled Function(Object error, StackTrace stackTrace)
+    _ScopeDependencyAnyCancelled Function(Object error, StackTrace stackTrace)
     defaultState,
   ) {
     notifyObserver(

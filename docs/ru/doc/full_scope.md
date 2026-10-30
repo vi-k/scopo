@@ -1,6 +1,6 @@
 # Scope
 
-> Перевод `doc/full_scope.md` (blob `24b3ab23a8f2fbd967c1bb18c2af77cc52b80e2f`).
+> Перевод `doc/full_scope.md` (blob `f0bd7c40fadcdbf74c8185c38e39242616969904`).
 > Правится в том же коммите, что и оригинал; проверка — `sh docs/ru/check.sh`.
 
 `Scope` — основной строительный блок пакета: виджет, который владеет
@@ -359,11 +359,12 @@ static Future<AppDependencies> init(ScopeInitContext ctx) async {
 а `flattenDependenciesWithErrors()` сужает обход до записей с настоящей
 ошибкой, а не с проброшенным `ScopeDependencyException`. У каждой зависимости
 есть ещё и `ScopeDependencyState` — `ScopeDependencyInitial`,
-`ScopeDependencyInitialized`, `ScopeDependencyFailed`,
+`ScopeDependencyInitialized`, `ScopeDependencyInitFailed`,
 `ScopeDependencyCancelled`, `ScopeDependencyDisposed`,
 `ScopeDependencyNoDisposalRequired`, `ScopeDependencyDisposalFailed` —
 и сокращения `isInitialized`, `isFailed`, `isCancelled`, `isDisposed`
-из `ScopeDependencyExtension`.
+из `ScopeDependencyExtension`. Любое состояние отвечает на `errors()`, `error`,
+`errorCount` и `hasErrors`; ошибки держат только два отказа и отмена.
 
 `ScopeDependencyNoDisposalRequired` — состояние зависимости, которая не задала
 `dep.dispose` и отдавать ей нечего: разбор проходит мимо неё, и вот что она
@@ -423,7 +424,7 @@ concurrent1/sequential1/dep3: Exception: no network
 Пустое `name` означает, что упала сама безымянная корневая зависимость.
 
 Группа, увидевшая провал, перестаёт требовать инициализации и переходит
-в `ScopeDependencyFailed`, сохраняя увиденный отказ — один, даже если
+в `ScopeDependencyInitFailed`, сохраняя увиденный отказ — один, даже если
 у `concurrent`-группы упало сразу несколько детей: первый отказ отменяет ветки
 рядом, так что группа хранит тот, который её и закончил. Свои ошибки хранит
 каждая зависимость, и `flattenDependenciesWithErrors()` обходит за ними дерево.

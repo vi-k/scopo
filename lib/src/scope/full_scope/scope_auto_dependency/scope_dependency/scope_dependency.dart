@@ -26,7 +26,7 @@ abstract interface class ScopeDependency {
   /// holds nothing and reports no step of its own, so counting it would promise
   /// a step that never arrives. That is what makes this number the denominator
   /// a progress indicator wants.
-  int get count;
+  int get stepCount;
 
   /// Where in its lifecycle this dependency is.
   ScopeDependencyState get state;
@@ -74,42 +74,32 @@ extension ScopeDependencyExtension on ScopeDependency {
   bool get initializationRequired => state is ScopeDependencyInitial;
 
   /// Whether the initialization succeeded.
-  bool get isInitialized => switch (state) {
-    ScopeDependencyInitialized() => true,
-    ScopeDependencyAnySuccess() ||
-    ScopeDependencyAnyFailed() ||
-    ScopeDependencyAnyCancelled() => false,
-  };
+  bool get isInitialized => state is ScopeDependencyInitialized;
 
   /// Whether the initialization was cancelled.
   ///
   /// A disposal is never cancelled, so this is about [init] alone.
-  bool get isCancelled => switch (state) {
-    ScopeDependencyAnyCancelled() => true,
-    ScopeDependencyAnySuccess() || ScopeDependencyAnyFailed() => false,
-  };
+  bool get isCancelled => state is ScopeDependencyCancelled;
 
   /// Whether the initialization or the disposal failed.
   bool get isFailed => switch (state) {
-    ScopeDependencyAnyFailed() => true,
-    ScopeDependencyAnySuccess() || ScopeDependencyAnyCancelled() => false,
+    ScopeDependencyInitFailed() || ScopeDependencyDisposalFailed() => true,
+    ScopeDependencyInitial() ||
+    ScopeDependencyInitialized() ||
+    ScopeDependencyCancelled() ||
+    ScopeDependencyDisposed() => false,
   };
 
   /// Whether this dependency stands in [ScopeDependencyDisposed].
   ///
-  /// Not the same question as "has the teardown run", and it used to be
-  /// written as though it were. A dependency that failed keeps
-  /// [ScopeDependencyFailed] through its own disposal on purpose — the list of
-  /// errors is the only record of what went wrong, and the state is where that
-  /// list lives — so a tree released by `disposesOnError` is disposed of,
+  /// Not the same question as "has the teardown run", and it used to be written
+  /// as though it were. A dependency that failed keeps
+  /// [ScopeDependencyInitFailed] through its own disposal on purpose — the list
+  /// of errors is the only record of what went wrong, and the state is where
+  /// that list lives — so a tree released by `disposesOnError` is disposed of,
   /// holds nothing, and answers `false` here.
   ///
   /// What says there is nothing left to release is [disposalRequired]. This
   /// getter names the state.
-  bool get isDisposed => switch (state) {
-    ScopeDependencyDisposed() => true,
-    ScopeDependencyAnySuccess() ||
-    ScopeDependencyAnyFailed() ||
-    ScopeDependencyAnyCancelled() => false,
-  };
+  bool get isDisposed => state is ScopeDependencyDisposed;
 }

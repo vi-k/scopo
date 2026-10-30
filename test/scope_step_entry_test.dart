@@ -923,7 +923,7 @@ final class _ForeignDependency implements ScopeDependency {
   final String name = 'foreign';
 
   @override
-  final int count = 1;
+  final int stepCount = 1;
 
   @override
   ScopeDependencyState get state => _state;

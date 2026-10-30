@@ -293,7 +293,7 @@ abstract class ScopeAutoDependencies<
     }
 
     final dependencies = _prepareDependencies(context);
-    final progressIterator = ProgressIterator(dependencies.count);
+    final progressIterator = ProgressIterator(dependencies.stepCount);
 
     _initializing = true;
     try {
@@ -753,7 +753,7 @@ abstract class ScopeAutoDependencies<
           final _ScopeDependencyWithErrors state => state.errors().any(
             (e) => e.error is! ScopeDependencyException,
           ),
-          ScopeDependencyAnySuccess() => false,
+          _ScopeDependencyAnySuccess() => false,
         },
       );
 }

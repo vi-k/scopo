@@ -701,7 +701,7 @@ void main() {
           expect(failedDependencies(dependencies), [
             'dep1 failed: Exception: dep1 failed',
           ]);
-          expect(dependencies.root.state, isA<ScopeDependencyFailed>());
+          expect(dependencies.root.state, isA<ScopeDependencyInitFailed>());
           expect(dependencies.root.isInitialized, false);
           expect(dependencies.root.isFailed, true);
           expect(dependencies.root.isCancelled, false);
@@ -725,7 +725,7 @@ void main() {
             '    "dep2" not initialized',
             '  "dep10" not initialized',
           ]);
-          expect(dependencies.root.state, isA<ScopeDependencyFailed>());
+          expect(dependencies.root.state, isA<ScopeDependencyInitFailed>());
           expect(dependencies.root.isInitialized, false);
           expect(dependencies.root.isFailed, true);
           expect(dependencies.root.isCancelled, false);
@@ -765,7 +765,7 @@ void main() {
           expect(failedDependencies(dependencies), [
             'concurrent1/dep2 failed: Exception: dep2 failed',
           ]);
-          expect(dependencies.root.state, isA<ScopeDependencyFailed>());
+          expect(dependencies.root.state, isA<ScopeDependencyInitFailed>());
           expect(dependencies.root.isInitialized, false);
           expect(dependencies.root.isFailed, true);
           expect(dependencies.root.isCancelled, false);
@@ -789,7 +789,7 @@ void main() {
             '    "dep2" failed: Exception: dep2 failed',
             '  "dep10" not initialized',
           ]);
-          expect(dependencies.root.state, isA<ScopeDependencyFailed>());
+          expect(dependencies.root.state, isA<ScopeDependencyInitFailed>());
           expect(dependencies.root.isInitialized, false);
           expect(dependencies.root.isFailed, true);
           expect(dependencies.root.isCancelled, false);
@@ -829,7 +829,7 @@ void main() {
           expect(failedDependencies(dependencies), [
             'concurrent1/sequential1/dep3 failed: Exception: dep3 failed',
           ]);
-          expect(dependencies.root.state, isA<ScopeDependencyFailed>());
+          expect(dependencies.root.state, isA<ScopeDependencyInitFailed>());
           expect(dependencies.root.isInitialized, false);
           expect(dependencies.root.isFailed, true);
           expect(dependencies.root.isCancelled, false);
@@ -853,7 +853,7 @@ void main() {
             '    "dep2" disposed',
             '  "dep10" not initialized',
           ]);
-          expect(dependencies.root.state, isA<ScopeDependencyFailed>());
+          expect(dependencies.root.state, isA<ScopeDependencyInitFailed>());
           expect(dependencies.root.isInitialized, false);
           expect(dependencies.root.isFailed, true);
           expect(dependencies.root.isCancelled, false);
@@ -896,7 +896,7 @@ void main() {
           expect(failedDependencies(dependencies), [
             'concurrent1/dep4 failed: Exception: dep4 failed',
           ]);
-          expect(dependencies.root.state, isA<ScopeDependencyFailed>());
+          expect(dependencies.root.state, isA<ScopeDependencyInitFailed>());
           expect(dependencies.root.isInitialized, false);
           expect(dependencies.root.isFailed, true);
           expect(dependencies.root.isCancelled, false);
@@ -920,7 +920,7 @@ void main() {
             '    "dep2" disposed',
             '  "dep10" not initialized',
           ]);
-          expect(dependencies.root.state, isA<ScopeDependencyFailed>());
+          expect(dependencies.root.state, isA<ScopeDependencyInitFailed>());
           expect(dependencies.root.isInitialized, false);
           expect(dependencies.root.isFailed, true);
           expect(dependencies.root.isCancelled, false);
@@ -963,7 +963,7 @@ void main() {
           expect(failedDependencies(dependencies), [
             'concurrent1/sequential1/concurrent2/dep5 failed: Exception: dep5 failed',
           ]);
-          expect(dependencies.root.state, isA<ScopeDependencyFailed>());
+          expect(dependencies.root.state, isA<ScopeDependencyInitFailed>());
           expect(dependencies.root.isInitialized, false);
           expect(dependencies.root.isFailed, true);
           expect(dependencies.root.isCancelled, false);
@@ -987,7 +987,7 @@ void main() {
             '    "dep2" disposed',
             '  "dep10" not initialized',
           ]);
-          expect(dependencies.root.state, isA<ScopeDependencyFailed>());
+          expect(dependencies.root.state, isA<ScopeDependencyInitFailed>());
           expect(dependencies.root.isInitialized, false);
           expect(dependencies.root.isFailed, true);
           expect(dependencies.root.isCancelled, false);
@@ -1031,7 +1031,7 @@ void main() {
           expect(failedDependencies(dependencies), [
             'concurrent1/sequential1/concurrent2/dep6 failed: Exception: dep6 failed',
           ]);
-          expect(dependencies.root.state, isA<ScopeDependencyFailed>());
+          expect(dependencies.root.state, isA<ScopeDependencyInitFailed>());
           expect(dependencies.root.isInitialized, false);
           expect(dependencies.root.isFailed, true);
           expect(dependencies.root.isCancelled, false);
@@ -1055,7 +1055,7 @@ void main() {
             '    "dep2" disposed',
             '  "dep10" not initialized',
           ]);
-          expect(dependencies.root.state, isA<ScopeDependencyFailed>());
+          expect(dependencies.root.state, isA<ScopeDependencyInitFailed>());
           expect(dependencies.root.isInitialized, false);
           expect(dependencies.root.isFailed, true);
           expect(dependencies.root.isCancelled, false);
@@ -1098,7 +1098,7 @@ void main() {
           expect(failedDependencies(dependencies), [
             'concurrent1/sequential1/concurrent2/sequential2/dep7 failed: Exception: dep7 failed',
           ]);
-          expect(dependencies.root.state, isA<ScopeDependencyFailed>());
+          expect(dependencies.root.state, isA<ScopeDependencyInitFailed>());
           expect(dependencies.root.isInitialized, false);
           expect(dependencies.root.isFailed, true);
           expect(dependencies.root.isCancelled, false);
@@ -1122,7 +1122,7 @@ void main() {
             '    "dep2" disposed',
             '  "dep10" not initialized',
           ]);
-          expect(dependencies.root.state, isA<ScopeDependencyFailed>());
+          expect(dependencies.root.state, isA<ScopeDependencyInitFailed>());
           expect(dependencies.root.isInitialized, false);
           expect(dependencies.root.isFailed, true);
           expect(dependencies.root.isCancelled, false);
@@ -1166,7 +1166,7 @@ void main() {
           expect(failedDependencies(dependencies), [
             'concurrent1/sequential1/concurrent2/sequential2/dep8 failed: Exception: dep8 failed',
           ]);
-          expect(dependencies.root.state, isA<ScopeDependencyFailed>());
+          expect(dependencies.root.state, isA<ScopeDependencyInitFailed>());
           expect(dependencies.root.isInitialized, false);
           expect(dependencies.root.isFailed, true);
           expect(dependencies.root.isCancelled, false);
@@ -1190,7 +1190,7 @@ void main() {
             '    "dep2" disposed',
             '  "dep10" not initialized',
           ]);
-          expect(dependencies.root.state, isA<ScopeDependencyFailed>());
+          expect(dependencies.root.state, isA<ScopeDependencyInitFailed>());
           expect(dependencies.root.isInitialized, false);
           expect(dependencies.root.isFailed, true);
           expect(dependencies.root.isCancelled, false);
@@ -1235,7 +1235,7 @@ void main() {
           expect(failedDependencies(dependencies), [
             'concurrent1/sequential1/dep9 failed: Exception: dep9 failed',
           ]);
-          expect(dependencies.root.state, isA<ScopeDependencyFailed>());
+          expect(dependencies.root.state, isA<ScopeDependencyInitFailed>());
           expect(dependencies.root.isInitialized, false);
           expect(dependencies.root.isFailed, true);
           expect(dependencies.root.isCancelled, false);
@@ -1259,7 +1259,7 @@ void main() {
             '    "dep2" disposed',
             '  "dep10" not initialized',
           ]);
-          expect(dependencies.root.state, isA<ScopeDependencyFailed>());
+          expect(dependencies.root.state, isA<ScopeDependencyInitFailed>());
           expect(dependencies.root.isInitialized, false);
           expect(dependencies.root.isFailed, true);
           expect(dependencies.root.isCancelled, false);
@@ -1305,7 +1305,7 @@ void main() {
           expect(failedDependencies(dependencies), [
             'dep10 failed: Exception: dep10 failed',
           ]);
-          expect(dependencies.root.state, isA<ScopeDependencyFailed>());
+          expect(dependencies.root.state, isA<ScopeDependencyInitFailed>());
           expect(dependencies.root.isInitialized, false);
           expect(dependencies.root.isFailed, true);
           expect(dependencies.root.isCancelled, false);
@@ -1329,7 +1329,7 @@ void main() {
             '    "dep2" disposed',
             '  "dep10" failed: Exception: dep10 failed',
           ]);
-          expect(dependencies.root.state, isA<ScopeDependencyFailed>());
+          expect(dependencies.root.state, isA<ScopeDependencyInitFailed>());
           expect(dependencies.root.isInitialized, false);
           expect(dependencies.root.isFailed, true);
           expect(dependencies.root.isCancelled, false);
@@ -1371,7 +1371,7 @@ void main() {
             'concurrent1/dep4 cancelled with error: Exception: dep4 failed',
             'concurrent1/sequential1/dep3 failed: Exception: dep3 failed',
           ]);
-          expect(dependencies.root.state, isA<ScopeDependencyFailed>());
+          expect(dependencies.root.state, isA<ScopeDependencyInitFailed>());
           expect(dependencies.root.isInitialized, false);
           expect(dependencies.root.isFailed, true);
           expect(dependencies.root.isCancelled, false);
@@ -1395,7 +1395,7 @@ void main() {
             '    "dep2" disposed',
             '  "dep10" not initialized',
           ]);
-          expect(dependencies.root.state, isA<ScopeDependencyFailed>());
+          expect(dependencies.root.state, isA<ScopeDependencyInitFailed>());
           expect(dependencies.root.isInitialized, false);
           expect(dependencies.root.isFailed, true);
           expect(dependencies.root.isCancelled, false);
@@ -1438,7 +1438,7 @@ void main() {
             'concurrent1/dep4 failed: Exception: dep4 failed',
             'concurrent1/sequential1/concurrent2/sequential2/dep7 cancelled with error: Exception: dep7 failed',
           ]);
-          expect(dependencies.root.state, isA<ScopeDependencyFailed>());
+          expect(dependencies.root.state, isA<ScopeDependencyInitFailed>());
           expect(dependencies.root.isInitialized, false);
           expect(dependencies.root.isFailed, true);
           expect(dependencies.root.isCancelled, false);
@@ -1462,7 +1462,7 @@ void main() {
             '    "dep2" disposed',
             '  "dep10" not initialized',
           ]);
-          expect(dependencies.root.state, isA<ScopeDependencyFailed>());
+          expect(dependencies.root.state, isA<ScopeDependencyInitFailed>());
           expect(dependencies.root.isInitialized, false);
           expect(dependencies.root.isFailed, true);
           expect(dependencies.root.isCancelled, false);
@@ -1507,7 +1507,7 @@ void main() {
             'concurrent1/sequential1/concurrent2/dep5 cancelled with error: Exception: dep5 failed',
             'concurrent1/sequential1/concurrent2/sequential2/dep7 cancelled with error: Exception: dep7 failed',
           ]);
-          expect(dependencies.root.state, isA<ScopeDependencyFailed>());
+          expect(dependencies.root.state, isA<ScopeDependencyInitFailed>());
           expect(dependencies.root.isInitialized, false);
           expect(dependencies.root.isFailed, true);
           expect(dependencies.root.isCancelled, false);
@@ -1531,7 +1531,7 @@ void main() {
             '    "dep2" disposed',
             '  "dep10" not initialized',
           ]);
-          expect(dependencies.root.state, isA<ScopeDependencyFailed>());
+          expect(dependencies.root.state, isA<ScopeDependencyInitFailed>());
           expect(dependencies.root.isInitialized, false);
           expect(dependencies.root.isFailed, true);
           expect(dependencies.root.isCancelled, false);
@@ -1574,7 +1574,7 @@ void main() {
             'concurrent1/sequential1/concurrent2/dep5 failed: Exception: dep5 failed',
             'concurrent1/sequential1/concurrent2/dep6 cancelled with error: Exception: dep6 failed',
           ]);
-          expect(dependencies.root.state, isA<ScopeDependencyFailed>());
+          expect(dependencies.root.state, isA<ScopeDependencyInitFailed>());
           expect(dependencies.root.isInitialized, false);
           expect(dependencies.root.isFailed, true);
           expect(dependencies.root.isCancelled, false);
@@ -1598,7 +1598,7 @@ void main() {
             '    "dep2" disposed',
             '  "dep10" not initialized',
           ]);
-          expect(dependencies.root.state, isA<ScopeDependencyFailed>());
+          expect(dependencies.root.state, isA<ScopeDependencyInitFailed>());
           expect(dependencies.root.isInitialized, false);
           expect(dependencies.root.isFailed, true);
           expect(dependencies.root.isCancelled, false);
@@ -1643,7 +1643,7 @@ void main() {
             'concurrent1/sequential1/concurrent2/sequential2/dep7 cancelled with error: Exception: dep7 failed',
             'concurrent1/sequential1/concurrent2/dep6 cancelled with error: Exception: dep6 failed',
           ]);
-          expect(dependencies.root.state, isA<ScopeDependencyFailed>());
+          expect(dependencies.root.state, isA<ScopeDependencyInitFailed>());
           expect(dependencies.root.isInitialized, false);
           expect(dependencies.root.isFailed, true);
           expect(dependencies.root.isCancelled, false);
@@ -1667,7 +1667,7 @@ void main() {
             '    "dep2" disposed',
             '  "dep10" not initialized',
           ]);
-          expect(dependencies.root.state, isA<ScopeDependencyFailed>());
+          expect(dependencies.root.state, isA<ScopeDependencyInitFailed>());
           expect(dependencies.root.isInitialized, false);
           expect(dependencies.root.isFailed, true);
           expect(dependencies.root.isCancelled, false);
@@ -2359,9 +2359,9 @@ void main() {
       handleInitFor(dependencies, async);
 
       final state = dependencies.root.state;
-      expect(state, isA<ScopeDependencyFailed>());
+      expect(state, isA<ScopeDependencyInitFailed>());
       expect(
-        (state as ScopeDependencyFailed).errors(),
+        state.errors(),
         hasLength(1),
         reason:
             'two children failed at once, and the group closed on the '
@@ -2378,7 +2378,7 @@ void main() {
   group('ScopeAutoDependencies failure after the automatic disposal', () {
     // A group is disposed of *because* something under it failed
     // (`ScopeDependencyGroup.disposalRequired` covers
-    // `ScopeDependencyFailed`), and `dispose` used to overwrite that state
+    // `ScopeDependencyInitFailed`), and `dispose` used to overwrite that state
     // with `ScopeDependencyDisposed` — so with the default
     // `disposesOnError` the caller was left with a tree that said nothing
     // about what had gone wrong. A failed *leaf* keeps its errors by the same
@@ -2415,9 +2415,9 @@ void main() {
           'failed: depB',
           reason: 'the disposal must not erase which child failed',
         );
-        expect(dependencies.root.state, isA<ScopeDependencyFailed>());
+        expect(dependencies.root.state, isA<ScopeDependencyInitFailed>());
         expect(
-          (dependencies.root.state as ScopeDependencyAnyFailed).errors(),
+          dependencies.root.state.errors(),
           hasLength(1),
           reason: 'the error list is the only record of the failure',
         );
@@ -3371,7 +3371,7 @@ final class _RetryingForeignDependency implements ScopeDependency {
   _RetryingForeignDependency(this.name, this.failuresBeforeRelease);
 
   @override
-  final int count = 1;
+  final int stepCount = 1;
 
   @override
   ScopeDependencyState get state => _state;
@@ -3428,7 +3428,7 @@ final class _ForeignDependency implements ScopeDependency {
   _ForeignDependency({required this.name, this.throwFromRequired = false});
 
   @override
-  final int count = 1;
+  final int stepCount = 1;
 
   @override
   ScopeDependencyState get state => _state;

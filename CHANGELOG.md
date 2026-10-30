@@ -32,6 +32,16 @@
   observer, and this one reaches nobody else. An override without `@override`
   keeps compiling under the old name and is no longer called. The migration
   table is in `doc/debug.md`.
+* **Breaking:** the states of a dependency are seven final classes and no
+  public groups. `ScopeDependencyFailed` is `ScopeDependencyInitFailed`: it
+  never meant a failed disposal, which is `ScopeDependencyDisposalFailed`,
+  while `isFailed` answers for both. `ScopeDependencyAnySuccess`,
+  `ScopeDependencyAnyFailed` and `ScopeDependencyAnyCancelled` are private —
+  the first held `ScopeDependencyInitial`, which is no success. Their error API
+  moves to `ScopeDependencyState`: `errors()`, `error`, `stackTrace`,
+  `hasErrors` and `errorCount`, which was `count`, answer on every state; where
+  there is nothing to hold, `errors()` is empty and `error` throws, as it did
+  for an empty cancellation. `ScopeDependency.count` is `stepCount`.
 * `LiteScope.of` and `Scope.of` called above a scope with no state yet advise
   `maybeOf`, which answers `null` there, instead of an `isInitialized` that a
   caller below the scope could not reach.

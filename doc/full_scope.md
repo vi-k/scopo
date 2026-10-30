@@ -356,11 +356,13 @@ Whatever the outcome, the container exposes what it built: `root` is the top
 `flattenDependenciesWithErrors()` narrows the walk to the entries that hold a
 real error rather than a propagated `ScopeDependencyException`. Each dependency
 also carries a `ScopeDependencyState` — `ScopeDependencyInitial`,
-`ScopeDependencyInitialized`, `ScopeDependencyFailed`,
+`ScopeDependencyInitialized`, `ScopeDependencyInitFailed`,
 `ScopeDependencyCancelled`, `ScopeDependencyDisposed`,
 `ScopeDependencyNoDisposalRequired`, `ScopeDependencyDisposalFailed` — and the
 `isInitialized`, `isFailed`, `isCancelled` and `isDisposed` shorthands of
-`ScopeDependencyExtension`.
+`ScopeDependencyExtension`. Every state answers `errors()`, `error`,
+`errorCount` and `hasErrors`; only the two failures and a cancellation hold any
+errors.
 
 `ScopeDependencyNoDisposalRequired` is the state of a dependency that set no
 `dep.dispose` and so had nothing to give back: the teardown passes it by, and
@@ -423,13 +425,13 @@ concurrent1/sequential1/dep3: Exception: no network
 An empty `name` means the anonymous root dependency itself failed.
 
 The group that saw the failure stops requiring initialization and switches to
-`ScopeDependencyFailed`, keeping the failure it saw — one of them, even when a
-`concurrent` group had several children fail at once: the first failure cancels
-the arms beside it, so the group keeps the one that ended it. Every dependency
-keeps its own errors, and `flattenDependenciesWithErrors()` walks the tree for
-them. The `stateToString()` of a group summarizes what it holds: the failed
-child by name, and any error that is not itself a `ScopeDependencyException`
-listed as unresolved.
+`ScopeDependencyInitFailed`, keeping the failure it saw — one of them, even
+when a `concurrent` group had several children fail at once: the first failure
+cancels the arms beside it, so the group keeps the one that ended it. Every
+dependency keeps its own errors, and `flattenDependenciesWithErrors()` walks
+the tree for them. The `stateToString()` of a group summarizes what it holds:
+the failed child by name, and any error that is not itself a
+`ScopeDependencyException` listed as unresolved.
 
 ## Disposal, unmount and close
 

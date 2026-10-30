@@ -6,7 +6,7 @@ final class _ScopeDependencyImpl with _ScopeDependencyMixin {
   final String name;
 
   @override
-  final int count = 1;
+  final int stepCount = 1;
 
   final FutureOr<void> Function(ScopeDependencyHandle dep) _init;
   ScopeDependencyHandle? _helper;

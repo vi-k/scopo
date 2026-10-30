@@ -10,11 +10,11 @@ abstract base class ScopeDependencyGroup with _ScopeDependencyMixin {
   /// The children of this group, in declaration order.
   List<ScopeDependency> get dependencies => List.of(_dependencies);
 
-  late final int _count;
+  late final int _stepCount;
 
   ScopeDependencyGroup._(this.name, Iterable<ScopeDependency> dependencies) {
     _dependencies = List.of(dependencies, growable: false);
-    _count = _dependencies.fold<int>(0, (p, e) => p + e.count);
+    _stepCount = _dependencies.fold<int>(0, (p, e) => p + e.stepCount);
 
     // Every child has to be one this tree can take through its states, and a
     // node the previous run already took through them is not. The walk used to
@@ -71,7 +71,7 @@ abstract base class ScopeDependencyGroup with _ScopeDependencyMixin {
   }
 
   @override
-  int get count => _count;
+  int get stepCount => _stepCount;
 
   /// A group holds nothing of its own, so what it needs disposing of is
   /// whatever its children still hold — which is why a group whose
@@ -79,15 +79,15 @@ abstract base class ScopeDependencyGroup with _ScopeDependencyMixin {
   ///
   /// [_ScopeDependencyMixin._isDisposalDone], and not the state alone: a group
   /// that was disposed of because something under it failed keeps saying
-  /// [ScopeDependencyFailed], so that the caller can still read what failed,
-  /// and that must not be mistaken for a disposal that is still due.
-  /// A failed disposal whose children may still hold resources needs another
+  /// [ScopeDependencyInitFailed], so that the caller can still read what
+  /// failed, and that must not be mistaken for a disposal that is still due. A
+  /// failed disposal whose children may still hold resources needs another
   /// walk, including when this group is itself a child of another group.
   @override
   bool get disposalRequired =>
       !_isDisposalDone &&
       (state is ScopeDependencyInitialized ||
-          state is ScopeDependencyFailed ||
+          state is ScopeDependencyInitFailed ||
           state is ScopeDependencyDisposalFailed ||
           state is ScopeDependencyCancelled);
 
@@ -289,7 +289,7 @@ abstract base class ScopeDependencyGroup with _ScopeDependencyMixin {
   @override
   String stateToString() {
     switch (state) {
-      case final ScopeDependencyAnyFailed state:
+      case final _ScopeDependencyAnyFailed state:
         final failedChildren = state
             .errors()
             .where((e) => e.error is ScopeDependencyException)

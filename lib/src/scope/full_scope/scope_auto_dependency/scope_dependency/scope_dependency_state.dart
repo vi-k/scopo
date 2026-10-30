@@ -1,11 +1,40 @@
 part of '../../../scope.dart';
 
+/// Where a [ScopeDependency] is in its lifecycle.
+///
+/// The seven final classes below are the states. A `switch` over them is
+/// exhaustive; the questions asked most often — succeeded, failed, cancelled —
+/// have getters on [ScopeDependencyExtension].
+///
 /// {@category Scope}
 sealed class ScopeDependencyState {
   const ScopeDependencyState();
 
   /// The state as it appears in a tree dump.
   String get description;
+
+  /// The first error this state holds.
+  ///
+  /// Throws a [StateError] when it holds none — see [hasErrors].
+  Object get error => _throwNoErrors();
+
+  /// The stack trace of [error].
+  ///
+  /// Throws a [StateError] when this state holds no error — see [hasErrors].
+  StackTrace get stackTrace => _throwNoErrors();
+
+  /// How many errors this state holds.
+  ///
+  /// Zero for a state that holds none. Only [ScopeDependencyInitFailed],
+  /// [ScopeDependencyDisposalFailed] and [ScopeDependencyCancelled] hold any,
+  /// and a cancellation may hold none.
+  int get errorCount => 0;
+
+  /// Whether this state holds an error.
+  bool get hasErrors => false;
+
+  /// Returns a copy of the errors this state holds, oldest first.
+  List<AsyncError> errors() => <AsyncError>[];
 
   @override
   String toString() => description;
@@ -14,9 +43,8 @@ sealed class ScopeDependencyState {
   static Never _throwNoErrors() => throw StateError('No errors');
 }
 
-/// {@category Scope}
-sealed class ScopeDependencyAnySuccess extends ScopeDependencyState {
-  const ScopeDependencyAnySuccess();
+sealed class _ScopeDependencyAnySuccess extends ScopeDependencyState {
+  const _ScopeDependencyAnySuccess();
 }
 
 sealed class _ScopeDependencyWithErrors extends ScopeDependencyState {
@@ -27,24 +55,28 @@ sealed class _ScopeDependencyWithErrors extends ScopeDependencyState {
 
   const _ScopeDependencyWithErrors._(this._errors);
 
+  @override
   Object get error =>
       _errors.firstOrNull?.error ?? ScopeDependencyState._throwNoErrors();
 
+  @override
   StackTrace get stackTrace =>
       _errors.firstOrNull?.stackTrace ?? ScopeDependencyState._throwNoErrors();
 
-  int get count => _errors.length;
+  @override
+  int get errorCount => _errors.length;
 
+  @override
   bool get hasErrors => _errors.isNotEmpty;
 
-  /// Returns a copy of the error list.
+  @override
   List<AsyncError> errors() => List.of(_errors);
 
   _ScopeDependencyWithErrors addError(Object error, StackTrace stackTrace);
 
   @override
   String toString({bool? showCount, bool showErrors = true}) {
-    final count = this.count;
+    final count = errorCount;
     showCount ??= count > 1;
     return '$description'
         '${showCount ? ' ($count ${count == 1 ? 'error' : 'errors'})' : ''}'
@@ -53,27 +85,25 @@ sealed class _ScopeDependencyWithErrors extends ScopeDependencyState {
   }
 }
 
-/// {@category Scope}
-sealed class ScopeDependencyAnyFailed extends _ScopeDependencyWithErrors {
-  ScopeDependencyAnyFailed(super.error, super.stackTrace);
+sealed class _ScopeDependencyAnyFailed extends _ScopeDependencyWithErrors {
+  _ScopeDependencyAnyFailed(super.error, super.stackTrace);
 
-  const ScopeDependencyAnyFailed._(super._errors) : super._();
+  const _ScopeDependencyAnyFailed._(super._errors) : super._();
 }
 
-/// {@category Scope}
-sealed class ScopeDependencyAnyCancelled extends _ScopeDependencyWithErrors {
-  ScopeDependencyAnyCancelled([Object? error, StackTrace? stackTrace])
+sealed class _ScopeDependencyAnyCancelled extends _ScopeDependencyWithErrors {
+  _ScopeDependencyAnyCancelled([Object? error, StackTrace? stackTrace])
     : super._(
         error == null
             ? _emptyList<AsyncError>()
             : _singleList(AsyncError(error, stackTrace)),
       );
 
-  const ScopeDependencyAnyCancelled._(super._errors) : super._();
+  const _ScopeDependencyAnyCancelled._(super._errors) : super._();
 }
 
 /// {@category Scope}
-final class ScopeDependencyInitial extends ScopeDependencyAnySuccess {
+final class ScopeDependencyInitial extends _ScopeDependencyAnySuccess {
   /// Creates the state of a dependency not started yet.
   const ScopeDependencyInitial();
 
@@ -82,31 +112,33 @@ final class ScopeDependencyInitial extends ScopeDependencyAnySuccess {
 }
 
 /// {@category Scope}
-final class ScopeDependencyFailed extends ScopeDependencyAnyFailed {
+final class ScopeDependencyInitFailed extends _ScopeDependencyAnyFailed {
   /// Creates the state of a dependency whose initialization failed.
-  ScopeDependencyFailed(super.error, super.stackTrace);
+  ScopeDependencyInitFailed(super.error, super.stackTrace);
 
-  ScopeDependencyFailed._(super._errors) : super._();
+  ScopeDependencyInitFailed._(super._errors) : super._();
 
   @override
   String get description => 'failed';
 
   @override
-  ScopeDependencyFailed addError(Object error, StackTrace stackTrace) =>
-      ScopeDependencyFailed._(_errors.withAdded(AsyncError(error, stackTrace)));
+  ScopeDependencyInitFailed addError(Object error, StackTrace stackTrace) =>
+      ScopeDependencyInitFailed._(
+        _errors.withAdded(AsyncError(error, stackTrace)),
+      );
 }
 
 /// {@category Scope}
-final class ScopeDependencyCancelled extends ScopeDependencyAnyCancelled {
+final class ScopeDependencyCancelled extends _ScopeDependencyAnyCancelled {
   /// Creates the state of a dependency whose initialization was cancelled.
   ScopeDependencyCancelled([super.error, super.stackTrace]);
 
   const ScopeDependencyCancelled._(super._errors) : super._();
 
   @override
-  String get description => count == 0
+  String get description => errorCount == 0
       ? 'cancelled'
-      : 'cancelled with ${count == 1 ? 'error' : 'errors'}';
+      : 'cancelled with ${errorCount == 1 ? 'error' : 'errors'}';
 
   @override
   ScopeDependencyCancelled addError(Object error, StackTrace stackTrace) =>
@@ -116,7 +148,7 @@ final class ScopeDependencyCancelled extends ScopeDependencyAnyCancelled {
 }
 
 /// {@category Scope}
-final class ScopeDependencyInitialized extends ScopeDependencyAnySuccess {
+final class ScopeDependencyInitialized extends _ScopeDependencyAnySuccess {
   /// Creates the state of an initialized dependency.
   const ScopeDependencyInitialized();
 
@@ -125,7 +157,7 @@ final class ScopeDependencyInitialized extends ScopeDependencyAnySuccess {
 }
 
 /// {@category Scope}
-final class ScopeDependencyDisposalFailed extends ScopeDependencyAnyFailed {
+final class ScopeDependencyDisposalFailed extends _ScopeDependencyAnyFailed {
   /// Creates the state of a dependency whose disposal failed.
   ScopeDependencyDisposalFailed(super.error, super.stackTrace);
 
@@ -149,7 +181,7 @@ final class ScopeDependencyDisposalFailed extends ScopeDependencyAnyFailed {
 /// too, and the state is what says the difference.
 ///
 /// {@category Scope}
-final class ScopeDependencyDisposed extends ScopeDependencyAnySuccess {
+final class ScopeDependencyDisposed extends _ScopeDependencyAnySuccess {
   /// Creates the state of a disposed dependency.
   const ScopeDependencyDisposed();
 

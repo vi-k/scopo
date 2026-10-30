@@ -1485,7 +1485,7 @@ final class _ContextKeeper implements ScopeDependency {
   final String name = '';
 
   @override
-  final int count = 1;
+  final int stepCount = 1;
 
   @override
   ScopeDependencyState get state => _state;
