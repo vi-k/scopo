@@ -1,8 +1,9 @@
 # Проход по именам перед 1.0
 
-> **Состояние на 2026-10-30:** открыт, ждёт решений владельца. Код не тронут;
-> находки разобраны, у каждой предложение и цена. Вопросы владельцу заданы
-> одной пачкой в разговоре 2026-10-30.
+> **Состояние на 2026-10-31:** волны 1–4 «Предлагаемого порядка» сделаны
+> и влиты в `main`: `3b0b890`, `b1e3cd1`, `97ba21e`, `309e05a`, выходят
+> в 0.22.0. Вердикты — в конце каждой сделанной находки. Пятая волна
+> открыта: Б5–Б9, В1–В4, Г3, Г5–Г7 владелец не одобрил, они ждут решения.
 > **Что это:** второй сплошной проход по публичным именам пакета — перед
 > заморозкой API в 1.0.0: что врёт, что спорит с соседним, что публично зря.
 > **Связанные записи:** `2026-08-18-naming-review.md` (первый проход, его
@@ -51,6 +52,15 @@ N13 (строители контроллера без `progress`). Префик�
 подсказок переписать. Цена (только смысл контекста): около 11 / 4 / 0 / 13 / 0
 и 6 в `ide/`.
 
+**Вердикт: исправлено, с уточнением к находке.** Волна 2, `b1e3cd1`.
+`AsyncScopeContext.isInitialized` стал `isReady`; `isInitialized` состояния
+`LiteScope` и `Scope` и геттер `ScopeDependencyExtension.isInitialized`
+остались. Пять подсказок и сообщение `_stateOrThrow` советуют теперь
+не переименованный геттер, а `maybeOf`: над скоупом без состояния он отвечает
+`null`, а `isInitialized` состояния, которого ещё нет, читающему снизу
+не достать — о том и была находка. Шаблоны `ide/` и их копия в `.vscode/`
+поправлены тем же коммитом.
+
 **А2. Хуки наблюдателя: `onReady` приходит до готовности, `onDispose`
 и `onDisposed` различает одна буква.** `scope_observer.dart`. `onReady` зовётся
 сразу (`async_scope_core.dart:334`), а `AsyncScopeReady` доходит до модели
@@ -72,6 +82,17 @@ N13 (строители контроллера без `progress`). Префик�
 со словом ядра, хуков самих по себе около 12 / 9 / 1 / 20 / 0 и 3 / 2 / 1 / 5 /
 0.
 
+**Вердикт: исправлено.** Волна 3, `97ba21e`. Имена как предложено:
+`onInitStarted`, `onInitialized`, `onDisposalStarted`,
+`onDisposalStepFinished`; `onDisposed` и `onProgress` остались. Строки
+`ScopePrintObserver` не менялись — они и раньше говорили `initialize…`,
+`initialized`, `dispose…`. Дартдок `onInitialized` теперь говорит, что для
+скоупа событие приходит до готовности. `onInitialized` совпал по имени с хуком
+состояний `LiteScope` и `Scope`; классы разные, и одно имя у обоих называет
+одно событие — конец инициализации. В `doc/debug.md` и зеркале — раздел «Coming
+from 0.21.x» с таблицей старых и новых имён, в том числе для А8.
+`ctx.onDispose` и `ref.onDispose` не тронуты.
+
 **А3. `compare:` у `select` и `ListenableSelector` возвращает `bool`, и `true`
 значит «другое».** `select.dart:41`, `listenable_selector.dart:33`. В Dart
 `compare` — это `Comparator`, отдающий `int` (`List.sort`); здесь два дартдока
@@ -79,6 +100,9 @@ N13 (строители контроллера без `progress`). Префик�
 в пакете уже есть и называется `ScopeStateNotifier.shouldNotify` — её
 переименовали из `equals` в августе (N8) ровно по этой причине. Предлагаю
 `compare:` → `shouldNotify:`. Цена: 4 / 2 / 0 / 4 / 0.
+
+**Вердикт: исправлено.** Волна 2, `b1e3cd1`. `compare:` стал `shouldNotify:`
+у `select` и `ListenableSelector`, с тем же знаком.
 
 **А4. `ScopeDependencyException.name` хранит путь.**
 `scope_dependency_exception.dart:9`; дартдок поля: «The path of the
@@ -88,11 +112,17 @@ dependency». У `ScopeAutoDependenciesProgress` есть и `path`, и `name`, 
 «the `name` (the path above)». Предлагаю `path`. Цена: доступов к полю —
 несколько в `lib` и `test` (сам тип 23 / 4 / 0 / 28 / 2).
 
+**Вердикт: исправлено.** Волна 2, `b1e3cd1`. Поле стало `path`.
+Деструктуризация `(:final name)` в `scope_dependency_group.dart` после
+механической замены отдавала бы не то поле; поправлена руками.
+
 **А5. `runOutsideFrame` откладывает не до конца кадра, а до конца сборки.**
 `is_building.dart:56`. Откладывает только когда `isBuilding` — фаза
 `persistentCallbacks`, перестройка скоупа или сборка `runApp`;
 из `transientCallbacks` и `postFrameCallbacks` действие идёт сразу, то есть
 внутри кадра. Предлагаю `runOutsideBuild`. Цена: 7 / 1 / 0 / 2 / 1.
+
+**Вердикт: исправлено.** Волна 2, `b1e3cd1`. `runOutsideBuild`.
 
 **А6. `ScopeDependencyFailed` — только сбой инициализации, а `isFailed` —
 любой.** `scope_dependency_state.dart:85`. Рядом есть
@@ -103,6 +133,11 @@ dependency». У `ScopeAutoDependenciesProgress` есть и `path`, и `name`, 
 и `ScopeDependencyCancelled` → `ScopeDependencyInitCancelled` — отменённым
 бывает только `init` (`scope_dependency_mixin.dart:328`). Цена: 14 / 2 / 0 / 34
 / 0 и 11 / 1 / 0 / 0 / 0.
+
+**Вердикт: исправлено частично.** Волна 4, `309e05a`. `ScopeDependencyFailed`
+стал `ScopeDependencyInitFailed`. Необязательная часть,
+`ScopeDependencyCancelled` → `ScopeDependencyInitCancelled`, не взята: владелец
+одобрил только первую.
 
 **А7. `ScopeDependencyAnySuccess` включает «ещё не начиналось».**
 `scope_dependency_state.dart:18`. Его листья — `Initial`, `Initialized`,
@@ -121,6 +156,15 @@ dependency». У `ScopeAutoDependenciesProgress` есть и `path`, и `name`, 
 публичными: свою `ScopeDependency` снаружи строить можно (в тестах шесть таких
 классов), и им нужны конструкторы листьев.
 
+**Вердикт: исправлено, с уточнением к находке.** Волна 4, `309e05a`. Три группы
+стали приватными, но не исчезли: внутри на них стоят исчерпывающие `switch`
+состояний. API ошибок переехал на `ScopeDependencyState` — к четырём членам
+находки добавился `stackTrace`, а `count` стал `errorCount` (Г4). Состояние без
+ошибок отвечает пустым `errors()`, нулём и `false`; `error` и `stackTrace`
+бросают `StateError`, как и раньше у пустой отмены. Геттеры расширения больше
+не называют групп: `isFailed` — исчерпывающий `switch` по листьям, остальные —
+проверка `is`. Новый тест `test/scope_dependency_state_test.dart`.
+
 **А8. `ScopeErrorRoute.observer` значит «только наблюдатель».**
 `scope_observer.dart:79`. Наблюдатель получает любой маршрут, а этот значит,
 что больше никто. Каноническая строка
@@ -129,6 +173,10 @@ README:904) читается как «если не направлено наб�
 `observerOnly`. `cancellation` — тоже не маршрут, а «не сбой», но и он доходит
 только до наблюдателя; оставить с его дартдоком. Цена `observer`: 7 / 2 / 1 /
 17 / 0.
+
+**Вердикт: исправлено.** Волна 3, `97ba21e`. `observerOnly`. Кроме полного
+имени поправлено и голое `observer`, которым маршрут назван в прозе и таблице
+`doc/debug.md`, в README и в зеркалах.
 
 ## Б. Публично зря
 
@@ -139,10 +187,16 @@ README:904) читается как «если не направлено наб�
 `Stream<AsyncScopeInitState>`. Предлагаю удалить; `switch` по четырём листьям
 остаётся исчерпывающим. Цена: 5 / 0 / 0 / 0 / 0.
 
+**Вердикт: исправлено.** Волна 1, `3b0b890`. Тип удалён, `AsyncScopeProgress`
+и `AsyncScopeReady` наследуют `AsyncScopeState` напрямую.
+
 **Б2. `ScopeModelInheritedElement` — сирота.** `scope_model/base.dart:17`.
 Повторяет то, что `ScopeModelElementBase` и так получает
 от `ScopeInheritedElement` и `ScopeModelContext`; у других семейств
 `XInheritedElement` нет. Предлагаю удалить. Цена: 2 / 0 / 0 / 0 / 0.
+
+**Вердикт: исправлено.** Волна 1, `3b0b890`. `ScopeModelElementBase` реализует
+`ScopeModelContext` сам.
 
 **Б3. `ScopeDependencyMixin` снаружи не подмешать.**
 `scope_dependency_mixin.dart:48`. Объявляет приватные абстрактные `_runInit`
@@ -152,11 +206,18 @@ README:904) читается как «если не направлено наб�
 0 / 0 / 2 (комментарии) / 0. Туда же — публичный статический
 `ScopeDependencyState.throwNoErrors`, нужный только внутри: приватным.
 
+**Вердикт: исправлено.** Волна 1, `3b0b890`. `_ScopeDependencyMixin` без
+`{@category}`; `throwNoErrors` стал `_throwNoErrors`.
+
 **Б4. `AsyncScopeModel` — пустой интерфейс.** `async_scope_model.dart:14`,
 `implements ScopeStateModel<AsyncScopeState> {}`. Его цель «чтобы снаружи
 нельзя было писать» уже выполнена: `ScopeStateModel` только для чтения.
 Предлагаю влить в `ScopeStateModel<AsyncScopeState>` в двух сигнатурах
 (`AsyncScopeCore`, `AsyncScopeElementBase.model`). Цена: 7 / 0 / 0 / 0 / 0.
+
+**Вердикт: исправлено.** Волна 1, `3b0b890`. Интерфейс удалён вместе
+с `_AsyncScopeModelView`; в файле остался приватный нотифаер, а модель
+асинхронного скоупа — `ScopeStateModel<AsyncScopeState>`.
 
 **Б5. Typedef'ы `Scope`: три строителя не совпадают ни с одним параметром.**
 `full_scope/scope_base.dart:9, 17, 25, 32`. `ScopeWaitingBuilder`,
@@ -289,10 +350,15 @@ ready branch, and this scope is ${model.state}» — оба смысла в од
 be rebuilt on every notification». Предлагаю `rebuildsOnNotify`. Цена: 5 / 1 /
 0 / 0 / 0.
 
+**Вердикт: исправлено.** Волна 2, `b1e3cd1`. `rebuildsOnNotify`.
+
 **Г2. `autoDisposeOnError` читается приказом.**
 `scope_auto_dependency.dart:28`. Effective Dart: булево свойство —
 неповелительный глагольный оборот. Предлагаю `disposesOnError`. Цена: 8 / 4 / 0
 / 20 / 0.
+
+**Вердикт: исправлено.** Волна 2, `b1e3cd1`. `disposesOnError`, вместе
+с текстами сообщений.
 
 **Г3. `AsyncScopeError` — состояние, названное как `Error`.**
 `async_scope_state.dart:48`. В Dart тип `…Error` — подкласс `Error`, ошибка
@@ -307,6 +373,9 @@ be rebuilt on every notification». Предлагаю `rebuildsOnNotify`. Це�
 (`scope_dependency.dart:29`), у групп с ошибками — число ошибок
 (`scope_dependency_state.dart:36`). Предлагаю `stepCount` и `errorCount`;
 вторая половина уходит сама, если принять А7. Цена: около 5 в `lib`.
+
+**Вердикт: исправлено.** Волна 4, `309e05a`. `ScopeDependency.count` стал
+`stepCount`, число ошибок — `errorCount` на `ScopeDependencyState`.
 
 **Г5. `ctx.progress(x)` — существительное у метода с побочным действием.**
 `scope_init_context.dart:21`; вызов может бросить `Cancelled`, и аргумент тоже
@@ -360,13 +429,21 @@ teardown».** `scope_observer.dart:41`, `doc/debug.md:267`. Код ждёт ег
 таймаута. Описать, что он делает и какой пользовательский код падает под этой
 фазой.
 
+**Вердикт: исправлено.** Волна 1, `3b0b890`. Дартдок и строка таблицы
+в `doc/debug.md` и зеркале называют, что шаг делает.
+
 **Д2. Дартдок `ScopeDependencyExtension.isCancelled`: «initialization or the
 disposal was cancelled».** `scope_dependency.dart:84`. Отменённым бывает только
 `init` (`scope_dependency_mixin.dart:328`).
 
+**Вердикт: исправлено.** Волна 1, `3b0b890`. «Whether the initialization was
+cancelled. A disposal is never cancelled…».
+
 **Д3. Сообщение `ScopeDependencyHandle`: `'helper already disposed'`.**
 `scope_dependency_handle.dart:11` — слово от `DepHelper`, переименованного
 в августе (N4).
+
+**Вердикт: исправлено.** Волна 1, `3b0b890`. `'dependency already disposed'`.
 
 ## Предлагаемый порядок
 
