@@ -7,7 +7,7 @@ import 'package:flutter/widgets.dart';
 /// inside an `assert`, so a release build has nothing but the frame phase to go
 /// by — and a build driven with no frame in progress, which is how `runApp`
 /// builds the first tree, looks there like no build at all. An action deferred
-/// by [IsBuildingExtension.runOutsideFrame] then ran inside the very build it
+/// by [IsBuildingExtension.runOutsideBuild] then ran inside the very build it
 /// was being kept out of, and marking an element dirty from there is refused in
 /// silence: an `AsyncScope` whose initialization failed before its first
 /// `await` showed an empty subtree in release where debug showed
@@ -36,7 +36,7 @@ extension IsBuildingExtension on SchedulerBinding {
   /// Whether a build is running right now.
   ///
   /// Anything that marks an element dirty is unsafe in this phase, which
-  /// is what [runOutsideFrame] exists for.
+  /// is what [runOutsideBuild] exists for.
   ///
   /// The phase is not the whole answer: `BuildOwner.buildScope` also runs with
   /// no frame in progress, which is how `runApp` builds the first tree, and
@@ -52,8 +52,9 @@ extension IsBuildingExtension on SchedulerBinding {
       scopeIsRebuilding ||
       (WidgetsBinding.instance.buildOwner?.debugBuilding ?? false);
 
-  /// Runs [action] now, or after the current frame when one is being built.
-  void runOutsideFrame(void Function() action) {
+  /// Runs [action] now, or after the current frame when a build is under
+  /// way — see [isBuilding].
+  void runOutsideBuild(void Function() action) {
     if (isBuilding) {
       SchedulerBinding.instance
         // The build being waited for may be one `runApp` drives outside a

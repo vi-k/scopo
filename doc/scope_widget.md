@@ -176,7 +176,7 @@ Three cases override the notify-only path, and each is deliberate.
 and a different `buildChild()`, so the subtree is rebuilt even if a notify-only
 rebuild was already pending.
 
-**The scope declared `autoSelfDependence`.** An element that rebuilds its own
+**The scope declared `rebuildsOnNotify`.** An element that rebuilds its own
 subtree as its state advances cannot use the shortcut, because its `buildChild`
 returns a different branch each time. `AsyncScope` sets it for good.
 `LiteScope` is more precise: it starts with the flag on, while the waiting,

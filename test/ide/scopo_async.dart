@@ -24,7 +24,7 @@ final class ConnectionScope extends AsyncScopeBase<ConnectionScope> {
 
   const ConnectionScope({super.key, required this.builder});
 
-  /// The state of the scope: `state`, `isInitialized`, `hasError`.
+  /// The state of the scope: `state`, `isReady`, `hasError`.
   ///
   /// `listen` is a real choice here, unlike in the data and controller
   /// families: what comes back is the state, and the state changes —
@@ -43,7 +43,7 @@ final class ConnectionScope extends AsyncScopeBase<ConnectionScope> {
 
   /// One value of the scope, subscribed to on its own.
   static bool isReadyOf(BuildContext context) =>
-      select(context, (scope) => scope.isInitialized);
+      select(context, (scope) => scope.isReady);
 
   @override
   Future<void> initScope(BuildContext context, ScopeInitContext ctx) async {

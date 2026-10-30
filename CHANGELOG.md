@@ -11,6 +11,21 @@
   abstract members, so it could not be mixed in outside the package; a
   dependency of your own implements `ScopeDependency`, as before.
   `ScopeDependencyState.throwNoErrors` was an internal helper.
+* **Breaking:** six names now say what they do.
+  `AsyncScopeContext.isInitialized` is `isReady`: it is true once the scope is
+  `AsyncScopeReady`. The state of a `LiteScope` or a `Scope` keeps its own
+  `isInitialized`, which means that its `initStateAsync` has finished — a later
+  moment, and the reason the two names had to part. `select` and
+  `ListenableSelector` take `shouldNotify:` instead of `compare:`, with the
+  same sign as before and as `ScopeStateNotifier.shouldNotify`: `true` means
+  the value changed. `ScopeDependencyException.name` is `path`, which is what
+  it always held. `runOutsideFrame` is `runOutsideBuild`: it waits for a
+  build, not for a frame. `ScopeWidgetElementBase.autoSelfDependence` is
+  `rebuildsOnNotify`, and `ScopeAutoDependencies.autoDisposeOnError` is
+  `disposesOnError`.
+* `LiteScope.of` and `Scope.of` called above a scope with no state yet advise
+  `maybeOf`, which answers `null` there, instead of an `isInitialized` that a
+  caller below the scope could not reach.
 * `ScopePhase.preparationForDisposal` is documented as what it is: reading
   the scope's `debugLabel` and timeout callbacks and giving up the wait for
   its `scopeKey`, not "the synchronous half of the teardown".

@@ -9,11 +9,11 @@ void main() {
     expect(CompareUtils.notIdentical(a, Object()), isTrue);
   });
 
-  // The four are passed as `compare:`, where the question is "did it change?"
-  // — so a pair that answers it backwards turns a filter into its opposite
-  // and nothing in the tree looks wrong until a value stops arriving. Cheap
-  // to write down, and `notEquals` did read as `==` in a mutation the suite
-  // never noticed.
+  // The four are passed as `shouldNotify:`, where the question is "did it
+  // change?" — so a pair that answers it backwards turns a filter into its
+  // opposite and nothing in the tree looks wrong until a value stops
+  // arriving. Cheap to write down, and `notEquals` did read as `==` in a
+  // mutation the suite never noticed.
   test('CompareUtils answers each question the way its name reads', () {
     expect(CompareUtils.equals('a', 'a'), isTrue);
     expect(CompareUtils.equals('a', 'b'), isFalse);

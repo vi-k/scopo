@@ -340,7 +340,7 @@ mixin _ScopeDependencyMixin implements ScopeDependency, ScopeObservable {
   /// something under it failed — [ScopeDependencyGroup.disposalRequired]
   /// covers [ScopeDependencyFailed] — so overwriting its state threw that
   /// record away exactly where it was needed, and with the default
-  /// [ScopeAutoDependencies.autoDisposeOnError] that happened before the
+  /// [ScopeAutoDependencies.disposesOnError] that happened before the
   /// caller ever saw it. A failed *leaf* keeps its errors by the same rule, and
   /// it is disposed of all the same: what decides that is whether the
   /// initializer took anything, not how it ended
@@ -554,7 +554,7 @@ mixin _ScopeDependencyMixin implements ScopeDependency, ScopeObservable {
       // a doubled '/'.
       Error.throwWithStackTrace(
         ScopeDependencyException(
-          name.isEmpty ? error.name : '$name/${error.name}',
+          name.isEmpty ? error.path : '$name/${error.path}',
           error.error,
           error.stackTrace,
         ),

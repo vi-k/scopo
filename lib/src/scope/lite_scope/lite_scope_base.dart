@@ -227,8 +227,8 @@ abstract base class LiteScope<
   /// created in the ready branch, so a scope still waiting for its `scopeKey`,
   /// still initializing, failed, or taken down by `close()` has none to give.
   /// The message says which of the two it was, and what state the scope was
-  /// in — read it from below `buildOnReady()`, or check `isInitialized`
-  /// first.
+  /// in — read it from below `buildOnReady()`, or use [maybeOf], which
+  /// answers `null` instead of throwing.
   static S of<W extends LiteScope<W, S>, S extends LiteScopeState<W, S>>(
     BuildContext context,
   ) => ScopeContext.of<W, _LiteScopeElement<W, S>>(

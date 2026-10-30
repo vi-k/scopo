@@ -23,7 +23,7 @@ extension ListenableSelectExtension<L extends Listenable> on L {
   /// ```
   ///
   /// By default a value counts as changed when it is not [Object.==] to the
-  /// previous one. [compare] replaces that test, and answers the same
+  /// previous one. [shouldNotify] replaces that test, and answers the same
   /// question: `true` means the value changed and the listener runs.
   ///
   /// Example:
@@ -32,13 +32,13 @@ extension ListenableSelectExtension<L extends Listenable> on L {
   /// final subscription = listenable.select(
   ///     (listenable) => listenable.data,
   ///     (listenable, data) => print(data),
-  ///     compare: (previous, current) => !identical(previous, current),
+  ///     shouldNotify: (previous, current) => !identical(previous, current),
   /// );
   /// ```
   ListenableSelectSubscription<T> select<T extends Object?>(
     T Function(L listenable) selector,
     void Function(L listenable, T value) listener, {
-    bool Function(T previous, T current)? compare,
+    bool Function(T previous, T current)? shouldNotify,
   }) {
     late final ListenableSelectSubscription<T> subscription;
 
@@ -51,8 +51,8 @@ extension ListenableSelectExtension<L extends Listenable> on L {
     // model said `2`, the subscription said the value it had started from, and
     // the next notification carrying `2` was filtered out as already
     // delivered. Counted rather than compared with what stands there now,
-    // because comparing means calling the caller's `compare` from inside the
-    // failure path, where a second throw would replace the first.
+    // because comparing means calling the caller's `shouldNotify` from inside
+    // the failure path, where a second throw would replace the first.
     var deliveries = 0;
 
     void handle() {
@@ -66,7 +66,7 @@ extension ListenableSelectExtension<L extends Listenable> on L {
       }
 
       final newValue = selector(this);
-      if (compare?.call(subscription._value, newValue) ??
+      if (shouldNotify?.call(subscription._value, newValue) ??
           subscription._value != newValue) {
         // Written before the listener runs and taken back if it fails. Before,
         // because a listener is free to notify again and the value it has

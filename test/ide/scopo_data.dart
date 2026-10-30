@@ -43,7 +43,7 @@ final class DbScope extends AsyncDataScopeBase<DbScope, Database> {
       AsyncDataScopeBase.of<DbScope, Database>(context, listen: false).data;
 
   // No `select` here on purpose. It would subscribe to the state of the
-  // scope — `hasData`, `isInitialized` — and a widget under the ready
+  // scope — `hasData`, `isReady` — and a widget under the ready
   // branch is past all of those. To follow something *inside* the value,
   // make the value a `Listenable` and wrap the widget in a
   // `ListenableSelector`, or put a `ScopeNotifier` under this scope.

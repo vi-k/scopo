@@ -187,7 +187,7 @@ void main() {
     });
 
     testWidgets(
-      'runOutsideFrame holds an action back until the build is over',
+      'runOutsideBuild holds an action back until the build is over',
       (tester) async {
         final order = <String>[];
         late StateSetter rebuild;
@@ -196,7 +196,7 @@ void main() {
           StatefulBuilder(
             builder: (context, setState) {
               rebuild = setState;
-              SchedulerBinding.instance.runOutsideFrame(
+              SchedulerBinding.instance.runOutsideBuild(
                 () => order.add('after'),
               );
               order.add('build');

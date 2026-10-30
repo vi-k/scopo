@@ -41,7 +41,7 @@ Object _currentBuildPass() {
     // pass that never ends.
     //
     // Asked for only when nothing else will bring a frame, unlike the
-    // neighbouring `runOutsideFrame`, which asks unconditionally: what that one
+    // neighbouring `runOutsideBuild`, which asks unconditionally: what that one
     // defers marks an element dirty and needs a frame of its own, while this
     // callback resets a field. Asking from inside a frame would order one more,
     // empty, after every frame that built anything.
@@ -343,7 +343,7 @@ abstract base class ScopeWidgetElementBase<
   ///
   /// A scope whose [buildChild] returns a different branch as its state
   /// advances sets this; the rest keep the notify-only rebuild.
-  bool get autoSelfDependence => false;
+  bool get rebuildsOnNotify => false;
 
   @override
   void init() {}
@@ -600,8 +600,8 @@ abstract base class ScopeWidgetElementBase<
   /// and this method leaves the child element alone.
   ///
   /// The subtree is rebuilt anyway when:
-  /// 1. [autoSelfDependence] - the element declared an automatic dependency on
-  ///    itself (used by initializers during the initialization phases).
+  /// 1. [rebuildsOnNotify] - the element rebuilds its subtree on every
+  ///    notification (used by initializers during the initialization phases).
   /// 2. [_forceRebuild] - the subtree must be rebuilt because the parent is
   ///    updating the element or the element depends on itself.
   @override
@@ -634,7 +634,7 @@ abstract base class ScopeWidgetElementBase<
         // scope then stays on the error for the rest of its life: the next
         // notification finds a cache and does not even build.
         _rebuildIsNotifyOnly =
-            !autoSelfDependence && !_forceRebuild && _builtChild != null;
+            !rebuildsOnNotify && !_forceRebuild && _builtChild != null;
       }
 
       super.performRebuild();

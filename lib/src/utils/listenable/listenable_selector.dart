@@ -30,7 +30,7 @@ final class ListenableSelector<L extends Listenable, T extends Object?>
   ///
   /// `true` means changed, so the comparison for a value that is replaced
   /// rather than mutated is `CompareUtils.notIdentical`.
-  final bool Function(T previous, T current)? compare;
+  final bool Function(T previous, T current)? shouldNotify;
 
   /// Builds the subtree from the selected value.
   final Widget Function(
@@ -50,7 +50,7 @@ final class ListenableSelector<L extends Listenable, T extends Object?>
     super.key,
     required this.listenable,
     required this.selector,
-    this.compare,
+    this.shouldNotify,
     required this.builder,
     this.child,
   });
@@ -79,7 +79,7 @@ final class _ListenableSelectorState<L extends Listenable, T extends Object?>
   void didUpdateWidget(ListenableSelector<L, T> oldWidget) {
     super.didUpdateWidget(oldWidget);
 
-    // The selector and the compare are as much a part of what this widget
+    // The selector and `shouldNotify` are as much a part of what this widget
     // watches as the listenable is: a parent that hands over a new one is
     // asking for something else to be selected, or for a different answer to
     // "did it change?". Replacing them only together with the source left the
@@ -97,7 +97,7 @@ final class _ListenableSelectorState<L extends Listenable, T extends Object?>
     // and never disposed of, and the next configuration builds a fresh one.
     if (!identical(widget.listenable, oldWidget.listenable) ||
         !identical(widget.selector, oldWidget.selector) ||
-        !identical(widget.compare, oldWidget.compare)) {
+        !identical(widget.shouldNotify, oldWidget.shouldNotify)) {
       _subscription.cancel();
       _subscribe();
     }
@@ -108,7 +108,7 @@ final class _ListenableSelectorState<L extends Listenable, T extends Object?>
       if (mounted) {
         setState(() {});
       }
-    }, compare: widget.compare);
+    }, shouldNotify: widget.shouldNotify);
   }
 
   @override

@@ -432,7 +432,7 @@ void main() {
         (model) => model.value,
         (model, value) => calls++,
         // Inverted on purpose: reports only while the value stays the same.
-        compare: (previous, current) => previous == current,
+        shouldNotify: (previous, current) => previous == current,
       );
 
       // ignore: cascade_invocations
@@ -492,7 +492,7 @@ void main() {
       notifier.select(
         (model) => model.box,
         (model, box) => seen.add(box),
-        compare: CompareUtils.notIdentical,
+        shouldNotify: CompareUtils.notIdentical,
       );
 
       // ignore: cascade_invocations
@@ -705,7 +705,7 @@ void main() {
             child: ListenableSelector<_Model, int>(
               listenable: model,
               selector: (model) => model.value,
-              compare: compare,
+              shouldNotify: compare,
               builder: (context, listenable, value, child) =>
                   Text('value: $value'),
             ),

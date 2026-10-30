@@ -295,7 +295,7 @@ abstract base class ScopeDependencyGroup with _ScopeDependencyMixin {
             .where((e) => e.error is ScopeDependencyException)
             .map(
               (e) => switch (e.error) {
-                ScopeDependencyException(:final name) => name,
+                ScopeDependencyException(:final path) => path,
                 _ => null,
               },
             )

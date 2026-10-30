@@ -149,7 +149,7 @@ void main() {
     final errorScreen = tester.widget<AppError>(find.byType(AppError));
     expect(initializationError, isA<ScopeDependencyException>());
     final failure = initializationError! as ScopeDependencyException;
-    expect(failure.name, 'bloc');
+    expect(failure.path, 'bloc');
     expect(failure.error.toString(), contains('FakeBloc loading error'));
     expect(errorScreen.error, same(initializationError));
     expect(completions, 0);

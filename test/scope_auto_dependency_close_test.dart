@@ -57,7 +57,7 @@ void main() {
               report.exception as ScopeDependencyException,
           ];
           for (final report in named) {
-            expect(report.name, startsWith('root/'));
+            expect(report.path, startsWith('root/'));
           }
           expect(
             named.map((report) => report.error),

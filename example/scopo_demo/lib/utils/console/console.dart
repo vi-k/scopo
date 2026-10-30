@@ -41,6 +41,6 @@ final class Console with ChangeNotifier {
 
   @override
   void notifyListeners() {
-    SchedulerBinding.instance.runOutsideFrame(super.notifyListeners);
+    SchedulerBinding.instance.runOutsideBuild(super.notifyListeners);
   }
 }

@@ -119,7 +119,7 @@ void main() {
     testWidgets('keeps the half-built tree when asked to keep it', (
       tester,
     ) async {
-      final deps = _Deps(autoDisposeOnError: false);
+      final deps = _Deps(disposesOnError: false);
 
       await tester.pumpWidget(_wrap(_DepScope(deps: deps)));
       await settle(tester, until: () => deps.started.contains('b'));
@@ -495,11 +495,10 @@ final class _Deps extends ScopeAutoDependencies<_Deps, BuildContext> {
 
   final bool _autoDisposeOnError;
 
-  _Deps({bool autoDisposeOnError = true})
-    : _autoDisposeOnError = autoDisposeOnError;
+  _Deps({bool disposesOnError = true}) : _autoDisposeOnError = disposesOnError;
 
   @override
-  bool get autoDisposeOnError => _autoDisposeOnError;
+  bool get disposesOnError => _autoDisposeOnError;
 
   @override
   ScopeDependency buildDependencies(BuildContext context) => sequential('', [

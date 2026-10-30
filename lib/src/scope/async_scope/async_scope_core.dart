@@ -417,7 +417,7 @@ abstract base class AsyncScopeElementBase<
   /// The read-only face of [_model], made once.
   ///
   /// Everything the scope shows of its state goes through here — [state],
-  /// [isInitialized], [hasError], [error], [stackTrace], `buildChild()`,
+  /// [isReady], [hasError], [error], [stackTrace], `buildChild()`,
   /// `debugFillProperties` and every run of every selector — so a wrapper
   /// built on each read was rubbish on every build of every dependent.
   @override
@@ -570,7 +570,7 @@ abstract base class AsyncScopeElementBase<
   ChildEntry? _asyncScopeParentEntry;
 
   @override
-  bool get autoSelfDependence => true;
+  bool get rebuildsOnNotify => true;
 
   @override
   bool get reportsOwnLifecycle => true;
@@ -579,7 +579,7 @@ abstract base class AsyncScopeElementBase<
   AsyncScopeState get state => model.state;
 
   @override
-  bool get isInitialized => model.state is AsyncScopeReady;
+  bool get isReady => model.state is AsyncScopeReady;
 
   @override
   bool get hasError => switch (model.state) {
@@ -1094,7 +1094,7 @@ abstract base class AsyncScopeElementBase<
       // The callback is guarded like every other deferred write to the model:
       // by the time it runs the scope may be gone, and a scope closed with
       // `close()` stays mounted while its notifier is disposed of.
-      SchedulerBinding.instance.runOutsideFrame(() {
+      SchedulerBinding.instance.runOutsideBuild(() {
         if (!mounted || _isDisposing) {
           return;
         }

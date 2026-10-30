@@ -65,7 +65,7 @@ final class PlayerScope
       ).controller;
 
   // No `select` here on purpose. It would subscribe to the state of the
-  // scope — `hasController`, `isInitialized` — and a widget under the
+  // scope — `hasController`, `isReady` — and a widget under the
   // ready branch is past all of those. To follow something *inside* the
   // controller, make it a `Listenable` and wrap the widget in a
   // `ListenableSelector`, or put a `ScopeNotifier` under this scope.

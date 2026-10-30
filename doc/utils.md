@@ -55,8 +55,8 @@ final subscription = model.select(
 ```
 
 The listener runs only when the selected value changes. By default that means
-`!=`, and `compare:` replaces the test with one of your own. It answers the
-same question, so `true` means changed: `notIdentical` for a value that is
+`!=`, and `shouldNotify:` replaces the test with one of your own. It answers
+the same question, so `true` means changed: `notIdentical` for a value that is
 replaced rather than mutated, a field-by-field comparison for a record, and so
 on. Passing `identical` there reports the opposite of what it is asked — the
 same object counts as a change and a replacement goes unnoticed. This is the
@@ -142,10 +142,11 @@ what those states were still using.
 
 `CompareUtils` is `equals`, `notEquals`, `identical` and `notIdentical` as
 named functions, for the places that take a comparison as a parameter —
-`compare:` above, among others — where a tear-off reads better than a lambda.
+`shouldNotify:` above, among others — where a tear-off reads better than a
+lambda.
 
 `IsBuildingExtension` extends `SchedulerBinding`. `isBuilding` says whether a
-build is running, and `runOutsideFrame(action)` runs the action now if it is
+build is running, and `runOutsideBuild(action)` runs the action now if it is
 safe, or in a post-frame callback if one is. This is what a scope uses to keep
 a notification out of the middle of a build.
 

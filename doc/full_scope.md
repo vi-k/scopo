@@ -246,7 +246,7 @@ Widget buildOnProgress(
     );
 ```
 
-`autoDisposeOnError` (`true` by default) is what makes a failed initialization
+`disposesOnError` (`true` by default) is what makes a failed initialization
 clean up after itself: when the tree did not reach the initialized state, the
 container's `dispose` runs before the error reaches `buildOnError`. Override it
 with `false` to keep the half-built tree for inspection.
@@ -307,7 +307,7 @@ the walk stops is worth knowing:
   Every failure is recorded on the dependency it belongs to and readable
   through `flattenDependenciesWithErrors()`.
 
-And with `autoDisposeOnError` set to `false`, releasing the half-built tree is
+And with `disposesOnError` set to `false`, releasing the half-built tree is
 yours to do.
 
 ### A hand-written container cleans up after itself
@@ -399,7 +399,7 @@ the paths are `dep1`, `concurrent1/dep2` and `concurrent1/sequential1/dep3`.
 The same strings appear in three places: in
 `ScopeAutoDependenciesProgress.path`, in what the container reports to
 `ScopeConfig.observer` while it initializes and while it disposes, and in
-`ScopeDependencyException.name`.
+`ScopeDependencyException.path`.
 
 `ScopeDependencyInfo.path` is the one that is not the whole path but the prefix
 of it. The walk it comes from visits the groups as well as the leaves, so each
@@ -411,9 +411,9 @@ canonical path of an entry is therefore
 ## Errors
 
 An error thrown by a `dep` initializer is wrapped in a
-`ScopeDependencyException`, which carries the `name` (the path above), the
-original `error` and its `stackTrace`. As the exception travels up through the
-enclosing groups, each named group prepends its own segment, so what reaches
+`ScopeDependencyException`, which carries the `path` above, the original
+`error` and its `stackTrace`. As the exception travels up through the enclosing
+groups, each named group prepends its own segment, so what reaches
 `buildOnError` names the exact dependency that failed:
 
 ```text
@@ -564,12 +564,12 @@ state layer keeps it too.
 by the element. The element is handed the container only together with the
 container, so when `initDependencies` failed it never has one to reach for. The
 container tears itself down from inside its own initialization instead, which
-is what `ScopeAutoDependencies.autoDisposeOnError` is: `dep.unmount` for every
+is what `ScopeAutoDependencies.disposesOnError` is: `dep.unmount` for every
 dependency, then `dep.dispose` for everything that registered one, in reverse.
 The promise `dep.unmount` carries — exactly once, always before `dep.dispose` —
 holds on that route as it does on the other.
 
-Turning `autoDisposeOnError` off keeps the half-built tree for inspection and
+Turning `disposesOnError` off keeps the half-built tree for inspection and
 leaves the disposal to you. The unmounting still happens: a container held for
 inspection is holding subscriptions, and they should not wait for you to get
 round to it.

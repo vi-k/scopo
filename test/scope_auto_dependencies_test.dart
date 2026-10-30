@@ -36,7 +36,7 @@ final class TestDependencies
   TestDependencies({this.failed = const {}});
 
   @override
-  bool get autoDisposeOnError => false;
+  bool get disposesOnError => false;
 
   FutureOr<void> Function(ScopeDependencyHandle) initDep(
     Duration delay, {
@@ -101,7 +101,7 @@ final class TestDependenciesAnonNested
   TestDependenciesAnonNested({this.failed = const {}});
 
   @override
-  bool get autoDisposeOnError => false;
+  bool get disposesOnError => false;
 
   FutureOr<void> Function(ScopeDependencyHandle) initDep(Duration delay) =>
       (dep) async {
@@ -156,7 +156,7 @@ final class TestDependenciesTwinFailures
   static const step = Duration(milliseconds: 10);
 
   @override
-  bool get autoDisposeOnError => false;
+  bool get disposesOnError => false;
 
   FutureOr<void> Function(ScopeDependencyHandle) _failAfterStep(String name) =>
       (dep) async {
@@ -210,7 +210,7 @@ final class TestDependenciesConcurrentEmptyInit
 }
 
 /// A small tree that keeps the default [ScopeAutoDependencies
-/// .autoDisposeOnError], so a failing dependency is followed at once by the
+/// .disposesOnError], so a failing dependency is followed at once by the
 /// automatic disposal — the path on which the group-level failure used to be
 /// overwritten — and so that a second `init()` runs against whatever that
 /// disposal left behind.
@@ -2380,7 +2380,7 @@ void main() {
     // (`ScopeDependencyGroup.disposalRequired` covers
     // `ScopeDependencyFailed`), and `dispose` used to overwrite that state
     // with `ScopeDependencyDisposed` — so with the default
-    // `autoDisposeOnError` the caller was left with a tree that said nothing
+    // `disposesOnError` the caller was left with a tree that said nothing
     // about what had gone wrong. A failed *leaf* keeps its errors by the same
     // rule -- a state that carries them is not overwritten -- and it is disposed
     // of all the same, whenever its initializer took something before it failed.
@@ -2407,7 +2407,7 @@ void main() {
         expect(
           dependencies.disposed,
           ['depA'],
-          reason: 'autoDisposeOnError must already have released depA',
+          reason: 'disposesOnError must already have released depA',
         );
 
         expect(
@@ -2730,7 +2730,7 @@ void main() {
 
     // L2 of the post-wave review. The refusal tells the caller to cancel the
     // initialization, and said flatly that cancelling "releases what it had
-    // built". That is the default. A container with `autoDisposeOnError`
+    // built". That is the default. A container with `disposesOnError`
     // turned off is promised the opposite -- the half-built tree is kept for
     // inspection, and the cancellation unmounts and stops there -- so the
     // caller who follows this message to the letter, in the one mode where the
@@ -2768,7 +2768,7 @@ void main() {
             (error) => error.message,
             'sends the opted-out caller back for a second `dispose()`',
             allOf(
-              contains('autoDisposeOnError'),
+              contains('disposesOnError'),
               contains('dispose of it once the cancellation has come back'),
             ),
           ),
@@ -3213,7 +3213,7 @@ final class LateRegisteringDependencies
 
 /// The same late registration, in a container that keeps its half-built tree.
 ///
-/// `autoDisposeOnError` off is the documented opt-out: a cancelled or failed
+/// `disposesOnError` off is the documented opt-out: a cancelled or failed
 /// initialization unmounts and stops, and what it built is left standing for
 /// its owner to look at and then dispose of.
 final class KeptOnErrorDependencies
@@ -3224,7 +3224,7 @@ final class KeptOnErrorDependencies
   final List<String> log;
 
   @override
-  bool get autoDisposeOnError => false;
+  bool get disposesOnError => false;
 
   @override
   ScopeDependency buildDependencies(void context) => dep('slow', (dep) async {

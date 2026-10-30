@@ -153,7 +153,7 @@ void main() {
           ['init', 'onUnmount', 'dispose'],
           reason:
               'the handle was registered before `performInit` was '
-              'awaited, so `autoDisposeOnError` finds it and releases the '
+              'awaited, so `disposesOnError` finds it and releases the '
               'controller even though `init` never returned',
         );
       },

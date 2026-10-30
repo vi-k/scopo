@@ -705,7 +705,7 @@ void main() {
       reason: 'and what it carries is the failure itself, not a copy',
     );
     expect(
-      reported.name,
+      reported.path,
       'outer/resource',
       reason:
           'named the way every other channel of this package names a '

@@ -101,7 +101,7 @@ extension ScopeDependencyExtension on ScopeDependency {
   /// written as though it were. A dependency that failed keeps
   /// [ScopeDependencyFailed] through its own disposal on purpose — the list of
   /// errors is the only record of what went wrong, and the state is where that
-  /// list lives — so a tree released by `autoDisposeOnError` is disposed of,
+  /// list lives — so a tree released by `disposesOnError` is disposed of,
   /// holds nothing, and answers `false` here.
   ///
   /// What says there is nothing left to release is [disposalRequired]. This

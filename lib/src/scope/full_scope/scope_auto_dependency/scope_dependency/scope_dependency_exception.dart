@@ -6,7 +6,7 @@ final class ScopeDependencyException implements Exception {
   /// slash.
   ///
   /// An empty string means the anonymous root dependency itself failed.
-  final String name;
+  final String path;
 
   /// What the dependency failed with.
   final Object error;
@@ -27,9 +27,9 @@ final class ScopeDependencyException implements Exception {
   /// Printed by [toString] on a line of its own, in parentheses.
   final String? hint;
 
-  /// Wraps [error] as the failure of the dependency called [name].
+  /// Wraps [error] as the failure of the dependency at [path].
   const ScopeDependencyException(
-    this.name,
+    this.path,
     this.error,
     this.stackTrace, {
     this.hint,
@@ -37,5 +37,5 @@ final class ScopeDependencyException implements Exception {
 
   @override
   String toString() =>
-      hint == null ? '$name: $error' : '$name: $error\n($hint)';
+      hint == null ? '$path: $error' : '$path: $error\n($hint)';
 }

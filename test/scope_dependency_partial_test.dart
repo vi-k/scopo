@@ -20,7 +20,7 @@ final class _Deps extends ScopeAutoDependencies<_Deps, void> {
   _Deps(this.released, this._init);
 
   @override
-  bool get autoDisposeOnError => false;
+  bool get disposesOnError => false;
 
   @override
   ScopeDependency buildDependencies(void context) =>
@@ -120,7 +120,7 @@ final class _Three extends ScopeAutoDependencies<_Three, void> {
   _Three(this.released, {this.failOnDispose = const {}});
 
   @override
-  bool get autoDisposeOnError => false;
+  bool get disposesOnError => false;
 
   FutureOr<void> Function(ScopeDependencyHandle dep) _init(String name) =>
       (dep) {
@@ -188,7 +188,7 @@ final class _Nested extends ScopeAutoDependencies<_Nested, void> {
   _Nested(this.released, {this.failOnDispose = const {}});
 
   @override
-  bool get autoDisposeOnError => false;
+  bool get disposesOnError => false;
 
   FutureOr<void> Function(ScopeDependencyHandle dep) _init(String name) =>
       (dep) {
@@ -259,7 +259,7 @@ final class _FailingDispose
   _FailingDispose();
 
   @override
-  bool get autoDisposeOnError => false;
+  bool get disposesOnError => false;
 
   @override
   ScopeDependency buildDependencies(void context) => sequential('', [
@@ -394,7 +394,7 @@ void _diagnosticsGroup() {
         for (final failure in failures) {
           expect(failure.error, isA<ScopeDependencyException>());
           final error = failure.error as ScopeDependencyException;
-          expect(error.name, path);
+          expect(error.path, path);
           expect(error.error, same(cause));
           expect(error.stackTrace, same(stackTrace));
           expect(failure.stackTrace, same(stackTrace));

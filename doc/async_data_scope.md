@@ -153,8 +153,8 @@ encourage reading the whole object where a selector would do.
 A value here is produced once, by `initData`, and never replaced. There is
 nothing to subscribe to and nothing to miss, and there is exactly one branch in
 which it exists at all — the ready one, which is what `builder` builds. Passing
-it is what makes that branch free of `data!` and `isInitialized`, and it is the
-same reason `dispose(data)` and `unmount(T? data)` receive it.
+it is what makes that branch free of `data!` and `isReady`, and it is the same
+reason `dispose(data)` and `unmount(T? data)` receive it.
 
 ## Reading it from the subtree
 
@@ -184,8 +184,8 @@ while there is nothing and returns the `null` once there is. The same ambiguity
 reaches `onUnmount`, which is handed a `T?` and cannot tell the two apart on
 its own.
 
-"Before the value arrives" is a shade earlier than `isInitialized`. The value
-is stored once the job has finished its children and cleanup successfully; the
+"Before the value arrives" is a shade earlier than `isReady`. The value is
+stored once the job has finished its children and cleanup successfully; the
 state of the scope is applied at the end of the frame, or after the whole of
 `pauseAfterInitialization`, which is deliberately longer. In that window the
 scope is still building `progressBuilder` while `data` already answers — and

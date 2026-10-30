@@ -112,7 +112,7 @@ void main() {
       // No `onUnmount()` here on purpose. An initialization that failed
       // never returns the container, so the element never gets it
       // and its own `onUnmount()` has nothing to call: the container is torn
-      // down from inside `init()` instead, by `autoDisposeOnError`. That
+      // down from inside `init()` instead, by `disposesOnError`. That
       // path is the one the promise has to hold on.
       await _init(deps);
 

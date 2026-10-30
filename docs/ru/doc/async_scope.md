@@ -1,6 +1,6 @@
 # AsyncScope
 
-> Перевод `doc/async_scope.md` (blob `e5d330520932e0be9a94b784b76bb392b4e548c7`).
+> Перевод `doc/async_scope.md` (blob `265335d8016cce4948ff3a0bc7eff9b0a0f8c5df`).
 > Правится в том же коммите, что и оригинал; проверка — `sh docs/ru/check.sh`.
 
 Скоуп, всё содержимое которого — жизненный цикл: асинхронная инициализация
@@ -145,12 +145,12 @@ progressBuilder: (context, progress) => switch (progress) {
 
 ```dart
 final scope = AsyncScope.of(context, listen: true);
-if (scope.isInitialized) { … }
+if (scope.isReady) { … }
 ```
 
 `of`, `maybeOf` и `select` возвращают `AsyncScopeContext`, который открывает
-`state`, `isInitialized` (состояние — `AsyncScopeReady`), `hasError` и `error`
-/ `stackTrace`; последние два бросают `StateError`, когда ошибки нет. Обычный
+`state`, `isReady` (состояние — `AsyncScopeReady`), `hasError` и `error` /
+`stackTrace`; последние два бросают `StateError`, когда ошибки нет. Обычный
 вход — прочитать одно поле через `select`: он подписывает только на него,
 а фильтрацию объясняет тема `base`.
 

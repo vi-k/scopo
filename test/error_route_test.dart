@@ -931,7 +931,7 @@ void main() {
       final report = audit.seenIn(SeenIn.flutterError).single;
       expect(report, isA<ScopeDependencyException>());
       final named = report as ScopeDependencyException;
-      expect(named.name, 'inner/leaf');
+      expect(named.path, 'inner/leaf');
       expect('${named.error}', 'Bad state: leaf cannot let go');
     });
 
@@ -1200,7 +1200,7 @@ void main() {
         observer.routes
             .map((r) => r.$4)
             .whereType<ScopeDependencyException>()
-            .map((e) => e.name),
+            .map((e) => e.path),
         containsAll(['leaf', 'inner']),
       );
       expect(audit.seenIn(SeenIn.flutterError), hasLength(2));

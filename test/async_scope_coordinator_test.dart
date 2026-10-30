@@ -133,7 +133,7 @@ void main() {
       );
 
       expect(
-        successor.isInitialized,
+        successor.isReady,
         isFalse,
         reason: 'the holder has the key, so the successor is still waiting',
       );

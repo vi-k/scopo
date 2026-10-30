@@ -145,13 +145,13 @@ built.
 
 ```dart
 final scope = AsyncScope.of(context, listen: true);
-if (scope.isInitialized) { … }
+if (scope.isReady) { … }
 ```
 
 `of`, `maybeOf` and `select` return an `AsyncScopeContext`, which exposes
-`state`, `isInitialized` (the state is `AsyncScopeReady`), `hasError`, and
-`error` / `stackTrace`, both of which throw a `StateError` when there is no
-error. Reading a single field through `select` is the usual way in, since it
+`state`, `isReady` (the state is `AsyncScopeReady`), `hasError`, and `error` /
+`stackTrace`, both of which throw a `StateError` when there is no error.
+Reading a single field through `select` is the usual way in, since it
 subscribes to that field alone — the `base` topic explains the filtering.
 
 ## Errors

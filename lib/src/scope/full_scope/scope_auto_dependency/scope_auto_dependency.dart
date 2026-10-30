@@ -25,7 +25,7 @@ abstract class ScopeAutoDependencies<
   ///
   /// On by default: the container is torn down before the error reaches
   /// `buildOnError`. Turn it off to keep the half-built tree for inspection.
-  bool get autoDisposeOnError => true;
+  bool get disposesOnError => true;
 
   /// The root of the dependency tree.
   ///
@@ -241,7 +241,7 @@ abstract class ScopeAutoDependencies<
     }
 
     return ScopeDependencyException(
-      error.name,
+      error.path,
       error.error,
       error.stackTrace,
       hint:
@@ -353,7 +353,7 @@ abstract class ScopeAutoDependencies<
         // Without it a dependency that took a subscription before the failure
         // kept it forever, while its `dispose` closed the sink underneath.
         //
-        // Unconditionally, not only under `autoDisposeOnError`: a container
+        // Unconditionally, not only under `disposesOnError`: a container
         // kept for inspection is still a container holding subscriptions, and
         // its owner disposing of it by hand later does not make them wait.
         // A second `onUnmount()` from that owner is a no-op -- the hooks are
@@ -385,7 +385,7 @@ abstract class ScopeAutoDependencies<
           );
         }
 
-        if (autoDisposeOnError) {
+        if (disposesOnError) {
           await _disposeBounded();
         }
       }
@@ -531,18 +531,18 @@ abstract class ScopeAutoDependencies<
     // drives the container by hand, and it tells them to do what the scope
     // does.
     //
-    // What the cancellation then amounts to depends on [autoDisposeOnError],
+    // What the cancellation then amounts to depends on [disposesOnError],
     // so the message asks rather than assumes. With the opt-out the
     // cancellation unmounts and stops -- keeping the half-built tree is the
     // whole point of turning it off -- and a caller who followed the flat
     // "cancelling releases what it had built" was left holding everything the
     // run had taken, in the one mode where the extra step matters most.
     if (_initializing) {
-      final afterCancelling = autoDisposeOnError
+      final afterCancelling = disposesOnError
           ? 'cancelling it releases what it had built'
           : 'cancelling it unmounts what it had built and '
                 'leaves the rest of it standing, this container having turned '
-                '`autoDisposeOnError` off, so dispose of it once the '
+                '`disposesOnError` off, so dispose of it once the '
                 'cancellation has come back';
 
       throw StateError(

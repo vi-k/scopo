@@ -18,7 +18,7 @@ abstract interface class AsyncScopeContext<W extends ScopeInheritedWidget>
   AsyncScopeState get state;
 
   /// Whether the scope has reached [AsyncScopeReady].
-  bool get isInitialized;
+  bool get isReady;
 
   /// Whether the initialization failed.
   bool get hasError;

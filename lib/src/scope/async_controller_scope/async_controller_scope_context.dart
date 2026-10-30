@@ -18,7 +18,7 @@ abstract interface class AsyncControllerScopeContext<
   ///
   /// Throws a [StateError] until there is one; [controllerOrNull] is the safe
   /// read, and [hasController] is the question on its own. The window in which
-  /// the controller exists and the scope is not yet `isInitialized` is the one
+  /// the controller exists and the scope is not yet `isReady` is the one
   /// [AsyncDataScopeContext.data] describes.
   C get controller;
 

@@ -39,7 +39,7 @@ void main() {
           await tester.pumpWidget(_app(h.scope()));
           await tester.pumpAndSettle();
           expect(h.context.hasError, phase == _Phase.error);
-          expect(h.context.isInitialized, phase == _Phase.ready);
+          expect(h.context.isReady, phase == _Phase.ready);
 
           final done = _Outcome(h.context.close());
           await tester.pump();
@@ -69,7 +69,7 @@ void main() {
         expect(done.settled, isTrue);
         expect(done.failure, isNull);
         expect(waiting.initializations, 0);
-        expect(owner.context.isInitialized, isTrue);
+        expect(owner.context.isReady, isTrue);
         await _remove(tester);
       });
 
@@ -108,8 +108,8 @@ void main() {
         await tester.pumpWidget(_app(h.scope()));
         // Readiness is applied at the end of a frame. Stop there, before the
         // notify-only rebuild it queued has had a chance to run.
-        await settle(tester, until: () => h.context.isInitialized);
-        expect(h.context.isInitialized, isTrue);
+        await settle(tester, until: () => h.context.isReady);
+        expect(h.context.isReady, isTrue);
         final done = _Outcome(h.context.close());
         await tester.pump();
 
@@ -233,12 +233,12 @@ void main() {
         final done = _Outcome(first.context.close());
         await settle(
           tester,
-          until: () => done.settled && second.context.isInitialized,
+          until: () => done.settled && second.context.isReady,
         );
 
         expect(done.settled, isTrue);
         expect(first.key.currentContext, isNotNull);
-        expect(second.context.isInitialized, isTrue);
+        expect(second.context.isReady, isTrue);
         expect(first.releases, 1);
         await _remove(tester);
       });
@@ -642,7 +642,7 @@ class _ConsumerState extends State<_Consumer> {
     final h = widget.harness;
     resource = switch (h.family) {
       _Family.asyncScope =>
-        AsyncScope.of(context, listen: true).isInitialized
+        AsyncScope.of(context, listen: true).isReady
             ? h.resource
             : throw StateError('not ready'),
       _Family.dataScope => AsyncDataScope.of<_Resource>(

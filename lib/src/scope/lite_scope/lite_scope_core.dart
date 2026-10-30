@@ -78,8 +78,8 @@ abstract base class LiteScopeCore<
   /// created in the ready branch, so a scope still waiting for its `scopeKey`,
   /// still initializing, failed, or taken down by `close()` has none to give.
   /// The message says which of the two it was, and what state the scope was
-  /// in — read it from below `buildOnReady()`, or check `isInitialized`
-  /// first.
+  /// in — read it from below `buildOnReady()`, or use [maybeOf], which
+  /// answers `null` instead of throwing.
   static S of<
     W extends LiteScopeCore<W, E, S>,
     E extends LiteScopeElementBase<W, E, S>,
@@ -118,7 +118,7 @@ abstract base class LiteScopeElementBase<
   S extends LiteScopeCoreState<W, E, S>
 >
     extends AsyncScopeElementBase<W, E> {
-  var _autoSelfDependence = true;
+  var _rebuildsOnNotify = true;
   final _globalStateKey = GlobalKey<S>();
   S? _state;
   Completer<void>? _screenshotCompleter;
@@ -203,13 +203,12 @@ abstract base class LiteScopeElementBase<
       (throw StateError(
         '${widget.toStringShort()} was found, but it has no state: the state '
         'is created in the ready branch, and this scope is ${model.state}. '
-        'Read it from below `buildOnReady()`, or check `isInitialized` first. '
-        '`maybeOf` answers `null` here too, the same as when there is no such '
-        'scope at all.',
+        'Read it from below `buildOnReady()`, or use `maybeOf`: it answers '
+        '`null` here, the same as when there is no such scope at all.',
       ));
 
   @override
-  bool get autoSelfDependence => _autoSelfDependence;
+  bool get rebuildsOnNotify => _rebuildsOnNotify;
 
   @override
   Widget buildOnState(AsyncScopeState state) => switch (state) {
@@ -261,7 +260,7 @@ abstract base class LiteScopeElementBase<
   /// it.
   @mustCallSuper
   Widget buildOnReady() {
-    _autoSelfDependence = false;
+    _rebuildsOnNotify = false;
 
     Widget buildState() => wrapState(
       _LiteScopeCoreWidget<W, E, S>(
@@ -594,7 +593,7 @@ abstract base class LiteScopeCoreState<
       _completeInit(ScopeErrorRoute.zone);
     } else {
       // Where a failing [onInitialized] goes depends on which of the two
-      // `runOutsideFrame` picks, and only the callback can tell: run at once,
+      // `runOutsideBuild` picks, and only the callback can tell: run at once,
       // it throws into this method and so into the zone, like the branch
       // above; run after the frame, it throws into the scheduler, which
       // reports it to `FlutterError`. The flag is still set when the action
@@ -609,7 +608,7 @@ abstract base class LiteScopeCoreState<
       // way of building the state outside that rebuild must not be able to
       // make it lie.
       var runsNow = true;
-      SchedulerBinding.instance.runOutsideFrame(
+      SchedulerBinding.instance.runOutsideBuild(
         () => _completeInit(
           runsNow ? ScopeErrorRoute.zone : ScopeErrorRoute.flutterError,
         ),
