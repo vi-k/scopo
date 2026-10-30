@@ -38,7 +38,11 @@ enum ScopePhase {
   /// same failure told to the observer.
   build,
 
-  /// The synchronous half of a teardown, before the asynchronous one.
+  /// Getting a scope ready for its teardown: reading its `debugLabel` and
+  /// timeout callbacks, and giving up the wait for its `scopeKey`.
+  ///
+  /// The cancellation of an initialization still running belongs here too,
+  /// but a failure of it reports [initializationCancellation].
   preparationForDisposal,
 
   /// The `onUnmount` hook.

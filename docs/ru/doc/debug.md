@@ -1,6 +1,6 @@
 # debug
 
-> Перевод `doc/debug.md` (blob `1837af6d55dabf7f8ccdb0d28070480b9eb7cfe0`).
+> Перевод `doc/debug.md` (blob `6bf6a6eaf6e429c4055a09d800fcf53a850294aa`).
 > Правится в том же коммите, что и оригинал; проверка — `sh docs/ru/check.sh`.
 
 Наблюдатель и глобальные настройки пакета. Всё на этой странице статическое
@@ -263,7 +263,7 @@ scopo | AppDeps(#1a2b7) | initialize network/session…
 | `initialization` | инициализация: хук `init()` или фаза |
 | `initializationCancellation` | отмена ещё идущей инициализации |
 | `build` | сборка собственного поддерева скоупа |
-| `preparationForDisposal` | синхронная половина разбора |
+| `preparationForDisposal` | подготовка к разбору: `debugLabel`, колбэки таймаутов, отказ от ожидания `scopeKey` |
 | `unmount` | хук `onUnmount` |
 | `disposal` | любой `dispose`: `disposeScope`, зависимости, контроллера, `ScopeModel` |
 | `abandonedWait` | ожидание, упавшее, когда ждать было уже некому |

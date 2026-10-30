@@ -8,7 +8,7 @@ interface class ScopeDependencyHandle {
 
   /// The name of the dependency being initialized.
   String get name =>
-      _dep?.name ?? (throw StateError('helper already disposed'));
+      _dep?.name ?? (throw StateError('dependency already disposed'));
 
   /// Lets go of whatever cannot wait for [dispose].
   ///

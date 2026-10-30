@@ -11,7 +11,7 @@ sealed class ScopeDependencyState {
   String toString() => description;
 
   /// Thrown when errors are asked of a state that holds none.
-  static Never throwNoErrors() => throw StateError('No errors');
+  static Never _throwNoErrors() => throw StateError('No errors');
 }
 
 /// {@category Scope}
@@ -28,10 +28,10 @@ sealed class _ScopeDependencyWithErrors extends ScopeDependencyState {
   const _ScopeDependencyWithErrors._(this._errors);
 
   Object get error =>
-      _errors.firstOrNull?.error ?? ScopeDependencyState.throwNoErrors();
+      _errors.firstOrNull?.error ?? ScopeDependencyState._throwNoErrors();
 
   StackTrace get stackTrace =>
-      _errors.firstOrNull?.stackTrace ?? ScopeDependencyState.throwNoErrors();
+      _errors.firstOrNull?.stackTrace ?? ScopeDependencyState._throwNoErrors();
 
   int get count => _errors.length;
 

@@ -1,3 +1,23 @@
+## 0.22.0
+
+* **Breaking:** five names the API reference listed but nothing outside the
+  package could use are gone. `AsyncScopeInitState` held `AsyncScopeProgress`
+  and `AsyncScopeReady` and nothing else; both extend `AsyncScopeState`
+  directly now, and a `switch` over the four states stays exhaustive.
+  `ScopeModelInheritedElement` repeated what `ScopeModelElementBase` gets from
+  `ScopeInheritedElement` and `ScopeModelContext`. `AsyncScopeModel` was an
+  empty interface: the model of an asynchronous scope is a
+  `ScopeStateModel<AsyncScopeState>`. `ScopeDependencyMixin` declared private
+  abstract members, so it could not be mixed in outside the package; a
+  dependency of your own implements `ScopeDependency`, as before.
+  `ScopeDependencyState.throwNoErrors` was an internal helper.
+* `ScopePhase.preparationForDisposal` is documented as what it is: reading
+  the scope's `debugLabel` and timeout callbacks and giving up the wait for
+  its `scopeKey`, not "the synchronous half of the teardown".
+  `ScopeDependencyExtension.isCancelled` says that only an initialization is
+  ever cancelled. A `ScopeDependencyHandle` read after its dependency was
+  disposed throws "dependency already disposed" instead of naming a "helper".
+
 ## 0.21.2
 
 * A group of an automatic dependency tree that fails before it reaches any

@@ -15,15 +15,7 @@ final class AsyncScopeWaiting extends AsyncScopeState {
 }
 
 /// {@category AsyncScope}
-sealed class AsyncScopeInitState extends AsyncScopeState {
-  AsyncScopeInitState();
-
-  @override
-  String toString() => '$AsyncScopeInitState';
-}
-
-/// {@category AsyncScope}
-final class AsyncScopeProgress extends AsyncScopeInitState {
+final class AsyncScopeProgress extends AsyncScopeState {
   /// Whatever the initialization reported — a caption, a fraction, a step.
   final Object? progress;
 
@@ -36,7 +28,7 @@ final class AsyncScopeProgress extends AsyncScopeInitState {
 }
 
 /// {@category AsyncScope}
-final class AsyncScopeReady extends AsyncScopeInitState {
+final class AsyncScopeReady extends AsyncScopeState {
   /// Reports that the initialization is over.
   AsyncScopeReady();
 

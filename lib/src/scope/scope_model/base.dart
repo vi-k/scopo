@@ -13,32 +13,6 @@ abstract interface class ScopeModelContext<
   M get model;
 }
 
-/// {@category ScopeModel}
-abstract interface class ScopeModelInheritedElement<
-  W extends ScopeInheritedWidget,
-  M extends Object
->
-    implements
-        // ignore: avoid_implementing_value_types
-        InheritedElement,
-        ScopeInheritedElement<W>,
-        ScopeModelContext<W, M> {
-  @override
-  W get widget;
-
-  @override
-  M get model;
-
-  @override
-  void init();
-
-  @override
-  void dispose();
-
-  @override
-  Widget buildChild();
-}
-
 base mixin _ScopeModelBaseMixin<M extends Object> on ScopeInheritedWidget {
   M? get value;
   bool get hasValue;

@@ -264,7 +264,7 @@ owns it, under a label of its own.
 | `initialization` | the initialization: the `init()` hook or the phase |
 | `initializationCancellation` | cancelling an initialization still running |
 | `build` | a build of the scope's own subtree |
-| `preparationForDisposal` | the synchronous half of the teardown |
+| `preparationForDisposal` | getting ready for the teardown: `debugLabel`, the timeout callbacks, giving up the `scopeKey` wait |
 | `unmount` | the `onUnmount` hook |
 | `disposal` | any `dispose`: `disposeScope`, a dependency's, a controller's, a `ScopeModel`'s |
 | `abandonedWait` | a wait that failed after its waiter was gone |

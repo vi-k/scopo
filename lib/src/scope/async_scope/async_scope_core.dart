@@ -5,7 +5,7 @@ abstract base class AsyncScopeCore<
   W extends AsyncScopeCore<W, E>,
   E extends AsyncScopeElementBase<W, E>
 >
-    extends ScopeModelCore<W, E, AsyncScopeModel> {
+    extends ScopeModelCore<W, E, ScopeStateModel<AsyncScopeState>> {
   /// Creates the widget half of an asynchronous scope.
   const AsyncScopeCore({
     super.key,
@@ -43,7 +43,7 @@ abstract base class AsyncScopeElementBase<
   W extends AsyncScopeCore<W, E>,
   E extends AsyncScopeElementBase<W, E>
 >
-    extends ScopeNotifierElementBase<W, E, AsyncScopeModel>
+    extends ScopeNotifierElementBase<W, E, ScopeStateModel<AsyncScopeState>>
     with AsyncScopeParent
     implements AsyncScopeContext<W> {
   /// The widget's name rather than the element's: it is the one that carries
@@ -421,7 +421,7 @@ abstract base class AsyncScopeElementBase<
   /// `debugFillProperties` and every run of every selector — so a wrapper
   /// built on each read was rubbish on every build of every dependent.
   @override
-  late final AsyncScopeModel model = _model.asUnmodifiable();
+  late final ScopeStateModel<AsyncScopeState> model = _model.asUnmodifiable();
   final _AsyncScopeNotifier _model = _AsyncScopeNotifier();
 
   /// Keeps the widget reachable during the asynchronous disposal -- and,

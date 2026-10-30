@@ -77,7 +77,7 @@ abstract class ScopeAutoDependencies<
     // [_runDispose] used to do it, once each, and a third entry point would
     // have had to remember. The marks of the whole subtree below travel the
     // segments the groups put in place in their own constructors.
-    ScopeDependencyMixin._wireStepsStarted(
+    _ScopeDependencyMixin._wireStepsStarted(
       tree,
       onStepStarted: (path) =>
           notifyObserver((observer) => observer.onStepStarted(this, path)),
@@ -187,7 +187,7 @@ abstract class ScopeAutoDependencies<
   ///
   /// A dependency of the caller's own making keeps no such flag, so it is
   /// asked the older question. It is the only thing it can answer.
-  bool _disposalIsOver(ScopeDependency root) => root is ScopeDependencyMixin
+  bool _disposalIsOver(ScopeDependency root) => root is _ScopeDependencyMixin
       ? root._isDisposalDone
       : !root.disposalRequired;
 
@@ -591,7 +591,7 @@ abstract class ScopeAutoDependencies<
       // announces the failures of its steps from inside the walk, where they
       // happen and beside the entries they end -- and those were looked up
       // above, a group that fell over before it reached any child included.
-      if (dependencies is! ScopeDependencyMixin) {
+      if (dependencies is! _ScopeDependencyMixin) {
         notifyObserver(
           (observer) => observer.onError(
             this,
@@ -638,7 +638,7 @@ abstract class ScopeAutoDependencies<
         // to announce from. A root of the package's own making has already
         // sent this exit from inside the walk, and reporting it again here
         // would double every step of a disposal the container drove itself.
-        if (dependencies is! ScopeDependencyMixin) {
+        if (dependencies is! _ScopeDependencyMixin) {
           notifyObserver((observer) => observer.onDisposalProgress(this, path));
         }
       });

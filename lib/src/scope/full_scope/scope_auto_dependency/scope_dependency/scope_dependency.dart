@@ -81,7 +81,9 @@ extension ScopeDependencyExtension on ScopeDependency {
     ScopeDependencyAnyCancelled() => false,
   };
 
-  /// Whether the initialization or the disposal was cancelled.
+  /// Whether the initialization was cancelled.
+  ///
+  /// A disposal is never cancelled, so this is about [init] alone.
   bool get isCancelled => switch (state) {
     ScopeDependencyAnyCancelled() => true,
     ScopeDependencyAnySuccess() || ScopeDependencyAnyFailed() => false,

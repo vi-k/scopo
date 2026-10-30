@@ -127,7 +127,7 @@ void main() {
       ]);
     });
 
-    // A dependency of the caller's own making is not a `ScopeDependencyMixin`
+    // A dependency of the caller's own making is not a `_ScopeDependencyMixin`
     // and has nowhere to take the callback. Its completed step still arrives:
     // that one travels the stream, which is the interface it does implement.
     test('is skipped for a dependency of the caller own making', () async {
@@ -291,7 +291,7 @@ void main() {
           ],
           reason:
               'the release arrives, the entry does not: a dependency that '
-              'is not a ScopeDependencyMixin has nowhere to take the callback '
+              'is not a _ScopeDependencyMixin has nowhere to take the callback '
               'from, and the release travels the public stream instead',
         );
       },

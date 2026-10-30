@@ -52,7 +52,7 @@ abstract base class ScopeModelElementBase<
   M extends Object
 >
     extends ScopeWidgetElementBase<W, E>
-    implements ScopeModelInheritedElement<W, M> {
+    implements ScopeModelContext<W, M> {
   /// Creates the element of a model scope.
   ScopeModelElementBase(super.widget);
 

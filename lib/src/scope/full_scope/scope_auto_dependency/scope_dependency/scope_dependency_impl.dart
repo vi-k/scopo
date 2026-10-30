@@ -1,7 +1,7 @@
 part of '../../../scope.dart';
 
 /// {@category Scope}
-final class _ScopeDependencyImpl with ScopeDependencyMixin {
+final class _ScopeDependencyImpl with _ScopeDependencyMixin {
   @override
   final String name;
 

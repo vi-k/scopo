@@ -13,13 +13,13 @@ part of '../../../scope.dart';
 /// Raised from two places, because the mistake arrives from two directions. A
 /// node under a group is seen by the group, as it is built. A node standing as
 /// the root of a tree has no group to see it and refuses for itself, in
-/// [ScopeDependencyMixin.init].
+/// [_ScopeDependencyMixin.init].
 ///
 /// It cannot be more than an assertion. The skip this replaced is what release
 /// still does -- running a second initializer over a container the first run
 /// has already furnished is the worse of the two -- so in a release build the
 /// mistake stays silent, as it was before.
-FlutterError _alreadyUsed(ScopeDependencyMixin dependency) =>
+FlutterError _alreadyUsed(_ScopeDependencyMixin dependency) =>
     FlutterError.fromParts(<DiagnosticsNode>[
       ErrorSummary(
         '${dependency.wrappedName} has already been through an initialization '
@@ -44,8 +44,7 @@ FlutterError _alreadyUsed(ScopeDependencyMixin dependency) =>
       ),
     ]);
 
-/// {@category Scope}
-mixin ScopeDependencyMixin implements ScopeDependency, ScopeObservable {
+mixin _ScopeDependencyMixin implements ScopeDependency, ScopeObservable {
   @override
   String get debugLabel => name;
 
@@ -196,7 +195,7 @@ mixin ScopeDependencyMixin implements ScopeDependency, ScopeObservable {
   /// hands it to its observer. That is what they pass in; the wiring itself
   /// is the same both times, and is now written once.
   ///
-  /// A dependency of the caller's own making is not a [ScopeDependencyMixin]
+  /// A dependency of the caller's own making is not a [_ScopeDependencyMixin]
   /// and has nowhere to take these, so it announces neither entry itself. Its
   /// completed initialization step still arrives, since that half travels the
   /// `onStep` of [ScopeDependency.init], which is the part of the contract it
@@ -212,7 +211,7 @@ mixin ScopeDependencyMixin implements ScopeDependency, ScopeObservable {
     onDisposalStepFailed,
     required String Function(String path) pathOf,
   }) {
-    if (dependency is! ScopeDependencyMixin) {
+    if (dependency is! _ScopeDependencyMixin) {
       return;
     }
 
@@ -466,7 +465,7 @@ mixin ScopeDependencyMixin implements ScopeDependency, ScopeObservable {
       _state = switch (_state) {
         final _ScopeDependencyWithErrors state when state.hasErrors => state,
         // A node that never ran goes on saying so.
-        // [ScopeDependencyMixin._markNothingToDispose] keeps
+        // [_ScopeDependencyMixin._markNothingToDispose] keeps
         // [ScopeDependencyInitial] on a child for exactly this reason, and
         // says why: "not initialized" is the true thing to say about it. The
         // node the walk passes through itself was saying the opposite --

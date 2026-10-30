@@ -1,7 +1,7 @@
 part of '../../../scope.dart';
 
 /// {@category Scope}
-abstract base class ScopeDependencyGroup with ScopeDependencyMixin {
+abstract base class ScopeDependencyGroup with _ScopeDependencyMixin {
   @override
   final String name;
 
@@ -30,7 +30,7 @@ abstract base class ScopeDependencyGroup with ScopeDependencyMixin {
     // which the walks guard and a constructor cannot.
     assert(() {
       for (final dependency in _dependencies) {
-        if (dependency is ScopeDependencyMixin &&
+        if (dependency is _ScopeDependencyMixin &&
             dependency._state is! ScopeDependencyInitial) {
           throw _alreadyUsed(dependency);
         }
@@ -54,7 +54,7 @@ abstract base class ScopeDependencyGroup with ScopeDependencyMixin {
     // silence. Construction is the one moment every child is reached by
     // definition.
     for (final dependency in _dependencies) {
-      ScopeDependencyMixin._wireStepsStarted(
+      _ScopeDependencyMixin._wireStepsStarted(
         dependency,
         onStepStarted: (path) => _onStepStarted?.call(_path(path)),
         onDisposalStepStarted: (path) =>
@@ -77,7 +77,7 @@ abstract base class ScopeDependencyGroup with ScopeDependencyMixin {
   /// whatever its children still hold — which is why a group whose
   /// initialization failed or was cancelled is disposed of too.
   ///
-  /// [ScopeDependencyMixin._isDisposalDone], and not the state alone: a group
+  /// [_ScopeDependencyMixin._isDisposalDone], and not the state alone: a group
   /// that was disposed of because something under it failed keeps saying
   /// [ScopeDependencyFailed], so that the caller can still read what failed,
   /// and that must not be mistaken for a disposal that is still due.
@@ -144,7 +144,7 @@ abstract base class ScopeDependencyGroup with ScopeDependencyMixin {
   ///
   /// Skipping them is right — there is nothing to run — but skipping them in
   /// silence left them saying `initialized` after the tree had been torn down.
-  /// See [ScopeDependencyMixin._markNothingToDispose].
+  /// See [_ScopeDependencyMixin._markNothingToDispose].
   ///
   /// A child of somebody else's making may throw from its
   /// [ScopeDependency.disposalRequired], and then the group fails before it
@@ -159,7 +159,7 @@ abstract base class ScopeDependencyGroup with ScopeDependencyMixin {
       for (final dependency in _dependencies.reversed) {
         if (dependency.disposalRequired) {
           order.add(dependency);
-        } else if (dependency is ScopeDependencyMixin) {
+        } else if (dependency is _ScopeDependencyMixin) {
           dependency._markNothingToDispose();
         }
       }
@@ -227,13 +227,13 @@ abstract base class ScopeDependencyGroup with ScopeDependencyMixin {
   /// Reads what a child that threw leaves behind, without asking it again.
   ///
   /// A child of this package has been through its own walk by now and says so
-  /// in [ScopeDependencyMixin._isDisposalDone]; a leaf takes its hook off
+  /// in [_ScopeDependencyMixin._isDisposalDone]; a leaf takes its hook off
   /// before calling it, so one that threw has let go all the same. A
   /// dependency of somebody else's making has made no such promise, and
   /// asking its [ScopeDependency.disposalRequired] a second time would be the
   /// same arbitrary code that just threw.
   void _noteWhatMayStillHold(ScopeDependency dependency) {
-    if (dependency is! ScopeDependencyMixin || !dependency._isDisposalDone) {
+    if (dependency is! _ScopeDependencyMixin || !dependency._isDisposalDone) {
       _mayStillHold = true;
     }
   }
@@ -243,7 +243,7 @@ abstract base class ScopeDependencyGroup with ScopeDependencyMixin {
   /// Announces the exit of [dependency]'s step for a child that cannot
   /// announce it itself.
   ///
-  /// A dependency of the caller's own making is not a [ScopeDependencyMixin]
+  /// A dependency of the caller's own making is not a [_ScopeDependencyMixin]
   /// and has no channel to be given, so the group speaks for it, from the one
   /// place it sees that child's steps come back: the `onStep` it hands that
   /// child, whose paths it is already forwarding. The type test is also what
@@ -253,7 +253,7 @@ abstract base class ScopeDependencyGroup with ScopeDependencyMixin {
   /// Called before the path is passed upwards, so that the two halves keep the
   /// order they have everywhere else.
   void _announceExitFor(ScopeDependency dependency, String path) {
-    if (dependency is! ScopeDependencyMixin) {
+    if (dependency is! _ScopeDependencyMixin) {
       _onDisposalStepEnded?.call(_path(path));
     }
   }
@@ -268,7 +268,7 @@ abstract base class ScopeDependencyGroup with ScopeDependencyMixin {
     Object error,
     StackTrace stackTrace,
   ) {
-    if (dependency is! ScopeDependencyMixin) {
+    if (dependency is! _ScopeDependencyMixin) {
       _onDisposalStepFailed?.call(_path(dependency.name), error, stackTrace);
     }
   }
@@ -276,7 +276,7 @@ abstract base class ScopeDependencyGroup with ScopeDependencyMixin {
   @override
   String get wrappedName => '[${name.isEmpty ? 'group' : name}]';
 
-  // `ScopeDependencyMixin.debugLabel` falls back to `name`, which a leaf
+  // `_ScopeDependencyMixin.debugLabel` falls back to `name`, which a leaf
   // dependency's constructor asserts is never empty but an anonymous group's
   // is by design — the root of a tree is usually one, and so is a nested
   // group with nothing to call itself. Left alone, an anonymous group's
