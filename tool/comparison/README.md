@@ -1,53 +1,49 @@
-# Зонды сравнения scopo с соседями по pub.dev
+# scopo next to its neighbours on pub.dev
 
-Одна и та же задача — экрану нужны БД и сессия поверх неё, обе закрываются
-асинхронно — на scopo и на пакетах, которые решают её по-своему. Каждый ресурс
-пишет журнал, и по журналу видно, что происходит, когда экран уходит посреди
-загрузки, пересоздаётся или падает. Из этих журналов взят довод, что нишу
-scopo — жизненный цикл ресурса, которым владеет поддерево, — на pub.dev целиком
-не закрывает никто.
+One task — a screen needs a database and a session restored from it, both
+opened and closed asynchronously — written with scopo and with packages that
+solve it their own way. Every resource writes to a log, and the log shows what
+happens when the screen is left during loading, re-created, or fails. The table
+at the top of the package's README is read from these logs.
 
-Зонды написаны агентами двух ревью рынка 2026-10-30 и перенесены сюда без
-правок кода, только с переименованием пакетов:
-`docs/records/2026-10-30[1]-fable-market-review.md`,
-`docs/records/2026-10-30[2]-opus-market-review.md`, сводка —
-`docs/records/2026-10-30[3]-market-reviews-report.md`. Журналы и их чтение —
-в самих ревью.
+Each screen is written the way its package's documentation shows. The two
+packages here are independent: each has its own scenarios and its own set of
+neighbours.
 
-## Что где
+## What is where
 
-- `five_scenarios/` — из ревью Opus. Пять сценариев: уход посреди открытия БД,
-  пересборка родителем, мгновенное переоткрытие, сбой восстановления сессии,
-  порядок закрытия. Варианты: scopo, scopo со `scopeKey`, cobalt_flutter,
-  Riverpod с `ref.mounted` и без, get_it + watch_it, depend.
-- `refresh_mid_open/` — из ревью Fable. Один сценарий: «обновить» посреди
-  открытия БД, то есть пересоздание экрана с новым ключом, и уход. Варианты:
-  scopo со `scopeKey`, Riverpod (scoped), get_it + watch_it, yx_scope.
+- `five_scenarios/` — five scenarios: leaving while the database is opening, a
+  rebuild by the parent, re-creating at once, a failed session restore, and the
+  closing order. Variants: scopo, scopo with `scopeKey`, cobalt_flutter,
+  Riverpod with and without `ref.mounted`, get_it + watch_it, depend.
+- `refresh_mid_open/` — one scenario: a refresh, that is a re-creation under a
+  new key, while the database is opening, then leaving. Variants: scopo with
+  `scopeKey`, Riverpod (scoped), get_it + watch_it, yx_scope.
 
-## Как запускать
+## Running
 
-Закреплённый Flutter 3.38.1 не подходит: Riverpod 3.4.3 требует Dart 3.12.
-Ревью гонялись глобальным Flutter 3.47.0, не через `fvm`:
+The pinned Flutter 3.38.1 does not resolve them: Riverpod 3.4.3 needs Dart
+3.12. Use a newer Flutter (3.47.0 here), not `fvm`:
 
 ```sh
 cd tool/comparison/five_scenarios && flutter pub get && flutter test
 cd tool/comparison/refresh_mid_open && flutter pub get && flutter test
 ```
 
-Оба прогона кончаются одним красным тестом, и это ожидаемо: падает вариант
-get_it + watch_it, и падение и есть находка — «not ready yet» и потерянная БД.
-`five_scenarios` даёт `+34 -1`, `refresh_mid_open` — `+3 -1` (проверено
-2026-10-30).
+Each run ends with one failing test, and that is the expected outcome: the
+get_it + watch_it variant fails, and the failure is the finding — "not ready
+yet" and a database nobody closes. `five_scenarios` ends at `+34 -1`,
+`refresh_mid_open` at `+3 -1`.
 
-Своего `.dart_tool` у корня зонды не трогают: у каждого свой пакет. Корневой
-`flutter analyze` их пропускает (`analysis_options.yaml`), в архив пакета
-`tool/` не входит (`.pubignore`).
+Each is a package of its own and leaves the root's `.dart_tool` alone. The root
+`flutter analyze` skips them (`analysis_options.yaml`), and `tool/` is not part
+of the published package (`.pubignore`).
 
-## scopo из рабочей копии
+## scopo from the working tree
 
-В `pubspec.yaml` обоих scopo прибит к 0.21.0 с pub.dev — на нём сняты журналы
-ревью. Проверить текущее дерево — положить рядом с `pubspec.yaml`
-`pubspec_overrides.yaml` (он вне git) и снова сделать `pub get`:
+Both pin scopo to 0.21.0 from pub.dev, the version the README table describes.
+To run them against the working tree instead, put a `pubspec_overrides.yaml`
+(ignored by git) next to `pubspec.yaml` and run `pub get` again:
 
 ```yaml
 dependency_overrides:

@@ -3,20 +3,40 @@
 [![pub version](https://img.shields.io/pub/v/scopo)](https://pub.dev/packages/scopo)
 [![license](https://img.shields.io/github/license/vi-k/scopo)](https://github.com/vi-k/scopo/blob/main/LICENSE)
 
-A Flutter package for managing scopes: dependency injection, state, and
-lifecycle inside the widget tree. A scope owns its dependencies, initializes
-them asynchronously, provides them to its subtree, and disposes of them in
-order — after its child scopes are gone.
+A Flutter package for asynchronous resources owned by the widget tree — a
+database, a socket, a player, a signed-in session. A scope opens them while its
+subtree shows a loading branch, cancels the opening if the subtree leaves
+first, provides them to its descendants, and releases them in order: after its
+child scopes are gone and, with a `scopeKey`, before the next owner of the same
+resource starts. Access to dependencies and a state on top of them come with
+it.
 
 ## Why another one
 
-scopo combines dependency access with **ownership over time**: when a value is
-built, what the screen shows while it is being built, what happens if the
-widget leaves before it is ready, and in what order things are let go on the
-way out.
+A screen needs a database and a session restored from it; both open and close
+asynchronously. Sooner or later two things happen to such a screen: the user
+leaves while the database is still opening, and the screen is re-created — a
+refresh, a new key — while the previous one is still closing what it opened.
 
-That is worth a package only when the objects have a lifecycle of their own — a
-database, a socket, a player, a signed-in session. What scopo adds:
+Here is what happens in those two moments, with the screen written the way each
+package's documentation shows. The code is in the repository, under
+[tool/comparison](https://github.com/vi-k/scopo/tree/main/tool/comparison); the
+versions are those of October 2026.
+
+| package | left while the database is opening | re-created at once | released on the way out |
+| --- | --- | --- | --- |
+| scopo 0.21.0 | the database is closed as soon as it arrives; the session is never started | with `scopeKey`, the old database is closed before the new one opens; without it, both are open at once | the session, then the database, each awaited |
+| flutter_riverpod 3.4.3 | the database stays open, unless the provider checks `ref.mounted` after the `await` | a global provider hands the new screen the same instance; a scoped one opens a second beside it | the database starts closing before the session has closed |
+| get_it 9.3.0 + watch_it 2.5.0 | the database stays open, and a `StateError` reaches the zone | both are open at once | the session, then the database |
+| yx_scope_flutter 1.2.0 | the opening runs to the end, session included, and then both are closed | both are open at once | the session, then the database |
+| cobalt_flutter 1.9.2 | the same as yx_scope | both are open at once | the session, then the database |
+
+Only the first row keeps one owner of the database in both moments, and only
+with `scopeKey`, which a scope does not have unless you give it one.
+
+scopo is about **ownership over time**: when a value is built, what the screen
+shows while it is being built, what happens if the widget leaves before it is
+ready, and in what order things are let go on the way out. What it gives:
 
 - **initialization is an ordinary `async` function** that reports its steps and
   returns its value, so a scope has a loading branch, a progress value and an

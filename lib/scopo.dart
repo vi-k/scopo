@@ -1,5 +1,7 @@
-/// A set of tools for creating and managing scopes on Flutter. Including
-/// dependency injection, asynchronous initialization and disposal.
+/// Asynchronous resources owned by the widget tree: a scope initializes what
+/// its subtree needs, cancels that initialization if the subtree leaves first,
+/// provides the result to its descendants, and disposes of it in order — after
+/// its child scopes, and before the next owner of the same `scopeKey`.
 library;
 
 // These are the kernel names used to drive an initialization and read its

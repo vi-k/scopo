@@ -1,3 +1,13 @@
+## 0.21.1
+
+* The package now describes itself by what it is for — asynchronous resources
+  owned by the widget tree — rather than as dependency injection and state
+  management: the pubspec description, the topics (`lifecycle` and `async` in,
+  `state-management` out), the library's documentation comment, and the opening
+  of the README, which now starts with what happens to a screen's database and
+  session when the screen is left during loading or re-created, next to
+  riverpod, get_it, yx_scope and cobalt. No API changes.
+
 ## 0.21.0
 
 * **Breaking:** the floor is Dart 3.10.0 and Flutter 3.38.1, up from Dart

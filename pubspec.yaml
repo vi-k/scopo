@@ -1,12 +1,14 @@
 name: scopo
-description: "A Flutter package for managing scopes and dependency injection
-  within the widget tree"
+description: "Asynchronous resources owned by the widget tree: cancellable
+  initialization with loading and error branches, ordered and awaited
+  disposal, one owner at a time."
 version: 0.21.0
 homepage: https://github.com/vi-k/scopo
 repository: https://github.com/vi-k/scopo
 issue_tracker: https://github.com/vi-k/scopo/issues
 topics:
-  - state-management
+  - lifecycle
+  - async
   - dependency-injection
   - scope
   - widgets
