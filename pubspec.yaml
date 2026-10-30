@@ -2,7 +2,7 @@ name: scopo
 description: "Asynchronous resources owned by the widget tree: cancellable
   initialization with loading and error branches, ordered and awaited
   disposal, one owner at a time."
-version: 0.21.1
+version: 0.21.2
 homepage: https://github.com/vi-k/scopo
 repository: https://github.com/vi-k/scopo
 issue_tracker: https://github.com/vi-k/scopo/issues
