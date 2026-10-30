@@ -11,9 +11,9 @@
   `AsyncDataScope`, `AsyncControllerScope`, `LiteScope` and `Scope`, then
   `ScopeModel`, `ScopeNotifier` and `ScopeWidgetBase` in a README section of
   their own, "Without an asynchronous phase". The topics of the API reference
-  follow the same order. The README also says that scopo works only in the
-  widget tree by design, and that a resource that has to live outside it needs
-  another tool.
+  and the tabs of `scopo_demo` follow the same order. The README also says that
+  scopo works only in the widget tree by design, and that a resource that has
+  to live outside it needs another tool.
 
 ## 0.21.0
 

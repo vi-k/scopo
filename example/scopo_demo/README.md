@@ -14,14 +14,14 @@ Ten tabs, one per family plus two scenarios that need a screen of their own:
 
 | tab | what it demonstrates |
 | --- | --- |
-| ScopeWidget | widget parameters through `ScopeWidgetBase`, plus element-owned mutable state and selective rebuilds through `ScopeWidgetCore` |
-| ScopeModel | owning a plain object: `create`/`dispose`, `.value`, a named scope |
-| ScopeNotifier | the same for a `Listenable`, with selectors filtering the rebuilds |
 | AsyncScope | asynchronous initialization and disposal without a container |
 | AsyncDataScope | the same, producing a value the subtree reads |
 | AsyncControllerScope | a controller with a lifecycle of its own, released on every path out of the scope — including a failed initialization and one the scope walked away from |
 | LiteScope | a state class with the full lifecycle |
 | Scope | the full family: a dependency tree, progress per dependency, a state |
+| ScopeModel | owning a plain object: `create`/`dispose`, `.value`, a named scope |
+| ScopeNotifier | the same for a `Listenable`, with selectors filtering the rebuilds |
+| ScopeWidget | widget parameters through `ScopeWidgetBase`, plus element-owned mutable state and selective rebuilds through `ScopeWidgetCore` |
 | Deferred closing | `close()`: the closing screen over a frozen subtree |
 | NavigationNode | a nested `Navigator` whose routes stay inside the scope, from the `navigation_node` package |
 

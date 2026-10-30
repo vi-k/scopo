@@ -21,14 +21,14 @@ import 'demos/scope_widget/scope_widget_demo.dart';
 import 'home_dependencies.dart';
 
 const _tabs = <(String, Widget)>[
-  ('ScopeWidget', ScopeWidgetDemo()),
-  ('ScopeModel', ScopeModelDemo()),
-  ('ScopeNotifier', ScopeNotifierDemo()),
   ('AsyncScope', AsyncScopeDemo()),
   ('AsyncDataScope', AsyncDataScopeDemo()),
   ('AsyncControllerScope', AsyncControllerDemo()),
   ('LiteScope', LiteScopeDemo()),
   ('Scope', ScopeDemo()),
+  ('ScopeModel', ScopeModelDemo()),
+  ('ScopeNotifier', ScopeNotifierDemo()),
+  ('ScopeWidget', ScopeWidgetDemo()),
   ('Deferred closing', DeferredClosingDemo()),
   ('NavigationNode', NavigationNodeDemo()),
 ];
