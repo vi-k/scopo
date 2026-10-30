@@ -1,0 +1,19 @@
+name: refresh_mid_open
+publish_to: none
+
+environment:
+  sdk: ^3.10.0
+
+dependencies:
+  flutter:
+    sdk: flutter
+  scopo: 0.21.0
+  flutter_riverpod: 3.4.3
+  get_it: 9.3.0
+  watch_it: 2.5.0
+  yx_scope: 1.2.2
+  yx_scope_flutter: 1.2.0
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter

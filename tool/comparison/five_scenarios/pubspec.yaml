@@ -1,0 +1,17 @@
+name: five_scenarios
+publish_to: none
+environment:
+  sdk: ^3.10.0
+dependencies:
+  flutter:
+    sdk: flutter
+  scopo: 0.21.0
+  cobalt: 1.9.2
+  cobalt_flutter: 1.9.2
+  flutter_riverpod: 3.4.3
+  get_it: 9.3.0
+  watch_it: 2.5.0
+  depend: 5.1.5
+dev_dependencies:
+  flutter_test:
+    sdk: flutter

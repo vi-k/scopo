@@ -1,0 +1,13 @@
+# A probe, not the package: the analyzer's defaults, not the repository's
+# rules for lib/, which would otherwise apply from the root.
+analyzer:
+  exclude:
+    - build/**
+    - android/**
+    - ios/**
+    - web/**
+    - windows/**
+    - macos/**
+    - linux/**
+  language:
+    strict-casts: true
