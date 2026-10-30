@@ -16,9 +16,9 @@ One scope is three types:
    `StatefulWidget`, except that `dependencies` is already available in
    `initState`.
 
-The lighter families (`ScopeWidgetBase`, `ScopeModel`, `ScopeNotifier`,
-`AsyncScope`, `AsyncDataScope`, `AsyncControllerScope`, `LiteScope`) drop one
-part or another. `Scope` is the full set.
+The lighter families (`AsyncScope`, `AsyncDataScope`, `AsyncControllerScope`,
+`LiteScope`, `ScopeModel`, `ScopeNotifier`, `ScopeWidgetBase`) drop one part or
+another. `Scope` is the full set.
 
 ## The initialization branch
 

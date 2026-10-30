@@ -1,6 +1,6 @@
 # Scope
 
-> Перевод `doc/full_scope.md` (blob `73df1910a731954dd55aec66a31651ef961e8667`).
+> Перевод `doc/full_scope.md` (blob `0de7b461fb7a0eab9d7ffeabd1adc3f0cfdb1e84`).
 > Правится в том же коммите, что и оригинал; проверка — `sh docs/ru/check.sh`.
 
 `Scope` — основной строительный блок пакета: виджет, который владеет
@@ -19,9 +19,9 @@
    у `StatefulWidget`, с той разницей, что `dependencies` уже доступны
    в `initState`.
 
-Младшие семейства (`ScopeWidgetBase`, `ScopeModel`, `ScopeNotifier`,
-`AsyncScope`, `AsyncDataScope`, `AsyncControllerScope`, `LiteScope`)
-отбрасывают ту или иную часть. `Scope` — полный набор.
+Младшие семейства (`AsyncScope`, `AsyncDataScope`, `AsyncControllerScope`,
+`LiteScope`, `ScopeModel`, `ScopeNotifier`, `ScopeWidgetBase`) отбрасывают ту
+или иную часть. `Scope` — полный набор.
 
 ## Ветка инициализации
 

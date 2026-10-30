@@ -74,6 +74,17 @@ show the closing screen while teardown runs.
 released by a single `dispose()`, everything above costs you something and buys
 you nothing: `provider` is smaller, better known, and enough.
 
+**Only in the widget tree, by design.** The owner of a scope's resources is an
+element of the tree: the scope starts when it is mounted, its release begins
+when it leaves, and the waits — child scopes before their parent, successive
+owners of one `scopeKey`, `close()` — are kept by the tree. There is no
+container that works without widgets, and that is deliberate: scopo is written
+the Flutter way, and the tree already knows when a part of the screen appears
+and when it leaves. `ScopeInitJob` runs an initialization outside the tree, in
+a test or before there are any widgets, but nothing orders a release around it.
+A resource that has to outlive every screen or work without Flutter — a
+background service, a pure Dart package — needs another tool.
+
 ## Features
 
 - **Scopes**: a widget that owns dependencies and a state and provides both to
@@ -86,17 +97,18 @@ you nothing: `provider` is smaller, better known, and enough.
   `scopeKey` makes a re-created scope wait for the previous scope with the same
   key. These waits time out after 3 s by default, then proceed even if release
   is unfinished; owners may overlap (see [scopeKey](#scopekey)).
+- **Graceful closing**: `close()` replaces the subtree with a closing branch
+  while the asynchronous disposal is running, and completes when it is over;
+  `LiteScope` can freeze the last frame under it as a screenshot.
+- **Observable lifecycle**: a typed observer is told about every
+  initialization, progress step, failure and teardown.
 - **Selective rebuilds**: `select` and `selectParam` subscribe a descendant to
   a single value; `notifyDependents` rebuilds only those descendants, never the
   scope's own subtree. `setState` is the other half and is untouched: it
   rebuilds the state's own subtree and reaches no subscriber.
-- **Graceful closing**: `close()` replaces the subtree with a closing branch
-  while the asynchronous disposal is running, and completes when it is over;
-  `LiteScope` can freeze the last frame under it as a screenshot.
-- **Eight families**: from a widget that only passes its own parameters down to
-  a full scope with a dependency container — take the smallest that fits.
-- **Observable lifecycle**: a typed observer is told about every
-  initialization, progress step, failure and teardown.
+- **Eight families**: five with an asynchronous lifecycle, from `AsyncScope`,
+  which only drives one, to `Scope`, with a dependency container and a state;
+  and three for what is created synchronously — take the smallest that fits.
 
 ## Installation
 
@@ -121,131 +133,23 @@ scope after releasing its previous resource.
 
 ## The families
 
-Eight of them, and the right one is the smallest that fits. They are listed
-here from the smallest up — the same order the topics are in — and the largest,
-`Scope`, gets a section of its own below.
+Eight of them, in two groups. The five with an asynchronous lifecycle come
+first, because that lifecycle is what the package is for. They go from the
+smallest up, from `AsyncScope`, which only drives a lifecycle, to `Scope`,
+which adds a dependency container and a state and gets a section of its own.
+The three without an asynchronous phase follow in a section of their own. Take
+the smallest one that fits; the topics are in the same order.
 
 | what you own | take |
 | --- | --- |
-| nothing but the widget's own parameters | `ScopeWidgetBase` |
-| a plain object with a `dispose()` | `ScopeModel` |
-| a `Listenable` — `ChangeNotifier`, `ValueNotifier`, … | `ScopeNotifier` |
 | objects that already exist, but whose lifecycle the tree has to drive | `AsyncScope` |
 | a value built asynchronously | `AsyncDataScope` |
 | …and that value is a controller with an `init` and a `dispose` of its own | `AsyncControllerScope` |
 | a state object with the full asynchronous lifecycle | `LiteScope` |
 | a container of dependencies **and** a state on top of it | `Scope` |
-
-### ScopeWidgetBase
-
-Provides the widget's own parameters to its subtree. Descendants subscribe per
-parameter, so an unrelated parameter change does not rebuild them.
-
-```dart
-final class ApiConfig extends ScopeWidgetBase<ApiConfig> {
-  final String apiKey;
-
-  const ApiConfig({
-    super.key,
-    required this.apiKey,
-    required super.child,
-  });
-
-  static String apiKeyOf(BuildContext context) =>
-      ScopeWidgetBase.select<ApiConfig, String>(
-        context,
-        (widget) => widget.apiKey,
-      );
-
-  @override
-  Widget build(BuildContext context) => child;
-}
-```
-
-**In depth:** the topic
-[ScopeWidget](https://pub.dev/documentation/scopo/latest/topics/ScopeWidget-topic.html).
-
-### ScopeModel
-
-Owns a plain Dart object: `create` builds it, `dispose` releases it. The model
-is not observable, so descendants are notified when the `ScopeModel` widget
-itself is rebuilt, and a selector then filters out the unchanged values.
-Subclass `ScopeModelBase` to get a named scope with its own static accessors.
-
-```dart
-class UserGate extends StatelessWidget {
-  const UserGate({super.key});
-
-  @override
-  Widget build(BuildContext context) => ScopeModel<UserModel>(
-        create: (context) => UserModel('Alice'),
-        dispose: (model) => model.dispose(),
-        builder: (context) => const UserView(),
-      );
-}
-
-class UserView extends StatelessWidget {
-  const UserView({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    // Without a subscription:
-    final user = ScopeModel.of<UserModel>(context, listen: false);
-
-    // With a subscription to the selected value:
-    final name = ScopeModel.select<UserModel, String>(
-      context,
-      (model) => model.name,
-    );
-
-    return Text('$name (${user.name})');
-  }
-}
-```
-
-**In depth:** the topic
-[ScopeModel](https://pub.dev/documentation/scopo/latest/topics/ScopeModel-topic.html).
-
-### ScopeNotifier
-
-The same as `ScopeModel`, but for a `Listenable` (`ChangeNotifier`,
-`ValueNotifier`, …): the scope subscribes to the model and rebuilds the
-descendants whose selected value has changed. `ScopeNotifierBase` is the
-subclassable variant.
-
-```dart
-class CounterGate extends StatelessWidget {
-  const CounterGate({super.key});
-
-  @override
-  Widget build(BuildContext context) => ScopeNotifier<Counter>(
-        create: (context) => Counter(),
-        dispose: (counter) => counter.dispose(),
-        builder: (context) => const CounterText(),
-      );
-}
-
-class CounterText extends StatelessWidget {
-  const CounterText({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    // Rebuilt on `notifyListeners`, and only if the selected value changed.
-    final value = ScopeNotifier.select<Counter, int>(
-      context,
-      (counter) => counter.value,
-    );
-
-    return TextButton(
-      onPressed: ScopeNotifier.of<Counter>(context, listen: false).increment,
-      child: Text('$value'),
-    );
-  }
-}
-```
-
-**In depth:** the topic
-[ScopeNotifier](https://pub.dev/documentation/scopo/latest/topics/ScopeNotifier-topic.html).
+| a plain object, created synchronously, with a `dispose()` | `ScopeModel` |
+| …and that object is a `Listenable` — `ChangeNotifier`, `ValueNotifier`, … | `ScopeNotifier` |
+| nothing but the widget's own parameters | `ScopeWidgetBase` |
 
 ### AsyncScope
 
@@ -625,10 +529,132 @@ class HomeScreen extends StatelessWidget {
 **In depth:** the topic
 [Scope](https://pub.dev/documentation/scopo/latest/topics/Scope-topic.html).
 
+## Without an asynchronous phase
+
+Three families for what the tree never has to wait for. `ScopeModel` and
+`ScopeNotifier` create their object when the scope is mounted and release it
+synchronously when it leaves; `ScopeWidgetBase` owns nothing and provides its
+own parameters. None of them has a loading branch, a cancellation or a wait for
+child scopes. They share `of`, `select` and the selective rebuilds with the
+families above, so the synchronous parts of a screen need no second package
+next to scopo. When nothing in the application is asynchronous, see the note on
+when not to take scopo under [Why another one](#why-another-one).
+
+### ScopeModel
+
+Owns a plain Dart object: `create` builds it, `dispose` releases it. The model
+is not observable, so descendants are notified when the `ScopeModel` widget
+itself is rebuilt, and a selector then filters out the unchanged values.
+Subclass `ScopeModelBase` to get a named scope with its own static accessors.
+
+```dart
+class UserGate extends StatelessWidget {
+  const UserGate({super.key});
+
+  @override
+  Widget build(BuildContext context) => ScopeModel<UserModel>(
+        create: (context) => UserModel('Alice'),
+        dispose: (model) => model.dispose(),
+        builder: (context) => const UserView(),
+      );
+}
+
+class UserView extends StatelessWidget {
+  const UserView({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    // Without a subscription:
+    final user = ScopeModel.of<UserModel>(context, listen: false);
+
+    // With a subscription to the selected value:
+    final name = ScopeModel.select<UserModel, String>(
+      context,
+      (model) => model.name,
+    );
+
+    return Text('$name (${user.name})');
+  }
+}
+```
+
+**In depth:** the topic
+[ScopeModel](https://pub.dev/documentation/scopo/latest/topics/ScopeModel-topic.html).
+
+### ScopeNotifier
+
+The same as `ScopeModel`, but for a `Listenable` (`ChangeNotifier`,
+`ValueNotifier`, …): the scope subscribes to the model and rebuilds the
+descendants whose selected value has changed. `ScopeNotifierBase` is the
+subclassable variant.
+
+```dart
+class CounterGate extends StatelessWidget {
+  const CounterGate({super.key});
+
+  @override
+  Widget build(BuildContext context) => ScopeNotifier<Counter>(
+        create: (context) => Counter(),
+        dispose: (counter) => counter.dispose(),
+        builder: (context) => const CounterText(),
+      );
+}
+
+class CounterText extends StatelessWidget {
+  const CounterText({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    // Rebuilt on `notifyListeners`, and only if the selected value changed.
+    final value = ScopeNotifier.select<Counter, int>(
+      context,
+      (counter) => counter.value,
+    );
+
+    return TextButton(
+      onPressed: ScopeNotifier.of<Counter>(context, listen: false).increment,
+      child: Text('$value'),
+    );
+  }
+}
+```
+
+**In depth:** the topic
+[ScopeNotifier](https://pub.dev/documentation/scopo/latest/topics/ScopeNotifier-topic.html).
+
+### ScopeWidgetBase
+
+Provides the widget's own parameters to its subtree. Descendants subscribe per
+parameter, so an unrelated parameter change does not rebuild them.
+
+```dart
+final class ApiConfig extends ScopeWidgetBase<ApiConfig> {
+  final String apiKey;
+
+  const ApiConfig({
+    super.key,
+    required this.apiKey,
+    required super.child,
+  });
+
+  static String apiKeyOf(BuildContext context) =>
+      ScopeWidgetBase.select<ApiConfig, String>(
+        context,
+        (widget) => widget.apiKey,
+      );
+
+  @override
+  Widget build(BuildContext context) => child;
+}
+```
+
+**In depth:** the topic
+[ScopeWidget](https://pub.dev/documentation/scopo/latest/topics/ScopeWidget-topic.html).
+
 ## Accessors: the type arguments, once
 
-The section above gives `App` five static wrappers, and every one of them names
-the same three types again:
+The section [Scope: the full family](#scope-the-full-family) gives `App` five
+static wrappers, and every one of them names the same three types again:
 
 ```dart
 static V select<V>(BuildContext context, V Function(AppState state) selector) =>
@@ -660,14 +686,14 @@ one, and takes the type arguments that family takes:
 
 | family | accessor |
 | --- | --- |
-| `ScopeWidgetBase` | `ScopeWidgetAccess<W>` |
-| `ScopeModelBase` | `ScopeModelAccess<W, M>` |
-| `ScopeNotifierBase` | `ScopeNotifierAccess<W, M>` |
 | `AsyncScopeBase` | `AsyncScopeAccess<W>` |
 | `AsyncDataScopeBase` | `AsyncDataScopeAccess<W, T>` |
 | `AsyncControllerScopeBase` | `AsyncControllerScopeAccess<W, C>` |
 | `LiteScope` | `LiteScopeAccess<W, S>` |
 | `Scope` | `ScopeAccess<W, D, S>` |
+| `ScopeModelBase` | `ScopeModelAccess<W, M>` |
+| `ScopeNotifierBase` | `ScopeNotifierAccess<W, M>` |
+| `ScopeWidgetBase` | `ScopeWidgetAccess<W>` |
 
 **What it costs**: one more step at every call site — `App.access.select(…)`
 rather than `App.select(…)`. Nothing else changes, and the statics stay exactly
@@ -1014,13 +1040,13 @@ which is where to read them alongside the source of a version you have pinned.
 | topic | file | start here for |
 | --- | --- | --- |
 | [base](https://pub.dev/documentation/scopo/latest/topics/base-topic.html) | `doc/base.md` | `of`, `select`, `listen`, and how a scope is found at all |
-| [ScopeWidget](https://pub.dev/documentation/scopo/latest/topics/ScopeWidget-topic.html) | `doc/scope_widget.md` | the widget/element pair every family extends |
-| [ScopeModel](https://pub.dev/documentation/scopo/latest/topics/ScopeModel-topic.html) | `doc/scope_model.md` | owning a plain object |
-| [ScopeNotifier](https://pub.dev/documentation/scopo/latest/topics/ScopeNotifier-topic.html) | `doc/scope_notifier.md` | owning a `Listenable` |
 | [AsyncScope](https://pub.dev/documentation/scopo/latest/topics/AsyncScope-topic.html) | `doc/async_scope.md` | the asynchronous lifecycle, `scopeKey`, the coordinator |
 | [AsyncDataScope](https://pub.dev/documentation/scopo/latest/topics/AsyncDataScope-topic.html) | `doc/async_data_scope.md` | the same, producing a value |
 | [AsyncControllerScope](https://pub.dev/documentation/scopo/latest/topics/AsyncControllerScope-topic.html) | `doc/async_controller_scope.md` | the same, where that value is a controller with a lifecycle of its own |
 | [LiteScope](https://pub.dev/documentation/scopo/latest/topics/LiteScope-topic.html) | `doc/lite_scope.md` | a state class with that lifecycle, and a `close()` with a screenshot |
 | [Scope](https://pub.dev/documentation/scopo/latest/topics/Scope-topic.html) | `doc/full_scope.md` | the full family: dependencies, state, four branches |
+| [ScopeModel](https://pub.dev/documentation/scopo/latest/topics/ScopeModel-topic.html) | `doc/scope_model.md` | owning a plain object |
+| [ScopeNotifier](https://pub.dev/documentation/scopo/latest/topics/ScopeNotifier-topic.html) | `doc/scope_notifier.md` | owning a `Listenable` |
+| [ScopeWidget](https://pub.dev/documentation/scopo/latest/topics/ScopeWidget-topic.html) | `doc/scope_widget.md` | the widget/element pair every family extends |
 | [debug](https://pub.dev/documentation/scopo/latest/topics/debug-topic.html) | `doc/debug.md` | the observer, timeouts, and the test setup |
 | [utils](https://pub.dev/documentation/scopo/latest/topics/utils-topic.html) | `doc/utils.md` | the helpers that come with the package |

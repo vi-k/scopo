@@ -6,9 +6,6 @@ const readme = DocManifest(
   support: _support,
   {
     'installation/import-package-scopo-scopo-dar': _library,
-    'the-families/ApiConfig': _library,
-    'the-families/UserGate': _library,
-    'the-families/CounterGate': _library,
     'the-families/ConnectionGate': DocEnvironment(_home, _application),
     'the-families/DatabaseGate': _library,
     'the-families/Player': _library,
@@ -20,6 +17,9 @@ const readme = DocManifest(
         DocEnvironment('$_dependencies\n$_state', _application),
     'scope-the-full-family/HomeScreen':
         DocEnvironment('$_dependencies\n$_state\n$_app', _application),
+    'without-an-asynchronous-phase/UserGate': _library,
+    'without-an-asynchronous-phase/CounterGate': _library,
+    'without-an-asynchronous-phase/ApiConfig': _library,
     'accessors-the-type-arguments-o/static-v-select-v-buildcontext':
         DocEnvironment(
       '$_dependencies\n$_state\n$_app\nclass Accessors {',

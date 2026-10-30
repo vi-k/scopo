@@ -7,6 +7,13 @@
   of the README, which now starts with what happens to a screen's database and
   session when the screen is left during loading or re-created, next to
   riverpod, get_it, yx_scope and cobalt. No API changes.
+* The families are documented asynchronous first: `AsyncScope`,
+  `AsyncDataScope`, `AsyncControllerScope`, `LiteScope` and `Scope`, then
+  `ScopeModel`, `ScopeNotifier` and `ScopeWidgetBase` in a README section of
+  their own, "Without an asynchronous phase". The topics of the API reference
+  follow the same order. The README also says that scopo works only in the
+  widget tree by design, and that a resource that has to live outside it needs
+  another tool.
 
 ## 0.21.0
 

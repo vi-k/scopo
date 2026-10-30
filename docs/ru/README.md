@@ -1,6 +1,6 @@
 # scopo
 
-> Перевод `README.md` (blob `f970ca35bdea98417c8dd8cfe4a50c55159de172`).
+> Перевод `README.md` (blob `1c2099e013ed07a49e643c7c6138f7acba3198fc`).
 > Правится в том же коммите, что и оригинал; проверка — `sh docs/ru/check.sh`.
 
 [![pub version](https://img.shields.io/pub/v/scopo)](https://pub.dev/packages/scopo)
@@ -77,6 +77,17 @@ Riverpod закрывает часть этого: `FutureProvider` и `AsyncVal
 и отпускаются одним `dispose()`, всё перечисленное чего-то стоит и ничего
 не даёт: `provider` меньше, известнее и его достаточно.
 
+**Только в дереве виджетов, и так задумано.** Владелец ресурсов скоупа —
+элемент дерева: скоуп стартует, когда его монтируют, его освобождение
+начинается, когда он уходит, а ожидания — дочерних скоупов перед родителем,
+сменяющих друг друга владельцев одного `scopeKey`, `close()` — держит дерево.
+Контейнера, который работает без виджетов, нет, и это сознательно: scopo
+написан по-флаттеровски, а дерево и так знает, когда часть экрана появляется
+и когда уходит. `ScopeInitJob` проводит инициализацию вне дерева, в тесте или
+до появления каких-либо виджетов, но освобождение вокруг неё никто
+не упорядочивает. Ресурсу, который должен пережить все экраны или работать без
+Flutter, — фоновому сервису, пакету на чистом Dart — нужен другой инструмент.
+
 ## Возможности
 
 - **Скоупы**: виджет, который владеет зависимостями и состоянием и отдаёт
@@ -90,19 +101,20 @@ Riverpod закрывает часть этого: `FutureProvider` и `AsyncVal
   с тем же ключом. Эти ожидания по умолчанию ограничены тремя секундами; после
   истечения работа продолжается, даже если освобождение ещё не закончено,
   и возможно одновременное владение (см. [scopeKey](#scopekey)).
+- **Аккуратное закрытие**: `close()` заменяет поддерево веткой закрытия, пока
+  идёт асинхронная утилизация, и завершается, когда она закончена; `LiteScope`
+  может заморозить под ней последний кадр снимком.
+- **Наблюдаемый жизненный цикл**: типизированному наблюдателю сообщают о каждой
+  инициализации, шаге прогресса, отказе и разборе.
 - **Выборочные перестроения**: `select` и `selectParam` подписывают потомка
   на одно значение; `notifyDependents` перестраивает только этих потомков
   и никогда — собственное поддерево скоупа. `setState` — вторая половина, и он
   не тронут: перестраивает собственное поддерево состояния и до подписчиков
   не доходит.
-- **Аккуратное закрытие**: `close()` заменяет поддерево веткой закрытия, пока
-  идёт асинхронная утилизация, и завершается, когда она закончена; `LiteScope`
-  может заморозить под ней последний кадр снимком.
-- **Восемь семейств**: от виджета, который только отдаёт вниз собственные
-  параметры, до полного скоупа с контейнером зависимостей — берут самое
-  маленькое из подходящих.
-- **Наблюдаемый жизненный цикл**: типизированному наблюдателю сообщают о каждой
-  инициализации, шаге прогресса, отказе и разборе.
+- **Восемь семейств**: пять с асинхронным жизненным циклом, от `AsyncScope`,
+  который только ведёт его, до `Scope` с контейнером зависимостей и состоянием,
+  и три для того, что создаётся синхронно, — берут самое маленькое
+  из подходящих.
 
 ## Установка
 
@@ -127,133 +139,23 @@ import 'package:scopo/scopo.dart';
 
 ## Семейства
 
-Их восемь, и нужное — самое маленькое из подходящих. Ниже они идут от меньшего
-к большему, в том же порядке, что и темы; самому большому, `Scope`, отведён
-отдельный раздел следом.
+Их восемь, в двух группах. Первыми идут пять семейств с асинхронным жизненным
+циклом, потому что ради этого цикла пакет и написан. Они идут от меньшего
+к большему: от `AsyncScope`, который только ведёт жизненный цикл, до `Scope`,
+который добавляет контейнер зависимостей и состояние; ему отведён отдельный
+раздел. Три семейства без асинхронной фазы идут следом в своём разделе. Берите
+самое маленькое из подходящих; темы идут в том же порядке.
 
 | чем владеете | что брать |
 | --- | --- |
-| ничем, кроме собственных параметров виджета | `ScopeWidgetBase` |
-| обычным объектом с `dispose()` | `ScopeModel` |
-| `Listenable` — `ChangeNotifier`, `ValueNotifier`, … | `ScopeNotifier` |
 | объектами, которые уже есть, но их жизненным циклом должно править дерево | `AsyncScope` |
 | значением, которое создаётся асинхронно | `AsyncDataScope` |
 | …и это значение — контроллер с собственными `init` и `dispose` | `AsyncControllerScope` |
 | объектом состояния с полным асинхронным циклом | `LiteScope` |
 | контейнером зависимостей **и** состоянием поверх него | `Scope` |
-
-### ScopeWidgetBase
-
-Отдаёт поддереву собственные параметры виджета. Потомки подписываются
-попараметрно, поэтому изменение постороннего параметра их не перестраивает.
-
-```dart
-final class ApiConfig extends ScopeWidgetBase<ApiConfig> {
-  final String apiKey;
-
-  const ApiConfig({
-    super.key,
-    required this.apiKey,
-    required super.child,
-  });
-
-  static String apiKeyOf(BuildContext context) =>
-      ScopeWidgetBase.select<ApiConfig, String>(
-        context,
-        (widget) => widget.apiKey,
-      );
-
-  @override
-  Widget build(BuildContext context) => child;
-}
-```
-
-**Подробнее:** тема
-[ScopeWidget](https://pub.dev/documentation/scopo/latest/topics/ScopeWidget-topic.html).
-
-### ScopeModel
-
-Владеет обычным объектом Dart: `create` его создаёт, `dispose` освобождает.
-Модель не наблюдаемая, поэтому потомков уведомляют, когда перестраивается сам
-виджет `ScopeModel`, а селектор затем отсеивает неизменившиеся значения.
-Наследуйтесь от `ScopeModelBase`, чтобы получить именованный скоуп со своими
-статическими аксессорами.
-
-```dart
-class UserGate extends StatelessWidget {
-  const UserGate({super.key});
-
-  @override
-  Widget build(BuildContext context) => ScopeModel<UserModel>(
-        create: (context) => UserModel('Alice'),
-        dispose: (model) => model.dispose(),
-        builder: (context) => const UserView(),
-      );
-}
-
-class UserView extends StatelessWidget {
-  const UserView({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    // Без подписки:
-    final user = ScopeModel.of<UserModel>(context, listen: false);
-
-    // С подпиской на выбранное значение:
-    final name = ScopeModel.select<UserModel, String>(
-      context,
-      (model) => model.name,
-    );
-
-    return Text('$name (${user.name})');
-  }
-}
-```
-
-**Подробнее:** тема
-[ScopeModel](https://pub.dev/documentation/scopo/latest/topics/ScopeModel-topic.html).
-
-### ScopeNotifier
-
-То же, что `ScopeModel`, но для `Listenable` (`ChangeNotifier`,
-`ValueNotifier`, …): скоуп подписывается на модель и перестраивает тех
-потомков, у которых изменилось выбранное значение. `ScopeNotifierBase` —
-вариант для наследования.
-
-```dart
-class CounterGate extends StatelessWidget {
-  const CounterGate({super.key});
-
-  @override
-  Widget build(BuildContext context) => ScopeNotifier<Counter>(
-        create: (context) => Counter(),
-        dispose: (counter) => counter.dispose(),
-        builder: (context) => const CounterText(),
-      );
-}
-
-class CounterText extends StatelessWidget {
-  const CounterText({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    // Перестраивается на `notifyListeners`, и только если выбранное
-    // значение изменилось.
-    final value = ScopeNotifier.select<Counter, int>(
-      context,
-      (counter) => counter.value,
-    );
-
-    return TextButton(
-      onPressed: ScopeNotifier.of<Counter>(context, listen: false).increment,
-      child: Text('$value'),
-    );
-  }
-}
-```
-
-**Подробнее:** тема
-[ScopeNotifier](https://pub.dev/documentation/scopo/latest/topics/ScopeNotifier-topic.html).
+| обычным объектом, который создаётся синхронно, с `dispose()` | `ScopeModel` |
+| …и этот объект — `Listenable`: `ChangeNotifier`, `ValueNotifier`, … | `ScopeNotifier` |
+| ничем, кроме собственных параметров виджета | `ScopeWidgetBase` |
 
 ### AsyncScope
 
@@ -635,10 +537,134 @@ class HomeScreen extends StatelessWidget {
 **Подробнее:** тема
 [Scope](https://pub.dev/documentation/scopo/latest/topics/Scope-topic.html).
 
+## Без асинхронной фазы
+
+Три семейства для того, чего дереву никогда не приходится ждать. `ScopeModel`
+и `ScopeNotifier` создают свой объект, когда скоуп монтируется, и синхронно
+отпускают его, когда скоуп уходит; `ScopeWidgetBase` ничем не владеет и отдаёт
+собственные параметры. Ни у одного из них нет ветки загрузки, отмены и ожидания
+дочерних скоупов. `of`, `select` и выборочные перестроения у них общие
+с семействами выше, поэтому синхронным частям экрана не нужен второй пакет
+рядом со scopo. Если в приложении нет ничего асинхронного, смотрите заметку
+о том, когда scopo брать не стоит, в разделе [Зачем ещё один](#зачем-ещё-один).
+
+### ScopeModel
+
+Владеет обычным объектом Dart: `create` его создаёт, `dispose` освобождает.
+Модель не наблюдаемая, поэтому потомков уведомляют, когда перестраивается сам
+виджет `ScopeModel`, а селектор затем отсеивает неизменившиеся значения.
+Наследуйтесь от `ScopeModelBase`, чтобы получить именованный скоуп со своими
+статическими аксессорами.
+
+```dart
+class UserGate extends StatelessWidget {
+  const UserGate({super.key});
+
+  @override
+  Widget build(BuildContext context) => ScopeModel<UserModel>(
+        create: (context) => UserModel('Alice'),
+        dispose: (model) => model.dispose(),
+        builder: (context) => const UserView(),
+      );
+}
+
+class UserView extends StatelessWidget {
+  const UserView({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    // Без подписки:
+    final user = ScopeModel.of<UserModel>(context, listen: false);
+
+    // С подпиской на выбранное значение:
+    final name = ScopeModel.select<UserModel, String>(
+      context,
+      (model) => model.name,
+    );
+
+    return Text('$name (${user.name})');
+  }
+}
+```
+
+**Подробнее:** тема
+[ScopeModel](https://pub.dev/documentation/scopo/latest/topics/ScopeModel-topic.html).
+
+### ScopeNotifier
+
+То же, что `ScopeModel`, но для `Listenable` (`ChangeNotifier`,
+`ValueNotifier`, …): скоуп подписывается на модель и перестраивает тех
+потомков, у которых изменилось выбранное значение. `ScopeNotifierBase` —
+вариант для наследования.
+
+```dart
+class CounterGate extends StatelessWidget {
+  const CounterGate({super.key});
+
+  @override
+  Widget build(BuildContext context) => ScopeNotifier<Counter>(
+        create: (context) => Counter(),
+        dispose: (counter) => counter.dispose(),
+        builder: (context) => const CounterText(),
+      );
+}
+
+class CounterText extends StatelessWidget {
+  const CounterText({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    // Перестраивается на `notifyListeners`, и только если выбранное
+    // значение изменилось.
+    final value = ScopeNotifier.select<Counter, int>(
+      context,
+      (counter) => counter.value,
+    );
+
+    return TextButton(
+      onPressed: ScopeNotifier.of<Counter>(context, listen: false).increment,
+      child: Text('$value'),
+    );
+  }
+}
+```
+
+**Подробнее:** тема
+[ScopeNotifier](https://pub.dev/documentation/scopo/latest/topics/ScopeNotifier-topic.html).
+
+### ScopeWidgetBase
+
+Отдаёт поддереву собственные параметры виджета. Потомки подписываются
+попараметрно, поэтому изменение постороннего параметра их не перестраивает.
+
+```dart
+final class ApiConfig extends ScopeWidgetBase<ApiConfig> {
+  final String apiKey;
+
+  const ApiConfig({
+    super.key,
+    required this.apiKey,
+    required super.child,
+  });
+
+  static String apiKeyOf(BuildContext context) =>
+      ScopeWidgetBase.select<ApiConfig, String>(
+        context,
+        (widget) => widget.apiKey,
+      );
+
+  @override
+  Widget build(BuildContext context) => child;
+}
+```
+
+**Подробнее:** тема
+[ScopeWidget](https://pub.dev/documentation/scopo/latest/topics/ScopeWidget-topic.html).
+
 ## Аксессоры: типовые аргументы, один раз
 
-В разделе выше у `App` пять статических обёрток, и каждая заново называет одни
-и те же три типа:
+В разделе [Scope: полное семейство](#scope-полное-семейство) у `App` пять
+статических обёрток, и каждая заново называет одни и те же три типа:
 
 ```dart
 static V select<V>(BuildContext context, V Function(AppState state) selector) =>
@@ -670,14 +696,14 @@ App.access.of(context).increment();
 
 | семейство | аксессор |
 | --- | --- |
-| `ScopeWidgetBase` | `ScopeWidgetAccess<W>` |
-| `ScopeModelBase` | `ScopeModelAccess<W, M>` |
-| `ScopeNotifierBase` | `ScopeNotifierAccess<W, M>` |
 | `AsyncScopeBase` | `AsyncScopeAccess<W>` |
 | `AsyncDataScopeBase` | `AsyncDataScopeAccess<W, T>` |
 | `AsyncControllerScopeBase` | `AsyncControllerScopeAccess<W, C>` |
 | `LiteScope` | `LiteScopeAccess<W, S>` |
 | `Scope` | `ScopeAccess<W, D, S>` |
+| `ScopeModelBase` | `ScopeModelAccess<W, M>` |
+| `ScopeNotifierBase` | `ScopeNotifierAccess<W, M>` |
+| `ScopeWidgetBase` | `ScopeWidgetAccess<W>` |
 
 **Чего это стоит**: одного лишнего звена на каждом вызове —
 `App.access.select(…)` вместо `App.select(…)`. Больше не меняется ничего,
@@ -1028,13 +1054,13 @@ Flutter, — потому и уехал. Добавьте пакет, попра
 | тема | файл | начинать здесь ради |
 | --- | --- | --- |
 | [base](https://pub.dev/documentation/scopo/latest/topics/base-topic.html) | `doc/base.md` | `of`, `select`, `listen` и того, как скоуп вообще находят |
-| [ScopeWidget](https://pub.dev/documentation/scopo/latest/topics/ScopeWidget-topic.html) | `doc/scope_widget.md` | пары «виджет — элемент», от которой наследуются все семейства |
-| [ScopeModel](https://pub.dev/documentation/scopo/latest/topics/ScopeModel-topic.html) | `doc/scope_model.md` | владения обычным объектом |
-| [ScopeNotifier](https://pub.dev/documentation/scopo/latest/topics/ScopeNotifier-topic.html) | `doc/scope_notifier.md` | владения `Listenable` |
 | [AsyncScope](https://pub.dev/documentation/scopo/latest/topics/AsyncScope-topic.html) | `doc/async_scope.md` | асинхронного жизненного цикла, `scopeKey`, координатора |
 | [AsyncDataScope](https://pub.dev/documentation/scopo/latest/topics/AsyncDataScope-topic.html) | `doc/async_data_scope.md` | того же, но с производимым значением |
 | [AsyncControllerScope](https://pub.dev/documentation/scopo/latest/topics/AsyncControllerScope-topic.html) | `doc/async_controller_scope.md` | то же, где это значение — контроллер с собственным жизненным циклом |
 | [LiteScope](https://pub.dev/documentation/scopo/latest/topics/LiteScope-topic.html) | `doc/lite_scope.md` | класса состояния с этим циклом и `close()` со снимком |
 | [Scope](https://pub.dev/documentation/scopo/latest/topics/Scope-topic.html) | `doc/full_scope.md` | полного семейства: зависимости, состояние, четыре ветки |
+| [ScopeModel](https://pub.dev/documentation/scopo/latest/topics/ScopeModel-topic.html) | `doc/scope_model.md` | владения обычным объектом |
+| [ScopeNotifier](https://pub.dev/documentation/scopo/latest/topics/ScopeNotifier-topic.html) | `doc/scope_notifier.md` | владения `Listenable` |
+| [ScopeWidget](https://pub.dev/documentation/scopo/latest/topics/ScopeWidget-topic.html) | `doc/scope_widget.md` | пары «виджет — элемент», от которой наследуются все семейства |
 | [debug](https://pub.dev/documentation/scopo/latest/topics/debug-topic.html) | `doc/debug.md` | наблюдателя, таймаутов и настройки для тестов |
 | [utils](https://pub.dev/documentation/scopo/latest/topics/utils-topic.html) | `doc/utils.md` | хелперов, которые едут вместе с пакетом |

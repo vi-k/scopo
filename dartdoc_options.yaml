@@ -25,14 +25,14 @@ dartdoc:
   categoryOrder:
     [
       base,
-      ScopeWidget,
-      ScopeModel,
-      ScopeNotifier,
       AsyncScope,
       AsyncDataScope,
       AsyncControllerScope,
       LiteScope,
       Scope,
+      ScopeModel,
+      ScopeNotifier,
+      ScopeWidget,
       debug,
       utils,
     ]

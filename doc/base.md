@@ -1,11 +1,11 @@
 # base
 
-Every scope family of this package — `ScopeWidgetBase`, `ScopeModel`,
-`ScopeNotifier`, `AsyncScope`, `AsyncDataScope`, `AsyncControllerScope`,
-`LiteScope` and `Scope` — stands on the same three types. Together they say
-what a scope is to the widget tree: an `InheritedWidget` that can be found from
-below, an element that owns whatever the scope holds, and one lookup protocol
-shared by all of them.
+Every scope family of this package — `AsyncScope`, `AsyncDataScope`,
+`AsyncControllerScope`, `LiteScope`, `Scope`, `ScopeModel`, `ScopeNotifier` and
+`ScopeWidgetBase` — stands on the same three types. Together they say what a
+scope is to the widget tree: an `InheritedWidget` that can be found from below,
+an element that owns whatever the scope holds, and one lookup protocol shared
+by all of them.
 
 | type | what it is |
 | --- | --- |

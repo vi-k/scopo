@@ -1,11 +1,11 @@
 # base
 
-> Перевод `doc/base.md` (blob `8ca8e6f1ff64b23f1d60ca3f43b56c9199b1fb9a`).
+> Перевод `doc/base.md` (blob `6ba02fadc2765b9c9212887c9cbe676eb6fbed5a`).
 > Правится в том же коммите, что и оригинал; проверка — `sh docs/ru/check.sh`.
 
-Каждое семейство скоупов этого пакета — `ScopeWidgetBase`, `ScopeModel`,
-`ScopeNotifier`, `AsyncScope`, `AsyncDataScope`, `AsyncControllerScope`,
-`LiteScope` и `Scope` — стоит на одних и тех же трёх типах. Вместе они говорят,
+Каждое семейство скоупов этого пакета — `AsyncScope`, `AsyncDataScope`,
+`AsyncControllerScope`, `LiteScope`, `Scope`, `ScopeModel`, `ScopeNotifier`
+и `ScopeWidgetBase` — стоит на одних и тех же трёх типах. Вместе они говорят,
 что такое скоуп для дерева виджетов: `InheritedWidget`, который можно найти
 снизу, элемент, владеющий тем, что скоуп держит, и один протокол поиска, общий
 для всех.
