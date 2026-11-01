@@ -23,6 +23,11 @@
    - Б5 — удалить `ScopeWaitingBuilder`, `ScopeProgressBuilder`,
      `ScopeErrorBuilder`; `ScopeInitCallback` оставить; поле демо
      `App.progressBuilder` — тип на месте, `String? progress`.
+   - Б6 — удалить тройку `ScopeStateWithErrorModel`,
+     `ScopeStateWithErrorNotifier`, `ScopeStateWithErrorModelView` целиком;
+     из публичного API убрать и `ScopeStateModelView`, и метод
+     `ScopeStateNotifier.asUnmodifiable()`: обёртка от понижающего приведения
+     остаётся приватным классом при `_AsyncScopeNotifier`.
 
    Перед этим Б9 закрыта и раздел о причинах отмены написан, влито в `main`,
    не отправлено, по ответу владельца на три предложения («1 ок, 2
