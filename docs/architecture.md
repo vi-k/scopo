@@ -18,8 +18,11 @@ scopo связывает ресурсы с деревом виджетов че�
   `_builtChild` сохраняет поддерево
   (`lib/src/scope/scope_widget/scope_widget_core.dart`).
 - Инициализация — `ScopeInitJob` с прогрессом через `ScopeInitContext.progress`
-  (`lib/src/scope/async_scope/scope_init_context.dart`). Внешнее ядро
-  `async_job: ^0.3.0` объявлено в `pubspec.yaml`.
+  (`lib/src/scope/async_scope/scope_init_context.dart`). Внешнее ядро объявлено
+  в `pubspec.yaml` как `async_job: '>=1.0.0 <1.1.0'` — одна минорная версия:
+  `ScopeInitJob` и его контекст наследуют `JobBase` и `JobContextBase`
+  из `engine.dart`, а этот протокол ядро может менять и в минорном выпуске.
+  Новая минорная версия ядра — новый выпуск scopo.
 
 ## 2. Карта исходников и библиотек
 

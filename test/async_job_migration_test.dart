@@ -262,7 +262,7 @@ void main() {
       expect(
         shownError,
         isA<Cancelled>()
-            .having((e) => e.reason, 'reason', isA<HandlerCancelReason>())
+            .having((e) => e.reason, 'reason', isA<BodyCancelReason>())
             .having((e) => e.description, 'description', 'no session'),
       );
       expect(observer.phases, [ScopePhase.initialization]);
@@ -1236,7 +1236,7 @@ void main() {
     while (reason is Cancelled) {
       reasons.add(reason.reason);
       reason = switch (reason.reason) {
-        HandlerCancelReason(:final cause) => cause,
+        BodyCancelReason(:final cause) => cause,
         ParentCancelReason(:final cause) => cause,
         _ => null,
       };

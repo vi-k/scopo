@@ -1,6 +1,6 @@
 # Состояние проекта
 
-> Обновлено: 2026-10-31. Файл поддерживается агентом и переписывается по ходу
+> Обновлено: 2026-11-01. Файл поддерживается агентом и переписывается по ходу
 > работы — это снимок «здесь и сейчас», а не история и не список пожеланий
 > (он в `docs/backlog.md`). История — в `docs/records/`; историческая часть
 > самого этого файла вынесена шесть раз: 2026-08-30
@@ -15,23 +15,33 @@
 
 1. Прочитай этот файл целиком, потом `docs/backlog.md`.
 2. Сверься: `git log --oneline -5`, `git status`.
-3. **Сейчас (2026-10-31): волны 1–4 прохода по именам сделаны и влиты в `main`,
-   не отправлены**, по ответу владельца «1 — делай все» на пачку вопросов.
-   Запись — `docs/records/2026-10/2026-10-30-api-names-review.md`, вердикты
-   в конце каждой сделанной находки. Коммиты: `3b0b890` (удалены
-   `AsyncScopeInitState`, `ScopeModelInheritedElement`, `AsyncScopeModel`;
-   `ScopeDependencyMixin` и `throwNoErrors` ушли в приватные; три дартдока),
-   `b1e3cd1` (`isReady`, `shouldNotify:`, `ScopeDependencyException.path`,
-   `runOutsideBuild`, `rebuildsOnNotify`, `disposesOnError`), `97ba21e` (хуки
-   наблюдателя `onInitStarted`, `onInitialized`, `onDisposalStarted`,
+3. **Сейчас (2026-11-01): scopo переведён на `async_job` 1.0 и влит в `main`,
+   не отправлен**, по слову владельца «давай начнём с перехода на async_job
+   1.0». Ограничение — `async_job: '>=1.0.0 <1.1.0'`, одна минорная версия:
+   `ScopeInitJob` наследует `JobBase` из `engine.dart`, а этот протокол ядро
+   меняет и в минорном выпуске (`doc/extending.md` ядра). Реэкспорт
+   `HandlerCancelReason` стал `BodyCancelReason`; строка в разделе 0.22.0
+   `CHANGELOG.md`, причина ограничения — в `docs/architecture.md` §1. Локи трёх
+   примеров пересозданы закреплённым тулчейном. Сокращение списка реэкспорта
+   ядра (Б9) не тронуто — ждёт решения владельца вместе с пятой волной.
+
+   Перед этим волны 1–4 прохода по именам сделаны и влиты в `main`, по ответу
+   владельца «1 — делай все» на пачку вопросов. Запись —
+   `docs/records/2026-10/2026-10-30-api-names-review.md`, вердикты в конце
+   каждой сделанной находки. Коммиты: `3b0b890` (удалены `AsyncScopeInitState`,
+   `ScopeModelInheritedElement`, `AsyncScopeModel`; `ScopeDependencyMixin`
+   и `throwNoErrors` ушли в приватные; три дартдока), `b1e3cd1` (`isReady`,
+   `shouldNotify:`, `ScopeDependencyException.path`, `runOutsideBuild`,
+   `rebuildsOnNotify`, `disposesOnError`), `97ba21e` (хуки наблюдателя
+   `onInitStarted`, `onInitialized`, `onDisposalStarted`,
    `onDisposalStepFinished`, маршрут `ScopeErrorRoute.observerOnly`, раздел
    «Coming from 0.21.x» в `doc/debug.md`), `309e05a`
    (`ScopeDependencyInitFailed`, группы `Any*` приватные, API ошибок
    на `ScopeDependencyState`, `errorCount`, `stepCount`). Всё ломающее —
    в разделе 0.22.0 `CHANGELOG.md`; версия в `pubspec.yaml` не поднята, выпуска
    не было. Пятая волна — Б5–Б9, В1–В4, Г3, Г5–Г7 — владелец не одобрил: они
-   открыты и ждут его решения. Дальше по порядку к 1.0.0 — правило версий 1.x
-   в `AGENTS.md`; первый шаг, `async_job` 1.0, — дело сессии `solo`.
+   открыты и ждут его решения. Дальше по порядку к 1.0.0 — решения по пятой
+   волне, потом правило версий 1.x в `AGENTS.md`.
 
    Перед этим записи `docs/records/` разложены по месяцам, по слову владельца
    «надо убрать нумерацию из имен документов» и выбору «переименовать все
@@ -120,9 +130,9 @@
    пункта.
 
    **Дерево:** `main` впереди `origin/main`: запись прохода `82ce176`, четыре
-   волны и коммит вердиктов поверх; отправлено до `3dce3fe`. Копия
-   `.claude/worktrees/api-names-review` и её ветка удаляются после мержа.
-   Основная копия закреплена на 3.38.1 (`.fvmrc`, `.fvm/`,
+   волны, коммит вердиктов и переход на `async_job` 1.0 поверх; отправлено
+   до `3dce3fe`. Копия `.claude/worktrees/async-job-1` и её ветка удаляются
+   после мержа. Основная копия закреплена на 3.38.1 (`.fvmrc`, `.fvm/`,
    `.vscode/settings.json` — вне git). CI на `52861d5` зелёный: `gate`
    и `ceiling`. Не трогать: каталоги агентов `.claude/` и `.superpowers/`.
 
@@ -248,9 +258,9 @@
 
 Flutter 3.38.1 через fvm, Dart 3.10.0 (не 3.38.0: там Dart — предрелиз);
 `.fvmrc`, `pubspec.yaml`, CI и `AGENTS.md` §6 согласованы. Пол поднят
-2026-10-28 под `async_job` ^0.6.0; код в высоком стиле форматтера,
-`require_trailing_commas` с ним не спорит — анализ чист. При обновлении ядра
-проверить наследуемые `JobBase` и `JobContextBase`
+2026-10-28 под `async_job` ^0.6.0, ядро 1.0 его не меняет (`sdk: ^3.10.0`); код
+в высоком стиле форматтера, `require_trailing_commas` с ним не спорит — анализ
+чист. При обновлении ядра проверить наследуемые `JobBase` и `JobContextBase`
 из `package:async_job/engine.dart` и прогнать тесты. Дев-зависимости пинит пол:
 `fake_async: ^1.3.3`, `leak_tracker_flutter_testing: ^3.0.10`.
 `discarded_futures` выключен намеренно, `unawaited_futures` включён. В копии
@@ -272,8 +282,8 @@ CI: `.github/workflows/ci.yml`, `gate` на полу, `ceiling` на stable
 
 ## Проверки
 
-Последний прогон — гейт §6 на Flutter 3.38.1 (2026-10-31, волны 1–4 прохода
-по именам, в копии): **830 тестов**; демо **10**, quickstart **1**; четыре
+Последний прогон — гейт §6 на Flutter 3.38.1 и `async_job` 1.0.0 (2026-11-01,
+в копии): **830 тестов**; демо **10**, quickstart **1**; четыре
 `analyze` — `No issues found!`; format — 131 файл, 0 changed; dartdoc — 0
 warnings, 0 errors; переводы актуальны: **17**;
 `tool/check_doc_examples.dart` — 113 PASS, 8 SKIP, 0 FAIL; публикационный

@@ -42,6 +42,12 @@
   `hasErrors` and `errorCount`, which was `count`, answer on every state; where
   there is nothing to hold, `errors()` is empty and `error` throws, as it did
   for an empty cancellation. `ScopeDependency.count` is `stepCount`.
+* **Breaking:** scopo runs on `async_job` 1.0. The re-exported
+  `HandlerCancelReason` is `BodyCancelReason`, and its `name`, which outcomes
+  and traces print, is `body` instead of `handler`; `ctx.wait`, deprecated in
+  the core since 0.3.0, is gone. scopo holds `async_job` to one minor version,
+  `>=1.0.0 <1.1.0`: it builds its initialization job on the engine protocol of
+  the core, which can change in a minor release.
 * `LiteScope.of` and `Scope.of` called above a scope with no state yet advise
   `maybeOf`, which answers `null` there, instead of an `isInitialized` that a
   caller below the scope could not reach.

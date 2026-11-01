@@ -8,12 +8,12 @@ library;
 // outcome. Listing them keeps future kernel helpers out of scopo's API.
 export 'package:async_job/async_job.dart'
     show
+        BodyCancelReason,
         CancelReason,
         Cancelled,
         DeferredJob,
         Done,
         Failed,
-        HandlerCancelReason,
         Job,
         JobAnswerer,
         JobContext,
