@@ -1,3 +1,4 @@
+import 'async_scope_cancelled.dart';
 import 'async_scope_cleanup.dart';
 import 'manifest.dart';
 
@@ -16,6 +17,14 @@ const asyncScope = DocManifest(
     ),
     'reading-the-state-from-the-sub/final-scope-asyncscope-of-cont':
         DocEnvironment.skip('Schematic conditional body contains an ellipsis.'),
+    'errors/wrong-a-request-that-ran-out-o': DocEnvironment(
+      'void example() {\nAsyncScope(\n'
+          'initScope: (context, ctx) async {},\n'
+          'disposeScope: () {},\n'
+          'progressBuilder: (context, progress) => Text("\$progress"),\n',
+      'builder: (context) => const HomeScreen(),\n);\n}',
+    ),
+    'errors/describe': DocEnvironment('', '', execution: describeCancelled),
     'disposal-in-order/wrong-the-connection-is-open-a': _arguments,
     'disposal-in-order/right-what-a-step-took-is-give': _arguments,
     'disposal-in-order/final-acquired-future-void-fun': DocEnvironment(

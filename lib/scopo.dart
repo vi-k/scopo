@@ -11,6 +11,7 @@ export 'package:async_job/async_job.dart'
         BodyCancelReason,
         CancelReason,
         Cancelled,
+        ChainCancelReason,
         DeferredJob,
         Done,
         Failed,

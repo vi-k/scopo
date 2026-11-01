@@ -1290,6 +1290,53 @@ void main() {
     await tester.pumpAndSettle();
   });
 
+  testWidgets('a continuation whose source was cancelled says so', (
+    tester,
+  ) async {
+    Object? shownError;
+    await tester.pumpWidget(
+      _wrap(
+        AsyncScope(
+          initScope: (context, ctx) async {
+            final source = Job.deferred<int>(
+              (ctx) => ctx.abandonable(() => Completer<int>().future),
+            );
+            // A continuation is a root job, not a child: its cancellation
+            // reaches the screen as it is, not inside a `BodyCancelReason`.
+            final next = source.then((ctx, value) => value + 1);
+            ctx.start(source);
+            unawaited(source.cancel());
+            await next.value;
+          },
+          disposeScope: () {},
+          progressBuilder: (context, progress) => const Text('loading'),
+          errorBuilder: (context, error, stackTrace, progress) {
+            shownError = error;
+            return const Text('failed');
+          },
+          builder: (context) => const Text('ready'),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('failed'), findsOneWidget);
+    expect(
+      shownError,
+      isA<Cancelled>().having(
+        (c) => c.reason,
+        'reason',
+        isA<ChainCancelReason>().having(
+          (r) => r.cause.reason,
+          'cause',
+          isA<ManualCancelReason>(),
+        ),
+      ),
+    );
+    await tester.pumpWidget(_wrap(const SizedBox.shrink()));
+    await tester.pumpAndSettle();
+  });
+
   testWidgets('a child with an observer of its own can answer for its errors', (
     tester,
   ) async {

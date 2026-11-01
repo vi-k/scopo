@@ -48,6 +48,10 @@
   the core since 0.3.0, is gone. scopo holds `async_job` to one minor version,
   `>=1.0.0 <1.1.0`: it builds its initialization job on the engine protocol of
   the core, which can change in a minor release.
+* `ChainCancelReason` is re-exported beside the other reasons of a
+  cancellation: a body that awaits a continuation made by `Job.then` and lets
+  its cancellation out puts it on the error screen. The `AsyncScope` topic says
+  which cancellations reach `buildOnError` and how to tell them apart.
 * `LiteScope.of` and `Scope.of` called above a scope with no state yet advise
   `maybeOf`, which answers `null` there, instead of an `isInitialized` that a
   caller below the scope could not reach.

@@ -187,6 +187,59 @@ running, and whose outcome the cancellation then took over: the observer does
 not hear that failure either — see the `debug` topic, section `onError` and
 `ScopeErrorRoute`.
 
+### A `Cancelled` on the error screen
+
+`buildOnError` receives a `Cancelled` more often than it seems. A cancellation
+the teardown asked for never gets there: a scope removed from the tree or
+`close()`d goes away without calling it. What does get there is an
+initialization that ended without becoming ready — by its own decision or
+because of a job it waited for — and a screen that tells these apart reads the
+reason.
+
+The check that comes to mind first treats every cancellation as nothing to
+show:
+
+```dart
+// Wrong: a request that ran out of time is a `Cancelled` too, and the screen
+// stays empty.
+errorBuilder: (context, error, stackTrace, progress) =>
+    error is Cancelled ? const SizedBox.shrink() : Text('$error'),
+```
+
+A child started with `timeout:` that runs out ends with `TimeoutCancelReason`,
+and the body that awaited it with `ctx.run` lets that out as its own
+cancellation. The scope is not on its way out — that cancellation would not
+reach the builder — so the empty screen is all the user gets for a request that
+timed out.
+
+What the builder receives depends on where the cancellation came from:
+
+| The body | `buildOnError` receives |
+| --- | --- |
+| throws `Cancelled('no session')` | `Cancelled` with `BodyCancelReason`, whose `cause` is `null`, and the description you gave |
+| lets a child's cancellation out of `ctx.run` | `Cancelled` with `BodyCancelReason`, whose `cause` is the child's `Cancelled`: `TimeoutCancelReason` for a `timeout:` that ran out, `ManualCancelReason` for a `cancel()` |
+| awaits the `value` of a continuation made by `Job.then` whose source was cancelled | the continuation's `Cancelled` itself, with `ChainCancelReason`, whose `cause` is the source's cancellation: a continuation is a root job, not a child |
+| runs branches with `ctx.runAll`, and one of them fails | that branch's failure, not a `Cancelled`; the branches the group stopped end with `SiblingCancelReason` in their own `done` |
+
+So the builder follows `BodyCancelReason.cause` down to the job that was
+cancelled, and decides there:
+
+```dart
+String describe(Object error) => switch (error) {
+  // A child's cancellation the body let out: the child says why.
+  Cancelled(reason: BodyCancelReason(:final cause?)) => describe(cause),
+  Cancelled(reason: TimeoutCancelReason(:final timeout)) =>
+    'No answer in ${timeout.inSeconds} s',
+  Cancelled(:final description?) => description,
+  Cancelled() => 'Stopped',
+  _ => 'Failed: $error',
+};
+```
+
+and `errorBuilder` shows `Text(describe(error))`. `CancelReason` is not sealed,
+so the switch keeps a case for a reason it does not name. Every name here is
+re-exported by `scopo`.
+
 ## Disposal, in order
 
 The teardown runs as one sequence, and every asynchronous step of it is
