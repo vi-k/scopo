@@ -32,6 +32,13 @@
      правило «у каждого семейства есть Core» дороже пяти имён.
    - Б8 — удалить `CompareUtils` и `ListenableView`; дартдок
      `ListenableSelector.shouldNotify` советует `(a, b) => !identical(a, b)`.
+   - В1 — `AsyncScopeState` → `AsyncScopeStatus`, `.state` → `.status`,
+     `buildOnState` → `buildOnStatus`; ради того же правила
+     `ScopeDependencyState` → `ScopeDependencyStatus`,
+     `ScopeDependency.state` → `.status`. Правило в `AGENTS.md` §7: State —
+     объект `State` Flutter или значение модели, фаза жизненного цикла —
+     Status. `*State` наследников `State`, `createState`, `wrapState`,
+     `ScopeStateModel`/`ScopeStateNotifier` и `model.state` не трогать.
 
    Перед этим Б9 закрыта и раздел о причинах отмены написан, влито в `main`,
    не отправлено, по ответу владельца на три предложения («1 ок, 2
