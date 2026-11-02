@@ -6,6 +6,7 @@ import 'package:flutter/foundation.dart';
 import 'package:scopo/scopo.dart';
 import 'package:test/test.dart';
 
+import 'utils/flutter_errors.dart';
 import 'utils/my_fake_async.dart';
 import 'utils/observer.dart';
 import 'utils/run_scope_init.dart';
@@ -1340,6 +1341,7 @@ void main() {
 
     group('many errors', () {
       test('dep3, dep4', () {
+        final reported = recordFlutterErrors();
         myFakeAsync((fakeAsync) {
           final dependencies = TestDependencies(failed: {'dep3', 'dep4'});
           final progress = fakeAsync
@@ -1401,9 +1403,13 @@ void main() {
           expect(dependencies.root.isCancelled, false);
           expect(dependencies.root.isDisposed, false);
         });
+        expect(reported.map((error) => '$error'), [
+          'concurrent1/dep4: Exception: dep4 failed',
+        ]);
       });
 
       test('dep4, dep7`', () {
+        final reported = recordFlutterErrors();
         myFakeAsync((fakeAsync) {
           final dependencies = TestDependencies(failed: {'dep4', 'dep7'});
           final progress = fakeAsync
@@ -1468,9 +1474,13 @@ void main() {
           expect(dependencies.root.isCancelled, false);
           expect(dependencies.root.isDisposed, false);
         });
+        expect(reported.map((error) => '$error'), [
+          'concurrent1/sequential1/concurrent2/sequential2/dep7: Exception: dep7 failed',
+        ]);
       });
 
       test('dep4, dep5, dep7', () {
+        final reported = recordFlutterErrors();
         myFakeAsync((fakeAsync) {
           final dependencies = TestDependencies(
             failed: {'dep4', 'dep5', 'dep7'},
@@ -1537,9 +1547,14 @@ void main() {
           expect(dependencies.root.isCancelled, false);
           expect(dependencies.root.isDisposed, false);
         });
+        expect(reported.map((error) => '$error'), [
+          'concurrent1/sequential1/concurrent2/dep5: Exception: dep5 failed',
+          'concurrent1/sequential1/concurrent2/sequential2/dep7: Exception: dep7 failed',
+        ]);
       });
 
       test('dep5, dep6`', () {
+        final reported = recordFlutterErrors();
         myFakeAsync((fakeAsync) {
           final dependencies = TestDependencies(failed: {'dep5', 'dep6'});
           final progress = fakeAsync
@@ -1604,9 +1619,13 @@ void main() {
           expect(dependencies.root.isCancelled, false);
           expect(dependencies.root.isDisposed, false);
         });
+        expect(reported.map((error) => '$error'), [
+          'concurrent1/sequential1/concurrent2/dep6: Exception: dep6 failed',
+        ]);
       });
 
       test('dep5, dep6, dep7`', () {
+        final reported = recordFlutterErrors();
         myFakeAsync((fakeAsync) {
           final dependencies = TestDependencies(
             failed: {'dep5', 'dep6', 'dep7'},
@@ -1673,6 +1692,10 @@ void main() {
           expect(dependencies.root.isCancelled, false);
           expect(dependencies.root.isDisposed, false);
         });
+        expect(reported.map((error) => '$error'), [
+          'concurrent1/sequential1/concurrent2/sequential2/dep7: Exception: dep7 failed',
+          'concurrent1/sequential1/concurrent2/dep6: Exception: dep6 failed',
+        ]);
       });
     });
   });
@@ -2354,6 +2377,7 @@ void main() {
   // and a guarded stream closes on the first error -- so the state keeps one
   // failed child however many fail in the same instant.
   test('a group keeps one failed child, not every sibling that fell over', () {
+    final reported = recordFlutterErrors();
     myFakeAsync((async) {
       final dependencies = TestDependenciesTwinFailures();
       handleInitFor(dependencies, async);
@@ -2373,6 +2397,14 @@ void main() {
         reason: 'so the rendered state names one child, never a pair',
       );
     });
+    expect(
+      reported.map((error) => '$error'),
+      anyOf(
+        equals(['twins/depA: Exception: depA failed']),
+        equals(['twins/depB: Exception: depB failed']),
+      ),
+      reason: 'the sibling the group did not keep is reported',
+    );
   });
 
   group('ScopeAutoDependencies failure after the automatic disposal', () {
@@ -2466,6 +2498,7 @@ void main() {
     test(
       'a disposer that never finishes does not hold the failure back',
       () async {
+        final reported = recordFlutterErrors();
         ScopeConfig.defaultDisposeScopeTimeout = const Duration(
           milliseconds: 50,
         );
@@ -2487,6 +2520,7 @@ void main() {
               'is waiting for, and giving up on the disposer is what lets it '
               'through',
         );
+        expect(reported.single, isA<TimeoutException>());
       },
       timeout: const Timeout(Duration(seconds: 10)),
     );
@@ -2554,6 +2588,7 @@ void main() {
     test(
       'reports the failures behind the first instead of dropping them',
       () async {
+        final reported = recordFlutterErrors();
         final observer = RecordingObserver();
         ScopeConfig.observer = observer;
         addTearDown(() => ScopeConfig.observer = null);
@@ -2590,6 +2625,9 @@ void main() {
               'and the one behind it is reported rather than dropped where '
               'it happened',
         );
+        expect(reported.map((error) => '$error'), [
+          'Bad state: unmount a failed',
+        ]);
       },
     );
   });

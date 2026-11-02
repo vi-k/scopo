@@ -6,6 +6,7 @@ import 'package:flutter/foundation.dart';
 import 'package:scopo/scopo.dart';
 import 'package:test/test.dart';
 
+import 'utils/flutter_errors.dart';
 import 'utils/run_scope_init.dart';
 
 /// A container whose single dependency takes something and then goes wrong.
@@ -145,6 +146,7 @@ void _sequentialDisposalGroup() {
     test(
       'does not keep the dependencies below it from being released',
       () async {
+        final reported = recordFlutterErrors();
         final released = <String>[];
         final deps = _Three(released, failOnDispose: {'b'});
 
@@ -158,10 +160,14 @@ void _sequentialDisposalGroup() {
               'disposal runs in reverse order, and one failure is not a '
               'reason to abandon whatever is left holding resources',
         );
+        expect(reported.map((error) => '$error'), [
+          'b: Exception: b failed to release',
+        ]);
       },
     );
 
     test('is still reported', () async {
+      final reported = recordFlutterErrors();
       final deps = _Three(<String>[], failOnDispose: {'b'});
 
       await runScopeInit((ctx) => deps.init(null, ctx));
@@ -172,6 +178,9 @@ void _sequentialDisposalGroup() {
         contains('b'),
         reason: 'the failure is recorded on the dependency that failed',
       );
+      expect(reported.map((error) => '$error'), [
+        'b: Exception: b failed to release',
+      ]);
     });
   });
 }
@@ -214,6 +223,7 @@ final class _Nested extends ScopeAutoDependencies<_Nested, void> {
 void _concurrentDisposalGroup() {
   group('a disposer that throws in a concurrent group', () {
     test('does not take the branch beside it with it', () async {
+      final reported = recordFlutterErrors();
       final released = <String>[];
       final deps = _Nested(released, failOnDispose: {'x'});
 
@@ -236,9 +246,13 @@ void _concurrentDisposalGroup() {
             'the branch finished its own reverse walk rather than '
             'stopping wherever the cancellation found it',
       );
+      expect(reported.map((error) => '$error'), [
+        'x: Exception: x failed to release',
+      ]);
     });
 
     test('is still reported', () async {
+      final reported = recordFlutterErrors();
       final deps = _Nested(<String>[], failOnDispose: {'x'});
 
       await runScopeInit((ctx) => deps.init(null, ctx));
@@ -249,6 +263,9 @@ void _concurrentDisposalGroup() {
         contains('x'),
         reason: 'the failure is recorded on the dependency that failed',
       );
+      expect(reported.map((error) => '$error'), [
+        'x: Exception: x failed to release',
+      ]);
     });
   });
 }

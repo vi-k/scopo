@@ -336,12 +336,14 @@ CI: `.github/workflows/ci.yml`, `gate` на полу, `ceiling` на stable
 ## Проверки
 
 Последний прогон — гейт §6 на Flutter 3.38.1 и `async_job` 1.0.0 (2026-11-02,
-в копии, подготовка 1.0.0, версия в дереве поднята до 1.0.0): **822 теста**;
-демо **10**, quickstart **1**; четыре `analyze` (корневой охватывает
-и `tool/`) — `No issues found!`; format — 127 файлов, 0 changed; dartdoc — 0
-warnings, 0 errors; переводы актуальны: **17**;
+в копии, после мелочей тестов): **824 теста**, консоль без единого отчёта
+`FlutterError`; демо **10**, quickstart **1**; четыре `analyze` (корневой
+охватывает и `tool/`) — `No issues found!`; format — 130 файлов, 0 changed;
+dartdoc — 0 warnings, 0 errors; переводы актуальны: **17**;
 `tool/check_doc_examples.dart` — 115 PASS, 8 SKIP, 0 FAIL; публикационный
-dry-run — 1 warning, незакоммиченный `pubspec.yaml`, других нет.
+dry-run — 0 warnings. На подготовке 1.0.0 тот же гейт прошёл с версией,
+поднятой в дереве до 1.0.0: dry-run дал одно предупреждение — сам
+незакоммиченный `pubspec.yaml`, других не было.
 
 Проверка комплекта `tool/consumer_validation` без исполнителя (шаг 3
 `docs/consumer-validation.md`: `prepare.sh` на `c5a76f0`, затем
@@ -387,9 +389,13 @@ Python-инструментов, `dart-format` (0 changed) и манифест �
 а не вешает его до таймаута; ошибки отброшенных future по-прежнему идут
 в обработчик зоны. На хелпере стоит и `ErrorRouteAudit.runGuarded`, держит его
 `test/run_guarded_test.dart` (нагруженность проверена: со старой формой первый
-тест виснет до таймаута). Тест «a release that throws…»
-в `test/scope_step_entry_test.dart` перехватывает отчёт `FlutterError`
-и проверяет его, а не печатает в консоль.
+тест виснет до таймаута). Консоль полного прогона тоже чиста: тест «a release
+that throws…» в `test/scope_step_entry_test.dart` и ещё одиннадцать тестов
+того же рода в `test/scope_auto_dependencies_test.dart`
+и `test/scope_dependency_partial_test.dart` перехватывают отчёты `FlutterError`
+хелпером `recordFlutterErrors` из `test/utils/flutter_errors.dart` и проверяют
+их, а не печатают. Хелпер — только для `test`: в `testWidgets` обработчик
+возвращают в теле, до ожиданий.
 
 Перед публикацией читать `AGENTS.md` §5 целиком. Авторизация macOS —
 `~/Library/Application Support/dart/pub-credentials.json`; `pub logout` удаляет
