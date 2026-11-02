@@ -233,14 +233,14 @@ final class _AsyncControllerScopeElement<
   Widget? buildOnClosing() => widget.buildOnClosing(this);
 
   @override
-  Widget buildOnState(AsyncScopeState state) => switch (state) {
+  Widget buildOnStatus(AsyncScopeStatus status) => switch (status) {
     AsyncScopeWaiting() =>
       widget.buildOnWaiting(this) ?? widget.buildOnProgress(this),
     // A controller reports no progress: its initialization only
     // finishes.
     AsyncScopeProgress() => widget.buildOnProgress(this),
     AsyncScopeReady() => widget.buildOnReady(this, data),
-    AsyncScopeError(:final error, :final stackTrace) => widget.buildOnError(
+    AsyncScopeFailed(:final error, :final stackTrace) => widget.buildOnError(
       this,
       error,
       stackTrace,

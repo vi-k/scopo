@@ -2399,7 +2399,7 @@ final class _RefusingForeign implements ScopeDependency {
   int get stepCount => 1;
 
   @override
-  ScopeDependencyState get state => const ScopeDependencyInitialized();
+  ScopeDependencyStatus get status => const ScopeDependencyInitialized();
 
   @override
   bool get disposalRequired => throw failure;
@@ -2420,7 +2420,7 @@ final class _RefusingForeign implements ScopeDependency {
   String get wrappedName => '"$name"';
 
   @override
-  String stateToString() => '$state';
+  String statusToString() => '$status';
 }
 
 /// A dependency of somebody else's making that may still hold after its
@@ -2442,7 +2442,7 @@ final class _HoldingForeign implements ScopeDependency {
   int get stepCount => 1;
 
   @override
-  ScopeDependencyState get state => const ScopeDependencyInitialized();
+  ScopeDependencyStatus get status => const ScopeDependencyInitialized();
 
   @override
   bool get disposalRequired => ++asked == 1 || (throw failure);
@@ -2465,7 +2465,7 @@ final class _HoldingForeign implements ScopeDependency {
   String get wrappedName => '"$name"';
 
   @override
-  String stateToString() => '$state';
+  String statusToString() => '$status';
 }
 
 /// A dependency of somebody else's making whose `dispose` throws [failure].
@@ -2481,8 +2481,8 @@ final class _ForeignRoot implements ScopeDependency {
   int get stepCount => 1;
 
   @override
-  ScopeDependencyState get state => _state;
-  ScopeDependencyState _state = const ScopeDependencyInitial();
+  ScopeDependencyStatus get status => _state;
+  ScopeDependencyStatus _state = const ScopeDependencyInitial();
 
   @override
   bool get disposalRequired => _state is ScopeDependencyInitialized;
@@ -2506,5 +2506,5 @@ final class _ForeignRoot implements ScopeDependency {
   String get wrappedName => '"$name"';
 
   @override
-  String stateToString() => '$state';
+  String statusToString() => '$status';
 }

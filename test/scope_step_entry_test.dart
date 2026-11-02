@@ -926,8 +926,8 @@ final class _ForeignDependency implements ScopeDependency {
   final int stepCount = 1;
 
   @override
-  ScopeDependencyState get state => _state;
-  ScopeDependencyState _state = const ScopeDependencyInitial();
+  ScopeDependencyStatus get status => _state;
+  ScopeDependencyStatus _state = const ScopeDependencyInitial();
 
   @override
   bool get disposalRequired =>
@@ -957,7 +957,7 @@ final class _ForeignDependency implements ScopeDependency {
   String get wrappedName => '"$name"';
 
   @override
-  String stateToString() => '$state';
+  String statusToString() => '$status';
 }
 
 /// A dependency of the caller's own making whose walk throws before it ever
@@ -982,7 +982,7 @@ final class _ThrowingForeignDependency extends _ForeignDependency {
 /// dependencies cannot throw from, `state` being a field read for them.
 final class _StateThrowingForeignDependency extends _ForeignDependency {
   @override
-  ScopeDependencyState get state =>
+  ScopeDependencyStatus get status =>
       throw StateError('foreign state getter boom');
 }
 

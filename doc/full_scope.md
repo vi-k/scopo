@@ -159,7 +159,7 @@ reason attached, not with the bare `LateInitializationError` the field itself
 throws.
 
 **A field holds what an initializer produces, not the dependency itself.** A
-`ScopeDependency` goes through its states once, and every run builds its tree
+`ScopeDependency` goes through its statuses once, and every run builds its tree
 afresh, so a node held over in a field and handed to a second run is refused —
 by the group it is put into, or, where it stands as the root, by the node
 itself. In a release build that refusal is gone, as every assertion is, and
@@ -246,7 +246,7 @@ Widget buildOnProgress(
 ```
 
 `disposesOnError` (`true` by default) is what makes a failed initialization
-clean up after itself: when the tree did not reach the initialized state, the
+clean up after itself: when the tree did not reach the initialized status, the
 container's `dispose` runs before the error reaches `buildOnError`. Override it
 with `false` to keep the half-built tree for inspection.
 
@@ -354,16 +354,16 @@ Whatever the outcome, the container exposes what it built: `root` is the top
 `ScopeDependencyInfo` records (`level`, `path`, `dependency`), and
 `flattenDependenciesWithErrors()` narrows the walk to the entries that hold a
 real error rather than a propagated `ScopeDependencyException`. Each dependency
-also carries a `ScopeDependencyState` — `ScopeDependencyInitial`,
+also carries a `ScopeDependencyStatus` — `ScopeDependencyInitial`,
 `ScopeDependencyInitialized`, `ScopeDependencyInitFailed`,
 `ScopeDependencyCancelled`, `ScopeDependencyDisposed`,
 `ScopeDependencyNoDisposalRequired`, `ScopeDependencyDisposalFailed` — and the
 `isInitialized`, `isFailed`, `isCancelled` and `isDisposed` shorthands of
-`ScopeDependencyExtension`. Every state answers `errors()`, `error`,
+`ScopeDependencyExtension`. Every status answers `errors()`, `error`,
 `errorCount` and `hasErrors`; only the two failures and a cancellation hold any
 errors.
 
-`ScopeDependencyNoDisposalRequired` is the state of a dependency that set no
+`ScopeDependencyNoDisposalRequired` is the status of a dependency that set no
 `dep.dispose` and so had nothing to give back: the teardown passes it by, and
 this is what it says afterwards. It is a `ScopeDependencyDisposed`, so
 `isDisposed` covers both.
@@ -428,7 +428,7 @@ The group that saw the failure stops requiring initialization and switches to
 when a `concurrent` group had several children fail at once: the first failure
 cancels the arms beside it, so the group keeps the one that ended it. Every
 dependency keeps its own errors, and `flattenDependenciesWithErrors()` walks
-the tree for them. The `stateToString()` of a group summarizes what it holds:
+the tree for them. The `statusToString()` of a group summarizes what it holds:
 the failed child by name, and any error that is not itself a
 `ScopeDependencyException` listed as unresolved.
 

@@ -2,9 +2,9 @@
 
 `AsyncScope` that produces a value. The initialization ends with the object it
 built, the subtree reads it from the scope, and the disposal receives it back.
-Everything else — the states, the ordered teardown, `scopeKey`, the waiting for
-child scopes — is the `AsyncScope` topic, and this page only covers what the
-value changes.
+Everything else — the statuses, the ordered teardown, `scopeKey`, the waiting
+for child scopes — is the `AsyncScope` topic, and this page only covers what
+the value changes.
 
 Reach for it when the scope exists *because of* an object: a database handle, a
 socket, a decoded file. When the objects are already reachable and only their
@@ -35,7 +35,7 @@ AsyncDataScope<Database>(
 return await Database.open();
 ```
 
-This is where the value enters. The element stores it as the ready state is
+This is where the value enters. The element stores it as the ready status is
 applied, and from that moment on:
 
 - **`builder`** receives it as its second argument — the ready branch never has
@@ -186,7 +186,7 @@ its own.
 
 "Before the value arrives" is a shade earlier than `isReady`. The value is
 stored once the job has finished its children and cleanup successfully; the
-state of the scope is applied at the end of the frame, or after the whole of
+status of the scope is applied at the end of the frame, or after the whole of
 `pauseAfterInitialization`, which is deliberately longer. In that window the
 scope is still building `progressBuilder` while `data` already answers — and
 that is the window the teardown of a scope that left early runs in, which is
@@ -222,7 +222,7 @@ topic.
 ## What the value does not do
 
 Storing the value does not make it observable. `AsyncDataScope` notifies its
-dependents when its **state** changes — waiting, progress, ready, error — and
+dependents when its **status** changes — waiting, progress, ready, error — and
 not when something inside the value changes. A `Database` that gains rows
 notifies nobody.
 
@@ -234,14 +234,14 @@ a stream from it and let the widgets that care listen.
 
 The element adds the value to its diagnostics, so the widget inspector and
 `debugDumpApp()` show `data: Database(…)` next to the scope — `null` until the
-initialization succeeds, which makes the two states easy to tell apart when a
+initialization succeeds, which makes the two statuses easy to tell apart when a
 subtree does not look the way it should.
 
 ## Where to go next
 
 | topic | what it covers |
 | --- | --- |
-| `AsyncScope` | the states, the ordered teardown, `scopeKey`, the coordinator |
+| `AsyncScope` | the statuses, the ordered teardown, `scopeKey`, the coordinator |
 | `Scope` | several dependencies with an order, a progress per dependency, and a state class |
 | `ScopeNotifier` | making the value itself observable |
 | `base` | `of`, `select`, `listen` |

@@ -128,5 +128,5 @@ final class _ScopeDependencyImpl with _ScopeDependencyMixin {
   String get wrappedName => '"$name"';
 
   @override
-  String stateToString() => '$state';
+  String statusToString() => '$status';
 }

@@ -42,7 +42,7 @@ final class Player extends AsyncControllerScopeBase<Player, PlayerController> {
 
 `AsyncControllerScopeCore` sits under both, for a scope that needs its own
 element. The family is built on the `AsyncDataScope` machinery, so everything
-that topic describes — the four states, the ordered teardown, `scopeKey`, the
+that topic describes — the four statuses, the ordered teardown, `scopeKey`, the
 waiting for child scopes, the four timeouts — applies here unchanged, and the
 controller is the value.
 
@@ -117,7 +117,7 @@ over:
 | the scope left before the asynchronous phase began | no controller was created | — |
 | `init()` threw | yes | yes |
 | the scope left while `init()` was still running | yes | yes |
-| the scope left, and the ready state never arrived | yes | yes |
+| the scope left, and the ready status never arrived | yes | yes |
 | the ordinary path: ready, then gone | yes | yes |
 
 `onUnmount()` is the synchronous half and always runs first — at the moment the
@@ -176,7 +176,7 @@ and the `scopeKey` released while the scope is still on screen are those of
 
 ## Following what the controller hears
 
-The scope notifies its dependents when its own state changes — waiting, ready,
+The scope notifies its dependents when its own status changes — waiting, ready,
 error — and for most scopes that happens once. A controller that is running has
 more to say while it runs: the track the session pushed, the position it
 reached. Carrying that to the widgets is the subtree's business rather than the
@@ -296,7 +296,7 @@ from `State.dispose` and lets the returned future go.
 ## What this family does not do
 
 **It does not make the controller observable.** The scope notifies its
-dependents when its *state* changes — waiting, ready, error — and not when
+dependents when its *status* changes — waiting, ready, error — and not when
 something inside the controller changes. The section above is the way to do
 that: a controller that is a `Listenable`, with a `ScopeNotifier.value` under
 this scope.
@@ -314,7 +314,7 @@ decision is made rather than defaulted. Route it onward from there, or assign a
 
 | topic | what for |
 | --- | --- |
-| `AsyncDataScope` | the machinery underneath: states, teardown order, `scopeKey` |
+| `AsyncDataScope` | the machinery underneath: statuses, teardown order, `scopeKey` |
 | `AsyncScope` | the same lifecycle with no value at all |
 | `ScopeNotifier` | making the controller itself observable |
 | `debug` | the four timeouts and the observer |

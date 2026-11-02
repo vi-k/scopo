@@ -29,7 +29,7 @@ abstract interface class ScopeDependency {
   int get stepCount;
 
   /// Where in its lifecycle this dependency is.
-  ScopeDependencyState get state;
+  ScopeDependencyStatus get status;
 
   /// Whether anything has to be released for this dependency.
   bool get disposalRequired;
@@ -37,7 +37,7 @@ abstract interface class ScopeDependency {
   /// Initializes this dependency, reporting the path of each step to
   /// [onStep].
   ///
-  /// Keeps [state] in step with how it went. The step itself lives in the
+  /// Keeps [status] in step with how it went. The step itself lives in the
   /// implementation and is not part of this interface: there is one way to
   /// initialize a dependency, and it is this one.
   ///
@@ -53,7 +53,7 @@ abstract interface class ScopeDependency {
 
   /// Releases this dependency, reporting the path of each step to [onStep].
   ///
-  /// Keeps [state] in step with how it went, the same way [init] does. There
+  /// Keeps [status] in step with how it went, the same way [init] does. There
   /// is no context here: a teardown is not cancelled, and there would be
   /// nothing to cancel it with.
   Future<void> dispose(void Function(String path) onStep);
@@ -61,8 +61,8 @@ abstract interface class ScopeDependency {
   /// The name as it appears in a tree dump — `"dep"` or `[group]`.
   String get wrappedName;
 
-  /// The state as a line of a tree dump.
-  String stateToString();
+  /// The status as a line of a tree dump.
+  String statusToString();
 }
 
 /// {@category Scope}
@@ -71,18 +71,18 @@ extension ScopeDependencyExtension on ScopeDependency {
   bool get isGroup => this is ScopeDependencyGroup;
 
   /// Whether this dependency has yet to be initialized.
-  bool get initializationRequired => state is ScopeDependencyInitial;
+  bool get initializationRequired => status is ScopeDependencyInitial;
 
   /// Whether the initialization succeeded.
-  bool get isInitialized => state is ScopeDependencyInitialized;
+  bool get isInitialized => status is ScopeDependencyInitialized;
 
   /// Whether the initialization was cancelled.
   ///
   /// A disposal is never cancelled, so this is about [init] alone.
-  bool get isCancelled => state is ScopeDependencyCancelled;
+  bool get isCancelled => status is ScopeDependencyCancelled;
 
   /// Whether the initialization or the disposal failed.
-  bool get isFailed => switch (state) {
+  bool get isFailed => switch (status) {
     ScopeDependencyInitFailed() || ScopeDependencyDisposalFailed() => true,
     ScopeDependencyInitial() ||
     ScopeDependencyInitialized() ||
@@ -95,11 +95,11 @@ extension ScopeDependencyExtension on ScopeDependency {
   /// Not the same question as "has the teardown run", and it used to be written
   /// as though it were. A dependency that failed keeps
   /// [ScopeDependencyInitFailed] through its own disposal on purpose — the list
-  /// of errors is the only record of what went wrong, and the state is where
+  /// of errors is the only record of what went wrong, and the status is where
   /// that list lives — so a tree released by `disposesOnError` is disposed of,
   /// holds nothing, and answers `false` here.
   ///
   /// What says there is nothing left to release is [disposalRequired]. This
-  /// getter names the state.
-  bool get isDisposed => state is ScopeDependencyDisposed;
+  /// getter names the status.
+  bool get isDisposed => status is ScopeDependencyDisposed;
 }

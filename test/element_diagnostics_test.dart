@@ -43,7 +43,7 @@ void main() {
         try {
           _expectPrintable(element);
           final diagnostics = element.toDiagnosticsNode().toStringDeep();
-          expect(diagnostics, contains('state:'));
+          expect(diagnostics, contains('status:'));
           expect(diagnostics, contains('model:'));
           expect(diagnostics, isNot(contains('scopeKey:')));
           expect(diagnostics, isNot(contains('pauseAfterInitialization:')));

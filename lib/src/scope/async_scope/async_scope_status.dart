@@ -1,13 +1,13 @@
 part of '../scope.dart';
 
 /// {@category AsyncScope}
-sealed class AsyncScopeState {
-  AsyncScopeState();
+sealed class AsyncScopeStatus {
+  AsyncScopeStatus();
 }
 
 /// {@category AsyncScope}
-final class AsyncScopeWaiting extends AsyncScopeState {
-  /// Creates the waiting state.
+final class AsyncScopeWaiting extends AsyncScopeStatus {
+  /// Creates the waiting status.
   AsyncScopeWaiting();
 
   @override
@@ -15,7 +15,7 @@ final class AsyncScopeWaiting extends AsyncScopeState {
 }
 
 /// {@category AsyncScope}
-final class AsyncScopeProgress extends AsyncScopeState {
+final class AsyncScopeProgress extends AsyncScopeStatus {
   /// Whatever the initialization reported — a caption, a fraction, a step.
   final Object? progress;
 
@@ -28,7 +28,7 @@ final class AsyncScopeProgress extends AsyncScopeState {
 }
 
 /// {@category AsyncScope}
-final class AsyncScopeReady extends AsyncScopeState {
+final class AsyncScopeReady extends AsyncScopeStatus {
   /// Reports that the initialization is over.
   AsyncScopeReady();
 
@@ -37,7 +37,7 @@ final class AsyncScopeReady extends AsyncScopeState {
 }
 
 /// {@category AsyncScope}
-final class AsyncScopeError extends AsyncScopeState {
+final class AsyncScopeFailed extends AsyncScopeStatus {
   /// What the initialization failed with.
   final Object error;
 
@@ -47,11 +47,11 @@ final class AsyncScopeError extends AsyncScopeState {
   /// The last progress reported before the failure.
   final Object? progress;
 
-  /// Creates the failed state.
-  AsyncScopeError(this.error, this.stackTrace, {this.progress});
+  /// Creates the failed status.
+  AsyncScopeFailed(this.error, this.stackTrace, {this.progress});
 
   @override
   String toString() =>
-      '$AsyncScopeError($error, $stackTrace'
+      '$AsyncScopeFailed($error, $stackTrace'
       '${progress == null ? '' : ', progress: $progress'})';
 }

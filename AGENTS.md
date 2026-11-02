@@ -232,6 +232,17 @@ fvm flutter clean && fvm flutter pub get
 - По-русски: «скоуп» (не «сцоп»), «журнал» (не «леджер»), «зависимости»,
   «жизненный цикл».
 
+**Имена в публичном API.**
+
+- **State — объект `State` из Flutter или значение модели, фаза жизненного
+  цикла — Status.** `ScopeState`, `LiteScopeState`, `createState`,
+  `ScopeStateModel.state` — первое; `AsyncScopeStatus`,
+  `ScopeDependencyStatus`, `AsyncScopeContext.status`, `buildOnStatus` —
+  второе. Модель асинхронного скоупа — `ScopeStateModel<AsyncScopeStatus>`: её
+  значение (`model.state`) и есть статус. В прозе документов то же самое: «the
+  four statuses», «четыре статуса». Решение владельца 2026-11-01, волна 5
+  прохода по именам.
+
 **Русские зеркала публичных документов** лежат в `docs/ru/` и повторяют пути
 оригиналов: `docs/ru/README.md`, `docs/ru/doc/base.md`,
 `docs/ru/example/minimal/README.md`. В архив пакета они не попадают — `docs/`

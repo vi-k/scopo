@@ -26,12 +26,12 @@ abstract base class ScopeDependencyGroup with _ScopeDependencyMixin {
     //
     // Children of this package's own making only. A dependency of the caller's
     // making keeps a lifecycle of its own and promises nothing about going
-    // through it once, and its [ScopeDependency.state] is arbitrary code,
+    // through it once, and its [ScopeDependency.status] is arbitrary code,
     // which the walks guard and a constructor cannot.
     assert(() {
       for (final dependency in _dependencies) {
         if (dependency is _ScopeDependencyMixin &&
-            dependency._state is! ScopeDependencyInitial) {
+            dependency._status is! ScopeDependencyInitial) {
           throw _alreadyUsed(dependency);
         }
       }
@@ -86,10 +86,10 @@ abstract base class ScopeDependencyGroup with _ScopeDependencyMixin {
   @override
   bool get disposalRequired =>
       !_isDisposalDone &&
-      (state is ScopeDependencyInitialized ||
-          state is ScopeDependencyInitFailed ||
-          state is ScopeDependencyDisposalFailed ||
-          state is ScopeDependencyCancelled);
+      (status is ScopeDependencyInitialized ||
+          status is ScopeDependencyInitFailed ||
+          status is ScopeDependencyDisposalFailed ||
+          status is ScopeDependencyCancelled);
 
   /// Unmounts every child, in reverse, whatever any one of them makes of it.
   ///
@@ -287,8 +287,8 @@ abstract base class ScopeDependencyGroup with _ScopeDependencyMixin {
   String get debugLabel => name.isEmpty ? '[group]' : name;
 
   @override
-  String stateToString() {
-    switch (state) {
+  String statusToString() {
+    switch (status) {
       case final _ScopeDependencyAnyFailed state:
         final failedChildren = state
             .errors()
@@ -316,7 +316,7 @@ abstract base class ScopeDependencyGroup with _ScopeDependencyMixin {
             '${errors.isEmpty //
                 ? '' : '. Unresolved errors: $errors'}';
 
-      case final ScopeDependencyState state:
+      case final ScopeDependencyStatus state:
         return '$state';
     }
   }

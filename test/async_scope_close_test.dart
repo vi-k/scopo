@@ -60,7 +60,7 @@ void main() {
           _app(Column(children: [owner.scope(), waiting.scope()])),
         );
         await tester.pumpAndSettle();
-        expect(waiting.context.state, isA<AsyncScopeWaiting>());
+        expect(waiting.context.status, isA<AsyncScopeWaiting>());
         expect(waiting.initializations, 0);
 
         final done = _Outcome(waiting.context.close());

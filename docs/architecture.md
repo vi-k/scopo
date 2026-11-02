@@ -41,7 +41,7 @@ scopo связывает ресурсы с деревом виджетов че�
 | `lib/src/scope/scope_widget/` | `scope_widget_core.dart`: элемент, аспекты, кэш сборки; `scope_widget_base.dart`: именованный фасад |
 | `lib/src/scope/scope_model/` | `base.dart`: владение моделью; `scope_model_core.dart`: основа; `scope_model_base.dart` и `scope_model.dart`: фасады |
 | `lib/src/scope/scope_notifier/` | `scope_notifier_core.dart`: подписка на модель; `scope_notifier_base.dart`: её замена; `scope_notifier.dart`: колбэки; `scope_state_model/`: модели состояния |
-| `lib/src/scope/async_scope/` | `async_scope_core.dart`: жизненный цикл; `scope_init_context.dart`: задача и адаптер ошибок; `async_scope_state.dart` и `async_scope_model.dart`: фазы и модель; `async_scope_context.dart`: интерфейс чтения |
+| `lib/src/scope/async_scope/` | `async_scope_core.dart`: жизненный цикл; `scope_init_context.dart`: задача и адаптер ошибок; `async_scope_status.dart` и `async_scope_model.dart`: фазы и модель; `async_scope_context.dart`: интерфейс чтения |
 | `lib/src/scope/async_scope/` | `async_scope_base.dart` и `async_scope.dart`: фасады; `async_scope_parent.dart`, `async_scope_coordinator.dart`, `scope_coordination.dart`: ожидание детей и ключей |
 | `lib/src/scope/async_data_scope/` | `async_data_scope_core.dart`: принятие данных; файлы `async_data_scope_base.dart`, `async_data_scope.dart`, `async_data_scope_context.dart`: фасады и контекст |
 | `lib/src/scope/async_controller_scope/` | `scope_controller.dart`: контроллер; `async_controller_scope_core.dart`: владение; `async_controller_scope_base.dart`, `async_controller_scope.dart`, `async_controller_scope_context.dart`: фасады и контекст |
@@ -171,12 +171,12 @@ scopo связывает ресурсы с деревом виджетов че�
 | Исход | Действие |
 | --- | --- |
 | `Done` | `_acceptInitValue`, затем `_settleReady`: сразу `_initSucceeded`, `_initCompleter`, событие готовности; `AsyncScopeReady` — в конце кадра или по таймеру `pauseAfterInitialization` |
-| `Failed` | `_settleFailure` объявляет сбой, живому не разбираемому элементу ставит `AsyncScopeError` с последним прогрессом |
+| `Failed` | `_settleFailure` объявляет сбой, живому не разбираемому элементу ставит `AsyncScopeFailed` с последним прогрессом |
 | `Cancelled` | Причина `_ScopeDisposalCancelReason` ожидаема; другая отмена попадает в `_settleFailure` |
 
 Фазы модели — `AsyncScopeWaiting`, `AsyncScopeProgress`, `AsyncScopeReady`,
-`AsyncScopeError` (`lib/src/scope/async_scope/async_scope_state.dart`);
-`buildOnState` выбирает экран. `_onInitStep` отклоняет прогресс после успеха,
+`AsyncScopeFailed` (`lib/src/scope/async_scope/async_scope_status.dart`);
+`buildOnStatus` выбирает экран. `_onInitStep` отклоняет прогресс после успеха,
 ошибки, удаления или начала разбора.
 
 `_prepareForDisposal` отменяет ожидание ключа и запрашивает отмену задачи.
@@ -394,13 +394,13 @@ Flutter при удалении поддерева; это отдельный м
 
 В `lib/src/scope/full_scope/scope_auto_dependency/scope_dependency/`
 `scope_dependency_impl.dart` задаёт лист, `scope_dependency_group.dart` —
-группы, `scope_dependency_mixin.dart` — цикл, `scope_dependency_state.dart` —
+группы, `scope_dependency_mixin.dart` — цикл, `scope_dependency_status.dart` —
 состояния, `scope_dependency_exception.dart` — ошибку.
 `ScopeDependencyMixin.init` ассертом требует `ScopeDependencyInitial`;
 одновременный запуск и разбор во время инициализации запрещены также обычными
 проверками.
 
-Состояния `ScopeDependencyState`: `ScopeDependencyInitial`,
+Состояния `ScopeDependencyStatus`: `ScopeDependencyInitial`,
 `ScopeDependencyInitialized`, `ScopeDependencyFailed`,
 `ScopeDependencyCancelled`, `ScopeDependencyDisposalFailed`,
 `ScopeDependencyDisposed`, `ScopeDependencyNoDisposalRequired`. Ошибки

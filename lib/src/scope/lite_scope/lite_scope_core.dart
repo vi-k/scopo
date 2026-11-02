@@ -202,7 +202,8 @@ abstract base class LiteScopeElementBase<
       _globalStateKey.currentState ??
       (throw StateError(
         '${widget.toStringShort()} was found, but it has no state: the state '
-        'is created in the ready branch, and this scope is ${model.state}. '
+        'is created in the ready branch, and the status of this scope is '
+        '$status. '
         'Read it from below `buildOnReady()`, or use `maybeOf`: it answers '
         '`null` here, the same as when there is no such scope at all.',
       ));
@@ -211,14 +212,14 @@ abstract base class LiteScopeElementBase<
   bool get rebuildsOnNotify => _rebuildsOnNotify;
 
   @override
-  Widget buildOnState(AsyncScopeState state) => switch (state) {
+  Widget buildOnStatus(AsyncScopeStatus status) => switch (status) {
     AsyncScopeWaiting() => buildOnWaiting() ?? _progressWhileWaiting(),
-    AsyncScopeProgress() => buildOnProgress(state.progress),
+    AsyncScopeProgress() => buildOnProgress(status.progress),
     AsyncScopeReady() => buildOnReady(),
-    AsyncScopeError() => buildOnError(
-      state.error,
-      state.stackTrace,
-      state.progress,
+    AsyncScopeFailed() => buildOnError(
+      status.error,
+      status.stackTrace,
+      status.progress,
     ),
   };
 
@@ -351,7 +352,7 @@ abstract base class LiteScopeElementBase<
   @override
   Future<void> close() async {
     // The screenshot barrier is released by the [ScreenshotReplacer] that
-    // [buildOnReady] mounts, and [buildOnState] only calls [buildOnReady] for
+    // [buildOnReady] mounts, and [buildOnStatus] only calls [buildOnReady] for
     // [AsyncScopeReady]. In any other state -- or when the element is no
     // longer in the tree -- nothing would ever release the barrier, so
     // installing it would make this future hang forever.
@@ -360,7 +361,7 @@ abstract base class LiteScopeElementBase<
     // barrier that an already running [_performAsyncDispose] is waiting for,
     // otherwise [_completeScreenshot] would release the new one and orphan
     // the old one.
-    if (mounted && state is AsyncScopeReady) {
+    if (mounted && status is AsyncScopeReady) {
       _screenshotCompleter ??= Completer<void>();
     }
 

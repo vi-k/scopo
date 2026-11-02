@@ -67,8 +67,9 @@ void main() {
           expect(entries, hasLength(count));
           expect(
             entries.map(
-              (info) => (info.dependency.state as ScopeDependencyDisposalFailed)
-                  .error,
+              (info) =>
+                  (info.dependency.status as ScopeDependencyDisposalFailed)
+                      .error,
             ),
             unorderedEquals(deps.failures),
           );

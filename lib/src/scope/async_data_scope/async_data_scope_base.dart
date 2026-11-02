@@ -240,7 +240,7 @@ final class _AsyncDataScopeElement<
   Widget? buildOnClosing() => widget.buildOnClosing(this);
 
   @override
-  Widget buildOnState(AsyncScopeState state) => switch (state) {
+  Widget buildOnStatus(AsyncScopeStatus status) => switch (status) {
     AsyncScopeWaiting() =>
       widget.buildOnWaiting(this) ?? widget.buildOnProgress(this, null),
     AsyncScopeProgress(:final progress) => widget.buildOnProgress(
@@ -248,7 +248,7 @@ final class _AsyncDataScopeElement<
       progress,
     ),
     AsyncScopeReady() => widget.buildOnReady(this, data),
-    AsyncScopeError(:final error, :final stackTrace, :final progress) =>
+    AsyncScopeFailed(:final error, :final stackTrace, :final progress) =>
       widget.buildOnError(this, error, stackTrace, progress),
   };
 }

@@ -1,6 +1,6 @@
 # Scope
 
-> Перевод `doc/full_scope.md` (blob `5b45b6a64ade0e48fc254d704cd1898097c741a9`).
+> Перевод `doc/full_scope.md` (blob `c397128986052ee3f48d0a8db797c1f506db822b`).
 > Правится в том же коммите, что и оригинал; проверка — `sh docs/ru/check.sh`.
 
 `Scope` — основной строительный блок пакета: виджет, который владеет
@@ -161,8 +161,8 @@ final class HomeDependencies
 бросает само поле.
 
 **В поле держат то, что производит инициализатор, а не саму зависимость.**
-`ScopeDependency` проходит свои состояния один раз, и каждый запуск строит
-дерево заново, поэтому узел, оставшийся в поле и поданный второму запуску,
+`ScopeDependency` проходит свои статусы один раз, и каждый запуск строит дерево
+заново, поэтому узел, оставшийся в поле и поданный второму запуску,
 отклоняется — группой, в которую его положили, или, если он стоит корнем, им
 самим. В release-сборке этого отказа нет, как и любого ассерта, и такой узел
 молча проходят мимо.
@@ -250,7 +250,7 @@ Widget buildOnProgress(
 
 `disposesOnError` (по умолчанию `true`) — то, что заставляет провалившуюся
 инициализацию убрать за собой: если дерево не дошло до инициализированного
-состояния, `dispose` контейнера отрабатывает раньше, чем ошибка доберётся
+статуса, `dispose` контейнера отрабатывает раньше, чем ошибка доберётся
 до `buildOnError`. Переопределите его в `false`, чтобы оставить недостроенное
 дерево для разбора.
 
@@ -357,15 +357,15 @@ static Future<AppDependencies> init(ScopeInitContext ctx) async {
 записи `ScopeDependencyInfo` (`level`, `path`, `dependency`),
 а `flattenDependenciesWithErrors()` сужает обход до записей с настоящей
 ошибкой, а не с проброшенным `ScopeDependencyException`. У каждой зависимости
-есть ещё и `ScopeDependencyState` — `ScopeDependencyInitial`,
+есть ещё и `ScopeDependencyStatus` — `ScopeDependencyInitial`,
 `ScopeDependencyInitialized`, `ScopeDependencyInitFailed`,
 `ScopeDependencyCancelled`, `ScopeDependencyDisposed`,
 `ScopeDependencyNoDisposalRequired`, `ScopeDependencyDisposalFailed` —
 и сокращения `isInitialized`, `isFailed`, `isCancelled`, `isDisposed`
-из `ScopeDependencyExtension`. Любое состояние отвечает на `errors()`, `error`,
+из `ScopeDependencyExtension`. Любой статус отвечает на `errors()`, `error`,
 `errorCount` и `hasErrors`; ошибки держат только два отказа и отмена.
 
-`ScopeDependencyNoDisposalRequired` — состояние зависимости, которая не задала
+`ScopeDependencyNoDisposalRequired` — статус зависимости, которая не задала
 `dep.dispose` и отдавать ей нечего: разбор проходит мимо неё, и вот что она
 говорит после. Это `ScopeDependencyDisposed`, так что `isDisposed` покрывает
 оба случая.
@@ -427,7 +427,7 @@ concurrent1/sequential1/dep3: Exception: no network
 у `concurrent`-группы упало сразу несколько детей: первый отказ отменяет ветки
 рядом, так что группа хранит тот, который её и закончил. Свои ошибки хранит
 каждая зависимость, и `flattenDependenciesWithErrors()` обходит за ними дерево.
-`stateToString()` группы подводит итог тому, что она держит: упавший ребёнок
+`statusToString()` группы подводит итог тому, что она держит: упавший ребёнок
 по имени и всякая ошибка, которая сама не является
 `ScopeDependencyException`, — списком неразрешённых.
 

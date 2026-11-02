@@ -1222,7 +1222,7 @@ Widget _wrap(Widget child) => Directionality(
 int _readyCount(WidgetTester tester) => tester
     .elementList(find.byType(_Async))
     .whereType<AsyncScopeContext<_Async>>()
-    .where((element) => element.state is AsyncScopeReady)
+    .where((element) => element.status is AsyncScopeReady)
     .length;
 
 /// An asynchronous scope whose hooks can be made to fail one at a time.

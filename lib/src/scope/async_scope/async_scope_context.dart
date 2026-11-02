@@ -14,8 +14,8 @@ abstract interface class AsyncScopeContext<W extends ScopeInheritedWidget>
   /// including the first disposal failure and its stack trace.
   Future<void> close();
 
-  /// The current state of the scope.
-  AsyncScopeState get state;
+  /// Where in its lifecycle the scope is.
+  AsyncScopeStatus get status;
 
   /// Whether the scope has reached [AsyncScopeReady].
   bool get isReady;

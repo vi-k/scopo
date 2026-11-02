@@ -287,7 +287,7 @@ family adds, the last frame kept under `buildOnClosing` instead of giving way
 to it.
 
 The screenshot is best-effort in a precise sense: it is installed only when the
-scope is actually ready and still mounted, because in any other state nothing
+scope is actually ready and still mounted, because in any other status nothing
 would ever release the barrier and the future would hang. A subtree that is
 never painted — inside an `Offstage`, or in the unselected branch of an
 `IndexedStack` — cannot be captured either; after
@@ -338,7 +338,7 @@ which is private here; see the `AsyncScope` topic.
 
 | topic | what it covers |
 | --- | --- |
-| `AsyncScope` | the lifecycle in full: states, teardown order, `scopeKey`, the coordinator |
+| `AsyncScope` | the lifecycle in full: statuses, teardown order, `scopeKey`, the coordinator |
 | `Scope` | a dependency container in front of the same state |
 | `ScopeWidget` | what `notifyDependents` does to the subtree |
 | `debug` | the observer that reports every step, and the timeouts |

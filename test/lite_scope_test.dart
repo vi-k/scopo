@@ -98,7 +98,7 @@ void main() {
     // `close()` installs a screenshot barrier and waits for it. The barrier is
     // only ever released by the `ScreenshotReplacer` that `buildOnReady()`
     // mounts, and `buildOnReady()` is the `AsyncScopeReady` branch of
-    // `buildOnState()` -- so in any other state nothing can release it and
+    // `buildOnStatus()` -- so in any other state nothing can release it and
     // `close()` waits forever.
     for (final (state, init, body)
         in <(String, Future<void> Function(ScopeInitContext), String)>[
@@ -544,9 +544,9 @@ void main() {
         );
         await settle(
           tester,
-          until: () => _scopeOf(tester).state is AsyncScopeReady,
+          until: () => _scopeOf(tester).status is AsyncScopeReady,
         );
-        expect(_scopeOf(tester).state, isA<AsyncScopeReady>());
+        expect(_scopeOf(tester).status, isA<AsyncScopeReady>());
 
         var isClosed = false;
         unawaited(_scopeOf(tester).close().whenComplete(() => isClosed = true));
@@ -642,7 +642,7 @@ void main() {
 
         final element = _scopeOf(tester);
         expect(
-          element.state,
+          element.status,
           isA<AsyncScopeWaiting>(),
           reason: 'the ready state must still be pending for this race',
         );
@@ -663,7 +663,7 @@ void main() {
         // The ready state was never applied, but `initScope()` did succeed, so
         // `disposeScope()` still has to run exactly once (see task 7).
         expect(element.disposeScopeCount, 1);
-        expect(element.state, isA<AsyncScopeWaiting>());
+        expect(element.status, isA<AsyncScopeWaiting>());
       },
     );
 
@@ -1709,14 +1709,14 @@ void main() {
               'have been called before the key was granted',
         );
 
-        await settle(tester, until: () => element.state is AsyncScopeReady);
+        await settle(tester, until: () => element.status is AsyncScopeReady);
 
         expect(
           initCount,
           1,
           reason: 'a scope that is not being disposed of initializes as usual',
         );
-        expect(element.state, isA<AsyncScopeReady>());
+        expect(element.status, isA<AsyncScopeReady>());
       },
     );
 
@@ -1754,7 +1754,7 @@ void main() {
           reason: 'an initialization that never ran has nothing to release',
         );
         expect(
-          element.state,
+          element.status,
           isA<AsyncScopeWaiting>(),
           reason: 'the scope never became ready',
         );
@@ -2219,7 +2219,7 @@ Future<void> _emitsProgressOnly(ScopeInitContext ctx) {
   return ctx.abandonable(() => Completer<void>().future);
 }
 
-/// Moves the scope into [AsyncScopeError].
+/// Moves the scope into [AsyncScopeFailed].
 Future<void> _failsImmediately(ScopeInitContext ctx) async {
   throw Exception('init failed');
 }

@@ -2,12 +2,12 @@
 
 * **Breaking:** five names the API reference listed but nothing outside the
   package could use are gone. `AsyncScopeInitState` held `AsyncScopeProgress`
-  and `AsyncScopeReady` and nothing else; both extend `AsyncScopeState`
-  directly now, and a `switch` over the four states stays exhaustive.
+  and `AsyncScopeReady` and nothing else; both extend `AsyncScopeStatus`
+  directly now, and a `switch` over the four statuses stays exhaustive.
   `ScopeModelInheritedElement` repeated what `ScopeModelElementBase` gets from
   `ScopeInheritedElement` and `ScopeModelContext`. `AsyncScopeModel` was an
   empty interface: the model of an asynchronous scope is a
-  `ScopeStateModel<AsyncScopeState>`. `ScopeDependencyMixin` declared private
+  `ScopeStateModel<AsyncScopeStatus>`. `ScopeDependencyMixin` declared private
   abstract members, so it could not be mixed in outside the package; a
   dependency of your own implements `ScopeDependency`, as before.
   `ScopeDependencyState.throwNoErrors` was an internal helper.
@@ -18,12 +18,22 @@
   `ScopeStateWithErrorNotifier` and `ScopeStateWithErrorModelView` were a
   notifier whose `state` throws after `setError`, and nothing in the package
   used it; a failure goes in the state as one more value, the way
-  `AsyncScopeError` does. `ScopeStateModelView` and
+  `AsyncScopeFailed` does. `ScopeStateModelView` and
   `ScopeStateNotifier.asUnmodifiable()` go with them: the read-only view the
   asynchronous scopes hand out as their `model` is private now. `CompareUtils`
   held four comparisons a lambda writes as briefly — for a value that is
   replaced, `shouldNotify: (a, b) => !identical(a, b)` — and `ListenableView` a
   `Listenable` that a notifier typed as `Listenable` already is.
+* **Breaking:** a phase of the lifecycle is a status, and `state` is left to
+  Flutter's `State` and to the value of a model. `AsyncScopeState` is
+  `AsyncScopeStatus`, read as `AsyncScopeContext.status` instead of `state` and
+  built in `buildOnStatus` instead of `buildOnState`; the diagnostics of a
+  scope label it `status`. `ScopeDependencyState` is `ScopeDependencyStatus`,
+  read as `ScopeDependency.status`, and `stateToString()` is
+  `statusToString()`. `AsyncScopeError` is `AsyncScopeFailed`, the way
+  `ScopeDependencyInitFailed` is named; `buildOnError`, `errorBuilder`,
+  `hasError` and `error` keep their names. The model of an asynchronous scope
+  is still a `ScopeStateModel<AsyncScopeStatus>`, so its `state` is the status.
 * **Breaking:** six names now say what they do.
   `AsyncScopeContext.isInitialized` is `isReady`: it is true once the scope is
   `AsyncScopeReady`. The state of a `LiteScope` or a `Scope` keeps its own
@@ -45,16 +55,16 @@
   observer, and this one reaches nobody else. An override without `@override`
   keeps compiling under the old name and is no longer called. The migration
   table is in `doc/debug.md`.
-* **Breaking:** the states of a dependency are seven final classes and no
+* **Breaking:** the statuses of a dependency are seven final classes and no
   public groups. `ScopeDependencyFailed` is `ScopeDependencyInitFailed`: it
   never meant a failed disposal, which is `ScopeDependencyDisposalFailed`,
   while `isFailed` answers for both. `ScopeDependencyAnySuccess`,
   `ScopeDependencyAnyFailed` and `ScopeDependencyAnyCancelled` are private —
   the first held `ScopeDependencyInitial`, which is no success. Their error API
-  moves to `ScopeDependencyState`: `errors()`, `error`, `stackTrace`,
-  `hasErrors` and `errorCount`, which was `count`, answer on every state; where
-  there is nothing to hold, `errors()` is empty and `error` throws, as it did
-  for an empty cancellation. `ScopeDependency.count` is `stepCount`.
+  moves to `ScopeDependencyStatus`: `errors()`, `error`, `stackTrace`,
+  `hasErrors` and `errorCount`, which was `count`, answer on every status;
+  where there is nothing to hold, `errors()` is empty and `error` throws, as it
+  did for an empty cancellation. `ScopeDependency.count` is `stepCount`.
 * **Breaking:** scopo runs on `async_job` 1.0. The re-exported
   `HandlerCancelReason` is `BodyCancelReason`, and its `name`, which outcomes
   and traces print, is `body` instead of `handler`; `ctx.wait`, deprecated in

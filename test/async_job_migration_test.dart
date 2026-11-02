@@ -42,7 +42,7 @@ void main() {
         tester.element(find.byType(AsyncScope))
             as AsyncScopeContext<AsyncScope>;
     final reported = tester.takeException();
-    expect(element.state, isA<AsyncScopeError>());
+    expect(element.status, isA<AsyncScopeFailed>());
     expect(reported, isNull);
     expect(shownError, isA<ScopeDependencyException>());
     expect('$shownError', contains('$failure'));
@@ -1535,8 +1535,8 @@ final class _ContextKeeper implements ScopeDependency {
   final int stepCount = 1;
 
   @override
-  ScopeDependencyState get state => _state;
-  ScopeDependencyState _state = const ScopeDependencyInitial();
+  ScopeDependencyStatus get status => _state;
+  ScopeDependencyStatus _state = const ScopeDependencyInitial();
 
   @override
   bool get disposalRequired => false;
@@ -1559,7 +1559,7 @@ final class _ContextKeeper implements ScopeDependency {
   String get wrappedName => '""';
 
   @override
-  String stateToString() => '$state';
+  String statusToString() => '$status';
 }
 
 /// A reason of the application's own, the way a consumer would write one.

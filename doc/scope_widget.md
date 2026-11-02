@@ -177,10 +177,10 @@ and a different `buildChild()`, so the subtree is rebuilt even if a notify-only
 rebuild was already pending.
 
 **The scope declared `rebuildsOnNotify`.** An element that rebuilds its own
-subtree as its state advances cannot use the shortcut, because its `buildChild`
-returns a different branch each time. `AsyncScope` sets it for good.
-`LiteScope` is more precise: it starts with the flag on, while the waiting,
-initializing and error branches replace one another, and clears it in
+subtree as its status advances cannot use the shortcut, because its
+`buildChild` returns a different branch each time. `AsyncScope` sets it for
+good. `LiteScope` is more precise: it starts with the flag on, while the
+waiting, initializing and error branches replace one another, and clears it in
 `buildOnReady()` — from the moment the ready branch is on screen, notifications
 stop rebuilding the subtree.
 

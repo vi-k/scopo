@@ -119,10 +119,10 @@ the safe default for a mutable object being re-assigned; override it when the
 state is a value type and repeated equal updates are common.
 
 A failure fits in the state as one more value. That is how the asynchronous
-families model it: `AsyncScopeError` stands beside `AsyncScopeWaiting`,
+families model it: `AsyncScopeFailed` stands beside `AsyncScopeWaiting`,
 `AsyncScopeProgress` and `AsyncScopeReady`, so reading
-`AsyncScope.of(context, listen: true).state` never throws, and `hasError` is
-derived from what the state is.
+`AsyncScope.of(context, listen: true).status` never throws, and `hasError` is
+derived from what the status is.
 
 ## Where to go next
 

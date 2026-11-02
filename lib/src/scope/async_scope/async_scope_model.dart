@@ -1,10 +1,10 @@
 part of '../scope.dart';
 
-/// The state of an asynchronous scope, written by the scope alone.
+/// The status of an asynchronous scope, written by the scope alone.
 ///
 /// The element hands out [_AsyncScopeModelView], a read-only view of this
 /// notifier, as `AsyncScopeElementBase.model`.
-final class _AsyncScopeNotifier extends ScopeStateNotifier<AsyncScopeState> {
+final class _AsyncScopeNotifier extends ScopeStateNotifier<AsyncScopeStatus> {
   _AsyncScopeNotifier() : super(AsyncScopeWaiting());
 }
 
@@ -12,13 +12,13 @@ final class _AsyncScopeNotifier extends ScopeStateNotifier<AsyncScopeState> {
 ///
 /// The notifier itself, handed out as a [ScopeStateModel], would be one
 /// downcast away from its `update`.
-final class _AsyncScopeModelView implements ScopeStateModel<AsyncScopeState> {
+final class _AsyncScopeModelView implements ScopeStateModel<AsyncScopeStatus> {
   final _AsyncScopeNotifier _notifier;
 
   _AsyncScopeModelView(this._notifier);
 
   @override
-  AsyncScopeState get state => _notifier.state;
+  AsyncScopeStatus get state => _notifier.state;
 
   @override
   void addListener(VoidCallback listener) => _notifier.addListener(listener);

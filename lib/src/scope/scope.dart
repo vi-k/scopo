@@ -29,7 +29,7 @@ part 'async_scope/async_scope_base.dart';
 part 'async_scope/async_scope_context.dart';
 part 'async_scope/async_scope_core.dart';
 part 'async_scope/async_scope_model.dart';
-part 'async_scope/async_scope_state.dart';
+part 'async_scope/async_scope_status.dart';
 part 'async_scope/scope_init_context.dart';
 part 'async_scope/async_scope_coordinator.dart';
 part 'async_data_scope/async_data_scope.dart';
@@ -50,7 +50,7 @@ part 'full_scope/scope_auto_dependency/scope_dependency/scope_dependency_handle.
 part 'full_scope/scope_auto_dependency/scope_dependency/scope_dependency_impl.dart';
 part 'full_scope/scope_auto_dependency/scope_dependency/scope_dependency_group.dart';
 part 'full_scope/scope_auto_dependency/scope_dependency/scope_dependency.dart';
-part 'full_scope/scope_auto_dependency/scope_dependency/scope_dependency_state.dart';
+part 'full_scope/scope_auto_dependency/scope_dependency/scope_dependency_status.dart';
 part 'full_scope/scope_auto_dependency/scope_dependency/scope_dependency_mixin.dart';
 part 'full_scope/scope_auto_dependency/scope_auto_dependency.dart';
 part 'full_scope/scope_auto_dependency/scope_auto_dependencies_progress.dart';

@@ -183,7 +183,7 @@ void main() {
       final scope =
           tester.element(find.byType(_LateStepScope)) as _LateStepScopeElement;
 
-      expect(scope.state, isA<AsyncScopeError>());
+      expect(scope.status, isA<AsyncScopeFailed>());
 
       // The helper the body left behind, reporting a step for a scope that
       // has already failed.
@@ -191,8 +191,8 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(
-        scope.state,
-        isA<AsyncScopeError>(),
+        scope.status,
+        isA<AsyncScopeFailed>(),
         reason:
             'a scope whose initialization failed does not go back to '
             'showing progress because something is still talking',
@@ -466,7 +466,7 @@ void main() {
         // coordinator lookup, so the error goes through the `try` of
         // `_performAsyncInit`. An error raised by the body itself takes the
         // other path — the failure of the job, which is what puts
-        // `AsyncScopeError` into the model and keeps the last progress with
+        // `AsyncScopeFailed` into the model and keeps the last progress with
         // it — and nothing covered that path.
         await tester.pumpWidget(
           Directionality(
@@ -496,8 +496,8 @@ void main() {
         expect(element.hasError, isTrue);
         expect(element.error, isA<StateError>());
         expect(
-          element.state,
-          isA<AsyncScopeError>().having(
+          element.status,
+          isA<AsyncScopeFailed>().having(
             (state) => state.progress,
             'progress',
             'step',
@@ -590,8 +590,8 @@ void main() {
               'while it was being built used to be',
         );
         expect(
-          child.state,
-          isA<AsyncScopeError>(),
+          child.status,
+          isA<AsyncScopeFailed>(),
           reason: 'and the scope shows it, which is the half the user sees',
         );
       },
@@ -804,7 +804,7 @@ void main() {
 
       expect(
         element.model,
-        isNot(isA<ScopeStateNotifier<AsyncScopeState>>()),
+        isNot(isA<ScopeStateNotifier<AsyncScopeStatus>>()),
         reason: 'only the scope writes its state',
       );
       expect(element.model.state, isA<AsyncScopeReady>());
@@ -1041,7 +1041,7 @@ final class _MovableScopeElement
   }
 
   @override
-  Widget buildOnState(AsyncScopeState state) => const SizedBox.shrink();
+  Widget buildOnStatus(AsyncScopeStatus status) => const SizedBox.shrink();
 }
 
 /// A scope whose initialization raises *while it is being cancelled*: the
@@ -1085,7 +1085,7 @@ final class _RaisingOnCancelScopeElement
   }
 
   @override
-  Widget buildOnState(AsyncScopeState state) => const SizedBox.shrink();
+  Widget buildOnStatus(AsyncScopeStatus status) => const SizedBox.shrink();
 }
 
 /// Minimal [AsyncScopeCore] used to test the `_registerWithParent()`
@@ -1105,7 +1105,7 @@ final class _RegisterRaceScopeElement
   _RegisterRaceScopeElement(super.widget);
 
   @override
-  Widget buildOnState(AsyncScopeState state) => const SizedBox.shrink();
+  Widget buildOnStatus(AsyncScopeStatus status) => const SizedBox.shrink();
 }
 
 /// Minimal [AsyncScopeCore] used to test the `_model.update(state)`
@@ -1135,7 +1135,7 @@ final class _ReadyRaceScopeElement
   }
 
   @override
-  Widget buildOnState(AsyncScopeState state) => const SizedBox.shrink();
+  Widget buildOnStatus(AsyncScopeStatus status) => const SizedBox.shrink();
 }
 
 /// A scope that waits for the scopes below it, and says so when the wait had
@@ -1173,7 +1173,7 @@ final class _WaitingParentScopeElement
   }
 
   @override
-  Widget buildOnState(AsyncScopeState state) => widget.child;
+  Widget buildOnStatus(AsyncScopeStatus status) => widget.child;
 }
 
 /// A scope whose synchronous setup can fail before its normal base setup.
@@ -1232,7 +1232,7 @@ final class _SyncInitAsyncScopeElement
   }
 
   @override
-  Widget buildOnState(AsyncScopeState state) => const SizedBox.shrink();
+  Widget buildOnStatus(AsyncScopeStatus status) => const SizedBox.shrink();
 }
 
 /// A scope whose initialization fails early.
@@ -1273,11 +1273,11 @@ final class _FailingInitScopeElement
   }
 
   @override
-  Widget buildOnState(AsyncScopeState state) => const SizedBox.shrink();
+  Widget buildOnStatus(AsyncScopeStatus status) => const SizedBox.shrink();
 }
 
 /// A scope whose body fails and leaves its context behind, so a step can
-/// still be reported for a scope that is already in `AsyncScopeError`.
+/// still be reported for a scope that is already in `AsyncScopeFailed`.
 final class _LateStepScope
     extends AsyncScopeCore<_LateStepScope, _LateStepScopeElement> {
   final void Function(ScopeInitContext ctx) onStarted;
@@ -1307,5 +1307,5 @@ final class _LateStepScopeElement
   }
 
   @override
-  Widget buildOnState(AsyncScopeState state) => const SizedBox.shrink();
+  Widget buildOnStatus(AsyncScopeStatus status) => const SizedBox.shrink();
 }

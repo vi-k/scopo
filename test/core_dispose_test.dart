@@ -113,7 +113,7 @@ void main() {
     await tester.pump();
     final element = key.currentContext! as _DataElement;
     expect(element.hasData, isTrue);
-    expect(element.state, isNot(isA<AsyncScopeReady>()));
+    expect(element.status, isNot(isA<AsyncScopeReady>()));
 
     await tester.pumpWidget(const SizedBox.shrink());
     await settle(tester, until: () => false, rounds: 2);
@@ -140,7 +140,7 @@ void main() {
       await tester.pump();
       final element = key.currentContext! as _ControllerElement;
       expect(element.hasController, isTrue);
-      expect(element.state, isNot(isA<AsyncScopeReady>()));
+      expect(element.status, isNot(isA<AsyncScopeReady>()));
 
       await tester.pumpWidget(const SizedBox.shrink());
       await settle(tester, until: () => false, rounds: 2);
@@ -321,7 +321,7 @@ final class _DataElement
   FutureOr<void> disposeData(String? data) => widget.dispose(data);
 
   @override
-  Widget buildOnState(AsyncScopeState state) => const SizedBox.expand();
+  Widget buildOnStatus(AsyncScopeStatus status) => const SizedBox.expand();
 }
 
 final class _Controller extends ScopeController {
@@ -398,7 +398,7 @@ final class _ControllerElement
   }
 
   @override
-  Widget buildOnState(AsyncScopeState state) => const SizedBox.expand();
+  Widget buildOnStatus(AsyncScopeStatus status) => const SizedBox.expand();
 }
 
 // The Core families expose no close(): closing a LiteScope above them waits

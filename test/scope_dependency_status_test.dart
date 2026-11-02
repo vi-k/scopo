@@ -2,11 +2,11 @@ import 'package:scopo/scopo.dart';
 import 'package:test/test.dart';
 
 void main() {
-  group('the error API of ScopeDependencyState', () {
+  group('the error API of ScopeDependencyStatus', () {
     final trace = StackTrace.current;
 
     test('a state that holds no error answers empty', () {
-      const states = <ScopeDependencyState>[
+      const states = <ScopeDependencyStatus>[
         ScopeDependencyInitial(),
         ScopeDependencyInitialized(),
         ScopeDependencyDisposed(),
@@ -30,7 +30,7 @@ void main() {
     });
 
     test('a failure answers with what it holds, oldest first', () {
-      final ScopeDependencyState state = ScopeDependencyInitFailed(
+      final ScopeDependencyStatus state = ScopeDependencyInitFailed(
         'first',
         trace,
       ).addError('second', trace);

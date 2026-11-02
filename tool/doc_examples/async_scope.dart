@@ -15,7 +15,7 @@ const asyncScope = DocManifest(
           'errorBuilder: (context, error, stack, progress) => Text("\$error"),\n'
           'builder: (context) => const HomeScreen(),\n);\n}',
     ),
-    'reading-the-state-from-the-sub/final-scope-asyncscope-of-cont':
+    'reading-the-status-from-the-su/final-scope-asyncscope-of-cont':
         DocEnvironment.skip('Schematic conditional body contains an ellipsis.'),
     'errors/wrong-a-request-that-ran-out-o': DocEnvironment(
       'void example() {\nAsyncScope(\n'

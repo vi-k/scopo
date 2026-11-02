@@ -759,7 +759,7 @@ void main() {
         reason: 'the successor is queued behind a key that is still held',
       );
       expect(
-        successor.state,
+        successor.status,
         isA<AsyncScopeWaiting>(),
         reason: 'and it has not started initializing',
       );
@@ -1011,7 +1011,7 @@ void main() {
     );
 
     expect(
-      successor.state,
+      successor.status,
       isA<AsyncScopeReady>(),
       reason: 'the key was released, so the next scope got in at once',
     );
@@ -1099,7 +1099,7 @@ void main() {
     );
 
     expect(
-      successor.state,
+      successor.status,
       isA<AsyncScopeReady>(),
       reason: 'the stuck scope gave the key back on its way out',
     );
@@ -1176,7 +1176,7 @@ void main() {
     );
 
     expect(
-      successor.state,
+      successor.status,
       isA<AsyncScopeReady>(),
       reason: 'the stuck scope gave the key back on its way out',
     );
@@ -1748,5 +1748,5 @@ final class _TestScopeElement
   }
 
   @override
-  Widget buildOnState(AsyncScopeState state) => widget.child;
+  Widget buildOnStatus(AsyncScopeStatus status) => widget.child;
 }

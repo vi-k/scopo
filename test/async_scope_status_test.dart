@@ -1,16 +1,16 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:scopo/scopo.dart';
 
-/// What an [AsyncScopeState] renders as.
+/// What an [AsyncScopeStatus] renders as.
 ///
 /// A state is read in a log and nowhere else, so its rendering is the whole of
 /// what it promises. This file used to count parentheses instead — a property
 /// `toString() => ''` has too, which left the promise held by nothing — and
 /// the shape that counting was groping at is the one both [AsyncScopeProgress]
-/// and [AsyncScopeError] have: a tail that appears only when there is
+/// and [AsyncScopeFailed] have: a tail that appears only when there is
 /// something to put in it.
 void main() {
-  group('AsyncScopeState.toString', () {
+  group('AsyncScopeStatus.toString', () {
     test('a scope that has not started names itself', () {
       expect('${AsyncScopeWaiting()}', 'AsyncScopeWaiting');
     });
@@ -28,18 +28,18 @@ void main() {
     });
   });
 
-  group('AsyncScopeError.toString', () {
+  group('AsyncScopeFailed.toString', () {
     test('names the state, the failure and the stack trace', () {
-      final state = AsyncScopeError(
+      final state = AsyncScopeFailed(
         Exception('boom'),
         StackTrace.fromString('trace'),
       );
 
-      expect('$state', 'AsyncScopeError(Exception: boom, trace)');
+      expect('$state', 'AsyncScopeFailed(Exception: boom, trace)');
     });
 
     test('adds the last progress reported before the failure', () {
-      final state = AsyncScopeError(
+      final state = AsyncScopeFailed(
         Exception('boom'),
         StackTrace.fromString('trace'),
         progress: 'loading',
@@ -47,7 +47,7 @@ void main() {
 
       expect(
         '$state',
-        'AsyncScopeError(Exception: boom, trace, progress: loading)',
+        'AsyncScopeFailed(Exception: boom, trace, progress: loading)',
       );
     });
   });

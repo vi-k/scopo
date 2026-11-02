@@ -28,23 +28,23 @@ AsyncScope(
 `pauseAfterInitialization`. `AsyncScopeCore` sits under both for a scope that
 needs its own element.
 
-## The four states
+## The four statuses
 
-`AsyncScopeState` is a sealed hierarchy, and each state drives one builder:
+`AsyncScopeStatus` is a sealed hierarchy, and each status drives one builder:
 
-| state | builder | when |
+| status | builder | when |
 | --- | --- | --- |
 | `AsyncScopeWaiting` | `buildOnWaiting`, or `buildOnProgress` when it returns `null` | mounted; waiting for a `scopeKey` and for the first event |
 | `AsyncScopeProgress` | `buildOnProgress` | `initScope` reported progress; the value is `progress` |
 | `AsyncScopeReady` | `buildOnReady` | `initScope` returned |
-| `AsyncScopeError` | `buildOnError` | `initScope` failed before it was ready; the progress it had reached comes with it |
+| `AsyncScopeFailed` | `buildOnError` | `initScope` failed before it was ready; the progress it had reached comes with it |
 
 `initScope` says only two of those four things, and names neither:
 `ctx.progress(x)` is the progress, and returning is the ready. "Waiting" and
 "failed" belong to the scope rather than to the work — the first is where a
 scope starts, and the second is what a throw makes of it.
 
-The ready state is not applied in the same frame the event arrives in. Without
+The ready status is not applied in the same frame the event arrives in. Without
 `pauseAfterInitialization` the scope schedules a post-frame callback, so the
 last progress value gets a frame to itself instead of being replaced within the
 frame it appeared in; with it, the ready branch is held back for that duration.
@@ -141,7 +141,7 @@ The package itself never looks inside a progress value. Progress is a caption;
 the type parameter a family has, where it has one, belongs to the value being
 built.
 
-## Reading the state from the subtree
+## Reading the status from the subtree
 
 ```dart
 final scope = AsyncScope.of(context, listen: true);
@@ -149,14 +149,14 @@ if (scope.isReady) { … }
 ```
 
 `of`, `maybeOf` and `select` return an `AsyncScopeContext`, which exposes
-`state`, `isReady` (the state is `AsyncScopeReady`), `hasError`, and `error` /
-`stackTrace`, both of which throw a `StateError` when there is no error.
+`status`, `isReady` (the status is `AsyncScopeReady`), `hasError`, and `error`
+/ `stackTrace`, both of which throw a `StateError` when there is no error.
 Reading a single field through `select` is the usual way in, since it
 subscribes to that field alone — the `base` topic explains the filtering.
 
 ## Errors
 
-A body that throws before the scope is ready puts it into `AsyncScopeError`,
+A body that throws before the scope is ready puts it into `AsyncScopeFailed`,
 and `buildOnError` receives the error, its stack trace, and the progress the
 scope had reached when it failed.
 
@@ -541,7 +541,7 @@ AsyncScope(
 );
 ```
 
-`close()` works from every state. A scope still waiting for its `scopeKey`, or
+`close()` works from every status. A scope still waiting for its `scopeKey`, or
 still initializing, is cancelled as it would be on removal; one whose
 initialization failed has nothing to release and completes right after its
 closing frame. The closing frame is asked for like any other, and when frames
@@ -572,7 +572,7 @@ the elements of the five built-in families are private. So those three are for
 a scope of your own — a family built on `AsyncScopeCore`, reading them on
 `this` — and not for a subtree looking upwards.
 `AsyncScope.of(context, listen: false)` and its siblings hand back an
-`AsyncScopeContext`, which carries the state of the scope and none of this.
+`AsyncScopeContext`, which carries the status of the scope and none of this.
 
 From a subtree, the wait to ask for is the coordinator's:
 

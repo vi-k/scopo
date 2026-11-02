@@ -2,13 +2,13 @@ part of '../../../scope.dart';
 
 /// Refuses a dependency that is being asked to start a second initialization.
 ///
-/// A dependency goes through its states once, and the tree a run works on is
-/// built afresh for that run. A node that is in neither of those positions --
-/// a node the previous run took through its states, handed to this one -- is a
+/// A dependency goes through its statuses once, and the tree a run works on is
+/// built afresh for that run. A node that is in neither of those positions -- a
+/// node the previous run took through its statuses, handed to this one -- is a
 /// mistake with no good outcome behind it: initialize it again and its one
 /// [ScopeDependencyHandle] is replaced, along with the `unmount` and `dispose`
-/// the first run registered on it, and whatever that run had taken is left
-/// with nothing to release it.
+/// the first run registered on it, and whatever that run had taken is left with
+/// nothing to release it.
 ///
 /// Raised from two places, because the mistake arrives from two directions. A
 /// node under a group is seen by the group, as it is built. A node standing as
@@ -19,46 +19,47 @@ part of '../../../scope.dart';
 /// still does -- running a second initializer over a container the first run
 /// has already furnished is the worse of the two -- so in a release build the
 /// mistake stays silent, as it was before.
-FlutterError _alreadyUsed(_ScopeDependencyMixin dependency) =>
-    FlutterError.fromParts(<DiagnosticsNode>[
-      ErrorSummary(
-        '${dependency.wrappedName} has already been through an initialization '
-        'and cannot start another.',
-      ),
-      ErrorDescription(
-        'A dependency is built, initialized and released, in that order and '
-        'once. This one stands in ${dependency.state}, so whatever it took has '
-        'already been given back, and a second initialization would replace '
-        'the handle that is the only way back to it.',
-      ),
-      ErrorDescription(
-        'A tree is built afresh for every run, so a node left over from the '
-        'previous one came from a field rather than from the build: usually a '
-        '`late final` holding the dependency itself, where what belongs in a '
-        'field is what its initializer produces.',
-      ),
-      ErrorHint(
-        'Build the dependency where the tree is built, so that every run gets '
-        'one of its own. The `Scope` topic says what a `late final` field '
-        'costs a container that runs more than once.',
-      ),
-    ]);
+FlutterError _alreadyUsed(
+  _ScopeDependencyMixin dependency,
+) => FlutterError.fromParts(<DiagnosticsNode>[
+  ErrorSummary(
+    '${dependency.wrappedName} has already been through an initialization '
+    'and cannot start another.',
+  ),
+  ErrorDescription(
+    'A dependency is built, initialized and released, in that order and '
+    'once. This one stands in ${dependency.status}, so whatever it took has '
+    'already been given back, and a second initialization would replace '
+    'the handle that is the only way back to it.',
+  ),
+  ErrorDescription(
+    'A tree is built afresh for every run, so a node left over from the '
+    'previous one came from a field rather than from the build: usually a '
+    '`late final` holding the dependency itself, where what belongs in a '
+    'field is what its initializer produces.',
+  ),
+  ErrorHint(
+    'Build the dependency where the tree is built, so that every run gets '
+    'one of its own. The `Scope` topic says what a `late final` field '
+    'costs a container that runs more than once.',
+  ),
+]);
 
 mixin _ScopeDependencyMixin implements ScopeDependency, ScopeObservable {
   @override
   String get debugLabel => name;
 
   @override
-  ScopeDependencyState get state => _state;
-  ScopeDependencyState _state = const ScopeDependencyInitial();
+  ScopeDependencyStatus get status => _status;
+  ScopeDependencyStatus _status = const ScopeDependencyInitial();
 
   /// Whether [dispose] has already run to its end.
   ///
-  /// The state used to answer this on its own, because a disposal that was
+  /// The status used to answer this on its own, because a disposal that was
   /// over always said [ScopeDependencyDisposed]. It cannot any more: a
   /// dependency that collected errors keeps them, so a group that was disposed
   /// of *because* something under it failed still says
-  /// [ScopeDependencyInitFailed]. Kept apart from the state, so
+  /// [ScopeDependencyInitFailed]. Kept apart from the status, so
   /// [ScopeDependency.disposalRequired] can still tell a disposal that is due
   /// from one that is done.
   bool _isDisposalDone = false;
@@ -101,7 +102,7 @@ mixin _ScopeDependencyMixin implements ScopeDependency, ScopeObservable {
   ///
   /// A dependency that never ran keeps [ScopeDependencyInitial]: "not
   /// initialized" is the true thing to say about it, and it is not what this
-  /// state means.
+  /// status means.
   void _markNothingToDispose() {
     // A dependency that is initializing right now holds nothing *yet*, which
     // is not the same as holding nothing. The guard on `dispose()` asks
@@ -119,8 +120,8 @@ mixin _ScopeDependencyMixin implements ScopeDependency, ScopeObservable {
     }
 
     _isDisposalDone = true;
-    if (_state is ScopeDependencyInitialized) {
-      _state = const ScopeDependencyNoDisposalRequired();
+    if (_status is ScopeDependencyInitialized) {
+      _status = const ScopeDependencyNoDisposalRequired();
     }
   }
 
@@ -234,11 +235,11 @@ mixin _ScopeDependencyMixin implements ScopeDependency, ScopeObservable {
 
   /// Automates the initialization process.
   ///
-  /// Runs [_runInit], handles the errors and sets the matching state.
+  /// Runs [_runInit], handles the errors and sets the matching status.
   ///
   /// A normal return from [_runInit] marks the dependency
   /// [ScopeDependencyInitialized]. A [Cancelled] thrown by the walk is
-  /// rethrown, and a dependency still in its initial state is marked
+  /// rethrown, and a dependency still in its initial status is marked
   /// [ScopeDependencyCancelled]. Cancellation is cooperative: this method
   /// does not interrupt a bare `await` inside [_runInit].
   ///
@@ -246,7 +247,7 @@ mixin _ScopeDependencyMixin implements ScopeDependency, ScopeObservable {
   /// a [ScopeDependencyException]. An exception from a child is recorded too;
   /// its path is prefixed with this dependency's name, if nonempty, before it
   /// is rethrown. If the job is already cancelled, the error is recorded in the
-  /// cancelled state instead, and [Cancelled] is thrown so the cancellation
+  /// cancelled status instead, and [Cancelled] is thrown so the cancellation
   /// goes on.
   @override
   Future<void> init(
@@ -254,14 +255,14 @@ mixin _ScopeDependencyMixin implements ScopeDependency, ScopeObservable {
     void Function(String path) onStep,
   ) async {
     assert(() {
-      if (_state is! ScopeDependencyInitial) {
+      if (_status is! ScopeDependencyInitial) {
         throw _alreadyUsed(this);
       }
 
       return true;
     }());
 
-    // [_state] cannot answer this: it stays [ScopeDependencyInitial] for the
+    // [_status] cannot answer this: it stays [ScopeDependencyInitial] for the
     // whole of the run below and leaves it only at the end, so a second call
     // arriving while the first is parked on an `await` finds every check
     // satisfied. A leaf has one [ScopeDependencyHandle], and running the
@@ -317,14 +318,14 @@ mixin _ScopeDependencyMixin implements ScopeDependency, ScopeObservable {
         // [ScopeDependencyException] that carries the path.
         _handleInitializationError(error, stackTrace);
       }
-      if (_state is! ScopeDependencyInitFailed) {
-        _state = const ScopeDependencyInitialized();
+      if (_status is! ScopeDependencyInitFailed) {
+        _status = const ScopeDependencyInitialized();
       }
     } finally {
       _initializing = false;
       // Catch the cancellation.
-      if (_state is ScopeDependencyInitial) {
-        _state = ScopeDependencyCancelled();
+      if (_status is ScopeDependencyInitial) {
+        _status = ScopeDependencyCancelled();
       }
     }
   }
@@ -334,11 +335,11 @@ mixin _ScopeDependencyMixin implements ScopeDependency, ScopeObservable {
 
   /// Automates the disposal process.
   ///
-  /// A state that carries errors survives the disposal untouched:
+  /// A status that carries errors survives the disposal untouched:
   /// [ScopeDependencyDisposed] says nothing at all, and the error list is the
   /// only record of what went wrong. A group is disposed of *because*
   /// something under it failed — [ScopeDependencyGroup.disposalRequired]
-  /// covers [ScopeDependencyInitFailed] — so overwriting its state threw that
+  /// covers [ScopeDependencyInitFailed] — so overwriting its status threw that
   /// record away exactly where it was needed, and with the default
   /// [ScopeAutoDependencies.disposesOnError] that happened before the
   /// caller ever saw it. A failed *leaf* keeps its errors by the same rule, and
@@ -429,7 +430,7 @@ mixin _ScopeDependencyMixin implements ScopeDependency, ScopeObservable {
 
     // Whether the walk got to its end, however it got there.
     //
-    // The state cannot answer this, and used to be asked: anything other than
+    // The status cannot answer this, and used to be asked: anything other than
     // [ScopeDependencyInitialized] was read as "the walk finished". That holds
     // for a walk that finished, and it is wrong for a tree a caller leads by
     // hand after an initialization went wrong -- one in
@@ -463,7 +464,7 @@ mixin _ScopeDependencyMixin implements ScopeDependency, ScopeObservable {
         _handleDisposalError(error, stackTrace);
       }
       walkEnded = true;
-      _state = switch (_state) {
+      _status = switch (_status) {
         final _ScopeDependencyWithErrors state when state.hasErrors => state,
         // A node that never ran goes on saying so.
         // [_ScopeDependencyMixin._markNothingToDispose] keeps
@@ -473,7 +474,7 @@ mixin _ScopeDependencyMixin implements ScopeDependency, ScopeObservable {
         // [ScopeDependencyDisposed] -- so a dump of a tree that was built and
         // then let go of without ever being initialized had a root claiming a
         // teardown over children that had never started.
-        ScopeDependencyInitial() => _state,
+        ScopeDependencyInitial() => _status,
         _ => const ScopeDependencyDisposed(),
       };
     } finally {
@@ -490,7 +491,7 @@ mixin _ScopeDependencyMixin implements ScopeDependency, ScopeObservable {
       // quietly or raised what a disposer threw -- unless the walk itself saw
       // something that may be holding still. A walk that did not end is one
       // that never started, or one that fell over before it reached anybody,
-      // and the state it left says so already.
+      // and the status it left says so already.
       //
       // The two are kept apart because they answer different questions. "Did
       // the walk finish" is about this tree; "is anything still held" is about
@@ -524,7 +525,7 @@ mixin _ScopeDependencyMixin implements ScopeDependency, ScopeObservable {
     _ScopeDependencyWithErrors Function(Object error, StackTrace stackTrace)
     defaultState,
   ) {
-    _state = switch (_state) {
+    _status = switch (_status) {
       final _ScopeDependencyWithErrors state => state.addError(
         error,
         stackTrace,
@@ -544,7 +545,7 @@ mixin _ScopeDependencyMixin implements ScopeDependency, ScopeObservable {
           observer.onTrace(this, '[handleError] $wrappedName: $error'),
     );
 
-    // Add the error to the state.
+    // Add the error to the status.
     _addErrorToState(error, stackTrace, defaultState);
 
     // Pass the error on.
@@ -604,10 +605,10 @@ mixin _ScopeDependencyMixin implements ScopeDependency, ScopeObservable {
       ),
     );
 
-    // Add the error to the state.
+    // Add the error to the status.
     _addErrorToState(error, stackTrace, defaultState);
 
-    // And say it out loud. The state of the tree is the only place this used
+    // And say it out loud. The status of the tree is the only place this used
     // to be kept, and the tree is on its way out: the dependency failed for a
     // reason of its own -- a socket, a database, a parse -- and what left the
     // node upwards was the cancellation, so an application with ordinary

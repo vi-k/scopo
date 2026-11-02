@@ -154,7 +154,7 @@ void main() {
       );
 
       expect(
-        scope.state,
+        scope.status,
         isA<AsyncScopeProgress>(),
         reason: 'the pause keeps the last progress on screen',
       );
@@ -162,7 +162,7 @@ void main() {
       await tester.pump(const Duration(seconds: 1));
       await tester.pump();
 
-      expect(scope.state, isA<AsyncScopeReady>());
+      expect(scope.status, isA<AsyncScopeReady>());
     });
 
     testWidgets('is skipped entirely when the config disables it', (
@@ -179,7 +179,7 @@ void main() {
       );
 
       expect(
-        scope.state,
+        scope.status,
         isA<AsyncScopeReady>(),
         reason:
             'no delay is scheduled at all, so the ready state applies at '
@@ -243,5 +243,5 @@ final class _PausedScopeElement
   }
 
   @override
-  Widget buildOnState(AsyncScopeState state) => const SizedBox.shrink();
+  Widget buildOnStatus(AsyncScopeStatus status) => const SizedBox.shrink();
 }

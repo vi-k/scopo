@@ -72,7 +72,7 @@ abstract base class AsyncDataScopeElementBase<
   FutureOr<void> disposeScope() => disposeData(data);
 
   @override
-  Widget buildOnState(AsyncScopeState state);
+  Widget buildOnStatus(AsyncScopeStatus status);
 
   //
   // End of overriding block

@@ -57,13 +57,13 @@ abstract class ScopeAutoDependencies<
       // Nothing has been built yet.
       null => _root = buildDependencies(context),
       // Built, but never initialized: this *is* that first initialization.
-      ScopeDependency(state: ScopeDependencyInitial()) => root,
+      ScopeDependency(status: ScopeDependencyInitial()) => root,
       // The previous tree is done: its disposal walk reached its end, so
       // nothing it acquired is still held and a new tree can stand where it
       // stood.
       _ when _disposalIsOver(root) => _root = _rebuildAfterDisposal(context),
       _ => throw StateError(
-        '$T has already been initialized (${root.stateToString()}) and has'
+        '$T has already been initialized (${root.statusToString()}) and has'
         ' not been disposed of. Dispose of it before initializing it again:'
         ' a second `init()` builds the tree afresh and runs every'
         ' initializer over the same container, whose fields the first run'
@@ -749,7 +749,7 @@ abstract class ScopeAutoDependencies<
   /// narrows the walk to where something actually failed.
   Iterable<ScopeDependencyInfo> flattenDependenciesWithErrors() =>
       flattenDependencies().where(
-        (info) => switch (info.dependency.state) {
+        (info) => switch (info.dependency.status) {
           final _ScopeDependencyWithErrors state => state.errors().any(
             (e) => e.error is! ScopeDependencyException,
           ),
@@ -781,5 +781,5 @@ final class ScopeDependencyInfo {
 
   @override
   String toString() =>
-      '${indent()}${dependency.wrappedName} ${dependency.stateToString()}';
+      '${indent()}${dependency.wrappedName} ${dependency.statusToString()}';
 }

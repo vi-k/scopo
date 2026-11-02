@@ -5,7 +5,7 @@ abstract base class AsyncScopeCore<
   W extends AsyncScopeCore<W, E>,
   E extends AsyncScopeElementBase<W, E>
 >
-    extends ScopeModelCore<W, E, ScopeStateModel<AsyncScopeState>> {
+    extends ScopeModelCore<W, E, ScopeStateModel<AsyncScopeStatus>> {
   /// Creates the widget half of an asynchronous scope.
   const AsyncScopeCore({
     super.key,
@@ -43,7 +43,7 @@ abstract base class AsyncScopeElementBase<
   W extends AsyncScopeCore<W, E>,
   E extends AsyncScopeElementBase<W, E>
 >
-    extends ScopeNotifierElementBase<W, E, ScopeStateModel<AsyncScopeState>>
+    extends ScopeNotifierElementBase<W, E, ScopeStateModel<AsyncScopeStatus>>
     with AsyncScopeParent
     implements AsyncScopeContext<W> {
   /// The widget's name rather than the element's: it is the one that carries
@@ -179,7 +179,7 @@ abstract base class AsyncScopeElementBase<
     if (_initSucceeded || !mounted || _isDisposing) {
       return;
     }
-    if (_model.state case AsyncScopeError()) {
+    if (_model.state case AsyncScopeFailed()) {
       return;
     }
 
@@ -357,7 +357,7 @@ abstract base class AsyncScopeElementBase<
     // is what this branch used to be for.
     if (mounted && !_isDisposing) {
       _model.update(
-        AsyncScopeError(
+        AsyncScopeFailed(
           error,
           stackTrace,
           progress: switch (_model.state) {
@@ -407,8 +407,8 @@ abstract base class AsyncScopeElementBase<
   @protected
   bool get boundsDisposeScopeItself => false;
 
-  /// Builds the branch belonging to [state].
-  Widget buildOnState(AsyncScopeState state);
+  /// Builds the branch belonging to [status].
+  Widget buildOnStatus(AsyncScopeStatus status);
 
   //
   // End of overriding block
@@ -416,12 +416,12 @@ abstract base class AsyncScopeElementBase<
 
   /// The read-only face of [_model], made once.
   ///
-  /// Everything the scope shows of its state goes through here — [state],
+  /// Everything the scope shows of its status goes through here — [status],
   /// [isReady], [hasError], [error], [stackTrace], `buildChild()`,
   /// `debugFillProperties` and every run of every selector — so a wrapper
   /// built on each read was rubbish on every build of every dependent.
   @override
-  late final ScopeStateModel<AsyncScopeState> model = _AsyncScopeModelView(
+  late final ScopeStateModel<AsyncScopeStatus> model = _AsyncScopeModelView(
     _model,
   );
   final _AsyncScopeNotifier _model = _AsyncScopeNotifier();
@@ -578,7 +578,7 @@ abstract base class AsyncScopeElementBase<
   bool get reportsOwnLifecycle => true;
 
   @override
-  AsyncScopeState get state => model.state;
+  AsyncScopeStatus get status => model.state;
 
   @override
   bool get isReady => model.state is AsyncScopeReady;
@@ -586,7 +586,7 @@ abstract base class AsyncScopeElementBase<
   @override
   bool get hasError => switch (model.state) {
     AsyncScopeWaiting() || AsyncScopeProgress() || AsyncScopeReady() => false,
-    AsyncScopeError() => true,
+    AsyncScopeFailed() => true,
   };
 
   @override
@@ -594,7 +594,7 @@ abstract base class AsyncScopeElementBase<
     AsyncScopeWaiting() ||
     AsyncScopeProgress() ||
     AsyncScopeReady() => throw StateError('No error'),
-    AsyncScopeError(:final error) => error,
+    AsyncScopeFailed(:final error) => error,
   };
 
   @override
@@ -602,7 +602,7 @@ abstract base class AsyncScopeElementBase<
     AsyncScopeWaiting() ||
     AsyncScopeProgress() ||
     AsyncScopeReady() => throw StateError('No error'),
-    AsyncScopeError(:final stackTrace) => stackTrace,
+    AsyncScopeFailed(:final stackTrace) => stackTrace,
   };
 
   /// Creates the element of an asynchronous scope.
@@ -1080,7 +1080,7 @@ abstract base class AsyncScopeElementBase<
       // The same state a failure of the job lands in, for the same reason. A
       // failure raised here -- the coordinator lookup, an
       // `onScopeKeyTimeout()` that throws -- is an initialization that failed
-      // before it was ready, which is what [AsyncScopeError] means and what
+      // before it was ready, which is what [AsyncScopeFailed] means and what
       // `buildOnError` is for. Left out, as it was, the model stayed
       // [AsyncScopeWaiting] and the scope went on showing its loading branch
       // for good: loud in the console, where the re-throw below puts it, and
@@ -1102,7 +1102,7 @@ abstract base class AsyncScopeElementBase<
         }
 
         _model.update(
-          AsyncScopeError(
+          AsyncScopeFailed(
             error,
             stackTrace,
             progress: switch (_model.state) {
@@ -1692,13 +1692,15 @@ abstract base class AsyncScopeElementBase<
       );
     }
 
-    return buildOnState(model.state);
+    return buildOnStatus(model.state);
   }
 
   @override
   void debugFillProperties(DiagnosticPropertiesBuilder properties) {
     super.debugFillProperties(properties);
-    properties.add(DiagnosticsProperty<AsyncScopeState>('state', model.state));
+    properties.add(
+      DiagnosticsProperty<AsyncScopeStatus>('status', model.state),
+    );
     if (mounted) {
       if (scopeKey case final scopeKey?) {
         properties.add(DiagnosticsProperty<Object?>('scopeKey', scopeKey));

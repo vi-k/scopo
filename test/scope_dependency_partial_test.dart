@@ -498,8 +498,8 @@ final class _CountingDependency implements ScopeDependency {
   final int stepCount = 1;
 
   @override
-  ScopeDependencyState get state => _state;
-  ScopeDependencyState _state = const ScopeDependencyInitial();
+  ScopeDependencyStatus get status => _state;
+  ScopeDependencyStatus _state = const ScopeDependencyInitial();
 
   @override
   bool get disposalRequired => _state is ScopeDependencyInitialized;
@@ -529,5 +529,5 @@ final class _CountingDependency implements ScopeDependency {
   String get wrappedName => '"$name"';
 
   @override
-  String stateToString() => '$state';
+  String statusToString() => '$status';
 }

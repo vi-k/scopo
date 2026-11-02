@@ -128,7 +128,7 @@ imports both packages gets only the ones it asks for; more in
 
 Start with
 [quickstart](https://github.com/vi-k/scopo/tree/main/example/quickstart): one
-`AsyncDataScope`, loading and ready states, and a button that recreates the
+`AsyncDataScope`, loading and ready statuses, and a button that recreates the
 scope after releasing its previous resource.
 
 ## The families
@@ -156,7 +156,7 @@ the smallest one that fits; the topics are in the same order.
 Async initialization and disposal without a dependency container: use it when
 the objects are already reachable (a singleton, a repository from a parent
 scope) and only their lifecycle has to be driven by the tree. Descendants can
-read the current state with `AsyncScope.of(context, listen: …).state`.
+read the current status with `AsyncScope.of(context, listen: …).status`.
 
 ```dart
 class ConnectionGate extends StatelessWidget {
@@ -966,10 +966,10 @@ anywhere; `mounted` too, if what you build reads it.
 
 Two things stay closed on purpose. The scope widgets and their states, because
 a mock of one could never be found: `of` looks the element up by exact type, so
-the double would sit in the tree unseen. And the state unions
-(`AsyncScopeState`, `ScopeDependencyState`), because `sealed` is what makes a
+the double would sit in the tree unseen. And the status unions
+(`AsyncScopeStatus`, `ScopeDependencyStatus`), because `sealed` is what makes a
 `switch` over them exhaustive — and there is nothing to mock there anyway:
-every leaf has a public constructor, so a test builds the state it wants.
+every leaf has a public constructor, so a test builds the status it wants.
 
 **In depth:** the topic
 [debug](https://pub.dev/documentation/scopo/latest/topics/debug-topic.html).

@@ -1406,7 +1406,7 @@ void main() {
   });
 
   // The same phase from a family that has no `buildOn*` at all, and the reason
-  // the guard stands where it does: one in `buildOnState` covers the four
+  // the guard stands where it does: one in `buildOnStatus` covers the four
   // asynchronous families, passes the test above and fails this one.
   testWidgets('a scope widget whose own build throws reports the same phase', (
     tester,
@@ -1628,7 +1628,7 @@ final class _CounterScopeState
 /// A scope with no `buildOn*` of its own, whose [build] throws.
 ///
 /// The failure has to come from the widget's own build rather than from a
-/// state branch: that is the half of the surface a guard around `buildOnState`
+/// state branch: that is the half of the surface a guard around `buildOnStatus`
 /// would not reach.
 final class _BuildFailingScope extends ScopeWidgetBase<_BuildFailingScope> {
   const _BuildFailingScope();
@@ -1705,7 +1705,7 @@ final class _FailingInitAsyncScopeElement
   Future<void> initScopeAsync(ScopeInitContext ctx) async {}
 
   @override
-  Widget buildOnState(AsyncScopeState state) => const SizedBox.shrink();
+  Widget buildOnStatus(AsyncScopeStatus status) => const SizedBox.shrink();
 }
 
 /// A controller scope whose initialization fails and whose controller then
@@ -1849,7 +1849,7 @@ final class _AsyncScopeElement
   }
 
   @override
-  Widget buildOnState(AsyncScopeState state) => const SizedBox.shrink();
+  Widget buildOnStatus(AsyncScopeStatus status) => const SizedBox.shrink();
 }
 
 /// A container with two dependencies, driven directly: its `C` is `void`, so
