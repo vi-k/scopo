@@ -105,13 +105,10 @@ final class _ResourceDeskState extends State<_ResourceDesk> {
       );
 
   Widget _loading(String id) => Column(
-        key: const ValueKey<String>('loading'),
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Text('Loading $id'),
-          _button('leave', 'Leave', _leave),
-        ],
-      );
+    key: const ValueKey<String>('loading'),
+    mainAxisSize: MainAxisSize.min,
+    children: [Text('Loading $id'), _button('leave', 'Leave', _leave)],
+  );
 
   @override
   Widget build(BuildContext context) {
@@ -148,11 +145,7 @@ final class _ResourceDeskState extends State<_ResourceDesk> {
             ResourceChild(resource: controller.resource),
             _button('leave', 'Leave', _leave),
             _button('switch', 'Switch', _switch),
-            _button(
-              'close',
-              'Close',
-              () => unawaited(_close(scopeContext)),
-            ),
+            _button('close', 'Close', () => unawaited(_close(scopeContext))),
           ],
         ),
       );

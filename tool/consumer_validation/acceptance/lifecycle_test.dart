@@ -7,9 +7,9 @@ Finder keyed(String name) => find.byKey(ValueKey<String>(name));
 
 Future<void> tick(WidgetTester tester, [int rounds = 1]) async {
   for (var i = 0; i < rounds; i++) {
-    await tester.runAsync(() => Future<void>.delayed(
-          const Duration(milliseconds: 10),
-        ));
+    await tester.runAsync(
+      () => Future<void>.delayed(const Duration(milliseconds: 10)),
+    );
     await tester.pump(const Duration(milliseconds: 10));
   }
 }
@@ -54,9 +54,9 @@ Future<void> ready(WidgetTester tester, Backend backend, String id) async {
 /// any default timeout too, not only within short delays.
 Future<void> outlast(WidgetTester tester) async {
   for (var i = 0; i < 8; i++) {
-    await tester.runAsync(() => Future<void>.delayed(
-          const Duration(milliseconds: 500),
-        ));
+    await tester.runAsync(
+      () => Future<void>.delayed(const Duration(milliseconds: 500)),
+    );
     await tester.pump(const Duration(milliseconds: 10));
   }
 }
@@ -65,8 +65,10 @@ void before(Backend backend, String first, String second) {
   expect(backend.events, contains(first));
   expect(backend.events, contains(second));
   expect(
-      backend.events.indexOf(first), lessThan(backend.events.indexOf(second)),
-      reason: backend.events.join(', '));
+    backend.events.indexOf(first),
+    lessThan(backend.events.indexOf(second)),
+    reason: backend.events.join(', '),
+  );
 }
 
 Future<void> clean(WidgetTester tester, Backend backend) async {
@@ -89,51 +91,61 @@ Future<void> clean(WidgetTester tester, Backend backend) async {
 }
 
 void main() {
-  testWidgets('d leave ready then immediate reopen waits for previous release',
-      (tester) async {
-    final backend = Backend(holdOpens: true, holdCloses: true);
-    await start(tester, backend);
-    await ready(tester, backend, 'a');
-    await press(tester, 'leave');
-    expect(keyed('home'), findsOneWidget);
-    await press(tester, 'open');
-    await until(tester, () => backend.events.contains('close:a'));
-    await tick(tester, 10);
-    expect(keyed('loading'), findsOneWidget);
-    expect(backend.events.where((e) => e == 'open:a'), hasLength(1));
-    before(backend, 'use:a:dispose', 'close:a');
-    backend.releaseClose('a');
-    await until(
-        tester, () => backend.events.where((e) => e == 'open:a').length == 2);
-    expect(backend.events.indexOf('closed:a'),
-        lessThan(backend.events.lastIndexOf('open:a')));
-    backend.releaseOpen('a');
-    await until(tester, () => find.text('Data a').evaluate().isNotEmpty);
-    expect(backend.liveResources, 1);
-    await clean(tester, backend);
-  });
+  testWidgets(
+    'd leave ready then immediate reopen waits for previous release',
+    (tester) async {
+      final backend = Backend(holdOpens: true, holdCloses: true);
+      await start(tester, backend);
+      await ready(tester, backend, 'a');
+      await press(tester, 'leave');
+      expect(keyed('home'), findsOneWidget);
+      await press(tester, 'open');
+      await until(tester, () => backend.events.contains('close:a'));
+      await tick(tester, 10);
+      expect(keyed('loading'), findsOneWidget);
+      expect(backend.events.where((e) => e == 'open:a'), hasLength(1));
+      before(backend, 'use:a:dispose', 'close:a');
+      backend.releaseClose('a');
+      await until(
+        tester,
+        () => backend.events.where((e) => e == 'open:a').length == 2,
+      );
+      expect(
+        backend.events.indexOf('closed:a'),
+        lessThan(backend.events.lastIndexOf('open:a')),
+      );
+      backend.releaseOpen('a');
+      await until(tester, () => find.text('Data a').evaluate().isNotEmpty);
+      expect(backend.liveResources, 1);
+      await clean(tester, backend);
+    },
+  );
 
-  testWidgets('b leave opening then immediate reopen keeps late owner isolated',
-      (tester) async {
-    final backend = Backend(holdOpens: true, holdCloses: true);
-    await start(tester, backend);
-    await press(tester, 'leave');
-    await press(tester, 'open');
-    await tick(tester, 10);
-    expect(keyed('loading'), findsOneWidget);
-    expect(backend.events, ['open:a']);
-    backend.releaseOpen('a');
-    await until(tester, () => backend.events.contains('close:a'));
-    await tick(tester, 10);
-    expect(backend.events.where((e) => e == 'open:a'), hasLength(1));
-    expect(backend.events.where((e) => e.startsWith('use:')), isEmpty);
-    backend.releaseClose('a');
-    await until(
-        tester, () => backend.events.where((e) => e == 'open:a').length == 2);
-    await ready(tester, backend, 'a');
-    before(backend, 'closed:a', 'use:a:mount');
-    await clean(tester, backend);
-  });
+  testWidgets(
+    'b leave opening then immediate reopen keeps late owner isolated',
+    (tester) async {
+      final backend = Backend(holdOpens: true, holdCloses: true);
+      await start(tester, backend);
+      await press(tester, 'leave');
+      await press(tester, 'open');
+      await tick(tester, 10);
+      expect(keyed('loading'), findsOneWidget);
+      expect(backend.events, ['open:a']);
+      backend.releaseOpen('a');
+      await until(tester, () => backend.events.contains('close:a'));
+      await tick(tester, 10);
+      expect(backend.events.where((e) => e == 'open:a'), hasLength(1));
+      expect(backend.events.where((e) => e.startsWith('use:')), isEmpty);
+      backend.releaseClose('a');
+      await until(
+        tester,
+        () => backend.events.where((e) => e == 'open:a').length == 2,
+      );
+      await ready(tester, backend, 'a');
+      before(backend, 'closed:a', 'use:a:mount');
+      await clean(tester, backend);
+    },
+  );
 
   testWidgets('d repeated switch back serializes both owners', (tester) async {
     final backend = Backend(holdOpens: true, holdCloses: true);
@@ -152,9 +164,13 @@ void main() {
     before(backend, 'use:b:dispose', 'close:b');
     backend.releaseClose('b');
     await until(
-        tester, () => backend.events.where((e) => e == 'open:a').length == 2);
-    expect(backend.events.indexOf('closed:b'),
-        lessThan(backend.events.lastIndexOf('open:a')));
+      tester,
+      () => backend.events.where((e) => e == 'open:a').length == 2,
+    );
+    expect(
+      backend.events.indexOf('closed:b'),
+      lessThan(backend.events.lastIndexOf('open:a')),
+    );
     backend.releaseOpen('a');
     await until(tester, () => find.text('Data a').evaluate().isNotEmpty);
     expect(backend.liveResources, 1);
@@ -170,7 +186,9 @@ void main() {
     expect(backend.events, contains('closed:a'));
     await press(tester, 'open');
     await until(
-        tester, () => backend.events.where((e) => e == 'open:a').length == 2);
+      tester,
+      () => backend.events.where((e) => e == 'open:a').length == 2,
+    );
     backend.releaseOpen('a');
     await until(tester, () => find.text('Data a').evaluate().isNotEmpty);
     expect(backend.liveResources, 1);
@@ -218,15 +236,18 @@ void main() {
     expect(keyed('data'), findsNothing);
     await press(tester, 'retry');
     await until(
-        tester, () => backend.events.where((e) => e == 'open:a').length == 2);
+      tester,
+      () => backend.events.where((e) => e == 'open:a').length == 2,
+    );
     expect(keyed('loading'), findsOneWidget);
     await ready(tester, backend, 'a');
     expect(backend.events.where((e) => e == 'failed:a'), hasLength(1));
     await clean(tester, backend);
   });
 
-  testWidgets('d replacement waits for old close before new open',
-      (tester) async {
+  testWidgets('d replacement waits for old close before new open', (
+    tester,
+  ) async {
     final backend = Backend(holdOpens: true, holdCloses: true);
     await start(tester, backend);
     await ready(tester, backend, 'a');
@@ -245,8 +266,9 @@ void main() {
     await clean(tester, backend);
   });
 
-  testWidgets('e close shows closing awaits release and removes child first',
-      (tester) async {
+  testWidgets('e close shows closing awaits release and removes child first', (
+    tester,
+  ) async {
     final backend = Backend(holdOpens: true, holdCloses: true);
     await start(tester, backend);
     await ready(tester, backend, 'a');
@@ -292,7 +314,9 @@ void main() {
     expect(keyed('home'), findsOneWidget);
     await press(tester, 'open');
     await until(
-        tester, () => backend.events.where((e) => e == 'open:a').length == 2);
+      tester,
+      () => backend.events.where((e) => e == 'open:a').length == 2,
+    );
     await ready(tester, backend, 'a');
     await clean(tester, backend);
   });
@@ -311,8 +335,9 @@ void main() {
     await clean(tester, backend);
   });
 
-  testWidgets('d long opening after leave still excludes the next owner',
-      (tester) async {
+  testWidgets('d long opening after leave still excludes the next owner', (
+    tester,
+  ) async {
     final backend = Backend(holdOpens: true, holdCloses: true);
     await start(tester, backend);
     await press(tester, 'leave');
@@ -323,13 +348,20 @@ void main() {
     backend.releaseOpen('a');
     await until(tester, () => backend.events.contains('close:a'));
     await outlast(tester);
-    expect(backend.events.where((e) => e == 'open:a'), hasLength(1),
-        reason: backend.events.join(', '));
+    expect(
+      backend.events.where((e) => e == 'open:a'),
+      hasLength(1),
+      reason: backend.events.join(', '),
+    );
     backend.releaseClose('a');
     await until(
-        tester, () => backend.events.where((e) => e == 'open:a').length == 2);
-    expect(backend.events.indexOf('closed:a'),
-        lessThan(backend.events.lastIndexOf('open:a')));
+      tester,
+      () => backend.events.where((e) => e == 'open:a').length == 2,
+    );
+    expect(
+      backend.events.indexOf('closed:a'),
+      lessThan(backend.events.lastIndexOf('open:a')),
+    );
     await ready(tester, backend, 'a');
     await clean(tester, backend);
   });

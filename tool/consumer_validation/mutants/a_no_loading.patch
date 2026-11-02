@@ -1,11 +1,14 @@
 --- a/lib/app.dart
 +++ b/lib/app.dart
-@@ -55,7 +55,7 @@
+@@ -51,10 +51,7 @@
+ 
    Widget _loading(String id) => Column(
-         mainAxisSize: MainAxisSize.min,
-         children: [
--          Text('Loading $id', key: const ValueKey('loading')),
-+          const Text('Please wait'),
-           _button('leave', 'Leave', _leave),
-         ],
-       );
+     mainAxisSize: MainAxisSize.min,
+-    children: [
+-      Text('Loading $id', key: const ValueKey('loading')),
+-      _button('leave', 'Leave', _leave),
+-    ],
++    children: [const Text('Please wait'), _button('leave', 'Leave', _leave)],
+   );
+ 
+   Widget _error(String id, Object error) => Column(

@@ -46,44 +46,41 @@ final class _DeskState extends State<_Desk> {
     setState(() => _id = null);
   }
 
-  Widget _button(String key, String text, VoidCallback action) => TextButton(
-        key: ValueKey(key),
-        onPressed: action,
-        child: Text(text),
-      );
+  Widget _button(String key, String text, VoidCallback action) =>
+      TextButton(key: ValueKey(key), onPressed: action, child: Text(text));
 
   Widget _loading(String id) => Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Text('Loading $id', key: const ValueKey('loading')),
-          _button('leave', 'Leave', _leave),
-        ],
-      );
+    mainAxisSize: MainAxisSize.min,
+    children: [
+      Text('Loading $id', key: const ValueKey('loading')),
+      _button('leave', 'Leave', _leave),
+    ],
+  );
 
   Widget _error(String id, Object error) => Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Text('Open failed $id', key: const ValueKey('error')),
-          Text('$error'),
-          _button('retry', 'Retry', () => setState(() => _attempt++)),
-          _button('leave', 'Leave', _leave),
-        ],
-      );
+    mainAxisSize: MainAxisSize.min,
+    children: [
+      Text('Open failed $id', key: const ValueKey('error')),
+      Text('$error'),
+      _button('retry', 'Retry', () => setState(() => _attempt++)),
+      _button('leave', 'Leave', _leave),
+    ],
+  );
 
   Widget _ready(BuildContext context, Resource resource) => Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          ResourceChild(resource: resource),
-          _button('leave', 'Leave', _leave),
-          _button('switch', 'Switch', () {
-            setState(() {
-              _id = _id == 'a' ? 'b' : 'a';
-              _attempt++;
-            });
-          }),
-          _button('close', 'Close', () => _close(context)),
-        ],
-      );
+    mainAxisSize: MainAxisSize.min,
+    children: [
+      ResourceChild(resource: resource),
+      _button('leave', 'Leave', _leave),
+      _button('switch', 'Switch', () {
+        setState(() {
+          _id = _id == 'a' ? 'b' : 'a';
+          _attempt++;
+        });
+      }),
+      _button('close', 'Close', () => _close(context)),
+    ],
+  );
 
   @override
   Widget build(BuildContext context) {

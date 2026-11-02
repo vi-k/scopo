@@ -1,6 +1,6 @@
 --- a/lib/app.dart
 +++ b/lib/app.dart
-@@ -105,7 +105,7 @@
+@@ -102,7 +102,7 @@
                )
              : AsyncDataScope<Resource>(
                  key: ValueKey((id, _attempt)),

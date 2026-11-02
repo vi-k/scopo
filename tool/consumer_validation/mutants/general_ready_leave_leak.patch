@@ -8,19 +8,19 @@
  
    void _leave() => setState(() => _id = null);
  
-@@ -74,7 +75,10 @@
-         mainAxisSize: MainAxisSize.min,
-         children: [
-           ResourceChild(resource: resource),
--          _button('leave', 'Leave', _leave),
-+          _button('leave', 'Leave', () {
-+            _leakReadyLeave = true;
-+            _leave();
-+          }),
-           _button('switch', 'Switch', () {
-             setState(() {
-               _id = _id == 'a' ? 'b' : 'a';
-@@ -116,7 +120,9 @@
+@@ -71,7 +72,10 @@
+     mainAxisSize: MainAxisSize.min,
+     children: [
+       ResourceChild(resource: resource),
+-      _button('leave', 'Leave', _leave),
++      _button('leave', 'Leave', () {
++        _leakReadyLeave = true;
++        _leave();
++      }),
+       _button('switch', 'Switch', () {
+         setState(() {
+           _id = _id == 'a' ? 'b' : 'a';
+@@ -113,7 +117,9 @@
                      rethrow;
                    }
                  },

@@ -28,14 +28,17 @@ final class Backend {
   void failNextOpen(String id) =>
       _failures.update(id, (n) => n + 1, ifAbsent: () => 1);
 
-  Future<void> _wait(String id, bool hold, Duration delay,
-          Map<String, List<Completer<void>>> gates) =>
-      Zone.root.run(() {
-        if (!hold) return Future<void>.delayed(delay);
-        final gate = Completer<void>();
-        gates.putIfAbsent(id, () => []).add(gate);
-        return gate.future;
-      });
+  Future<void> _wait(
+    String id,
+    bool hold,
+    Duration delay,
+    Map<String, List<Completer<void>>> gates,
+  ) => Zone.root.run(() {
+    if (!hold) return Future<void>.delayed(delay);
+    final gate = Completer<void>();
+    gates.putIfAbsent(id, () => []).add(gate);
+    return gate.future;
+  });
 
   /// Release all currently pending acquisitions; future attempts still wait.
   void releaseOpen(String id) => _release(id, _opens);
@@ -83,7 +86,11 @@ final class Resource {
     _closing = true;
     _backend.events.add('close:$id');
     await _backend._wait(
-        id, _backend.holdCloses, _backend.closeDelay, _backend._closes);
+      id,
+      _backend.holdCloses,
+      _backend.closeDelay,
+      _backend._closes,
+    );
     _closed = true;
     _backend.events.add('closed:$id');
   }
@@ -114,14 +121,14 @@ final class _ResourceChildState extends State<ResourceChild> {
 
   @override
   Widget build(BuildContext context) => Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Text('Data ${widget.resource.id}', key: const ValueKey('data')),
-          TextButton(
-            key: const ValueKey('use'),
-            onPressed: () => widget.resource.use('tap'),
-            child: const Text('Use'),
-          ),
-        ],
-      );
+    mainAxisSize: MainAxisSize.min,
+    children: [
+      Text('Data ${widget.resource.id}', key: const ValueKey('data')),
+      TextButton(
+        key: const ValueKey('use'),
+        onPressed: () => widget.resource.use('tap'),
+        child: const Text('Use'),
+      ),
+    ],
+  );
 }

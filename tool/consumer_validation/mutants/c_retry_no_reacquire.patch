@@ -1,11 +1,11 @@
 --- a/lib/app.dart
 +++ b/lib/app.dart
-@@ -65,7 +65,7 @@
-         children: [
-           Text('Open failed $id', key: const ValueKey('error')),
-           Text('$error'),
--          _button('retry', 'Retry', () => setState(() => _attempt++)),
-+          _button('retry', 'Retry', () {}),
-           _button('leave', 'Leave', _leave),
-         ],
-       );
+@@ -62,7 +62,7 @@
+     children: [
+       Text('Open failed $id', key: const ValueKey('error')),
+       Text('$error'),
+-      _button('retry', 'Retry', () => setState(() => _attempt++)),
++      _button('retry', 'Retry', () {}),
+       _button('leave', 'Leave', _leave),
+     ],
+   );

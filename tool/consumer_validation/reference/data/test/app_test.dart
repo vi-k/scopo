@@ -5,17 +5,18 @@ import 'package:resource_exercise/backend.dart';
 
 Future<void> advance(WidgetTester tester, bool Function() done) async {
   for (var i = 0; i < 100 && !done(); i++) {
-    await tester.runAsync(() => Future<void>.delayed(
-          const Duration(milliseconds: 10),
-        ));
+    await tester.runAsync(
+      () => Future<void>.delayed(const Duration(milliseconds: 10)),
+    );
     await tester.pump();
   }
   expect(done(), isTrue);
 }
 
 void main() {
-  testWidgets('unrelated app rebuild keeps the acquired instance',
-      (tester) async {
+  testWidgets('unrelated app rebuild keeps the acquired instance', (
+    tester,
+  ) async {
     final backend = Backend();
     await tester.pumpWidget(buildApp(backend));
     await tester.tap(find.byKey(const ValueKey('open')));
