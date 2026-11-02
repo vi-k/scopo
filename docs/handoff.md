@@ -39,6 +39,9 @@
      объект `State` Flutter или значение модели, фаза жизненного цикла —
      Status. `*State` наследников `State`, `createState`, `wrapState`,
      `ScopeStateModel`/`ScopeStateNotifier` и `model.state` не трогать.
+   - В2 — восемь `XElementBase` → `XCoreElement` (тройка `XCore` /
+     `XCoreElement` / `XCoreState`); приватный `_LiteScopeCoreElement` →
+     `_LiteScopeReadyElement`.
 
    Перед этим Б9 закрыта и раздел о причинах отмены написан, влито в `main`,
    не отправлено, по ответу владельца на три предложения («1 ок, 2
