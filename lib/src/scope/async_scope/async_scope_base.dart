@@ -157,7 +157,10 @@ abstract base class AsyncScopeBase<W extends AsyncScopeBase<W>>
   static AsyncScopeContext<W>? maybeOf<W extends AsyncScopeBase<W>>(
     BuildContext context, {
     required bool listen,
-  }) => ScopeContext.maybeOf<W, AsyncScopeContext<W>>(context, listen: listen);
+  }) => ScopeInheritedContext.maybeOf<W, AsyncScopeContext<W>>(
+    context,
+    listen: listen,
+  );
 
   /// The nearest scope [W] above [context].
   ///
@@ -165,17 +168,23 @@ abstract base class AsyncScopeBase<W extends AsyncScopeBase<W>>
   static AsyncScopeContext<W> of<W extends AsyncScopeBase<W>>(
     BuildContext context, {
     required bool listen,
-  }) => ScopeContext.of<W, AsyncScopeContext<W>>(context, listen: listen);
+  }) => ScopeInheritedContext.of<W, AsyncScopeContext<W>>(
+    context,
+    listen: listen,
+  );
 
   /// Subscribes to one value of the scope and returns it.
   static V select<W extends AsyncScopeBase<W>, V extends Object?>(
     BuildContext context,
     V Function(AsyncScopeContext<W> context) selector,
-  ) => ScopeContext.select<W, AsyncScopeContext<W>, V>(context, selector);
+  ) => ScopeInheritedContext.select<W, AsyncScopeContext<W>, V>(
+    context,
+    selector,
+  );
 }
 
 final class _AsyncScopeElement<W extends AsyncScopeBase<W>>
-    extends AsyncScopeElementBase<W, _AsyncScopeElement<W>> {
+    extends AsyncScopeCoreElement<W, _AsyncScopeElement<W>> {
   _AsyncScopeElement(super.widget);
 
   @override
@@ -212,7 +221,7 @@ final class _AsyncScopeElement<W extends AsyncScopeBase<W>>
 
   /// Runs [AsyncScopeBase.onMount] before anything the scope does for itself.
   ///
-  /// Called from [ScopeWidgetElementBase.init], which is the first point at
+  /// Called from [ScopeWidgetCoreElement.init], which is the first point at
   /// which the element is connected to its ancestors and nothing has begun:
   /// the asynchronous phase starts on the build this runs in, once it returns.
   /// Called from `mount()` instead, the hook ran *after* the initialization it

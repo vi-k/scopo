@@ -231,7 +231,7 @@ final class _PausedScope
 }
 
 final class _PausedScopeElement
-    extends AsyncScopeElementBase<_PausedScope, _PausedScopeElement> {
+    extends AsyncScopeCoreElement<_PausedScope, _PausedScopeElement> {
   _PausedScopeElement(super.widget);
 
   @override

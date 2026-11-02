@@ -3,7 +3,7 @@ part of '../scope.dart';
 /// {@category ScopeModel}
 abstract base class ScopeModelCore<
   W extends ScopeModelCore<W, E, M>,
-  E extends ScopeModelElementBase<W, E, M>,
+  E extends ScopeModelCoreElement<W, E, M>,
   M extends Object
 >
     extends ScopeWidgetCore<W, E> {
@@ -20,41 +20,41 @@ abstract base class ScopeModelCore<
   /// The element of the nearest scope [W], or `null` if there is none.
   static E? maybeOf<
     W extends ScopeModelCore<W, E, M>,
-    E extends ScopeModelElementBase<W, E, M>,
+    E extends ScopeModelCoreElement<W, E, M>,
     M extends Object
   >(BuildContext context, {required bool listen}) =>
-      ScopeContext.maybeOf<W, E>(context, listen: listen);
+      ScopeInheritedContext.maybeOf<W, E>(context, listen: listen);
 
   /// The element of the nearest scope [W].
   ///
   /// Throws when there is no such scope above [context].
   static E of<
     W extends ScopeModelCore<W, E, M>,
-    E extends ScopeModelElementBase<W, E, M>,
+    E extends ScopeModelCoreElement<W, E, M>,
     M extends Object
   >(BuildContext context, {required bool listen}) =>
-      ScopeContext.of<W, E>(context, listen: listen);
+      ScopeInheritedContext.of<W, E>(context, listen: listen);
 
   /// Subscribes to one value of the scope and returns it.
   static V select<
     W extends ScopeModelCore<W, E, M>,
-    E extends ScopeModelElementBase<W, E, M>,
+    E extends ScopeModelCoreElement<W, E, M>,
     M extends Object,
     V extends Object?
   >(BuildContext context, V Function(E element) selector) =>
-      ScopeContext.select<W, E, V>(context, selector);
+      ScopeInheritedContext.select<W, E, V>(context, selector);
 }
 
 /// {@category ScopeModel}
-abstract base class ScopeModelElementBase<
+abstract base class ScopeModelCoreElement<
   W extends ScopeModelCore<W, E, M>,
-  E extends ScopeModelElementBase<W, E, M>,
+  E extends ScopeModelCoreElement<W, E, M>,
   M extends Object
 >
-    extends ScopeWidgetElementBase<W, E>
+    extends ScopeWidgetCoreElement<W, E>
     implements ScopeModelContext<W, M> {
   /// Creates the element of a model scope.
-  ScopeModelElementBase(super.widget);
+  ScopeModelCoreElement(super.widget);
 
   @override
   M get model;

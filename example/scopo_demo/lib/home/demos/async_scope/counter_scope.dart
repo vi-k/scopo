@@ -74,7 +74,7 @@ final class CounterScope
 /// Maps model initialization and disposal onto the `AsyncScope` state
 /// machine and publishes the ready model to descendants.
 final class CounterScopeElement
-    extends AsyncScopeElementBase<CounterScope, CounterScopeElement> {
+    extends AsyncScopeCoreElement<CounterScope, CounterScopeElement> {
   late final CounterModel _model;
 
   /// Taken once, on the way in.

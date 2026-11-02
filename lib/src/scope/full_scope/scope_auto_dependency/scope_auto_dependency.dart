@@ -409,7 +409,7 @@ abstract class ScopeAutoDependencies<
   /// and the scope above goes on showing its loading branch for good — nothing
   /// on screen and nothing in the console. The neighbouring family bounds the
   /// same wait for the same reason, and says so in
-  /// `AsyncControllerScopeElementBase._releaseController`.
+  /// `AsyncControllerScopeCoreElement._releaseController`.
   ///
   /// The limit is [ScopeConfig.defaultDisposeScopeTimeout] rather than the
   /// `disposeScopeTimeout` of the scope: a container knows nothing of the

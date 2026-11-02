@@ -1009,7 +1009,7 @@ void main() {
 
 /// the budget runs out.
 ///
-/// The cancellation chain of `AsyncScopeElementBase._performAsyncDispose`
+/// The cancellation chain of `AsyncScopeCoreElement._performAsyncDispose`
 /// only makes progress outside the test's fake-async zone, so
 /// `pumpAndSettle()` alone never reaches `disposeScope()`. The same workaround
 /// is documented in `async_scope_coordinator_test.dart` and
@@ -1026,7 +1026,7 @@ final class _MovableScope
 }
 
 final class _MovableScopeElement
-    extends AsyncScopeElementBase<_MovableScope, _MovableScopeElement> {
+    extends AsyncScopeCoreElement<_MovableScope, _MovableScopeElement> {
   /// Awaited by [disposeScope], so a test can keep the disposal — and with it
   /// the parent that waits for this scope — open for as long as it likes.
   Future<void>? disposalGate;
@@ -1060,7 +1060,7 @@ final class _RaisingOnCancelScope
 
 final class _RaisingOnCancelScopeElement
     extends
-        AsyncScopeElementBase<
+        AsyncScopeCoreElement<
           _RaisingOnCancelScope,
           _RaisingOnCancelScopeElement
         > {
@@ -1101,7 +1101,7 @@ final class _RegisterRaceScope
 
 final class _RegisterRaceScopeElement
     extends
-        AsyncScopeElementBase<_RegisterRaceScope, _RegisterRaceScopeElement> {
+        AsyncScopeCoreElement<_RegisterRaceScope, _RegisterRaceScopeElement> {
   _RegisterRaceScopeElement(super.widget);
 
   @override
@@ -1124,7 +1124,7 @@ final class _ReadyRaceScope
 }
 
 final class _ReadyRaceScopeElement
-    extends AsyncScopeElementBase<_ReadyRaceScope, _ReadyRaceScopeElement> {
+    extends AsyncScopeCoreElement<_ReadyRaceScope, _ReadyRaceScopeElement> {
   int disposeCount = 0;
 
   _ReadyRaceScopeElement(super.widget);
@@ -1155,7 +1155,7 @@ final class _WaitingParentScope
 
 final class _WaitingParentScopeElement
     extends
-        AsyncScopeElementBase<_WaitingParentScope, _WaitingParentScopeElement> {
+        AsyncScopeCoreElement<_WaitingParentScope, _WaitingParentScopeElement> {
   bool timedOut = false;
   bool disposed = false;
 
@@ -1198,7 +1198,7 @@ final class _SyncInitAsyncScope
 
 final class _SyncInitAsyncScopeElement
     extends
-        AsyncScopeElementBase<_SyncInitAsyncScope, _SyncInitAsyncScopeElement> {
+        AsyncScopeCoreElement<_SyncInitAsyncScope, _SyncInitAsyncScopeElement> {
   int syncInitAttempts = 0;
   int asyncInitStarts = 0;
   int unmountCount = 0;
@@ -1253,7 +1253,7 @@ final class _FailingInitScope
 }
 
 final class _FailingInitScopeElement
-    extends AsyncScopeElementBase<_FailingInitScope, _FailingInitScopeElement> {
+    extends AsyncScopeCoreElement<_FailingInitScope, _FailingInitScopeElement> {
   int disposeCount = 0;
 
   _FailingInitScopeElement(super.widget);
@@ -1289,7 +1289,7 @@ final class _LateStepScope
 }
 
 final class _LateStepScopeElement
-    extends AsyncScopeElementBase<_LateStepScope, _LateStepScopeElement> {
+    extends AsyncScopeCoreElement<_LateStepScope, _LateStepScopeElement> {
   _LateStepScopeElement(super.widget);
 
   int disposeCount = 0;

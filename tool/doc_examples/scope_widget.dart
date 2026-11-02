@@ -19,8 +19,8 @@ const scopeWidget = DocManifest(
     'notifydependents/init': DocEnvironment(
       'abstract base class CounterElement<W extends '
           'ScopeModelCore<W, E, ChangeNotifier>, '
-          'E extends ScopeModelElementBase<W, E, ChangeNotifier>>\n'
-          'extends ScopeModelElementBase<W, E, ChangeNotifier> {\n'
+          'E extends ScopeModelCoreElement<W, E, ChangeNotifier>>\n'
+          'extends ScopeModelCoreElement<W, E, ChangeNotifier> {\n'
           'CounterElement(super.widget);',
       '}',
     ),

@@ -1,11 +1,11 @@
 # ScopeWidget
 
-> Перевод `doc/scope_widget.md` (blob `d8013bf177795be48f9956c5f5133b6c29100851`).
+> Перевод `doc/scope_widget.md` (blob `8898d66f6a981e689c2318ba965764886fab2fb5`).
 > Правится в том же коммите, что и оригинал; проверка — `sh docs/ru/check.sh`.
 
 Под этим именем живут две вещи. `ScopeWidgetBase` — простейший скоуп пакета,
 годный к употреблению как есть: виджет, отдающий поддереву собственные
-параметры. `ScopeWidgetCore` и `ScopeWidgetElementBase` — пара, от которой
+параметры. `ScopeWidgetCore` и `ScopeWidgetCoreElement` — пара, от которой
 наследуется любое другое семейство: место, где хранятся подписки, где
 `notifyDependents` решает не перестраивать поддерево и где скоуп цепляется
 за жизненный цикл элемента.
@@ -90,7 +90,7 @@ final class MyScope extends ScopeWidgetCore<MyScope, MyScopeElement> {
 }
 
 final class MyScopeElement
-    extends ScopeWidgetElementBase<MyScope, MyScopeElement> {
+    extends ScopeWidgetCoreElement<MyScope, MyScopeElement> {
   MyScopeElement(super.widget);
 
   @override

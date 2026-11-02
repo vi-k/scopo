@@ -2462,7 +2462,7 @@ void main() {
     // leak a disposer: it holds the failure itself, and the scope above shows
     // its loading branch for good -- nothing on screen and nothing in the
     // console. The neighbouring family bounds the same wait for the same
-    // reason, in `AsyncControllerScopeElementBase`.
+    // reason, in `AsyncControllerScopeCoreElement`.
     test(
       'a disposer that never finishes does not hold the failure back',
       () async {

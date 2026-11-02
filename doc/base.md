@@ -10,7 +10,7 @@ by all of them.
 | type | what it is |
 | --- | --- |
 | `ScopeInheritedWidget` | the `InheritedWidget` every scope widget descends from |
-| `ScopeContext` | the lookup protocol: `of`, `maybeOf`, `select` |
+| `ScopeInheritedContext` | the lookup protocol: `of`, `maybeOf`, `select` |
 | `ScopeInheritedElement` | what the element of a scope has to provide |
 
 An application never instantiates them. The layer is still worth reading twice
@@ -47,7 +47,7 @@ that `child` instead of its own, the failure is immediate rather than subtle.
 
 ```dart
 abstract interface class ScopeInheritedElement<W extends ScopeInheritedWidget>
-    implements ScopeContext<W> {
+    implements ScopeInheritedContext<W> {
   W get widget;
 
   @mustCallSuper
@@ -74,25 +74,28 @@ is not supported and an assertion says so. Everything a scope owns — a model, 
 notifier subscription, a dependency container, a place in the queue of a
 `scopeKey` — is acquired in the first and released in the second.
 
-The element is also the `ScopeContext` of its own scope: what a descendant
-receives from `of` is this object, which is why `select` can read the current
-value straight from it.
+The element is also the `ScopeInheritedContext` of its own scope: what a
+descendant receives from `of` is this object, which is why `select` can read
+the current value straight from it.
 
 The bookkeeping behind all of that — the per-dependent subscriptions, the
 rebuild that only notifies instead of rebuilding the subtree — lives in
-`ScopeWidgetElementBase`, described in the `ScopeWidget` topic. Implementing
+`ScopeWidgetCoreElement`, described in the `ScopeWidget` topic. Implementing
 `ScopeInheritedElement` from scratch is not the intended path; extending that
 class is.
 
 ## Finding a scope
 
-Three entry points, all static on `ScopeContext`, where `W` is the widget type
-and `C` is the context type of the family:
+Three entry points, all static on `ScopeInheritedContext`, where `W` is the
+widget type and `C` is the context type of the family:
 
 ```dart
-ScopeContext.maybeOf<W, C>(context, listen: false); // C?, null if not found
-ScopeContext.of<W, C>(context, listen: false);      // C, throws if not found
-ScopeContext.select<W, C, V>(context, selector);    // V, throws if not found
+// C?, null if not found
+ScopeInheritedContext.maybeOf<W, C>(context, listen: false);
+// C, throws if not found
+ScopeInheritedContext.of<W, C>(context, listen: false);
+// V, throws if not found
+ScopeInheritedContext.select<W, C, V>(context, selector);
 ```
 
 In practice these are called through the wrapper each family exposes, so that
@@ -326,7 +329,7 @@ A scope element may subscribe to its own scope — that is how the richer
 families rebuild their own subtree as the initialization advances.
 `InheritedElement` forbids it (an assert in `notifyClients` blocks a self
 dependency), so those subscriptions are kept apart from the rest and notified
-separately. The mechanism belongs to `ScopeWidgetElementBase`; it matters here
+separately. The mechanism belongs to `ScopeWidgetCoreElement`; it matters here
 only as the reason `ScopeInheritedElement` is an interface a family implements
 rather than a mixin an application applies.
 

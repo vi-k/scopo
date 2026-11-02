@@ -32,7 +32,7 @@ final class ScopeNotifier<M extends Listenable>
     BuildContext context, {
     required bool listen,
   }) =>
-      ScopeContext.maybeOf<
+      ScopeInheritedContext.maybeOf<
             ScopeNotifier<M>,
             ScopeModelContext<ScopeNotifier<M>, M>
           >(context, listen: listen)
@@ -45,10 +45,11 @@ final class ScopeNotifier<M extends Listenable>
     BuildContext context, {
     required bool listen,
   }) =>
-      ScopeContext.of<ScopeNotifier<M>, ScopeModelContext<ScopeNotifier<M>, M>>(
-        context,
-        listen: listen,
-      ).model;
+      ScopeInheritedContext.of<
+            ScopeNotifier<M>,
+            ScopeModelContext<ScopeNotifier<M>, M>
+          >(context, listen: listen)
+          .model;
 
   /// Subscribes to one value of the model and returns it.
   ///
@@ -58,7 +59,7 @@ final class ScopeNotifier<M extends Listenable>
     BuildContext context,
     V Function(M model) selector,
   ) =>
-      ScopeContext.select<
+      ScopeInheritedContext.select<
         ScopeNotifier<M>,
         ScopeModelContext<ScopeNotifier<M>, M>,
         V

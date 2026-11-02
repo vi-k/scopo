@@ -24,8 +24,10 @@ abstract base class ScopeWidgetBase<W extends ScopeWidgetBase<W>>
   static W? maybeOf<W extends ScopeWidgetBase<W>>(
     BuildContext context, {
     required bool listen,
-  }) =>
-      ScopeContext.maybeOf<W, ScopeContext<W>>(context, listen: listen)?.widget;
+  }) => ScopeInheritedContext.maybeOf<W, ScopeInheritedContext<W>>(
+    context,
+    listen: listen,
+  )?.widget;
 
   /// The nearest scope widget [W] above [context].
   ///
@@ -33,20 +35,23 @@ abstract base class ScopeWidgetBase<W extends ScopeWidgetBase<W>>
   static W of<W extends ScopeWidgetBase<W>>(
     BuildContext context, {
     required bool listen,
-  }) => ScopeContext.of<W, ScopeContext<W>>(context, listen: listen).widget;
+  }) => ScopeInheritedContext.of<W, ScopeInheritedContext<W>>(
+    context,
+    listen: listen,
+  ).widget;
 
   /// Subscribes to one parameter of the scope widget and returns it.
   static V select<W extends ScopeWidgetBase<W>, V extends Object?>(
     BuildContext context,
     V Function(W widget) selector,
-  ) => ScopeContext.select<W, ScopeContext<W>, V>(
+  ) => ScopeInheritedContext.select<W, ScopeInheritedContext<W>, V>(
     context,
     (context) => selector(context.widget),
   );
 }
 
 final class _ScopeWidgetElement<W extends ScopeWidgetBase<W>>
-    extends ScopeWidgetElementBase<W, _ScopeWidgetElement<W>>
+    extends ScopeWidgetCoreElement<W, _ScopeWidgetElement<W>>
     implements ScopeInheritedElement<W> {
   _ScopeWidgetElement(super.widget);
 

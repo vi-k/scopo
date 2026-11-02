@@ -119,7 +119,7 @@ final class AsyncDataScope<T extends Object?>
   /// The nearest `AsyncDataScope<T>` above [context], or `null`.
   static AsyncDataScopeContext<AsyncDataScope<T>, T>?
   maybeOf<T extends Object?>(BuildContext context, {required bool listen}) =>
-      ScopeContext.maybeOf<
+      ScopeInheritedContext.maybeOf<
         AsyncDataScope<T>,
         AsyncDataScopeContext<AsyncDataScope<T>, T>
       >(context, listen: listen);
@@ -131,7 +131,7 @@ final class AsyncDataScope<T extends Object?>
     BuildContext context, {
     required bool listen,
   }) =>
-      ScopeContext.of<
+      ScopeInheritedContext.of<
         AsyncDataScope<T>,
         AsyncDataScopeContext<AsyncDataScope<T>, T>
       >(context, listen: listen);
@@ -145,7 +145,7 @@ final class AsyncDataScope<T extends Object?>
     BuildContext context,
     V Function(AsyncDataScopeContext<AsyncDataScope<T>, T> context) selector,
   ) =>
-      ScopeContext.select<
+      ScopeInheritedContext.select<
         AsyncDataScope<T>,
         AsyncDataScopeContext<AsyncDataScope<T>, T>,
         V

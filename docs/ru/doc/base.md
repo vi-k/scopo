@@ -1,6 +1,6 @@
 # base
 
-> Перевод `doc/base.md` (blob `6ba02fadc2765b9c9212887c9cbe676eb6fbed5a`).
+> Перевод `doc/base.md` (blob `7a27ff5bc422745c53269497f955bb9175bdab78`).
 > Правится в том же коммите, что и оригинал; проверка — `sh docs/ru/check.sh`.
 
 Каждое семейство скоупов этого пакета — `AsyncScope`, `AsyncDataScope`,
@@ -13,7 +13,7 @@
 | тип | что это |
 | --- | --- |
 | `ScopeInheritedWidget` | `InheritedWidget`, от которого происходит виджет любого скоупа |
-| `ScopeContext` | протокол поиска: `of`, `maybeOf`, `select` |
+| `ScopeInheritedContext` | протокол поиска: `of`, `maybeOf`, `select` |
 | `ScopeInheritedElement` | что обязан предоставить элемент скоупа |
 
 Приложение их не создаёт. Читать этот слой всё же стоит, и по двум причинам:
@@ -51,7 +51,7 @@ abstract base class ScopeInheritedWidget extends InheritedWidget {
 
 ```dart
 abstract interface class ScopeInheritedElement<W extends ScopeInheritedWidget>
-    implements ScopeContext<W> {
+    implements ScopeInheritedContext<W> {
   W get widget;
 
   @mustCallSuper
@@ -78,25 +78,28 @@ abstract interface class ScopeInheritedElement<W extends ScopeInheritedWidget>
 владеет, — модель, подписка на notifier, контейнер зависимостей, место
 в очереди `scopeKey`, — берётся в первом и освобождается во втором.
 
-Элемент заодно является `ScopeContext` собственного скоупа: именно этот объект
-получает потомок из `of`, и поэтому `select` умеет читать текущее значение
-прямо из него.
+Элемент заодно является `ScopeInheritedContext` собственного скоупа: именно
+этот объект получает потомок из `of`, и поэтому `select` умеет читать текущее
+значение прямо из него.
 
 Весь учёт за этим — подписки по каждому зависимому, перестроение, которое
 только уведомляет вместо перестроения поддерева, — живёт
-в `ScopeWidgetElementBase` и описан в теме `ScopeWidget`. Реализовывать
+в `ScopeWidgetCoreElement` и описан в теме `ScopeWidget`. Реализовывать
 `ScopeInheritedElement` с нуля не предполагается; предполагается наследоваться
 от того класса.
 
 ## Поиск скоупа
 
-Три входа, все статические на `ScopeContext`, где `W` — тип виджета, а `C` —
-тип контекста семейства:
+Три входа, все статические на `ScopeInheritedContext`, где `W` — тип виджета,
+а `C` — тип контекста семейства:
 
 ```dart
-ScopeContext.maybeOf<W, C>(context, listen: false); // C?, null, если не найден
-ScopeContext.of<W, C>(context, listen: false);      // C, бросает, если не найден
-ScopeContext.select<W, C, V>(context, selector);    // V, бросает, если не найден
+// C?, null, если не найден
+ScopeInheritedContext.maybeOf<W, C>(context, listen: false);
+// C, бросает, если не найден
+ScopeInheritedContext.of<W, C>(context, listen: false);
+// V, бросает, если не найден
+ScopeInheritedContext.select<W, C, V>(context, selector);
 ```
 
 На практике их зовут через обёртку, которую предоставляет каждое семейство, —
@@ -325,7 +328,7 @@ provider. Контекст, который ленивый список отда�
 перестраивают своё же поддерево по ходу инициализации. `InheritedElement` это
 запрещает (ассерт в `notifyClients` блокирует зависимость от себя), поэтому
 такие подписки хранятся отдельно от остальных и уведомляются отдельно. Механизм
-принадлежит `ScopeWidgetElementBase`; здесь он важен лишь как причина,
+принадлежит `ScopeWidgetCoreElement`; здесь он важен лишь как причина,
 по которой `ScopeInheritedElement` — интерфейс, реализуемый семейством,
 а не миксин, который подмешивает приложение.
 

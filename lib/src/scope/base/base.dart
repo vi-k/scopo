@@ -134,7 +134,7 @@ void _reportFailure(Object error, StackTrace stackTrace, [String? context]) {
 }
 
 /// {@category base}
-abstract interface class ScopeContext<W extends ScopeInheritedWidget> {
+abstract interface class ScopeInheritedContext<W extends ScopeInheritedWidget> {
   /// The widget of this scope.
   W get widget;
 
@@ -142,7 +142,8 @@ abstract interface class ScopeContext<W extends ScopeInheritedWidget> {
   ///
   /// With `listen: true` the caller is subscribed to every change of that
   /// scope; with `listen: false` it is not subscribed at all.
-  static C? maybeOf<W extends ScopeInheritedWidget, C extends ScopeContext<W>>(
+  static C?
+  maybeOf<W extends ScopeInheritedWidget, C extends ScopeInheritedContext<W>>(
     BuildContext context, {
     required bool listen,
   }) => _find<W, C, void>(context, listen: listen)?.$1;
@@ -150,7 +151,8 @@ abstract interface class ScopeContext<W extends ScopeInheritedWidget> {
   /// The context of the nearest scope [W] above [context].
   ///
   /// Throws when there is no such scope. [maybeOf] returns `null` instead.
-  static C of<W extends ScopeInheritedWidget, C extends ScopeContext<W>>(
+  static C
+  of<W extends ScopeInheritedWidget, C extends ScopeInheritedContext<W>>(
     BuildContext context, {
     required bool listen,
   }) => _find<W, C, void>(context, listen: listen)?.$1 ?? _throwNotFound<W>();
@@ -162,7 +164,7 @@ abstract interface class ScopeContext<W extends ScopeInheritedWidget> {
   /// such scope.
   static V select<
     W extends ScopeInheritedWidget,
-    C extends ScopeContext<W>,
+    C extends ScopeInheritedContext<W>,
     V extends Object?
   >(BuildContext context, V Function(C context) selector) =>
       (_find<W, C, V>(context, listen: true, selector: selector) ??
@@ -172,7 +174,7 @@ abstract interface class ScopeContext<W extends ScopeInheritedWidget> {
 
   static (C, V?)? _find<
     W extends ScopeInheritedWidget,
-    C extends ScopeContext<W>,
+    C extends ScopeInheritedContext<W>,
     V extends Object?
   >(BuildContext context, {required bool listen, V Function(C)? selector}) {
     assert(() {
@@ -289,7 +291,7 @@ abstract interface class ScopeContext<W extends ScopeInheritedWidget> {
 
 /// {@category base}
 abstract interface class ScopeInheritedElement<W extends ScopeInheritedWidget>
-    implements ScopeContext<W> {
+    implements ScopeInheritedContext<W> {
   @override
   W get widget;
 

@@ -16,8 +16,8 @@ const scopeNotifier = DocManifest(
     'the-whole-difference/init': DocEnvironment(
       'abstract base class CounterElement<W extends '
           'ScopeModelCore<W, E, Counter>, '
-          'E extends ScopeNotifierElementBase<W, E, Counter>>\n'
-          'extends ScopeModelElementBase<W, E, Counter> {\n'
+          'E extends ScopeNotifierCoreElement<W, E, Counter>>\n'
+          'extends ScopeModelCoreElement<W, E, Counter> {\n'
           'CounterElement(super.widget);',
       '}',
     ),

@@ -61,7 +61,7 @@ abstract interface class CounterScopeContext {
 /// Owns the count for the lifetime of the mounted scope and notifies selector
 /// dependents after each increment.
 final class CounterScopeElement
-    extends ScopeWidgetElementBase<CounterScope, CounterScopeElement>
+    extends ScopeWidgetCoreElement<CounterScope, CounterScopeElement>
     implements CounterScopeContext {
   CounterScopeElement(super.widget);
 

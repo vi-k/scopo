@@ -6,7 +6,7 @@ part of '../scope.dart';
 /// {@category LiteScope}
 abstract base class LiteScopeCore<
   W extends LiteScopeCore<W, E, S>,
-  E extends LiteScopeElementBase<W, E, S>,
+  E extends LiteScopeCoreElement<W, E, S>,
   S extends LiteScopeCoreState<W, E, S>
 >
     extends AsyncScopeCore<W, E> {
@@ -26,14 +26,14 @@ abstract base class LiteScopeCore<
   /// If [listen] is true, the widget will be rebuilt when the scope changes.
   static W paramsOf<
     W extends LiteScopeCore<W, E, S>,
-    E extends LiteScopeElementBase<W, E, S>,
+    E extends LiteScopeCoreElement<W, E, S>,
     S extends LiteScopeCoreState<W, E, S>
   >(BuildContext context, {required bool listen}) => listen
-      ? ScopeContext.select<W, LiteScopeElementBase<W, E, S>, W>(
+      ? ScopeInheritedContext.select<W, LiteScopeCoreElement<W, E, S>, W>(
           context,
           (element) => element.widget,
         )
-      : ScopeContext.of<W, LiteScopeElementBase<W, E, S>>(
+      : ScopeInheritedContext.of<W, LiteScopeCoreElement<W, E, S>>(
           context,
           listen: false,
         ).widget;
@@ -42,11 +42,11 @@ abstract base class LiteScopeCore<
   /// [selector] and becomes **dependent** on it.
   static V selectParam<
     W extends LiteScopeCore<W, E, S>,
-    E extends LiteScopeElementBase<W, E, S>,
+    E extends LiteScopeCoreElement<W, E, S>,
     S extends LiteScopeCoreState<W, E, S>,
     V extends Object?
   >(BuildContext context, V Function(W widget) selector) =>
-      ScopeContext.select<W, LiteScopeElementBase<W, E, S>, V>(
+      ScopeInheritedContext.select<W, LiteScopeCoreElement<W, E, S>, V>(
         context,
         (element) => selector(element.widget),
       );
@@ -62,10 +62,10 @@ abstract base class LiteScopeCore<
   /// not.
   static S? maybeOf<
     W extends LiteScopeCore<W, E, S>,
-    E extends LiteScopeElementBase<W, E, S>,
+    E extends LiteScopeCoreElement<W, E, S>,
     S extends LiteScopeCoreState<W, E, S>
   >(BuildContext context) =>
-      ScopeContext.maybeOf<W, LiteScopeElementBase<W, E, S>>(
+      ScopeInheritedContext.maybeOf<W, LiteScopeCoreElement<W, E, S>>(
         context,
         listen: false,
       )?._globalStateKey.currentState;
@@ -82,12 +82,13 @@ abstract base class LiteScopeCore<
   /// answers `null` instead of throwing.
   static S of<
     W extends LiteScopeCore<W, E, S>,
-    E extends LiteScopeElementBase<W, E, S>,
+    E extends LiteScopeCoreElement<W, E, S>,
     S extends LiteScopeCoreState<W, E, S>
-  >(BuildContext context) => ScopeContext.of<W, LiteScopeElementBase<W, E, S>>(
-    context,
-    listen: false,
-  )._stateOrThrow;
+  >(BuildContext context) =>
+      ScopeInheritedContext.of<W, LiteScopeCoreElement<W, E, S>>(
+        context,
+        listen: false,
+      )._stateOrThrow;
 
   /// Selects and returns a specific value from the state [S] of the scope [W]
   /// using the [selector] and becomes **dependent** on it.
@@ -96,11 +97,11 @@ abstract base class LiteScopeCore<
   /// two conditions.
   static V select<
     W extends LiteScopeCore<W, E, S>,
-    E extends LiteScopeElementBase<W, E, S>,
+    E extends LiteScopeCoreElement<W, E, S>,
     S extends LiteScopeCoreState<W, E, S>,
     V extends Object?
   >(BuildContext context, V Function(S scope) selector) =>
-      ScopeContext.select<W, LiteScopeElementBase<W, E, S>, V>(
+      ScopeInheritedContext.select<W, LiteScopeCoreElement<W, E, S>, V>(
         context,
         (element) => selector(element._stateOrThrow),
       );
@@ -108,23 +109,23 @@ abstract base class LiteScopeCore<
 
 /// The core element base class for [LiteScopeCore].
 ///
-/// Extends [AsyncScopeElementBase] to provide dependency initialization
+/// Extends [AsyncScopeCoreElement] to provide dependency initialization
 /// management without strict payload rules.
 ///
 /// {@category LiteScope}
-abstract base class LiteScopeElementBase<
+abstract base class LiteScopeCoreElement<
   W extends LiteScopeCore<W, E, S>,
-  E extends LiteScopeElementBase<W, E, S>,
+  E extends LiteScopeCoreElement<W, E, S>,
   S extends LiteScopeCoreState<W, E, S>
 >
-    extends AsyncScopeElementBase<W, E> {
+    extends AsyncScopeCoreElement<W, E> {
   var _rebuildsOnNotify = true;
   final _globalStateKey = GlobalKey<S>();
   S? _state;
   Completer<void>? _screenshotCompleter;
 
   /// Creates the element of a lite scope.
-  LiteScopeElementBase(super.widget);
+  LiteScopeCoreElement(super.widget);
 
   //
   // Overriding block
@@ -372,7 +373,7 @@ abstract base class LiteScopeElementBase<
 /// The state implementation for [LiteScopeCore].
 final class _LiteScopeCoreWidget<
   W extends LiteScopeCore<W, E, S>,
-  E extends LiteScopeElementBase<W, E, S>,
+  E extends LiteScopeCoreElement<W, E, S>,
   S extends LiteScopeCoreState<W, E, S>
 >
     extends StatefulWidget {
@@ -387,20 +388,20 @@ final class _LiteScopeCoreWidget<
   S createState() => _createState();
 
   @override
-  StatefulElement createElement() => _LiteScopeCoreElement<W, E, S>(this);
+  StatefulElement createElement() => _LiteScopeReadyElement<W, E, S>(this);
 
   @override
   String toStringShort() => '$S';
 }
 
 /// Reports the state's own build, below the scope's `buildOn*` boundary.
-final class _LiteScopeCoreElement<
+final class _LiteScopeReadyElement<
   W extends LiteScopeCore<W, E, S>,
-  E extends LiteScopeElementBase<W, E, S>,
+  E extends LiteScopeCoreElement<W, E, S>,
   S extends LiteScopeCoreState<W, E, S>
 >
     extends StatefulElement {
-  _LiteScopeCoreElement(_LiteScopeCoreWidget<W, E, S> super.widget);
+  _LiteScopeReadyElement(_LiteScopeCoreWidget<W, E, S> super.widget);
 
   @override
   Widget build() {
@@ -432,7 +433,7 @@ final class _LiteScopeCoreElement<
 /// {@category LiteScope}
 abstract base class LiteScopeCoreState<
   W extends LiteScopeCore<W, E, S>,
-  E extends LiteScopeElementBase<W, E, S>,
+  E extends LiteScopeCoreElement<W, E, S>,
   S extends LiteScopeCoreState<W, E, S>
 >
     extends State<_LiteScopeCoreWidget<W, E, S>> {

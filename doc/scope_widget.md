@@ -2,7 +2,7 @@
 
 Two things live under this name. `ScopeWidgetBase` is the simplest scope of the
 package, usable as it is: a widget that hands its own parameters to its
-subtree. `ScopeWidgetCore` and `ScopeWidgetElementBase` are the pair every
+subtree. `ScopeWidgetCore` and `ScopeWidgetCoreElement` are the pair every
 other family extends — the place where subscriptions are kept, where
 `notifyDependents` decides not to rebuild the subtree, and where a scope hooks
 into the element lifecycle.
@@ -88,7 +88,7 @@ final class MyScope extends ScopeWidgetCore<MyScope, MyScopeElement> {
 }
 
 final class MyScopeElement
-    extends ScopeWidgetElementBase<MyScope, MyScopeElement> {
+    extends ScopeWidgetCoreElement<MyScope, MyScopeElement> {
   MyScopeElement(super.widget);
 
   @override

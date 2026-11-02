@@ -34,19 +34,21 @@ final class ScopeModel<M extends Object>
     BuildContext context, {
     required bool listen,
   }) =>
-      ScopeContext.maybeOf<ScopeModel<M>, ScopeModelContext<ScopeModel<M>, M>>(
-        context,
-        listen: listen,
-      )?.model;
+      ScopeInheritedContext.maybeOf<
+            ScopeModel<M>,
+            ScopeModelContext<ScopeModel<M>, M>
+          >(context, listen: listen)
+          ?.model;
 
   /// The model of the nearest `ScopeModel<M>`.
   ///
   /// Throws when there is no such scope above [context].
   static M of<M extends Object>(BuildContext context, {required bool listen}) =>
-      ScopeContext.of<ScopeModel<M>, ScopeModelContext<ScopeModel<M>, M>>(
-        context,
-        listen: listen,
-      ).model;
+      ScopeInheritedContext.of<
+            ScopeModel<M>,
+            ScopeModelContext<ScopeModel<M>, M>
+          >(context, listen: listen)
+          .model;
 
   /// Subscribes to one value of the model and returns it.
   ///
@@ -55,7 +57,7 @@ final class ScopeModel<M extends Object>
     BuildContext context,
     V Function(M model) selector,
   ) =>
-      ScopeContext.select<
+      ScopeInheritedContext.select<
         ScopeModel<M>,
         ScopeModelContext<ScopeModel<M>, M>,
         V

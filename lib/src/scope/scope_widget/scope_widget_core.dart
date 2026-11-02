@@ -18,8 +18,8 @@ typedef _ScopeDependency<T extends Object, V extends Object?> = (
 /// registration outright before the dependent rebuilds.
 ///
 /// The other half of that bargain is held by the assertion in
-/// `ScopeContext._find`, which allows a registration only from the dependent's
-/// own build or from a builder that re-runs whole. Without it the
+/// `ScopeInheritedContext._find`, which allows a registration only from the
+/// dependent's own build or from a builder that re-runs whole. Without it the
 /// registrations of one dependent could straddle two frames and the later ones
 /// would silently replace the earlier — which is exactly what the item builder
 /// of a lazy list does, and why it is refused.
@@ -94,7 +94,7 @@ enum _InitPhase {
 /// {@category ScopeWidget}
 abstract base class ScopeWidgetCore<
   W extends ScopeWidgetCore<W, E>,
-  E extends ScopeWidgetElementBase<W, E>
+  E extends ScopeWidgetCoreElement<W, E>
 >
     extends ScopeInheritedWidget {
   /// Creates the widget half of a scope.
@@ -126,32 +126,32 @@ abstract base class ScopeWidgetCore<
   /// The element of the nearest scope [W] above [context], or `null`.
   static E? maybeOf<
     W extends ScopeWidgetCore<W, E>,
-    E extends ScopeWidgetElementBase<W, E>
+    E extends ScopeWidgetCoreElement<W, E>
   >(BuildContext context, {required bool listen}) =>
-      ScopeContext.maybeOf<W, E>(context, listen: listen);
+      ScopeInheritedContext.maybeOf<W, E>(context, listen: listen);
 
   /// The element of the nearest scope [W] above [context].
   ///
   /// Throws when there is no such scope.
   static E
-  of<W extends ScopeWidgetCore<W, E>, E extends ScopeWidgetElementBase<W, E>>(
+  of<W extends ScopeWidgetCore<W, E>, E extends ScopeWidgetCoreElement<W, E>>(
     BuildContext context, {
     required bool listen,
-  }) => ScopeContext.of<W, E>(context, listen: listen);
+  }) => ScopeInheritedContext.of<W, E>(context, listen: listen);
 
   /// Subscribes to one value of the scope and returns it.
   static V select<
     W extends ScopeWidgetCore<W, E>,
-    E extends ScopeWidgetElementBase<W, E>,
+    E extends ScopeWidgetCoreElement<W, E>,
     V extends Object?
   >(BuildContext context, V Function(E element) selector) =>
-      ScopeContext.select<W, E, V>(context, selector);
+      ScopeInheritedContext.select<W, E, V>(context, selector);
 }
 
 /// {@category ScopeWidget}
-abstract base class ScopeWidgetElementBase<
+abstract base class ScopeWidgetCoreElement<
   W extends ScopeWidgetCore<W, E>,
-  E extends ScopeWidgetElementBase<W, E>
+  E extends ScopeWidgetCoreElement<W, E>
 >
     extends InheritedElement
     implements ScopeInheritedElement<W>, ScopeObservable {
@@ -202,7 +202,7 @@ abstract base class ScopeWidgetElementBase<
   bool get _didInit => _initPhase == _InitPhase.done;
 
   /// Creates the element.
-  ScopeWidgetElementBase(W super.widget);
+  ScopeWidgetCoreElement(W super.widget);
 
   @override
   W get widget => super.widget as W;
@@ -304,7 +304,7 @@ abstract base class ScopeWidgetElementBase<
   ///
   /// `false` here: a family with no phase of its own is announced by this
   /// class, at the two points a bare element has. A family that runs an
-  /// initialization — everything on [AsyncScopeElementBase] — overrides this
+  /// initialization — everything on [AsyncScopeCoreElement] — overrides this
   /// to `true` and reports the phase itself, in more detail than a pair of
   /// events could carry.
   @protected

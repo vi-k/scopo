@@ -151,7 +151,7 @@ abstract base class AsyncDataScopeBase<
     W extends AsyncDataScopeBase<W, T>,
     T extends Object?
   >(BuildContext context, {required bool listen}) =>
-      ScopeContext.maybeOf<W, AsyncDataScopeContext<W, T>>(
+      ScopeInheritedContext.maybeOf<W, AsyncDataScopeContext<W, T>>(
         context,
         listen: listen,
       );
@@ -159,12 +159,14 @@ abstract base class AsyncDataScopeBase<
   /// The nearest scope [W] above [context].
   ///
   /// Throws when there is none.
-  static AsyncDataScopeContext<W, T>
-  of<W extends AsyncDataScopeBase<W, T>, T extends Object?>(
-    BuildContext context, {
-    required bool listen,
-  }) =>
-      ScopeContext.of<W, AsyncDataScopeContext<W, T>>(context, listen: listen);
+  static AsyncDataScopeContext<W, T> of<
+    W extends AsyncDataScopeBase<W, T>,
+    T extends Object?
+  >(BuildContext context, {required bool listen}) =>
+      ScopeInheritedContext.of<W, AsyncDataScopeContext<W, T>>(
+        context,
+        listen: listen,
+      );
 
   /// Subscribes to one value of the scope and returns it.
   static V select<
@@ -174,15 +176,17 @@ abstract base class AsyncDataScopeBase<
   >(
     BuildContext context,
     V Function(AsyncDataScopeContext<W, T> context) selector,
-  ) =>
-      ScopeContext.select<W, AsyncDataScopeContext<W, T>, V>(context, selector);
+  ) => ScopeInheritedContext.select<W, AsyncDataScopeContext<W, T>, V>(
+    context,
+    selector,
+  );
 }
 
 final class _AsyncDataScopeElement<
   W extends AsyncDataScopeBase<W, T>,
   T extends Object?
 >
-    extends AsyncDataScopeElementBase<W, _AsyncDataScopeElement<W, T>, T> {
+    extends AsyncDataScopeCoreElement<W, _AsyncDataScopeElement<W, T>, T> {
   _AsyncDataScopeElement(super.widget);
 
   @override

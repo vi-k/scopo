@@ -938,7 +938,7 @@ final class _PlainChildScope
 }
 
 final class _PlainChildScopeElement
-    extends ScopeWidgetElementBase<_PlainChildScope, _PlainChildScopeElement> {
+    extends ScopeWidgetCoreElement<_PlainChildScope, _PlainChildScopeElement> {
   _PlainChildScopeElement(super.widget);
 
   @override
@@ -958,7 +958,7 @@ final class _Scope extends ScopeWidgetCore<_Scope, _ScopeElement> {
 }
 
 final class _ScopeElement
-    extends ScopeWidgetElementBase<_Scope, _ScopeElement> {
+    extends ScopeWidgetCoreElement<_Scope, _ScopeElement> {
   _ScopeElement(super.widget);
 
   int value = 0;
@@ -987,9 +987,9 @@ final class _ScopeElement
 
   /// Whether [buildChild] subscribes the scope to a value of its own.
   ///
-  /// From the build, because that is the only place a subscription can be
-  /// taken -- see the assertion in `ScopeContext._find`. Called straight from
-  /// a test it would be exactly the mistake that assertion is about.
+  /// From the build, because that is the only place a subscription can be taken
+  /// -- see the assertion in `ScopeInheritedContext._find`. Called straight
+  /// from a test it would be exactly the mistake that assertion is about.
   bool dependOnSelf = false;
 
   @override

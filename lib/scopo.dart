@@ -42,7 +42,7 @@ export 'src/environment/scope_config.dart'
         ScopeTimeout;
 export 'src/scope/scope.dart';
 // The rebuild counter beside it is the package's own bookkeeping: written by
-// `ScopeWidgetElementBase`, read by `isBuilding`, and no business of a
+// `ScopeWidgetCoreElement`, read by `isBuilding`, and no business of a
 // consumer.
 export 'src/utils/is_building.dart' show IsBuildingExtension;
 // `listen` and `select` on a `Listenable` are not here but in

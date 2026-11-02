@@ -145,11 +145,11 @@ abstract base class Scope<
     D extends ScopeDependencies,
     S extends ScopeState<W, D, S>
   >(BuildContext context, {required bool listen}) => listen
-      ? ScopeContext.select<W, _ScopeElement<W, D, S>, W>(
+      ? ScopeInheritedContext.select<W, _ScopeElement<W, D, S>, W>(
           context,
           (element) => element.widget,
         )
-      : ScopeContext.of<W, _ScopeElement<W, D, S>>(
+      : ScopeInheritedContext.of<W, _ScopeElement<W, D, S>>(
           context,
           listen: false,
         ).widget;
@@ -162,7 +162,7 @@ abstract base class Scope<
     S extends ScopeState<W, D, S>,
     V extends Object?
   >(BuildContext context, V Function(W widget) selector) =>
-      ScopeContext.select<W, _ScopeElement<W, D, S>, V>(
+      ScopeInheritedContext.select<W, _ScopeElement<W, D, S>, V>(
         context,
         (element) => selector(element.widget),
       );
@@ -180,10 +180,11 @@ abstract base class Scope<
     W extends Scope<W, D, S>,
     D extends ScopeDependencies,
     S extends ScopeState<W, D, S>
-  >(BuildContext context) => ScopeContext.maybeOf<W, _ScopeElement<W, D, S>>(
-    context,
-    listen: false,
-  )?._globalStateKey.currentState;
+  >(BuildContext context) =>
+      ScopeInheritedContext.maybeOf<W, _ScopeElement<W, D, S>>(
+        context,
+        listen: false,
+      )?._globalStateKey.currentState;
 
   /// Finds and returns the state [S] of the scope [W] from the given
   /// [context].
@@ -199,10 +200,11 @@ abstract base class Scope<
     W extends Scope<W, D, S>,
     D extends ScopeDependencies,
     S extends ScopeState<W, D, S>
-  >(BuildContext context) => ScopeContext.of<W, _ScopeElement<W, D, S>>(
-    context,
-    listen: false,
-  )._stateOrThrow;
+  >(BuildContext context) =>
+      ScopeInheritedContext.of<W, _ScopeElement<W, D, S>>(
+        context,
+        listen: false,
+      )._stateOrThrow;
 
   /// Selects and returns a specific value from the state [S] of the scope [W]
   /// using the [selector] and becomes **dependent** on it.
@@ -215,7 +217,7 @@ abstract base class Scope<
     S extends ScopeState<W, D, S>,
     V extends Object?
   >(BuildContext context, V Function(S scope) selector) =>
-      ScopeContext.select<W, _ScopeElement<W, D, S>, V>(
+      ScopeInheritedContext.select<W, _ScopeElement<W, D, S>, V>(
         context,
         (element) => selector(element._stateOrThrow),
       );
@@ -227,7 +229,7 @@ final class _ScopeElement<
   D extends ScopeDependencies,
   S extends ScopeState<W, D, S>
 >
-    extends ScopeElementBase<W, _ScopeElement<W, D, S>, D, S> {
+    extends ScopeCoreElement<W, _ScopeElement<W, D, S>, D, S> {
   _ScopeElement(super.widget);
 
   @override

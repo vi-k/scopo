@@ -34,20 +34,20 @@ final class DbScope extends AsyncDataScopeBase<DbScope, Database> {
   /// [buildOnReady], where there always is.
   ///
   /// `listen: false`, and not as a default worth revisiting: subscribing
-  /// here follows the *state* of the scope — waiting, progress, ready,
-  /// error — and the value is read from a subtree the ready state built.
+  /// here follows the *status* of the scope — waiting, progress, ready,
+  /// error — and the value is read from a subtree the ready branch built.
   /// Storing a value does not make it observable; a value the widgets have
   /// to follow should be a `Listenable` with a `ScopeNotifier` under this
   /// scope, or should expose a stream.
   static Database of(BuildContext context) =>
       AsyncDataScopeBase.of<DbScope, Database>(context, listen: false).data;
 
-  // No `select` here on purpose. It would subscribe to the state of the
+  // No `select` here on purpose. It would subscribe to the status of the
   // scope — `hasData`, `isReady` — and a widget under the ready
   // branch is past all of those. To follow something *inside* the value,
   // make the value a `Listenable` and wrap the widget in a
   // `ListenableSelector`, or put a `ScopeNotifier` under this scope.
-  // `AsyncDataScopeBase.select` is there if the state is what you need.
+  // `AsyncDataScopeBase.select` is there if the status is what you need.
 
   @override
   Future<Database> initData(BuildContext context, ScopeInitContext ctx) =>

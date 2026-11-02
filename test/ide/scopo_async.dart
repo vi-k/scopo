@@ -24,10 +24,10 @@ final class ConnectionScope extends AsyncScopeBase<ConnectionScope> {
 
   const ConnectionScope({super.key, required this.builder});
 
-  /// The state of the scope: `state`, `isReady`, `hasError`.
+  /// The status of the scope: `status`, `isReady`, `hasError`.
   ///
   /// `listen` is a real choice here, unlike in the data and controller
-  /// families: what comes back is the state, and the state changes —
+  /// families: what comes back is the status, and the status changes —
   /// waiting, progress, ready, error. Reading one field through [select]
   /// is the usual way in, since it subscribes to that field alone; take
   /// the whole context with `listen: false` when one read is enough.

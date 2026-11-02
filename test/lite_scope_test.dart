@@ -967,13 +967,13 @@ void main() {
       );
     });
 
-    // The same shape as the `AsyncScopeElementBase` deadlock covered in
+    // The same shape as the `AsyncScopeCoreElement` deadlock covered in
     // `async_scope_test.dart`, one layer down: `LiteScopeCoreState`
     // synchronizes its disposal with its own initialization through a
     // completer, and `_performAsyncInit()` runs on a future discarded by
     // `initState()`. A failed `initScope()` used to leave that completer
     // unsettled, so `close()` -- which reaches it through
-    // `LiteScopeElementBase.disposeScope()` -- never came back.
+    // `LiteScopeCoreElement.disposeScope()` -- never came back.
     for (final (kind, isAsync) in [('synchronously', false), ('async', true)]) {
       testWidgets('completes when the state initScope throws $kind', (
         tester,
@@ -2161,7 +2161,7 @@ _CloseScopeElement _scopeOf(WidgetTester tester) => tester
 /// Some of the futures involved here are only completed outside the test's
 /// fake-async zone -- the engine rasterization behind
 /// `RenderRepaintBoundary.toImage()`, and the `StreamSubscription.cancel()`
-/// chain of `AsyncScopeElementBase._performAsyncDispose` (the same `runAsync`
+/// chain of `AsyncScopeCoreElement._performAsyncDispose` (the same `runAsync`
 /// workaround is documented in `async_scope_test.dart`) -- so plain `pump()`
 /// and `idle()` are not enough to let them make progress.
 /// Mounts a scope holding a `scopeKey` and returns while its
@@ -2228,7 +2228,7 @@ Future<void> _failsImmediately(ScopeInitContext ctx) async {
 Future<void> _becomesReady(ScopeInitContext ctx) async {}
 
 /// A minimal [LiteScopeCore] with an element type visible to the test, so
-/// [LiteScopeElementBase.close] can be called in any state -- including the
+/// [LiteScopeCoreElement.close] can be called in any state -- including the
 /// states in which no [LiteScopeCoreState] exists yet.
 final class _CloseScope
     extends LiteScopeCore<_CloseScope, _CloseScopeElement, _CloseScopeState> {
@@ -2256,7 +2256,7 @@ final class _CloseScope
   /// by the framework by the time the teardown gets there.
   final bool failStateUnmount;
 
-  /// Becomes [AsyncScopeElementBase.waitForChildrenTimeout], so the second
+  /// Becomes [AsyncScopeCoreElement.waitForChildrenTimeout], so the second
   /// stage of the teardown can be made to expire.
   final Duration? waitForChildren;
 
@@ -2277,7 +2277,7 @@ final class _CloseScope
   /// parent's wait for its children expire.
   final Completer<void>? disposeGate;
 
-  /// Becomes [AsyncScopeElementBase.scopeKey], so `close()` can be exercised
+  /// Becomes [AsyncScopeCoreElement.scopeKey], so `close()` can be exercised
   /// on a scope that actually holds a key.
   final Object? testKey;
 
@@ -2324,7 +2324,7 @@ final class _CloseScope
 
 final class _CloseScopeElement
     extends
-        LiteScopeElementBase<
+        LiteScopeCoreElement<
           _CloseScope,
           _CloseScopeElement,
           _CloseScopeState

@@ -182,11 +182,11 @@ abstract base class LiteScope<
     BuildContext context, {
     required bool listen,
   }) => listen
-      ? ScopeContext.select<W, _LiteScopeElement<W, S>, W>(
+      ? ScopeInheritedContext.select<W, _LiteScopeElement<W, S>, W>(
           context,
           (element) => element.widget,
         )
-      : ScopeContext.of<W, _LiteScopeElement<W, S>>(
+      : ScopeInheritedContext.of<W, _LiteScopeElement<W, S>>(
           context,
           listen: false,
         ).widget;
@@ -198,7 +198,7 @@ abstract base class LiteScope<
     S extends LiteScopeState<W, S>,
     V extends Object?
   >(BuildContext context, V Function(W widget) selector) =>
-      ScopeContext.select<W, _LiteScopeElement<W, S>, V>(
+      ScopeInheritedContext.select<W, _LiteScopeElement<W, S>, V>(
         context,
         (element) => selector(element.widget),
       );
@@ -214,7 +214,7 @@ abstract base class LiteScope<
   /// not.
   static S? maybeOf<W extends LiteScope<W, S>, S extends LiteScopeState<W, S>>(
     BuildContext context,
-  ) => ScopeContext.maybeOf<W, _LiteScopeElement<W, S>>(
+  ) => ScopeInheritedContext.maybeOf<W, _LiteScopeElement<W, S>>(
     context,
     listen: false,
   )?._globalStateKey.currentState;
@@ -231,7 +231,7 @@ abstract base class LiteScope<
   /// answers `null` instead of throwing.
   static S of<W extends LiteScope<W, S>, S extends LiteScopeState<W, S>>(
     BuildContext context,
-  ) => ScopeContext.of<W, _LiteScopeElement<W, S>>(
+  ) => ScopeInheritedContext.of<W, _LiteScopeElement<W, S>>(
     context,
     listen: false,
   )._stateOrThrow;
@@ -246,7 +246,7 @@ abstract base class LiteScope<
     S extends LiteScopeState<W, S>,
     V extends Object?
   >(BuildContext context, V Function(S scope) selector) =>
-      ScopeContext.select<W, _LiteScopeElement<W, S>, V>(
+      ScopeInheritedContext.select<W, _LiteScopeElement<W, S>, V>(
         context,
         (element) => selector(element._stateOrThrow),
       );
@@ -257,7 +257,7 @@ final class _LiteScopeElement<
   W extends LiteScope<W, S>,
   S extends LiteScopeState<W, S>
 >
-    extends LiteScopeElementBase<W, _LiteScopeElement<W, S>, S> {
+    extends LiteScopeCoreElement<W, _LiteScopeElement<W, S>, S> {
   _LiteScopeElement(super.widget);
 
   @override

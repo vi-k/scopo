@@ -4,7 +4,7 @@
   package could use are gone. `AsyncScopeInitState` held `AsyncScopeProgress`
   and `AsyncScopeReady` and nothing else; both extend `AsyncScopeStatus`
   directly now, and a `switch` over the four statuses stays exhaustive.
-  `ScopeModelInheritedElement` repeated what `ScopeModelElementBase` gets from
+  `ScopeModelInheritedElement` repeated what `ScopeModelCoreElement` gets from
   `ScopeInheritedElement` and `ScopeModelContext`. `AsyncScopeModel` was an
   empty interface: the model of an asynchronous scope is a
   `ScopeStateModel<AsyncScopeStatus>`. `ScopeDependencyMixin` declared private
@@ -34,6 +34,12 @@
   `ScopeDependencyInitFailed` is named; `buildOnError`, `errorBuilder`,
   `hasError` and `error` keep their names. The model of an asynchronous scope
   is still a `ScopeStateModel<AsyncScopeStatus>`, so its `state` is the status.
+* **Breaking:** the element of a family you extend is named after its widget.
+  `ScopeWidgetCore` comes with `ScopeWidgetCoreElement`, which was
+  `ScopeWidgetElementBase`, and the same goes for `ScopeModel`,
+  `ScopeNotifier`, `AsyncScope`, `AsyncDataScope`, `AsyncControllerScope`,
+  `LiteScope` and `Scope`. `ScopeContext` is `ScopeInheritedContext`, beside
+  the `ScopeInheritedWidget` and `ScopeInheritedElement` it goes with.
 * **Breaking:** six names now say what they do.
   `AsyncScopeContext.isInitialized` is `isReady`: it is true once the scope is
   `AsyncScopeReady`. The state of a `LiteScope` or a `Scope` keeps its own
@@ -43,7 +49,7 @@
   same sign as before and as `ScopeStateNotifier.shouldNotify`: `true` means
   the value changed. `ScopeDependencyException.name` is `path`, which is what
   it always held. `runOutsideFrame` is `runOutsideBuild`: it waits for a build,
-  not for a frame. `ScopeWidgetElementBase.autoSelfDependence` is
+  not for a frame. `ScopeWidgetCoreElement.autoSelfDependence` is
   `rebuildsOnNotify`, and `ScopeAutoDependencies.autoDisposeOnError` is
   `disposesOnError`.
 * **Breaking:** the hooks of `ScopeObserver` come in pairs that read the same

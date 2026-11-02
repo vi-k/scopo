@@ -2,7 +2,7 @@ part of '../scope.dart';
 
 /// {@category AsyncScope}
 abstract interface class AsyncScopeContext<W extends ScopeInheritedWidget>
-    implements ScopeContext<W> {
+    implements ScopeInheritedContext<W> {
   /// Closes this scope and waits for its resources to be released.
   ///
   /// The closing branch replaces the subtree before the release begins, so

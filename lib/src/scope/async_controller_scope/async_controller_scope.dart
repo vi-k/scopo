@@ -83,10 +83,12 @@ final class AsyncControllerScope<C extends ScopeController>
       builder(context, controller);
 
   /// The nearest `AsyncControllerScope<C>` above [context], or `null`.
-  static AsyncControllerScopeContext<AsyncControllerScope<C>, C>? maybeOf<
-    C extends ScopeController
-  >(BuildContext context, {required bool listen}) =>
-      ScopeContext.maybeOf<
+  static AsyncControllerScopeContext<AsyncControllerScope<C>, C>?
+  maybeOf<C extends ScopeController>(
+    BuildContext context, {
+    required bool listen,
+  }) =>
+      ScopeInheritedContext.maybeOf<
         AsyncControllerScope<C>,
         AsyncControllerScopeContext<AsyncControllerScope<C>, C>
       >(context, listen: listen);
@@ -96,7 +98,7 @@ final class AsyncControllerScope<C extends ScopeController>
   /// Throws when there is none.
   static AsyncControllerScopeContext<AsyncControllerScope<C>, C>
   of<C extends ScopeController>(BuildContext context, {required bool listen}) =>
-      ScopeContext.of<
+      ScopeInheritedContext.of<
         AsyncControllerScope<C>,
         AsyncControllerScopeContext<AsyncControllerScope<C>, C>
       >(context, listen: listen);
@@ -110,7 +112,7 @@ final class AsyncControllerScope<C extends ScopeController>
     V Function(AsyncControllerScopeContext<AsyncControllerScope<C>, C> context)
     selector,
   ) =>
-      ScopeContext.select<
+      ScopeInheritedContext.select<
         AsyncControllerScope<C>,
         AsyncControllerScopeContext<AsyncControllerScope<C>, C>,
         V

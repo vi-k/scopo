@@ -89,7 +89,7 @@ final class AsyncScopeCoordinator
 
 final class _AsyncScopeCoordinatorElement
     extends
-        ScopeWidgetElementBase<
+        ScopeWidgetCoreElement<
           AsyncScopeCoordinator,
           _AsyncScopeCoordinatorElement
         >
@@ -106,7 +106,7 @@ final class _AsyncScopeCoordinatorElement
   ///
   /// A wait for children outlives the tree in the very cases it exists for,
   /// and this element is the second one that can be asked its name after it
-  /// has left -- `AsyncScopeElementBase.debugLabel` keeps a copy for exactly
+  /// has left -- `AsyncScopeCoreElement.debugLabel` keeps a copy for exactly
   /// that and says why. The observer reads the label at the expiry, not at
   /// the start: asking an unmounted element raised a `_TypeError` inside the
   /// observer's own hook, the guard then named the observer as the thing that

@@ -305,7 +305,7 @@ final class _DataCore
 }
 
 final class _DataElement
-    extends AsyncDataScopeElementBase<_DataCore, _DataElement, String?> {
+    extends AsyncDataScopeCoreElement<_DataCore, _DataElement, String?> {
   _DataElement(super.widget);
 
   @override
@@ -373,7 +373,7 @@ final class _ControllerCore
 
 final class _ControllerElement
     extends
-        AsyncControllerScopeElementBase<
+        AsyncControllerScopeCoreElement<
           _ControllerCore,
           _ControllerElement,
           _Controller

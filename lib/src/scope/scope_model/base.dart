@@ -5,7 +5,7 @@ abstract interface class ScopeModelContext<
   W extends ScopeInheritedWidget,
   M extends Object
 >
-    implements ScopeContext<W> {
+    implements ScopeInheritedContext<W> {
   @override
   W get widget;
 

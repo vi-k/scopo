@@ -52,32 +52,40 @@ abstract base class ScopeModelBase<
   Widget build(BuildContext context);
 
   /// The context of the nearest scope [W], or `null` if there is none.
-  static ScopeModelContext<W, M>?
-  maybeOf<W extends ScopeModelBase<W, M>, M extends Object>(
-    BuildContext context, {
-    required bool listen,
-  }) =>
-      ScopeContext.maybeOf<W, ScopeModelContext<W, M>>(context, listen: listen);
+  static ScopeModelContext<W, M>? maybeOf<
+    W extends ScopeModelBase<W, M>,
+    M extends Object
+  >(BuildContext context, {required bool listen}) =>
+      ScopeInheritedContext.maybeOf<W, ScopeModelContext<W, M>>(
+        context,
+        listen: listen,
+      );
 
   /// The context of the nearest scope [W].
   ///
   /// Throws when there is no such scope above [context].
-  static ScopeModelContext<W, M>
-  of<W extends ScopeModelBase<W, M>, M extends Object>(
-    BuildContext context, {
-    required bool listen,
-  }) => ScopeContext.of<W, ScopeModelContext<W, M>>(context, listen: listen);
+  static ScopeModelContext<W, M> of<
+    W extends ScopeModelBase<W, M>,
+    M extends Object
+  >(BuildContext context, {required bool listen}) =>
+      ScopeInheritedContext.of<W, ScopeModelContext<W, M>>(
+        context,
+        listen: listen,
+      );
 
   /// Subscribes to one value of the scope and returns it.
   static V
   select<W extends ScopeModelBase<W, M>, M extends Object, V extends Object?>(
     BuildContext context,
     V Function(ScopeModelContext<W, M> context) selector,
-  ) => ScopeContext.select<W, ScopeModelContext<W, M>, V>(context, selector);
+  ) => ScopeInheritedContext.select<W, ScopeModelContext<W, M>, V>(
+    context,
+    selector,
+  );
 }
 
 final class _ScopeModelElement<W extends ScopeModelBase<W, M>, M extends Object>
-    extends ScopeModelElementBase<W, _ScopeModelElement<W, M>, M>
+    extends ScopeModelCoreElement<W, _ScopeModelElement<W, M>, M>
     with _ScopeModelElementMixin<W, M>
     implements ScopeModelContext<W, M> {
   _ScopeModelElement(super.widget);

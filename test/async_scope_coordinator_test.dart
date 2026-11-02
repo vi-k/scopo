@@ -555,7 +555,7 @@ void main() {
 
   // `AsyncScopeParent.waitForChildren` is public API in its own right, not
   // just the plumbing behind the static helper: `AsyncScopeCore.of` hands out
-  // the element, and every custom `AsyncScopeElementBase` exposes the method.
+  // the element, and every custom `AsyncScopeCoreElement` exposes the method.
   // Called without an `onTimeout` it must report the expiry itself, or a
   // dropped child is total silence.
   testWidgets('the mixin waitForChildren reports an expiry by default', (
@@ -1626,7 +1626,7 @@ Future<void> _tearDownTree(WidgetTester tester, {required int scopes}) async {
 /// the budget runs out.
 ///
 /// The `StreamSubscription.cancel()` chain of
-/// `AsyncScopeElementBase._performAsyncDispose` only makes progress outside the
+/// `AsyncScopeCoreElement._performAsyncDispose` only makes progress outside the
 /// test's fake-async zone, so `pumpAndSettle()` alone never reaches
 /// `disposeScope()`. The same workaround is documented in
 /// `async_scope_test.dart` and `lite_scope_test.dart`.
@@ -1635,11 +1635,11 @@ final class _TestScope extends AsyncScopeCore<_TestScope, _TestScopeElement> {
   final String? disposeLabel;
   final Duration disposeDelay;
 
-  /// Overrides [AsyncScopeElementBase.scopeKeyTimeout] for this scope only,
+  /// Overrides [AsyncScopeCoreElement.scopeKeyTimeout] for this scope only,
   /// so one scope in a tree can expire while another one cannot.
   final Duration? keyTimeout;
 
-  /// Makes [AsyncScopeElementBase.onScopeKeyTimeout] fail, the way a plain
+  /// Makes [AsyncScopeCoreElement.onScopeKeyTimeout] fail, the way a plain
   /// user error in an overridden hook does.
   final bool throwOnKeyTimeout;
 
@@ -1677,7 +1677,7 @@ final class _TestScope extends AsyncScopeCore<_TestScope, _TestScopeElement> {
 }
 
 final class _TestScopeElement
-    extends AsyncScopeElementBase<_TestScope, _TestScopeElement> {
+    extends AsyncScopeCoreElement<_TestScope, _TestScopeElement> {
   /// Whether this scope had to be let into its key without ever getting it.
   bool keyTimedOut = false;
 

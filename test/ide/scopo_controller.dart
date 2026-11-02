@@ -54,7 +54,7 @@ final class PlayerScope
   /// is one — read it from below [buildOnReady], where there always is.
   ///
   /// `listen: false`, and not as a default worth revisiting: subscribing
-  /// here follows the *state* of the scope — waiting, ready, error — and
+  /// here follows the *status* of the scope — waiting, ready, error — and
   /// this family does not make the controller observable. A controller
   /// whose values the widgets have to follow should be a `Listenable`
   /// with a `ScopeNotifier` under this scope, or should expose a stream.
@@ -64,12 +64,12 @@ final class PlayerScope
         listen: false,
       ).controller;
 
-  // No `select` here on purpose. It would subscribe to the state of the
+  // No `select` here on purpose. It would subscribe to the status of the
   // scope — `hasController`, `isReady` — and a widget under the
   // ready branch is past all of those. To follow something *inside* the
   // controller, make it a `Listenable` and wrap the widget in a
   // `ListenableSelector`, or put a `ScopeNotifier` under this scope.
-  // `AsyncControllerScopeBase.select` is there if the state is what you
+  // `AsyncControllerScopeBase.select` is there if the status is what you
   // need.
 
   @override

@@ -92,7 +92,7 @@ final class CounterScope
 /// Owns the notifier and unsubscribes the scope from it before disposing it.
 final class CounterScopeElement
     extends
-        ScopeNotifierElementBase<
+        ScopeNotifierCoreElement<
           CounterScope,
           CounterScopeElement,
           CounterModel

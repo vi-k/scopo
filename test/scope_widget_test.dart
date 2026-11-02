@@ -672,7 +672,7 @@ final class _AncestorScope
 }
 
 final class _AncestorScopeElement
-    extends ScopeWidgetElementBase<_AncestorScope, _AncestorScopeElement> {
+    extends ScopeWidgetCoreElement<_AncestorScope, _AncestorScopeElement> {
   _AncestorScopeElement(super.widget);
 
   @override
@@ -688,7 +688,7 @@ final class _InitReaderScope
 }
 
 final class _InitReaderScopeElement
-    extends ScopeWidgetElementBase<_InitReaderScope, _InitReaderScopeElement> {
+    extends ScopeWidgetCoreElement<_InitReaderScope, _InitReaderScopeElement> {
   _InitReaderScopeElement(super.widget);
 
   String? _ancestorValue;
@@ -753,7 +753,7 @@ final class _CounterScope
 }
 
 final class _CounterScopeElement
-    extends ScopeWidgetElementBase<_CounterScope, _CounterScopeElement> {
+    extends ScopeWidgetCoreElement<_CounterScope, _CounterScopeElement> {
   _CounterScopeElement(super.widget);
 
   /// The value the dependents select, changed only through [bump].
@@ -979,7 +979,7 @@ final class _FailingInitScope
 
 final class _FailingInitScopeElement
     extends
-        ScopeWidgetElementBase<_FailingInitScope, _FailingInitScopeElement> {
+        ScopeWidgetCoreElement<_FailingInitScope, _FailingInitScopeElement> {
   static int initAttempts = 0;
   static int acquired = 0;
   static int released = 0;
@@ -1016,7 +1016,7 @@ final class _ListeningInitScope
 
 final class _ListeningInitScopeElement
     extends
-        ScopeWidgetElementBase<
+        ScopeWidgetCoreElement<
           _ListeningInitScope,
           _ListeningInitScopeElement
         > {
@@ -1123,7 +1123,7 @@ final class _ShadeHostState extends State<_ShadeHost> {
 }
 
 final class _ShadeScopeElement
-    extends ScopeWidgetElementBase<_ShadeScope, _ShadeScopeElement> {
+    extends ScopeWidgetCoreElement<_ShadeScope, _ShadeScopeElement> {
   _ShadeScopeElement(super.widget);
 
   int value = 0;

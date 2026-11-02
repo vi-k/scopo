@@ -151,7 +151,7 @@ abstract base class AsyncControllerScopeBase<
     W extends AsyncControllerScopeBase<W, C>,
     C extends ScopeController
   >(BuildContext context, {required bool listen}) =>
-      ScopeContext.maybeOf<W, AsyncControllerScopeContext<W, C>>(
+      ScopeInheritedContext.maybeOf<W, AsyncControllerScopeContext<W, C>>(
         context,
         listen: listen,
       );
@@ -163,7 +163,7 @@ abstract base class AsyncControllerScopeBase<
     W extends AsyncControllerScopeBase<W, C>,
     C extends ScopeController
   >(BuildContext context, {required bool listen}) =>
-      ScopeContext.of<W, AsyncControllerScopeContext<W, C>>(
+      ScopeInheritedContext.of<W, AsyncControllerScopeContext<W, C>>(
         context,
         listen: listen,
       );
@@ -176,7 +176,7 @@ abstract base class AsyncControllerScopeBase<
   >(
     BuildContext context,
     V Function(AsyncControllerScopeContext<W, C> context) selector,
-  ) => ScopeContext.select<W, AsyncControllerScopeContext<W, C>, V>(
+  ) => ScopeInheritedContext.select<W, AsyncControllerScopeContext<W, C>, V>(
     context,
     selector,
   );
@@ -187,7 +187,7 @@ final class _AsyncControllerScopeElement<
   C extends ScopeController
 >
     extends
-        AsyncControllerScopeElementBase<
+        AsyncControllerScopeCoreElement<
           W,
           _AsyncControllerScopeElement<W, C>,
           C

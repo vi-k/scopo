@@ -52,21 +52,26 @@ abstract base class ScopeNotifierBase<
   Widget build(BuildContext context);
 
   /// The context of the nearest scope [W], or `null` if there is none.
-  static ScopeModelContext<W, M>?
-  maybeOf<W extends ScopeNotifierBase<W, M>, M extends Listenable>(
-    BuildContext context, {
-    required bool listen,
-  }) =>
-      ScopeContext.maybeOf<W, ScopeModelContext<W, M>>(context, listen: listen);
+  static ScopeModelContext<W, M>? maybeOf<
+    W extends ScopeNotifierBase<W, M>,
+    M extends Listenable
+  >(BuildContext context, {required bool listen}) =>
+      ScopeInheritedContext.maybeOf<W, ScopeModelContext<W, M>>(
+        context,
+        listen: listen,
+      );
 
   /// The context of the nearest scope [W].
   ///
   /// Throws when there is no such scope above [context].
-  static ScopeModelContext<W, M>
-  of<W extends ScopeNotifierBase<W, M>, M extends Listenable>(
-    BuildContext context, {
-    required bool listen,
-  }) => ScopeContext.of<W, ScopeModelContext<W, M>>(context, listen: listen);
+  static ScopeModelContext<W, M> of<
+    W extends ScopeNotifierBase<W, M>,
+    M extends Listenable
+  >(BuildContext context, {required bool listen}) =>
+      ScopeInheritedContext.of<W, ScopeModelContext<W, M>>(
+        context,
+        listen: listen,
+      );
 
   /// Subscribes to one value of the scope and returns it.
   static V select<
@@ -76,14 +81,17 @@ abstract base class ScopeNotifierBase<
   >(
     BuildContext context,
     V Function(ScopeModelContext<W, M> context) selector,
-  ) => ScopeContext.select<W, ScopeModelContext<W, M>, V>(context, selector);
+  ) => ScopeInheritedContext.select<W, ScopeModelContext<W, M>, V>(
+    context,
+    selector,
+  );
 }
 
 final class _ScopeNotifierElement<
   W extends ScopeNotifierBase<W, M>,
   M extends Listenable
 >
-    extends ScopeNotifierElementBase<W, _ScopeNotifierElement<W, M>, M>
+    extends ScopeNotifierCoreElement<W, _ScopeNotifierElement<W, M>, M>
     with _ScopeModelElementMixin<W, M> {
   _ScopeNotifierElement(super.widget);
 

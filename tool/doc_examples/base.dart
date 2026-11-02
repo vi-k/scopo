@@ -9,9 +9,9 @@ const baseTopic = DocManifest(
       'API signature excerpt: child omits the private placeholder default.',
     ),
     'the-element/ScopeInheritedElement': DocEnvironment('', ''),
-    'finding-a-scope/scopecontext-maybeof-w-c-conte': DocEnvironment(
+    'finding-a-scope/c-null-if-not-found': DocEnvironment(
       'void example<W extends ScopeInheritedWidget, '
-          'C extends ScopeContext<W>, V>(BuildContext context, '
+          'C extends ScopeInheritedContext<W>, V>(BuildContext context, '
           'V Function(C) selector) {',
       '}',
     ),

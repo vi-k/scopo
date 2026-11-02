@@ -3,7 +3,7 @@ part of '../scope.dart';
 /// {@category AsyncDataScope}
 abstract base class AsyncDataScopeCore<
   W extends AsyncDataScopeCore<W, E, T>,
-  E extends AsyncDataScopeElementBase<W, E, T>,
+  E extends AsyncDataScopeCoreElement<W, E, T>,
   T extends Object?
 >
     extends AsyncScopeCore<W, E> {
@@ -17,38 +17,38 @@ abstract base class AsyncDataScopeCore<
   /// The element of the nearest scope [W] above [context], or `null`.
   static E? maybeOf<
     W extends AsyncDataScopeCore<W, E, T>,
-    E extends AsyncDataScopeElementBase<W, E, T>,
+    E extends AsyncDataScopeCoreElement<W, E, T>,
     T extends Object?
   >(BuildContext context, {required bool listen}) =>
-      ScopeContext.maybeOf<W, E>(context, listen: listen);
+      ScopeInheritedContext.maybeOf<W, E>(context, listen: listen);
 
   /// The element of the nearest scope [W] above [context].
   ///
   /// Throws when there is none.
   static E of<
     W extends AsyncDataScopeCore<W, E, T>,
-    E extends AsyncDataScopeElementBase<W, E, T>,
+    E extends AsyncDataScopeCoreElement<W, E, T>,
     T extends Object?
   >(BuildContext context, {required bool listen}) =>
-      ScopeContext.of<W, E>(context, listen: listen);
+      ScopeInheritedContext.of<W, E>(context, listen: listen);
 
   /// Subscribes to one value of the scope and returns it.
   static V select<
     W extends AsyncDataScopeCore<W, E, T>,
-    E extends AsyncDataScopeElementBase<W, E, T>,
+    E extends AsyncDataScopeCoreElement<W, E, T>,
     T extends Object?,
     V extends Object?
   >(BuildContext context, V Function(E element) selector) =>
-      ScopeContext.select<W, E, V>(context, selector);
+      ScopeInheritedContext.select<W, E, V>(context, selector);
 }
 
 /// {@category AsyncDataScope}
-abstract base class AsyncDataScopeElementBase<
+abstract base class AsyncDataScopeCoreElement<
   W extends AsyncDataScopeCore<W, E, T>,
-  E extends AsyncDataScopeElementBase<W, E, T>,
+  E extends AsyncDataScopeCoreElement<W, E, T>,
   T extends Object?
 >
-    extends AsyncScopeElementBase<W, E>
+    extends AsyncScopeCoreElement<W, E>
     implements AsyncDataScopeContext<W, T> {
   //
   // Overriding block
@@ -104,7 +104,7 @@ abstract base class AsyncDataScopeElementBase<
   T? get dataOrNull => _data;
 
   /// Creates the element of a scope producing a value.
-  AsyncDataScopeElementBase(super.widget);
+  AsyncDataScopeCoreElement(super.widget);
 
   /// Sealed: this is where the value is caught on its way past, and the
   /// family has nothing to offer without it. The hook to write is

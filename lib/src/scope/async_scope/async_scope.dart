@@ -119,10 +119,11 @@ final class AsyncScope extends AsyncScopeBase<AsyncScope> {
   static AsyncScopeContext<AsyncScope>? maybeOf(
     BuildContext context, {
     required bool listen,
-  }) => ScopeContext.maybeOf<AsyncScope, AsyncScopeContext<AsyncScope>>(
-    context,
-    listen: listen,
-  );
+  }) =>
+      ScopeInheritedContext.maybeOf<AsyncScope, AsyncScopeContext<AsyncScope>>(
+        context,
+        listen: listen,
+      );
 
   /// The nearest [AsyncScope] above [context].
   ///
@@ -130,7 +131,7 @@ final class AsyncScope extends AsyncScopeBase<AsyncScope> {
   static AsyncScopeContext<AsyncScope> of(
     BuildContext context, {
     required bool listen,
-  }) => ScopeContext.of<AsyncScope, AsyncScopeContext<AsyncScope>>(
+  }) => ScopeInheritedContext.of<AsyncScope, AsyncScopeContext<AsyncScope>>(
     context,
     listen: listen,
   );
@@ -139,8 +140,10 @@ final class AsyncScope extends AsyncScopeBase<AsyncScope> {
   static V select<V extends Object?>(
     BuildContext context,
     V Function(AsyncScopeContext<AsyncScope> context) selector,
-  ) => ScopeContext.select<AsyncScope, AsyncScopeContext<AsyncScope>, V>(
-    context,
-    selector,
-  );
+  ) =>
+      ScopeInheritedContext.select<
+        AsyncScope,
+        AsyncScopeContext<AsyncScope>,
+        V
+      >(context, selector);
 }

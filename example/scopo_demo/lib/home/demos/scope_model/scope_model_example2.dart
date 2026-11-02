@@ -74,7 +74,7 @@ abstract interface class CounterScopeContext {
 /// Owns the model and explicitly notifies dependents after mutating it.
 final class CounterScopeElement
     extends
-        ScopeModelElementBase<CounterScope, CounterScopeElement, CounterModel>
+        ScopeModelCoreElement<CounterScope, CounterScopeElement, CounterModel>
     implements CounterScopeContext {
   CounterScopeElement(super.widget);
 

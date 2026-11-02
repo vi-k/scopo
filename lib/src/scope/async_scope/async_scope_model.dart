@@ -3,7 +3,7 @@ part of '../scope.dart';
 /// The status of an asynchronous scope, written by the scope alone.
 ///
 /// The element hands out [_AsyncScopeModelView], a read-only view of this
-/// notifier, as `AsyncScopeElementBase.model`.
+/// notifier, as `AsyncScopeCoreElement.model`.
 final class _AsyncScopeNotifier extends ScopeStateNotifier<AsyncScopeStatus> {
   _AsyncScopeNotifier() : super(AsyncScopeWaiting());
 }

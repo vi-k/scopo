@@ -12,7 +12,7 @@ scopo связывает ресурсы с деревом виджетов че�
 и `ScopeInheritedElement` (`lib/src/scope/base/base.dart`). Три опорных
 решения:
 
-- Циклом владеет элемент: `ScopeWidgetElementBase.build` однократно вызывает
+- Циклом владеет элемент: `ScopeWidgetCoreElement.build` однократно вызывает
   `init`, а `unmount` разбирает и частично упавшую инициализацию.
 - Уведомление отделено от сборки: `notifyDependents` будит подписчиков,
   `_builtChild` сохраняет поддерево
@@ -81,13 +81,13 @@ scopo связывает ресурсы с деревом виджетов че�
 - Асинхронные ветки: `AsyncScopeCore` → `AsyncDataScopeCore` →
   `AsyncControllerScopeCore`; другая ветка — `AsyncScopeCore` → `LiteScopeCore`
   → `ScopeCore`.
-- Элементы: `ScopeWidgetElementBase` → `ScopeModelElementBase` →
-  `ScopeNotifierElementBase` → `AsyncScopeElementBase`. Далее —
-  `AsyncDataScopeElementBase` → `AsyncControllerScopeElementBase` либо
-  `LiteScopeElementBase` → `ScopeElementBase`.
+- Элементы: `ScopeWidgetCoreElement` → `ScopeModelCoreElement` →
+  `ScopeNotifierCoreElement` → `AsyncScopeCoreElement`. Далее —
+  `AsyncDataScopeCoreElement` → `AsyncControllerScopeCoreElement` либо
+  `LiteScopeCoreElement` → `ScopeCoreElement`.
 
 Асимметрия намеренная: виджет `AsyncScopeCore` наследует модельную основу,
-а элемент использует подписку `ScopeNotifierElementBase.init`, поскольку его
+а элемент использует подписку `ScopeNotifierCoreElement.init`, поскольку его
 модель — `ScopeStateModel` с интерфейсом `Listenable`. Модель создаётся как
 `_AsyncScopeNotifier`, наружу отдаётся приватное представление для чтения
 `_AsyncScopeModelView` (`lib/src/scope/async_scope/async_scope_model.dart`).
@@ -104,8 +104,8 @@ scopo связывает ресурсы с деревом виджетов че�
 | `Scope` | — | `ScopeDependencies` и `ScopeState` |
 
 Основы с окончанием Core допускают собственный элемент. Интерфейсы чтения —
-`ScopeContext`, `ScopeModelContext` и контексты асинхронных семейств. Аксессоры
-`ScopeWidgetAccess`, `ScopeModelAccess`, `ScopeNotifierAccess`,
+`ScopeInheritedContext`, `ScopeModelContext` и контексты асинхронных семейств.
+Аксессоры `ScopeWidgetAccess`, `ScopeModelAccess`, `ScopeNotifierAccess`,
 `AsyncScopeAccess`, `AsyncDataScopeAccess`, `AsyncControllerScopeAccess`,
 `LiteScopeAccess`, `ScopeAccess` в файлах фасадов связывают типы поиска.
 У `LiteScope` и `Scope` поиск возвращает состояние.
@@ -122,7 +122,7 @@ scopo связывает ресурсы с деревом виджетов че�
 
 ## 4. Подписки, аспекты и сборка
 
-Координаты: `ScopeContext._find` в `lib/src/scope/base/base.dart`;
+Координаты: `ScopeInheritedContext._find` в `lib/src/scope/base/base.dart`;
 `_ScopeDependencies`, `_notifyDependent`, `notifyDependents`, `build`
 в `lib/src/scope/scope_widget/scope_widget_core.dart`.
 
@@ -206,7 +206,7 @@ scopo связывает ресурсы с деревом виджетов че�
 
 В `lib/src/scope/async_controller_scope/scope_controller.dart` обёртки
 `performInit`, `performUnmount`, `performDispose` обеспечивают один цикл
-контроллера и общий результат его разбора. `AsyncControllerScopeElementBase`
+контроллера и общий результат его разбора. `AsyncControllerScopeCoreElement`
 в `lib/src/scope/async_controller_scope/async_controller_scope_core.dart`
 освобождает контроллер также после неудачной инициализации и позднего возврата.
 
@@ -270,7 +270,7 @@ and `ScopeErrorRoute` в `doc/debug.md`, там же `Cancelled` из `disposeSc
 
 Прямые отчёты Flutter: ошибки селекторов, хуков наблюдателя, дополнительные
 и поздние ошибки разбора; таймауты при `timeoutReportsEnabled`. Сбой
-`ScopeWidgetElementBase.build` слышит наблюдатель и граница Flutter, создающая
+`ScopeWidgetCoreElement.build` слышит наблюдатель и граница Flutter, создающая
 экран ошибки. Вторичные ошибки разбора принимает `_reportFailure`
 из `lib/src/scope/base/base.dart`; общей обязательной пары каналов нет.
 
@@ -322,7 +322,7 @@ and `ScopeErrorRoute` в `doc/debug.md`, там же `Cancelled` из `disposeSc
 
 ## 8. Состояние, закрытие и скриншот
 
-Координаты: `LiteScopeElementBase`, `LiteScopeCoreState`
+Координаты: `LiteScopeCoreElement`, `LiteScopeCoreState`
 в `lib/src/scope/lite_scope/lite_scope_core.dart`; `_capture`,
 `_retryOrGiveUp`, `_reportCompleted`
 в `lib/src/utils/screenshot_replacer.dart`.
@@ -333,7 +333,7 @@ and `ScopeErrorRoute` в `doc/debug.md`, там же `Cancelled` из `disposeSc
 частично упавший `initStateAsync`. После успеха вызываются `onInitialized`
 и `notifyDependents`; собственный экран перестраивает `setState`.
 
-Общий барьер закрытия живёт ниже, в `AsyncScopeElementBase`
+Общий барьер закрытия живёт ниже, в `AsyncScopeCoreElement`
 (`lib/src/scope/async_scope/async_scope_core.dart`), и на нём стоит `close()`
 трёх асинхронных семейств. `close()` смонтированного скоупа ставит
 `_closingCompleter`, и `buildChild` строит вместо ветки состояния
@@ -366,7 +366,7 @@ post-frame-колбэк этой сборки (`_completeClosingFrame`), то е
 `dispose` освобождает дескриптор изображения; позднее изображение после
 удаления освобождается сразу.
 
-Для полного скоупа `ScopeElementBase.onUnmount` вызывает состояние, затем
+Для полного скоупа `ScopeCoreElement.onUnmount` вызывает состояние, затем
 контейнер. `disposeScope` ждёт состояние и затем зависимости, с отдельным
 лимитом для каждого этапа и продолжением после ошибки
 (`lib/src/scope/full_scope/scope_core.dart`). Обычный `State.dispose` вызывает
@@ -458,7 +458,7 @@ Flutter при удалении поддерева; это отдельный м
 `ScopeCompositeObserver` ограждает каждого получателя и передаёт маршрут без
 изменений; `ScopePrintObserver` печатает события с опциональным `onTrace`,
 а строку `onError` маршрут не меняет. Структурные семейства сообщают цикл
-из `ScopeWidgetElementBase`, асинхронные — сами по `reportsOwnLifecycle`.
+из `ScopeWidgetCoreElement`, асинхронные — сами по `reportsOwnLifecycle`.
 
 ## 11. Утилиты
 

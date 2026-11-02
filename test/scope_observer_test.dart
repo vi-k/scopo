@@ -232,11 +232,11 @@ void main() {
       );
 
       // `LiteScope` -- `_CounterScope`'s family -- is built on
-      // `AsyncScopeElementBase`: its `initScope()` defaults to an immediate
+      // `AsyncScopeCoreElement`: its `initScope()` defaults to an immediate
       // `AsyncScopeReady()`, same as a bare `AsyncScope`. `reportsOwnLifecycle`
       // is therefore `true`, so the single `onInitStarted` below is the
       // asynchronous phase's own -- the structural pair
-      // `ScopeWidgetElementBase` fires for every other family is suppressed
+      // `ScopeWidgetCoreElement` fires for every other family is suppressed
       // here, not doubled with it.
       expect(observer.events, ['init _CounterScope', 'ready _CounterScope']);
 
@@ -271,9 +271,9 @@ void main() {
       );
 
       // `ScopeWidgetBase` -- `_PlainScope`'s family -- goes no further than
-      // `ScopeWidgetElementBase` itself: it runs no initialization of its own,
+      // `ScopeWidgetCoreElement` itself: it runs no initialization of its own,
       // so `reportsOwnLifecycle` keeps its default `false` and this is the bare
-      // reporting `ScopeWidgetElementBase` gives every such family:
+      // reporting `ScopeWidgetCoreElement` gives every such family:
       // `onInitStarted`, then `onDisposalStarted` and `onDisposed` as a pair
       // around the teardown.
       expect(observer.events, ['init _PlainScope']);
@@ -812,7 +812,7 @@ void main() {
 
   // `close()` is the only path on which the first stage of a teardown can
   // fail at all: a scope taken off the tree has already been unmounted by the
-  // framework -- `ScopeWidgetElementBase.unmount()` runs `unmountScope()`
+  // framework -- `ScopeWidgetCoreElement.unmount()` runs `unmountScope()`
   // before it starts the asynchronous half -- so by the time the teardown
   // reaches that stage it is a no-op there.
   testWidgets('a failing onUnmount reports onError for the unmount phase', (
@@ -857,7 +857,7 @@ void main() {
 
     // A closed scope stays mounted, and taking it off the tree afterwards
     // does *not* run a second teardown over it:
-    // `LiteScopeElementBase._performAsyncDispose()` returns the
+    // `LiteScopeCoreElement._performAsyncDispose()` returns the
     // `_closeCompleter.future` that `close()` above already completed,
     // rather than running its body again, so the framework's own
     // `unmount()` reports nothing new. Now that the pair is a counting
@@ -1638,8 +1638,8 @@ final class _BuildFailingScope extends ScopeWidgetBase<_BuildFailingScope> {
 }
 
 /// A scope with no phase of its own: [ScopeWidgetBase] goes no further than
-/// [ScopeWidgetElementBase] itself, so it never overrides
-/// [ScopeWidgetElementBase.reportsOwnLifecycle].
+/// [ScopeWidgetCoreElement] itself, so it never overrides
+/// [ScopeWidgetCoreElement.reportsOwnLifecycle].
 final class _PlainScope extends ScopeWidgetBase<_PlainScope> {
   const _PlainScope({super.child});
 
@@ -1659,7 +1659,7 @@ final class _FailingInitScope
 
 final class _FailingInitScopeElement
     extends
-        ScopeWidgetElementBase<_FailingInitScope, _FailingInitScopeElement> {
+        ScopeWidgetCoreElement<_FailingInitScope, _FailingInitScopeElement> {
   _FailingInitScopeElement(super.widget);
 
   @override
@@ -1689,7 +1689,7 @@ final class _FailingInitAsyncScope
 
 final class _FailingInitAsyncScopeElement
     extends
-        AsyncScopeElementBase<
+        AsyncScopeCoreElement<
           _FailingInitAsyncScope,
           _FailingInitAsyncScopeElement
         > {
@@ -1838,7 +1838,7 @@ final class _AsyncScope
 }
 
 final class _AsyncScopeElement
-    extends AsyncScopeElementBase<_AsyncScope, _AsyncScopeElement> {
+    extends AsyncScopeCoreElement<_AsyncScope, _AsyncScopeElement> {
   _AsyncScopeElement(super.widget);
 
   @override
@@ -1881,7 +1881,7 @@ final class _ClosingScope
 
 final class _ClosingScopeElement
     extends
-        LiteScopeElementBase<
+        LiteScopeCoreElement<
           _ClosingScope,
           _ClosingScopeElement,
           _ClosingScopeState

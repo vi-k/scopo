@@ -3,7 +3,7 @@ part of '../scope.dart';
 /// {@category AsyncScope}
 abstract base class AsyncScopeCore<
   W extends AsyncScopeCore<W, E>,
-  E extends AsyncScopeElementBase<W, E>
+  E extends AsyncScopeCoreElement<W, E>
 >
     extends ScopeModelCore<W, E, ScopeStateModel<AsyncScopeStatus>> {
   /// Creates the widget half of an asynchronous scope.
@@ -16,34 +16,34 @@ abstract base class AsyncScopeCore<
   /// The element of the nearest scope [W] above [context], or `null`.
   static E? maybeOf<
     W extends AsyncScopeCore<W, E>,
-    E extends AsyncScopeElementBase<W, E>
+    E extends AsyncScopeCoreElement<W, E>
   >(BuildContext context, {required bool listen}) =>
-      ScopeContext.maybeOf<W, E>(context, listen: listen);
+      ScopeInheritedContext.maybeOf<W, E>(context, listen: listen);
 
   /// The element of the nearest scope [W] above [context].
   ///
   /// Throws when there is none.
   static E
-  of<W extends AsyncScopeCore<W, E>, E extends AsyncScopeElementBase<W, E>>(
+  of<W extends AsyncScopeCore<W, E>, E extends AsyncScopeCoreElement<W, E>>(
     BuildContext context, {
     required bool listen,
-  }) => ScopeContext.of<W, E>(context, listen: listen);
+  }) => ScopeInheritedContext.of<W, E>(context, listen: listen);
 
   /// Subscribes to one value of the scope and returns it.
   static V select<
     W extends AsyncScopeCore<W, E>,
-    E extends AsyncScopeElementBase<W, E>,
+    E extends AsyncScopeCoreElement<W, E>,
     V extends Object?
   >(BuildContext context, V Function(E element) selector) =>
-      ScopeContext.select<W, E, V>(context, selector);
+      ScopeInheritedContext.select<W, E, V>(context, selector);
 }
 
 /// {@category AsyncScope}
-abstract base class AsyncScopeElementBase<
+abstract base class AsyncScopeCoreElement<
   W extends AsyncScopeCore<W, E>,
-  E extends AsyncScopeElementBase<W, E>
+  E extends AsyncScopeCoreElement<W, E>
 >
-    extends ScopeNotifierElementBase<W, E, ScopeStateModel<AsyncScopeStatus>>
+    extends ScopeNotifierCoreElement<W, E, ScopeStateModel<AsyncScopeStatus>>
     with AsyncScopeParent
     implements AsyncScopeContext<W> {
   /// The widget's name rather than the element's: it is the one that carries
@@ -606,7 +606,7 @@ abstract base class AsyncScopeElementBase<
   };
 
   /// Creates the element of an asynchronous scope.
-  AsyncScopeElementBase(super.widget);
+  AsyncScopeCoreElement(super.widget);
 
   /// Whether the asynchronous initialization has started.
   bool _didStartAsyncInit = false;
