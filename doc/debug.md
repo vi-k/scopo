@@ -775,6 +775,28 @@ The events themselves have not changed. An override marked `@override` names
 the old hook in a compile error; one written without `@override` keeps
 compiling and is no longer called, so search for the old names as well.
 
+A phase of the lifecycle is now called a status, which leaves `state` to
+Flutter's `State` and to the value of a model. The element of each family is
+named after its widget, the context after the inherited widget it reads, and
+the step counter after what it does:
+
+| 0.21.x | now |
+|---|---|
+| `AsyncScopeState` | `AsyncScopeStatus` |
+| `AsyncScopeContext.state` | `AsyncScopeContext.status` |
+| `buildOnState` | `buildOnStatus` |
+| `AsyncScopeError` | `AsyncScopeFailed` |
+| `ScopeDependencyState` | `ScopeDependencyStatus` |
+| `ScopeDependency.state` | `ScopeDependency.status` |
+| `stateToString()` | `statusToString()` |
+| `ScopeWidgetElementBase` and every other `…ElementBase` | `ScopeWidgetCoreElement`, `…CoreElement` |
+| `ScopeContext` | `ScopeInheritedContext` |
+| `ProgressIterator` | `ProgressTracker` |
+
+Each of these old names is a compile error, so the analyzer points at every
+place to change. The changelog lists the rest of the breaking changes of this
+release.
+
 ## Coming from 0.12.x
 
 **A dependency container no longer reports its disposal through `onProgress`.**

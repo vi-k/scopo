@@ -1,6 +1,6 @@
 # debug
 
-> Перевод `doc/debug.md` (blob `5dbc47cd0a95876509556c755499c8c46ed23d60`).
+> Перевод `doc/debug.md` (blob `34a27abb8663f04dbdb33454d66b6ea5dfdc9df8`).
 > Правится в том же коммите, что и оригинал; проверка — `sh docs/ru/check.sh`.
 
 Наблюдатель и глобальные настройки пакета. Всё на этой странице статическое
@@ -781,6 +781,28 @@ void main() {
 Сами события не изменились. Переопределение с `@override` назовёт старый хук
 в ошибке компиляции; написанное без `@override` продолжит компилироваться
 и перестанет вызываться, поэтому старые имена стоит поискать и вручную.
+
+Фаза жизненного цикла теперь называется статусом, а `state` остаётся за `State`
+из Flutter и за значением модели. Элемент каждого семейства назван по своему
+виджету, контекст — по наследуемому виджету, который он читает, а счётчик
+шагов — по тому, что он делает:
+
+| 0.21.x | теперь |
+|---|---|
+| `AsyncScopeState` | `AsyncScopeStatus` |
+| `AsyncScopeContext.state` | `AsyncScopeContext.status` |
+| `buildOnState` | `buildOnStatus` |
+| `AsyncScopeError` | `AsyncScopeFailed` |
+| `ScopeDependencyState` | `ScopeDependencyStatus` |
+| `ScopeDependency.state` | `ScopeDependency.status` |
+| `stateToString()` | `statusToString()` |
+| `ScopeWidgetElementBase` и все остальные `…ElementBase` | `ScopeWidgetCoreElement`, `…CoreElement` |
+| `ScopeContext` | `ScopeInheritedContext` |
+| `ProgressIterator` | `ProgressTracker` |
+
+Каждое из этих старых имён — ошибка компиляции, так что анализатор сам покажет
+все места, которые надо поменять. Остальные ломающие изменения этого выпуска
+перечислены в CHANGELOG.
 
 ## Если вы пришли с 0.12.x
 
