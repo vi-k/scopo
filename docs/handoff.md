@@ -44,6 +44,9 @@
      `_LiteScopeReadyElement`.
    - В3 — `ScopeContext` → `ScopeInheritedContext` (тройка базы с
      `ScopeInheritedWidget` и `ScopeInheritedElement`).
+   - В4 — оставить `create`/`dispose` полями конструктора: два режима
+     владения (`create:` и `.value`) на одном классе, хуки в `.value` были бы
+     бессмысленны.
 
    Перед этим Б9 закрыта и раздел о причинах отмены написан, влито в `main`,
    не отправлено, по ответу владельца на три предложения («1 ок, 2
