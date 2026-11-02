@@ -30,6 +30,8 @@
      остаётся приватным классом при `_AsyncScopeNotifier`.
    - Б7 — оставить `ScopeCore*` и `AsyncControllerScopeCore*` как есть:
      правило «у каждого семейства есть Core» дороже пяти имён.
+   - Б8 — удалить `CompareUtils` и `ListenableView`; дартдок
+     `ListenableSelector.shouldNotify` советует `(a, b) => !identical(a, b)`.
 
    Перед этим Б9 закрыта и раздел о причинах отмены написан, влито в `main`,
    не отправлено, по ответу владельца на три предложения («1 ок, 2
