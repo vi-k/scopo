@@ -6,6 +6,7 @@ import 'package:scopo/scopo.dart';
 
 import 'utils/leaks.dart';
 import 'utils/observer.dart';
+import 'utils/run_guarded.dart';
 import 'utils/settle.dart';
 
 void main() {
@@ -71,7 +72,7 @@ void main() {
     // the spot instead of parking the details), so the mount runs inside a
     // guarded child zone that catches it first.
     final errors = <Object>[];
-    await runZonedGuarded(() async {
+    await runGuarded(() async {
       await tester.pumpWidget(
         const Directionality(
           textDirection: TextDirection.ltr,
@@ -173,7 +174,7 @@ void main() {
     'a key changed after a failed lookup is not reported as held',
     (tester) async {
       final errors = <Object>[];
-      await runZonedGuarded(() async {
+      await runGuarded(() async {
         await tester.pumpWidget(
           const Directionality(
             textDirection: TextDirection.ltr,
@@ -965,7 +966,7 @@ void main() {
     // Nothing inside that zone may throw, so every `expect` is made once it
     // is gone.
     final errors = <Object>[];
-    await runZonedGuarded(() async {
+    await runGuarded(() async {
       await tester.pumpWidget(
         build(holder: true, waiter: false, successor: false),
       );

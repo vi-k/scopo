@@ -223,8 +223,19 @@ void main() {
 
       await runScopeInit((ctx) => dependencies.init(null, ctx));
       observer.events.clear();
+
+      // The failure is reported to `FlutterError` as well; caught here, it is
+      // checked instead of being printed over the test output.
+      final reported = <Object>[];
+      final previous = FlutterError.onError;
+      FlutterError.onError = (details) => reported.add(details.exception);
+      addTearDown(() => FlutterError.onError = previous);
+
       await dependencies.dispose();
 
+      FlutterError.onError = previous;
+
+      expect(reported.single, isA<ScopeDependencyException>());
       expect(observer.events, [
         'dispose _FailingDisposer',
         'disposal step _FailingDisposer storage/cache',

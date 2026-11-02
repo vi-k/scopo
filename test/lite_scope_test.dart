@@ -6,6 +6,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:scopo/scopo.dart';
 
 import 'utils/leaks.dart';
+import 'utils/run_guarded.dart';
 import 'utils/settle.dart';
 
 void main() {
@@ -988,7 +989,7 @@ void main() {
         var isClosed = false;
         late _CloseScopeElement element;
 
-        await runZonedGuarded(() async {
+        await runGuarded(() async {
           await tester.pumpWidget(
             _app(
               _CloseScope(
@@ -1051,7 +1052,7 @@ void main() {
           var isClosed = false;
           late _CloseScopeElement element;
 
-          await runZonedGuarded(() async {
+          await runGuarded(() async {
             await tester.pumpWidget(
               _app(
                 _CloseScope(

@@ -5,6 +5,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:scopo/scopo.dart';
 
 import 'utils/observer.dart';
+import 'utils/run_guarded.dart';
 import 'utils/settle.dart';
 
 /// Cleanup is a promise, and a hook the user wrote is not part of it.
@@ -427,7 +428,7 @@ void main() {
       addTearDown(() => FlutterError.onError = previousOnError);
       Iterable<Object> errors() => reported.map((details) => details.exception);
 
-      await runZonedGuarded(
+      await runGuarded(
         () async {
           await tester.pumpWidget(
             _wrap(
@@ -606,7 +607,7 @@ void main() {
 
       // See the `onWaitForChildrenTimeout` test: a disposal that re-throws
       // does so on a discarded future.
-      await runZonedGuarded(() async {
+      await runGuarded(() async {
         await tester.pumpWidget(build(holder: true, successor: false));
         await tester.pumpAndSettle();
 
@@ -835,7 +836,7 @@ void main() {
 
       // See the `onWaitForChildrenTimeout` test: a disposal that re-throws
       // does so on a discarded future.
-      await runZonedGuarded(() async {
+      await runGuarded(() async {
         await tester.pumpWidget(
           _wrap(_DepScope(log: log, failOnStateDispose: true)),
         );
@@ -991,7 +992,7 @@ void main() {
         FlutterError.onError = (_) {};
         addTearDown(() => FlutterError.onError = previousOnError);
 
-        await runZonedGuarded(() async {
+        await runGuarded(() async {
           await tester.pumpWidget(
             _wrap(
               _PlainDepScope(

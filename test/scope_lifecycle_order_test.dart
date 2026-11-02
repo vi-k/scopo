@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:scopo/scopo.dart';
 
+import 'utils/run_guarded.dart';
 import 'utils/settle.dart';
 
 /// The order of the hooks a scope offers, on both ways out and in.
@@ -170,7 +171,7 @@ void main() {
       _Deps.failing = true;
       addTearDown(() => _Deps.failing = false);
 
-      await runZonedGuarded(() async {
+      await runGuarded(() async {
         await tester.pumpWidget(const _DepHost());
         await tester.pumpAndSettle();
         tester.takeException();
@@ -199,7 +200,7 @@ void main() {
         _DepState.failing = true;
         addTearDown(() => _DepState.failing = false);
 
-        await runZonedGuarded(() async {
+        await runGuarded(() async {
           await tester.pumpWidget(const _DepHost());
           await tester.pumpAndSettle();
           tester.takeException();

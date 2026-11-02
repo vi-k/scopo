@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:scopo/scopo.dart';
 
+import 'utils/run_guarded.dart';
 import 'utils/settle.dart';
 
 void main() {
@@ -529,7 +530,7 @@ void main() {
         // failing, so the body only ever collects, and every `expect` is made
         // once the zone is gone.
         final errors = <Object>[];
-        await runZonedGuarded(() async {
+        await runGuarded(() async {
           await tester.pumpWidget(
             const Directionality(
               textDirection: TextDirection.ltr,
@@ -610,7 +611,7 @@ void main() {
         // uncaught error of the zone the mount ran in, and nothing inside the
         // zone may throw.
         final errors = <Object>[];
-        await runZonedGuarded(() async {
+        await runGuarded(() async {
           await tester.pumpWidget(
             const Directionality(
               textDirection: TextDirection.ltr,
@@ -694,7 +695,7 @@ void main() {
       (tester) async {
         final errors = <Object>[];
 
-        await runZonedGuarded(() async {
+        await runGuarded(() async {
           await tester.pumpWidget(
             Directionality(
               textDirection: TextDirection.ltr,
@@ -954,7 +955,7 @@ void main() {
         // about it: nothing inside may throw, every expectation is made once
         // the zone is gone.
         final errors = <Object>[];
-        await runZonedGuarded(() async {
+        await runGuarded(() async {
           await tester.pumpWidget(
             const Directionality(
               textDirection: TextDirection.ltr,

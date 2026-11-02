@@ -1,8 +1,8 @@
-import 'dart:async';
-
 import 'package:flutter/foundation.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:scopo/scopo.dart';
+
+import 'run_guarded.dart' as guarded;
 
 /// Which second channel an error reached, beside the observer.
 enum SeenIn { flutterError, zone }
@@ -51,30 +51,12 @@ final class RouteAudit {
   void zoneError(Object error, StackTrace stackTrace) =>
       _seen.add((SeenIn.zone, error));
 
-  /// Runs [body] in a guarded zone whose uncaught errors go to [zoneError].
+  /// Runs [body] through [guarded.runGuarded], with [zoneError] as the guard.
   ///
-  /// The returned future completes when [body] does, and with its error if it
-  /// threw. `await runZonedGuarded(...)` would never come back from a body
-  /// that threw -- the error goes to the guard and the awaited future stays
-  /// open -- so the body is waited for through a completer of the caller's
-  /// zone instead. Nothing inside [body] should `expect`: a failure there is
-  /// an error of the guarded zone like any other.
-  Future<void> runGuarded(Future<void> Function() body) {
-    final done = Completer<void>();
-    unawaited(
-      runZonedGuarded(() async {
-        try {
-          await body();
-          done.complete();
-          // ignore: avoid_catching_errors
-        } on Object catch (error, stackTrace) {
-          done.completeError(error, stackTrace);
-        }
-      }, zoneError),
-    );
-
-    return done.future;
-  }
+  /// Nothing inside [body] should `expect`: a failure there is an error of
+  /// the guarded zone like any other.
+  Future<void> runGuarded(Future<void> Function() body) =>
+      guarded.runGuarded(body, zoneError);
 
   /// The errors that reached [channel], in order.
   List<Object> seenIn(SeenIn channel) => [

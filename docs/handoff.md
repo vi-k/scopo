@@ -375,9 +375,21 @@ Python-инструментов, `dart-format` (0 changed) и манифест �
 и слова владельца. Заявка потребителя от 2026-09-07 закрыта намеренно частично;
 форма A (хуки принимают ошибку) остаётся возможным продолжением:
 `docs/records/2026-09/2026-09-07-timeout-diagnostics-design.md`. Мелкое,
-отложено: тесты местами ещё оборачивают в `await runZonedGuarded`;
-`test/scope_step_entry_test.dart:219` шумит в консоль; в ядре нет теста на один
-объект ошибки дважды с разными вердиктами фильтра.
+не в scopo: в ядре нет теста на один объект ошибки дважды с разными вердиктами
+фильтра `Job.isCancellationError`. Ядро живёт в монорепозитории `solo`
+(`packages/async_job`), и делать это — в сессии того репозитория, по его
+`AGENTS.md`; 2026-11-02 проверено, что в `test/cancellation_error_test.dart`
+ядра такого теста по-прежнему нет.
+
+Две мелочи scopo закрыты 2026-11-02 по слову «разбери оставшиеся мелочи».
+`await runZonedGuarded` в тестах заменён на `runGuarded`
+из `test/utils/run_guarded.dart`: тело, которое бросило, валит тест сразу,
+а не вешает его до таймаута; ошибки отброшенных future по-прежнему идут
+в обработчик зоны. На хелпере стоит и `ErrorRouteAudit.runGuarded`, держит его
+`test/run_guarded_test.dart` (нагруженность проверена: со старой формой первый
+тест виснет до таймаута). Тест «a release that throws…»
+в `test/scope_step_entry_test.dart` перехватывает отчёт `FlutterError`
+и проверяет его, а не печатает в консоль.
 
 Перед публикацией читать `AGENTS.md` §5 целиком. Авторизация macOS —
 `~/Library/Application Support/dart/pub-credentials.json`; `pub logout` удаляет
