@@ -131,12 +131,12 @@
 
 ## 0.21.0
 
-* **Breaking:** the floor is Dart 3.10.0 and Flutter 3.38.1, up from Dart
-  3.6.0 and Flutter 3.27.0, and `async_job` is ^0.6.0. That release of the
-  kernel changes no API: it raises its own floor to Dart 3.10.0, which this
-  package can only follow. Flutter 3.38.1 is the first release that carries a
-  stable Dart 3.10.0: the Dart of 3.38.0 is a prerelease, which `^3.10.0` does
-  not admit. The dev dependencies move to the versions that 3.38.1 pins:
+* **Breaking:** the floor is Dart 3.10.0 and Flutter 3.38.1, up from Dart 3.6.0
+  and Flutter 3.27.0, and `async_job` is ^0.6.0. That release of the kernel
+  changes no API: it raises its own floor to Dart 3.10.0, which this package
+  can only follow. Flutter 3.38.1 is the first release that carries a stable
+  Dart 3.10.0: the Dart of 3.38.0 is a prerelease, which `^3.10.0` does not
+  admit. The dev dependencies move to the versions that 3.38.1 pins:
   `fake_async` ^1.3.3 and `leak_tracker_flutter_testing` ^3.0.10. The API of
   `scopo` is unchanged.
 
@@ -193,21 +193,20 @@
   scopo's answer now leaves out a failure the observer was told goes nowhere
   else. An object the observer was told with `ScopeErrorRoute.observer` that is
   thrown again later — by `ctx.unattended` work, say, or as a `const` exception
-  a cleanup throws, or by the body that reads the child after its cancellation
-  — still reaches `FlutterError`, and the observer is not told of it again:
-  identity cannot tell the same failure from a second one, and a duplicate
-  report is better than a lost one. Any observer counts, an empty
+  a cleanup throws, or by the body that reads the child after its
+  cancellation — still reaches `FlutterError`, and the observer is not told of
+  it again: identity cannot tell the same failure from a second one, and a
+  duplicate report is better than a lost one. Any observer counts, an empty
   `ScopeCompositeObserver` included, but one whose `onError` throws has heard
   nothing, and the failure is reported to `FlutterError` — a
   `ScopeCompositeObserver` with an observer inside it that throws included.
-  Without an observer the failure is
-  reported to `FlutterError` as before: nobody else has heard it. The other
-  errors of the initialization job are reported as before, and
-  their route follows what the kernel says it does next: those it answers for —
-  of `ctx.onDispose` and the rest of its cleanup stack, of `ctx.onCancel` and
-  `whenFinished` callbacks, of late `ctx.abandonable` actions and
-  `ctx.unattended` work, and a failure of the body after its cancellation — say
-  `ScopeErrorRoute.flutterError`.
+  Without an observer the failure is reported to `FlutterError` as before:
+  nobody else has heard it. The other errors of the initialization job are
+  reported as before, and their route follows what the kernel says it does
+  next: those it answers for — of `ctx.onDispose` and the rest of its cleanup
+  stack, of `ctx.onCancel` and `whenFinished` callbacks, of late
+  `ctx.abandonable` actions and `ctx.unattended` work, and a failure of the
+  body after its cancellation — say `ScopeErrorRoute.flutterError`.
 * **Behaviour change:** `ScopeCompositeObserver` no longer keeps to itself what
   an observer inside it throws. It still asks every observer, then throws the
   first failure on, the way a single observer that throws does: the package
@@ -244,8 +243,8 @@
   `CompositeListenableSubscription`. They are extensions on the framework's own
   `Listenable`, and a file that also imported another package with a `listen`
   and a `select` there — `flutter_solo` has both — found `listen` ambiguous and
-  its `select` silently replaced by this one, the more specific of the two; only
-  a `hide` on the `scopo` import got the code to compile. Add
+  its `select` silently replaced by this one, the more specific of the two;
+  only a `hide` on the `scopo` import got the code to compile. Add
   `import 'package:scopo/listenable.dart';` where they are used.
   `ListenableSelector` stays in the main import.
 
@@ -269,9 +268,9 @@
   shows that form.
 * **Breaking:** the owning constructors of `ScopeModel`, `ScopeNotifier` and
   their `Base` classes take a non-nullable `create`. `create: null`, or a
-  nullable factory, compiled and then failed while the scope was built, on
-  the assert `widget.create != null`; it is now a compile-time error. The
-  field stays nullable for the `.value` constructors.
+  nullable factory, compiled and then failed while the scope was built, on the
+  assert `widget.create != null`; it is now a compile-time error. The field
+  stays nullable for the `.value` constructors.
 * **Breaking:** `AsyncScopeContext` declares `close()`, so a class that
   implements it by hand, a mock included, has to add one. `AsyncScopeBase`,
   `AsyncDataScopeBase` and `AsyncControllerScopeBase` gain `buildOnClosing`: a
@@ -323,25 +322,25 @@
   the scope for good. A scope widget whose rebuild threw stops reusing the
   child it built before the failure, so the next notification replaces the
   `ErrorWidget` instead of leaving it on screen. And `ScopeNotifier.value`
-  moves its listener to the new model before the subtree is built, so a
-  builder that changes the new model during that rebuild is heard.
-* **Fix:** a second `dispose()` after a failed one reaches what the first
-  left held. A group whose disposal failed now still reports
-  `disposalRequired`, so a parent group walks into it again instead of
-  skipping it, and each attempt decides afresh whether something may still be
-  held: a retry that released everything lets the container be initialized
-  again, where it used to keep refusing with `has not been disposed of`.
+  moves its listener to the new model before the subtree is built, so a builder
+  that changes the new model during that rebuild is heard.
+* **Fix:** a second `dispose()` after a failed one reaches what the first left
+  held. A group whose disposal failed now still reports `disposalRequired`, so
+  a parent group walks into it again instead of skipping it, and each attempt
+  decides afresh whether something may still be held: a retry that released
+  everything lets the container be initialized again, where it used to keep
+  refusing with `has not been disposed of`.
 * **Fix:** the `LiteScope` recipe that holds the branch back with
-  `isInitialized` now reaches the ready screen: completion notifies the
-  scope's dependents but does not rebuild the state's own `build`, so the
-  recipe calls `setState` from `onInitialized()`. The topics also stop
-  contradicting the code: a late result of an abandoned initialization is
-  handed to `disposeScope` even after the teardown has finished, the first
-  teardown failure of a scope taken off the tree goes to
-  `FlutterError.reportError`, `ScopeObserver` is an ordinary class rather than
-  a `base class`, and a controller under `controllerDep` keeps `mounted` true
-  until its initializer finishes, so it checks the `ScopeInitContext` instead.
-  The README now credits `get_it` with managing ownership over time.
+  `isInitialized` now reaches the ready screen: completion notifies the scope's
+  dependents but does not rebuild the state's own `build`, so the recipe calls
+  `setState` from `onInitialized()`. The topics also stop contradicting the
+  code: a late result of an abandoned initialization is handed to
+  `disposeScope` even after the teardown has finished, the first teardown
+  failure of a scope taken off the tree goes to `FlutterError.reportError`,
+  `ScopeObserver` is an ordinary class rather than a `base class`, and a
+  controller under `controllerDep` keeps `mounted` true until its initializer
+  finishes, so it checks the `ScopeInitContext` instead. The README now credits
+  `get_it` with managing ownership over time.
 * **Fix:** the texts about cancelling an initialization stop describing the
   stream it used to be. The dartdoc of `initCancellationTimeout`,
   `ScopeConfig.defaultInitCancellationTimeout` and `ScopeTimeout`, the debug
@@ -355,16 +354,15 @@
   cancellation of an initialization and a scope's own disposal are each
   bounded, three seconds by default; on expiry the scope goes on, and the
   previous owner, or a child, may still be releasing the resource. The
-  `scopeKey` section shows the four `ScopeConfig` defaults to set to `null`
-  for unbounded waits, and what that costs: a hung disposal then stops the
-  teardown for good.
+  `scopeKey` section shows the four `ScopeConfig` defaults to set to `null` for
+  unbounded waits, and what that costs: a hung disposal then stops the teardown
+  for good.
 * **Fix:** `ScopeObserver.onError` hears the state's own hooks. A failure of
   `initStateAsync` or `onInitialized` in a `ScopeState` or a `LiteScopeState`
   arrives once under `ScopePhase.initialization`, and a failure of the state's
   `build` once under `ScopePhase.build`, with the original error and stack
-  trace. They still reach the zone or Flutter as before, and the teardown
-  still runs. The debug topic names the Flutter hooks the observer does not
-  hear.
+  trace. They still reach the zone or Flutter as before, and the teardown still
+  runs. The debug topic names the Flutter hooks the observer does not hear.
 * **Fix:** the `AsyncDataScope` topic shows `return await Database.open();`
   where its Dart block held prose, and says that `ctx.progress` takes an
   `Object` while the builders receive `Object?`.
@@ -433,10 +431,10 @@
   subtree used to vanish on the next ordinary rebuild of the scope that was
   never closed; it now stays mounted, and a later valid `close()` installs a
   fresh barrier and releases the resources once.
-* **Fix:** in debug builds, an `AsyncControllerScope` that rejects a
-  controller already used by another scope no longer unmounts that controller
-  when the rejected scope is closed or leaves the tree. The controller stays
-  with its original owner until that scope is torn down.
+* **Fix:** in debug builds, an `AsyncControllerScope` that rejects a controller
+  already used by another scope no longer unmounts that controller when the
+  rejected scope is closed or leaves the tree. The controller stays with its
+  original owner until that scope is torn down.
 * **Fix:** the `Scope` and debug topics tell the failures of the scope's own
   teardown steps, which `close()` completes with, from the failures inside a
   `ScopeAutoDependencies` container: the container reports them through one
@@ -458,18 +456,18 @@
 ## 0.16.0
 
 * **Breaking:** `canReleaseAfterCancellation` is gone. It was the guard that
-  asked whether there was still a scope to release a late value with, and
-  after the fix below the answer is always yes. A family of your own that
-  overrode or read it drops the question along with it.
+  asked whether there was still a scope to release a late value with, and after
+  the fix below the answer is always yes. A family of your own that overrode or
+  read it drops the question along with it.
 * **Fix:** what an initialization built after the teardown had given up on it
   is released, however late it arrives. A body parked on a future that never
   completes cannot be cancelled at all, so the teardown waits out
   `initCancellationTimeout` — three seconds by default — and finishes without
   it. The element used to give the widget back at that moment, and every
   release a family has is a hook read off the widget: whatever the body opened
-  afterwards was passed over in silence, with nothing left to release it and
-  no word about it. The element now keeps the widget for as long as the
-  abandoned initialization runs and lets go of it the moment that job ends, so
+  afterwards was passed over in silence, with nothing left to release it and no
+  word about it. The element now keeps the widget for as long as the abandoned
+  initialization runs and lets go of it the moment that job ends, so
   `disposeScope`, `disposeData` and the dependency container's `onUnmount` and
   `dispose` all run on that path as they do on every other. A release that
   fails there reaches the observer and `FlutterError.reportError`, there being
@@ -501,10 +499,9 @@
   context the callback is given. What still counts as a build outside a `build`
   is a builder that re-runs whole — `LayoutBuilder`, `SliverLayoutBuilder` and
   the delegate of a `SliverPersistentHeader`. That also closes the two hooks
-  which used to slip through under a layout callback,
-  `didChangeDependencies` and `didUpdateWidget`. None of it reaches a release
-  build: every flag the check stands on is Flutter's own debug state, so the
-  mistake is silent there.
+  which used to slip through under a layout callback, `didChangeDependencies`
+  and `didUpdateWidget`. None of it reaches a release build: every flag the
+  check stands on is Flutter's own debug state, so the mistake is silent there.
 * **Fix:** a dependency held over from a previous run is refused rather than
   skipped. A `ScopeDependency` goes through its states once, and the container
   promised as much — but a group walked only the children that still needed

@@ -171,8 +171,8 @@ re-established while the dependent builds, as they are anywhere in Flutter, so
 the pair a scope compares against is the one from the dependent's latest build,
 not from its first.
 
-**A subscription may only be taken from a build**, and an assertion says so —
-a `FlutterError` whose summary is that one line, with the explanation and the
+**A subscription may only be taken from a build**, and an assertion says so — a
+`FlutterError` whose summary is that one line, with the explanation and the
 advice under it and the offending dependent named at the bottom, the way the
 framework reports a mistimed lookup of its own. What a dependent asked for is
 remembered per build, and the boundary between one build and the next is taken
@@ -269,13 +269,14 @@ around them. A `watch` taken there is not refused.
 **`context.select` is guarded by the dependent**, the way the rule above is:
 the assertion asks whether the calling element is in its own `build`, so a
 `select` from `didChangeDependencies` is refused there as it is here. The
-exception for a layout callback is written into the assertion as a widget type
-— a `LayoutBuilder` is let through by name. That covers `OrientationBuilder`,
-which is a `StatelessWidget` wrapped around a `LayoutBuilder` and hands its
-builder that element's context; it does not cover `SliverLayoutBuilder`, which
-is the other subclass of `ConstrainedLayoutBuilder` and is refused by a check
-written against the first. The rule here names the shared superclass instead,
-so both go through, and a persistent header delegate with them.
+exception for a layout callback is written into the assertion as a widget
+type — a `LayoutBuilder` is let through by name. That covers
+`OrientationBuilder`, which is a `StatelessWidget` wrapped around a
+`LayoutBuilder` and hands its builder that element's context; it does not cover
+`SliverLayoutBuilder`, which is the other subclass of
+`ConstrainedLayoutBuilder` and is refused by a check written against the first.
+The rule here names the shared superclass instead, so both go through, and a
+persistent header delegate with them.
 
 **The item builder of a lazy list is refused outright**, by an assertion of its
 own whose advice is to wrap the item in a `Builder` or pull it out into a
@@ -286,8 +287,8 @@ a change rebuilds every item the list is holding rather than the one that
 cares, and that is the cost provider names. Here it is not only a cost. The
 items are built across frames, and the frame is the boundary this package
 resets on, so the items a scroll brings into view wipe what the items above
-them had asked for — and those items are then subscribed to nothing at all.
-A `Builder` around the item settles both at once.
+them had asked for — and those items are then subscribed to nothing at all. A
+`Builder` around the item settles both at once.
 
 **What a dependent asked for is cleared on a microtask, not on a build.**
 provider keeps the selectors of one dependent in a set and empties it at the

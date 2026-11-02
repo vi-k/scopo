@@ -25,10 +25,9 @@ Both are extensions on the framework's own `Listenable`, where another package
 is free to put a `listen` and a `select` of its own. Exported with the scopes,
 they met those in every file that imported both: `listen` was ambiguous, and
 the other package's `select` was quietly replaced by this one — the more
-specific of the two — so the call failed with errors about the wrong
-signature. Kept apart, they arrive only in a file that asks for them.
-`ListenableSelector` below is a widget, collides with nothing, and stays in the
-main import.
+specific of the two — so the call failed with errors about the wrong signature.
+Kept apart, they arrive only in a file that asks for them. `ListenableSelector`
+below is a widget, collides with nothing, and stays in the main import.
 
 `addListener` and `removeListener` require keeping the callback around, which
 is why a closure cannot be unsubscribed without storing it somewhere. `listen`
