@@ -1051,3 +1051,41 @@ which is where to read them alongside the source of a version you have pinned.
 | [ScopeWidget](https://pub.dev/documentation/scopo/latest/topics/ScopeWidget-topic.html) | `doc/scope_widget.md` | the widget/element pair every family extends |
 | [debug](https://pub.dev/documentation/scopo/latest/topics/debug-topic.html) | `doc/debug.md` | the observer, timeouts, and the test setup |
 | [utils](https://pub.dev/documentation/scopo/latest/topics/utils-topic.html) | `doc/utils.md` | the helpers that come with the package |
+
+## Versions
+
+| A change | Comes in |
+| --- | --- |
+| A fix that keeps the public API | a patch release, such as `1.0.1` |
+| A new class, member or optional parameter | a minor release, such as `1.1.0` |
+| A removed or renamed member, a changed signature or documented behaviour | a major release, such as `2.0.0` |
+| A new value of an enum or a new subclass of a sealed class | a major release, such as `2.0.0` |
+
+From 1.0.0 on, scopo follows semantic versioning: the constraint `^1.0.0` takes
+every minor and patch release, and they keep code written against 1.0.0
+working, but for the cases below. The public API is what
+`package:scopo/scopo.dart` and `package:scopo/listenable.dart` export, the
+names re-exported from `async_job` among them; the text of error messages and
+of debug output, such as the lines `ScopePrintObserver` prints, is not part of
+it. A member that goes away is first marked `@Deprecated` in a minor release,
+with the name to use instead, and is removed in the next major one.
+
+A minor release can add a member to a class you extend, such as a hook of
+`ScopeObserver`, and a member of the same name in your own code then stops
+compiling. It can add a member to an interface you implement, such as
+`ScopeDependency`, and your implementation then stops compiling too. The
+changelog of such a release names the members it adds.
+
+A `switch` over an `AsyncScopeStatus`, a `ScopeDependencyStatus`, a
+`ScopePhase` or a `ScopeErrorRoute` can be exhaustive, and a new subclass or
+value would make it stop compiling: these come only in a major release.
+
+`Cancelled`, `Outcome`, `CancelReason` and the other names scopo re-exports
+come from [async_job](https://pub.dev/packages/async_job), the package that
+runs a scope's initialization, and keep the promise of its own versions.
+`CancelReason` is open, and a minor release of `async_job` can add a reason, so
+a `switch` over reasons keeps a default case. scopo holds `async_job` to one
+minor version, such as `>=1.0.0 <1.1.0`, because it builds on a protocol of
+that package that can change in a minor release. Each minor release of
+`async_job` comes as a minor release of scopo, and its changelog names the
+members `async_job` added to the names scopo re-exports.

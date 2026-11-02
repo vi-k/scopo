@@ -1,5 +1,9 @@
-## 0.22.0
+## 1.0.0
 
+* From 1.0.0 on, scopo follows semantic versioning. A new section of the
+  README, Versions, says which change comes in which release, what counts as
+  the public API, and how a release of `async_job` reaches the names scopo
+  re-exports.
 * **Breaking:** five names the API reference listed but nothing outside the
   package could use are gone. `AsyncScopeInitState` held `AsyncScopeProgress`
   and `AsyncScopeReady` and nothing else; both extend `AsyncScopeStatus`
