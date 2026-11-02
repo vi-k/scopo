@@ -85,10 +85,10 @@ packages:
     dependency: "direct main"
     description:
       name: depend
-      sha256: "5bbc8d6cc36cec223be9c019de681fe881057b8afe2899b16f61bbcd66cb7df5"
+      sha256: "76921eb4ef2350c9e842e101e7269c00f2fd2ff933f94b372c9c8ff1aee489e9"
       url: "https://pub.dev"
     source: hosted
-    version: "5.1.5"
+    version: "5.2.0"
   fake_async:
     dependency: transitive
     description:
@@ -314,4 +314,4 @@ packages:
     version: "2.5.0"
 sdks:
   dart: ">=3.12.0 <4.0.0"
-  flutter: ">=3.38.1"
+  flutter: ">=3.41.0"

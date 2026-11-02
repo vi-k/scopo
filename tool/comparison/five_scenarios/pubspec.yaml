@@ -11,7 +11,7 @@ dependencies:
   flutter_riverpod: 3.4.3
   get_it: 9.3.0
   watch_it: 2.5.0
-  depend: 5.1.5
+  depend: 5.2.0
 dev_dependencies:
   flutter_test:
     sdk: flutter
