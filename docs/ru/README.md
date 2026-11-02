@@ -738,7 +738,8 @@ mkdir -p "$DIR"
 cp "$(find ~/.pub-cache/hosted/pub.dev -maxdepth 1 -name 'scopo-*' | sort -V | tail -1)"/ide/scopo-live-templates.xml "$DIR/scopo.xml"
 ```
 
-Группа появится в **Settings → Editor → Live Templates**.
+Группа появится в **Settings**, раздел **Editor**, подраздел **Live
+Templates**.
 
 Все одиннадцать перечислены
 в [`ide/README.md`](https://github.com/vi-k/scopo/blob/main/ide/README.md),

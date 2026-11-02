@@ -46,8 +46,8 @@ cp "$(find ~/.pub-cache/hosted/pub.dev -maxdepth 1 -name 'scopo-*' | sort -V | t
 ```
 
 Имя файла обязано совпадать с группой: XML объявляет `scopo`, значит файл —
-`scopo.xml`. Перезапусти IDE, и шаблоны появятся в **Settings → Editor → Live
-Templates** группой `scopo`.
+`scopo.xml`. Перезапусти IDE, и шаблоны появятся группой `scopo`
+в **Settings**, раздел **Editor**, подраздел **Live Templates**.
 
 ## Сами шаблоны
 

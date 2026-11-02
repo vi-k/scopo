@@ -45,9 +45,9 @@ flutter run
 
 ## Что попробовать
 
-- Передайте `ScopePrintObserver` в `main()` параметр `trace: true`, чтобы
-  видеть механику под жизненным циклом — очередь `scopeKey`, инициализацию
-  и разбор, — а не только вехи.
+- Передайте `ScopePrintObserver` в `main()` параметр `trace: true`, чтобы кроме
+  вех видеть механику под жизненным циклом — очередь `scopeKey`, инициализацию
+  и разбор.
 - Заставьте `AppDependencies.init` бросить исключение после первого
   `ctx.progress`, чтобы попасть на ветку ошибки.
 - Поставьте `ScopeConfig.pauseAfterInitializationEnabled = false`, чтобы
