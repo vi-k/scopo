@@ -40,6 +40,9 @@
   `ScopeNotifier`, `AsyncScope`, `AsyncDataScope`, `AsyncControllerScope`,
   `LiteScope` and `Scope`. `ScopeContext` is `ScopeInheritedContext`, beside
   the `ScopeInheritedWidget` and `ScopeInheritedElement` it goes with.
+* **Breaking:** `ProgressIterator` is `ProgressTracker`. It never was an
+  `Iterator`: it counts the steps of an initialization and hands back a
+  `Progress` for each.
 * **Breaking:** six names now say what they do.
   `AsyncScopeContext.isInitialized` is `isReady`: it is true once the scope is
   `AsyncScopeReady`. The state of a `LiteScope` or a `Scope` keeps its own

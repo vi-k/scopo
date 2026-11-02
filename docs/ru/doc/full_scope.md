@@ -1,6 +1,6 @@
 # Scope
 
-> Перевод `doc/full_scope.md` (blob `c397128986052ee3f48d0a8db797c1f506db822b`).
+> Перевод `doc/full_scope.md` (blob `1af816f4fa6f9798592e33f5ddfba85f3b6d1757`).
 > Правится в том же коммите, что и оригинал; проверка — `sh docs/ru/check.sh`.
 
 `Scope` — основной строительный блок пакета: виджет, который владеет
@@ -229,7 +229,7 @@ Future<HomeDependencies> initDependencies(
 Каждый шаг, о котором сообщает контейнер, несёт
 `ScopeAutoDependenciesProgress`: `path` — путь только что инициализированной
 зависимости, `name` — последний сегмент этого пути, то есть имя, с которым
-зависимость объявлена, плюс счётчик шагов `ProgressIterator` (`number`, `total`
+зависимость объявлена, плюс счётчик шагов `ProgressTracker` (`number`, `total`
 и `value` как доля от 0 до 1). Именно этот объект получает `buildOnProgress`,
 так что прогресс-бару с подписью больше ничего не нужно:
 

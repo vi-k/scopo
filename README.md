@@ -1002,7 +1002,7 @@ side.
 
 ## Also in the box
 
-- `ProgressIterator` — step counting (`1/3`, `2/3`, …) for initialization
+- `ProgressTracker` — step counting (`1/3`, `2/3`, …) for initialization
   progress.
 - `ScreenshotReplacer` — renders a subtree once, then replaces it with the
   captured image; used to keep the last frame while a scope is closing. A

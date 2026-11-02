@@ -10,7 +10,7 @@ tends to want the same tools; nothing here needs a scope above it.
 | `ListenableSelectExtension.select` | a listener called only when a selected value changes; from `package:scopo/listenable.dart` |
 | `ListenableSelector` | the widget form of that selector |
 | `StateAsNotifier` | a mixin that makes a `State` listenable |
-| `ProgressIterator`, `Progress` | step counting for an initialization |
+| `ProgressTracker`, `Progress` | step counting for an initialization |
 | `ScreenshotReplacer` | freezes a subtree into the image it last painted |
 | `IsBuildingExtension` | is a build running, and how to wait for the end of it |
 
@@ -78,17 +78,17 @@ itself becomes a `Listenable`, with a `notifyListeners()` for its own use. The
 `ChangeNotifier` behind it is created on the first listener and disposed of
 with the state, so a state nobody listens to costs nothing.
 
-## ProgressIterator
+## ProgressTracker
 
 Step counting for an initialization that knows how many steps it has:
 
 ```dart
-final progress = ProgressIterator(3);
+final tracker = ProgressTracker(3);
 
-progress.nextStep(); // 1/3
-progress.nextStep(); // 2/3
-progress.addSteps(1); // 3/3
-progress.isCompleted; // true
+tracker.nextStep(); // 1/3
+tracker.nextStep(); // 2/3
+tracker.addSteps(1); // 3/3
+tracker.isCompleted; // true
 ```
 
 `Progress` is the value it produces: `number`, `total`, `value` as a fraction
@@ -151,5 +151,5 @@ neither belongs to a frame nor to this package, in a release build.
 | topic | what it covers |
 | --- | --- |
 | `ScopeNotifier` | the scope form of `select`, and the state models |
-| `Scope` | `ProgressIterator` in the dependency container, and `close()` |
+| `Scope` | `ProgressTracker` in the dependency container, and `close()` |
 | `LiteScope` | `close()` and the screenshot in their own family |

@@ -378,7 +378,7 @@ Flutter при удалении поддерева; это отдельный м
 (`lib/src/scope/full_scope/scope_dependencies.dart`). `ScopeAutoDependencies`
 в `lib/src/scope/full_scope/scope_auto_dependency/scope_auto_dependency.dart`
 строит `root` через `buildDependencies`, запускает его `init` и публикует
-`ScopeAutoDependenciesProgress` с путём и шагом `ProgressIterator`.
+`ScopeAutoDependenciesProgress` с путём и шагом `ProgressTracker`.
 
 - `dep` создаёт лист. `ScopeDependencyHandle` хранит `unmount` и `dispose`,
   которые регистрируются при захвате ресурса, до следующих ожиданий.
@@ -466,7 +466,7 @@ Flutter при удалении поддерева; это отдельный м
 
 | Файл относительно каталога утилит | Содержимое |
 | --- | --- |
-| `progress_iterator/progress_iterator.dart` | `ProgressIterator`, `Progress`: число и доля выполненных шагов |
+| `progress_tracker/progress_tracker.dart` | `ProgressTracker`, `Progress`: число и доля выполненных шагов |
 | `screenshot_replacer.dart` | `ScreenshotReplacer`, барьер окончания захвата и владение изображением |
 | `is_building.dart` | Публичное `IsBuildingExtension`; `runOutsideBuild` откладывает действие при `isBuilding`; внутренний счётчик сборок работает и вне кадра |
 | `listenable/listen.dart`, `listenable/select.dart` | `listen`, `select`, `ListenableSubscription`, `ListenableSelectSubscription`, `CompositeListenableSubscription` |

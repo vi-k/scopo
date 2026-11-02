@@ -1,6 +1,6 @@
 # AsyncScope
 
-> Перевод `doc/async_scope.md` (blob `68dad5586fe573b46efe12153503a45e095b18af`).
+> Перевод `doc/async_scope.md` (blob `36ae99fcf1c333d99cd358a396d3d31f085a524b`).
 > Правится в том же коммите, что и оригинал; проверка — `sh docs/ru/check.sh`.
 
 Скоуп, всё содержимое которого — жизненный цикл: асинхронная инициализация
@@ -102,21 +102,21 @@ AsyncScope(
 
 ### Счёт шагов
 
-Для инициализации, которая знает число своих шагов, есть `ProgressIterator`,
+Для инициализации, которая знает число своих шагов, есть `ProgressTracker`,
 а `Progress` — значение, которое он выдаёт: `number`, `total`, `value` как доля
 от 0 до 1 и `toString` вида `2/3`.
 
 ```dart
 initScope: (context, ctx) async {
-  final steps = ProgressIterator(3);
+  final tracker = ProgressTracker(3);
 
-  ctx.progress(steps.nextStep()); // 1/3
+  ctx.progress(tracker.nextStep()); // 1/3
   await api.connect();
 
-  ctx.progress(steps.nextStep()); // 2/3
+  ctx.progress(tracker.nextStep()); // 2/3
   await api.loadProfile();
 
-  ctx.progress(steps.nextStep()); // 3/3
+  ctx.progress(tracker.nextStep()); // 3/3
   await api.warmUpCache();
 },
 progressBuilder: (context, progress) => switch (progress) {

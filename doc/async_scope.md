@@ -101,21 +101,21 @@ usually — and then the ready branch.
 
 ### Counting steps
 
-For an initialization that knows how many steps it has, `ProgressIterator`
+For an initialization that knows how many steps it has, `ProgressTracker`
 counts them and `Progress` is the value it produces: `number`, `total`, `value`
 as a fraction between 0 and 1, and a `toString` of `2/3`.
 
 ```dart
 initScope: (context, ctx) async {
-  final steps = ProgressIterator(3);
+  final tracker = ProgressTracker(3);
 
-  ctx.progress(steps.nextStep()); // 1/3
+  ctx.progress(tracker.nextStep()); // 1/3
   await api.connect();
 
-  ctx.progress(steps.nextStep()); // 2/3
+  ctx.progress(tracker.nextStep()); // 2/3
   await api.loadProfile();
 
-  ctx.progress(steps.nextStep()); // 3/3
+  ctx.progress(tracker.nextStep()); // 3/3
   await api.warmUpCache();
 },
 progressBuilder: (context, progress) => switch (progress) {

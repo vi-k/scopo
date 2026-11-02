@@ -8,7 +8,7 @@ const utilsTopic = DocManifest(
     'listening-to-a-listenable/final-subscription-counter-lis': _body,
     'listening-to-a-listenable/final-subscription-model-selec': _body,
     'listening-to-a-listenable/listenableselector-counter-int': _body,
-    'progressiterator/final-progress-progressiterato': _body,
+    'progresstracker/final-tracker-progresstracker-': _body,
     'screenshotreplacer/screenshotreplacer': _body,
   },
 );

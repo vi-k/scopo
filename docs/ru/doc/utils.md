@@ -1,6 +1,6 @@
 # utils
 
-> Перевод `doc/utils.md` (blob `d00ead14770559d695ed433e4b360835f903414f`).
+> Перевод `doc/utils.md` (blob `a2c2b0c0fb4d6ea29d1114a4a1e24d71eceb404a`).
 > Правится в том же коммите, что и оригинал; проверка — `sh docs/ru/check.sh`.
 
 Хелперы, которые едут вместе с пакетом, но не принадлежат ни одному семейству
@@ -14,7 +14,7 @@
 | `ListenableSelectExtension.select` | слушатель, который зовут только при изменении выбранного значения; из `package:scopo/listenable.dart` |
 | `ListenableSelector` | виджетная форма того же селектора |
 | `StateAsNotifier` | миксин, делающий `State` слушаемым |
-| `ProgressIterator`, `Progress` | счёт шагов инициализации |
+| `ProgressTracker`, `Progress` | счёт шагов инициализации |
 | `ScreenshotReplacer` | замораживает поддерево в изображение, которое оно нарисовало последним |
 | `IsBuildingExtension` | идёт ли сейчас сборка и как дождаться её конца |
 
@@ -82,17 +82,17 @@ ListenableSelector<Counter, int>(
 `ChangeNotifier` создаётся на первом слушателе и утилизируется вместе
 с состоянием, так что состояние, которое никто не слушает, ничего не стоит.
 
-## ProgressIterator
+## ProgressTracker
 
 Счёт шагов для инициализации, которая знает, сколько их у неё:
 
 ```dart
-final progress = ProgressIterator(3);
+final tracker = ProgressTracker(3);
 
-progress.nextStep(); // 1/3
-progress.nextStep(); // 2/3
-progress.addSteps(1); // 3/3
-progress.isCompleted; // true
+tracker.nextStep(); // 1/3
+tracker.nextStep(); // 2/3
+tracker.addSteps(1); // 3/3
+tracker.isCompleted; // true
 ```
 
 `Progress` — производимое им значение: `number`, `total`, `value` как доля от 0
@@ -154,5 +154,5 @@ ScreenshotReplacer(
 | тема | о чём |
 | --- | --- |
 | `ScopeNotifier` | скоуповая форма `select` и модели состояния |
-| `Scope` | `ProgressIterator` в контейнере зависимостей и `close()` |
+| `Scope` | `ProgressTracker` в контейнере зависимостей и `close()` |
 | `LiteScope` | `close()` и снимок в своём семействе |

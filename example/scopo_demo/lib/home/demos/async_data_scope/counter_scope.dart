@@ -31,10 +31,10 @@ final class CounterModel with ChangeNotifier {
   }) async {
     console.log(debugSource, '$debugName: initialize');
 
-    final iterator = ProgressIterator(steps);
+    final tracker = ProgressTracker(steps);
 
     try {
-      ctx.progress(iterator.currentStep);
+      ctx.progress(tracker.currentStep);
       for (var i = 0; i < steps; i++) {
         // Through the context rather than a bare `await`: the wait ends the
         // moment the scope gives up, instead of running the demo out to its
@@ -42,7 +42,7 @@ final class CounterModel with ChangeNotifier {
         await ctx.abandonable(
           () => Future<void>.delayed(const Duration(milliseconds: 100)),
         );
-        ctx.progress(iterator.nextStep());
+        ctx.progress(tracker.nextStep());
       }
 
       final model = CounterModel._(

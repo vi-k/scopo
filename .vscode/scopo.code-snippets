@@ -516,7 +516,7 @@
       "  /// through `ctx.progress`, and `null` until it sends anything. This",
       "  /// family keeps the progress",
       "  /// untyped on purpose: it is a caption rather than something the scope",
-      "  /// carries, and a `ProgressIterator` puts its `Progress` here when the",
+      "  /// carries, and a `ProgressTracker` puts its `Progress` here when the",
       "  /// steps are counted.",
       "  @override",
       "  Widget buildOnProgress(BuildContext context, Object? progress) => Center(",

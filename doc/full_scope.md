@@ -226,7 +226,7 @@ instead of `null`.
 Every step the container reports carries a `ScopeAutoDependenciesProgress`:
 `path` — the path of the dependency that has just been initialized — `name`,
 the last segment of that path, which is the name the dependency was declared
-with, plus the step counter of a `ProgressIterator` (`number`, `total`, and
+with, plus the step counter of a `ProgressTracker` (`number`, `total`, and
 `value` as a fraction between 0 and 1). That object is what `buildOnProgress`
 receives, so a progress bar with a caption needs nothing else:
 

@@ -7,31 +7,31 @@ import 'package:flutter/foundation.dart';
 ///
 /// ```dart
 /// static Future<MyFeatureDeps> initDependencies(ScopeInitContext ctx) async {
-///   final progressIterator = ProgressIterator(3);
+///   final tracker = ProgressTracker(3);
 ///
 ///   // Step 1
-///   ctx.progress(progressIterator.nextStep()); // 1/3
+///   ctx.progress(tracker.nextStep()); // 1/3
 ///
 ///   // Step 2
-///   ctx.progress(progressIterator.nextStep()); // 2/3
+///   ctx.progress(tracker.nextStep()); // 2/3
 ///
 ///   // Step 3
-///   ctx.progress(progressIterator.nextStep()); // 3/3
+///   ctx.progress(tracker.nextStep()); // 3/3
 ///
 ///   return MyFeatureDeps();
 /// }
 /// ```
 ///
 /// {@category utils}
-final class ProgressIterator {
+final class ProgressTracker {
   /// The total number of steps.
   final int total;
 
   /// The current step.
   Progress _currentStep;
 
-  /// Creates an iterator over [total] steps, starting at `0/total`.
-  ProgressIterator(this.total) : _currentStep = Progress(0, total);
+  /// Creates a tracker of [total] steps, starting at `0/total`.
+  ProgressTracker(this.total) : _currentStep = Progress(0, total);
 
   /// The current step.
   Progress get currentStep => _currentStep;
@@ -79,7 +79,7 @@ final class Progress {
   /// indicator is handed: a task of no steps at all is complete rather than
   /// the `NaN` of `0 / 0`, and a count that ran past its total reads as 1
   /// rather than as `4/3`. The assertions above and in
-  /// [ProgressIterator.addSteps] are what say so out loud, and they are off in
+  /// [ProgressTracker.addSteps] are what say so out loud, and they are off in
   /// a release build.
   ///
   /// [num.clamp] answers for all three, the empty task included: it compares

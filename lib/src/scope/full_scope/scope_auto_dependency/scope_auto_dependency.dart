@@ -293,7 +293,7 @@ abstract class ScopeAutoDependencies<
     }
 
     final dependencies = _prepareDependencies(context);
-    final progressIterator = ProgressIterator(dependencies.stepCount);
+    final tracker = ProgressTracker(dependencies.stepCount);
 
     _initializing = true;
     try {
@@ -307,7 +307,7 @@ abstract class ScopeAutoDependencies<
       // review -- and there is no delegated stream left to have it.
       try {
         await dependencies.init(ctx, (path) {
-          final step = progressIterator.nextStep();
+          final step = tracker.nextStep();
           final progress = ScopeAutoDependenciesProgress(path, step);
           notifyObserver((observer) => observer.onProgress(this, progress));
           ctx.progress(progress);

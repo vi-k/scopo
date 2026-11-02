@@ -50,5 +50,5 @@ export 'src/utils/is_building.dart' show IsBuildingExtension;
 // those of every other package that has one, and the import is the choice.
 export 'src/utils/listenable/listenable_selector.dart';
 export 'src/utils/listenable/state_as_notifier.dart';
-export 'src/utils/progress_iterator/progress_iterator.dart';
+export 'src/utils/progress_tracker/progress_tracker.dart';
 export 'src/utils/screenshot_replacer.dart';
