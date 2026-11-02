@@ -242,6 +242,15 @@ fvm flutter clean && fvm flutter pub get
   значение (`model.state`) и есть статус. В прозе документов то же самое: «the
   four statuses», «четыре статуса». Решение владельца 2026-11-01, волна 5
   прохода по именам.
+- **Колбэк называют по тому, что он делает.** Делает работу за скоуп — глагол:
+  `create`, `dispose`, `initScope`, `disposeScope`, `initData`,
+  `createController`, `dep.unmount`, `ScopePrintObserver.output`. Сообщает
+  о событии — `onX`: `onMount`, `onUnmount`, `onScopeKeyTimeout` и три его
+  соседа, `ScreenshotReplacer.onCompleted`, хуки `ScopeObserver` вроде
+  `onInitialized`. Строит виджет — `builder`, `xBuilder` или `buildOnX`:
+  `errorBuilder`, `buildOnReady`. Поле это, параметр конструктора или
+  переопределяемый метод — на имя не влияет. Решение владельца 2026-11-02,
+  волна 5 прохода по именам.
 
 **Русские зеркала публичных документов** лежат в `docs/ru/` и повторяют пути
 оригиналов: `docs/ru/README.md`, `docs/ru/doc/base.md`,
