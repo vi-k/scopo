@@ -16,7 +16,7 @@ import 'theme_manager/theme_manager.dart';
 /// [FakeAnalytics].
 final class App extends Scope<App, AppDependencies, AppState> {
   final ScopeInitCallback<AppDependencies> init;
-  final ScopeProgressBuilder<String> progressBuilder;
+  final Widget Function(BuildContext context, String? progress) progressBuilder;
   final Widget Function(BuildContext context) builder;
 
   const App({

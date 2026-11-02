@@ -1,6 +1,6 @@
 # Scope
 
-> Перевод `doc/full_scope.md` (blob `f0bd7c40fadcdbf74c8185c38e39242616969904`).
+> Перевод `doc/full_scope.md` (blob `5b45b6a64ade0e48fc254d704cd1898097c741a9`).
 > Правится в том же коммите, что и оригинал; проверка — `sh docs/ru/check.sh`.
 
 `Scope` — основной строительный блок пакета: виджет, который владеет
@@ -94,9 +94,8 @@ Future<AppDependencies> initDependencies(
     AppDependencies();
 ```
 
-У четырёх функциональных типов, из которых собран скоуп, есть имена —
-на случай, если их приходится передавать: `ScopeInitCallback`,
-`ScopeWaitingBuilder`, `ScopeProgressBuilder` и `ScopeErrorBuilder`.
+У функции инициализации есть своё имя типа — на случай, если её приходится
+передавать: `ScopeInitCallback`.
 
 `ScopeInitJob<T>` даёт тот же контекст и вне скоупа — когда дерево зависимостей
 обходят руками, собирают контейнер до появления виджетов или пишут тест.

@@ -46,7 +46,7 @@ scopo связывает ресурсы с деревом виджетов че�
 | `lib/src/scope/async_data_scope/` | `async_data_scope_core.dart`: принятие данных; файлы `async_data_scope_base.dart`, `async_data_scope.dart`, `async_data_scope_context.dart`: фасады и контекст |
 | `lib/src/scope/async_controller_scope/` | `scope_controller.dart`: контроллер; `async_controller_scope_core.dart`: владение; `async_controller_scope_base.dart`, `async_controller_scope.dart`, `async_controller_scope_context.dart`: фасады и контекст |
 | `lib/src/scope/lite_scope/` | `lite_scope_core.dart`: состояние и закрытие; `lite_scope_base.dart`: `LiteScope`, `LiteScopeState`, аксессор |
-| `lib/src/scope/full_scope/` | `scope_core.dart`: контейнер и состояние; `scope_base.dart`: `Scope`, `ScopeState`, типы колбэков; `scope_dependencies.dart`: интерфейс контейнера |
+| `lib/src/scope/full_scope/` | `scope_core.dart`: контейнер и состояние; `scope_base.dart`: `Scope`, `ScopeState`, `ScopeInitCallback`; `scope_dependencies.dart`: интерфейс контейнера |
 | `lib/src/scope/full_scope/scope_auto_dependency/` | `scope_auto_dependency.dart`: автоматический контейнер; `scope_auto_dependencies_progress.dart`: прогресс; `scope_dependency/`: узлы, группы, состояния, ошибки |
 
 `lib/src/environment/scope_config.dart` — отдельная библиотека; файлы
@@ -87,10 +87,10 @@ scopo связывает ресурсы с деревом виджетов че�
   `LiteScopeElementBase` → `ScopeElementBase`.
 
 Асимметрия намеренная: виджет `AsyncScopeCore` наследует модельную основу,
-а элемент использует подписку `ScopeNotifierElementBase.init`, поскольку
-`AsyncScopeModel` реализует `ScopeStateModel` с интерфейсом `Listenable`.
-Модель создаётся как `_AsyncScopeNotifier`, наружу отдаётся представление
-`asUnmodifiable` (`lib/src/scope/async_scope/async_scope_model.dart`).
+а элемент использует подписку `ScopeNotifierElementBase.init`, поскольку его
+модель — `ScopeStateModel` с интерфейсом `Listenable`. Модель создаётся как
+`_AsyncScopeNotifier`, наружу отдаётся приватное представление для чтения
+`_AsyncScopeModelView` (`lib/src/scope/async_scope/async_scope_model.dart`).
 
 | Именованный слой | Готовый виджет с колбэками | Что хранит |
 | --- | --- | --- |
@@ -116,11 +116,9 @@ scopo связывает ресурсы с деревом виджетов че�
 `ScopeNotifier.value` переносится в `_ScopeNotifierElement.update` до вызова
 родительского обновления и его сборки.
 
-В `lib/src/scope/scope_notifier/scope_state_model/` находятся модели
-`ScopeStateModel`, `ScopeStateWithErrorModel`, их изменяемые реализации
-`ScopeStateNotifier`, `ScopeStateWithErrorNotifier` и представления для чтения.
-`update` сохраняет значение независимо от `shouldNotify`; после `setError`
-обновление снимает ошибку и уведомляет.
+В `lib/src/scope/scope_notifier/scope_state_model/` находятся модель
+`ScopeStateModel` и её изменяемая реализация `ScopeStateNotifier`. `update`
+сохраняет значение независимо от `shouldNotify`.
 
 ## 4. Подписки, аспекты и сборка
 
@@ -468,13 +466,11 @@ Flutter при удалении поддерева; это отдельный м
 
 | Файл относительно каталога утилит | Содержимое |
 | --- | --- |
-| `compare_utils.dart` | `CompareUtils`: равенство, неравенство и сравнение по идентичности |
 | `progress_iterator/progress_iterator.dart` | `ProgressIterator`, `Progress`: число и доля выполненных шагов |
 | `screenshot_replacer.dart` | `ScreenshotReplacer`, барьер окончания захвата и владение изображением |
-| `is_building.dart` | Публичное `IsBuildingExtension`; `runOutsideFrame` откладывает действие при `isBuilding`; внутренний счётчик сборок работает и вне кадра |
+| `is_building.dart` | Публичное `IsBuildingExtension`; `runOutsideBuild` откладывает действие при `isBuilding`; внутренний счётчик сборок работает и вне кадра |
 | `listenable/listen.dart`, `listenable/select.dart` | `listen`, `select`, `ListenableSubscription`, `ListenableSelectSubscription`, `CompositeListenableSubscription` |
 | `listenable/listenable_selector.dart` | `ListenableSelector`: виджет с подпиской на выбранное значение |
-| `listenable/listenable_view.dart` | `ListenableView`: представление с передачей слушателей исходной модели |
 | `listenable/state_as_notifier.dart` | `StateAsNotifier`: добавляет состоянию интерфейс `Listenable` |
 | `check_disposed.dart` | Внутренние `throwIfDisposed`, `debugAssertNotDisposed` |
 

@@ -91,9 +91,8 @@ Future<AppDependencies> initDependencies(
     AppDependencies();
 ```
 
-The four function types the scope is built from are named as well, for anyone
-passing them around: `ScopeInitCallback`, `ScopeWaitingBuilder`,
-`ScopeProgressBuilder` and `ScopeErrorBuilder`.
+The initialization function has a type name of its own, for anyone passing it
+around: `ScopeInitCallback`.
 
 Outside a scope, `ScopeInitJob<T>` supplies that same context: a dependency
 tree walked by hand, a container built before any widget exists, a test. Start

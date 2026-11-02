@@ -23,7 +23,6 @@ part 'scope_notifier/scope_notifier.dart';
 part 'scope_notifier/scope_notifier_base.dart';
 part 'scope_notifier/scope_notifier_core.dart';
 part 'scope_notifier/scope_state_model/scope_state_model.dart';
-part 'scope_notifier/scope_state_model/scope_state_with_error_model.dart';
 part 'async_scope/async_scope_parent.dart';
 part 'async_scope/async_scope.dart';
 part 'async_scope/async_scope_base.dart';

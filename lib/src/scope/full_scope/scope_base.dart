@@ -9,34 +9,6 @@ part of '../scope.dart';
 typedef ScopeInitCallback<D extends ScopeDependencies> =
     Future<D> Function(BuildContext context, ScopeInitContext ctx);
 
-/// A builder function used to display a waiting widget while the [Scope] is
-/// waiting for a [Scope.scopeKey] and [Scope.initDependencies] to send their
-/// first state.
-///
-/// {@category Scope}
-typedef ScopeWaitingBuilder = Widget? Function(BuildContext context);
-
-/// A builder function used to display a widget while the [Scope] is
-/// initializing dependencies.
-///
-/// Contains optional [progress] data reported during initialization.
-///
-/// {@category Scope}
-typedef ScopeProgressBuilder<P extends Object> =
-    Widget Function(BuildContext context, P? progress);
-
-/// A builder function used to display an error widget if scope initialization
-/// fails.
-///
-/// {@category Scope}
-typedef ScopeErrorBuilder<P extends Object> =
-    Widget Function(
-      BuildContext context,
-      Object error,
-      StackTrace stackTrace,
-      P? progress,
-    );
-
 /// A base class for creating scopes with dependency injection and state
 /// management.
 ///

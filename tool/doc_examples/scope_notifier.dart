@@ -25,11 +25,6 @@ const scopeNotifier = DocManifest(
       'Schematic constructor call: builder: ... is an expression placeholder.',
     ),
     'state-models/PlayerState': DocEnvironment('', ''),
-    'state-models/model': DocEnvironment(
-      'void example(ScopeStateWithErrorNotifier<Player> model, '
-          'Object failure, StackTrace stackTrace, Player recovered) {',
-      '}',
-    ),
   },
 );
 

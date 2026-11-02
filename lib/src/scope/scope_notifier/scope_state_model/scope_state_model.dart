@@ -46,25 +46,4 @@ class ScopeStateNotifier<S extends Object> extends ChangeNotifier
   /// sense: this answers the opposite of the `equals` it replaced, which said
   /// whether the two were the same.
   bool shouldNotify(S previous, S current) => true;
-
-  /// A view of this notifier that can be read and listened to, not set.
-  ScopeStateModelView<S> asUnmodifiable() => ScopeStateModelView(this);
-}
-
-/// {@category ScopeNotifier}
-class ScopeStateModelView<S extends Object> implements ScopeStateModel<S> {
-  final ScopeStateNotifier<S> _notifier;
-
-  /// Wraps [notifier] into a read-only view of it.
-  ScopeStateModelView(ScopeStateNotifier<S> notifier) : _notifier = notifier;
-
-  @override
-  S get state => _notifier.state;
-
-  @override
-  void addListener(VoidCallback listener) => _notifier.addListener(listener);
-
-  @override
-  void removeListener(VoidCallback listener) =>
-      _notifier.removeListener(listener);
 }

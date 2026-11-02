@@ -421,7 +421,9 @@ abstract base class AsyncScopeElementBase<
   /// `debugFillProperties` and every run of every selector — so a wrapper
   /// built on each read was rubbish on every build of every dependent.
   @override
-  late final ScopeStateModel<AsyncScopeState> model = _model.asUnmodifiable();
+  late final ScopeStateModel<AsyncScopeState> model = _AsyncScopeModelView(
+    _model,
+  );
   final _AsyncScopeNotifier _model = _AsyncScopeNotifier();
 
   /// Keeps the widget reachable during the asynchronous disposal -- and,

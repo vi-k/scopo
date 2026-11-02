@@ -9,11 +9,9 @@ tends to want the same tools; nothing here needs a scope above it.
 | `ListenableListenExtension.listen` | `Stream`-style subscription to a `Listenable`; from `package:scopo/listenable.dart` |
 | `ListenableSelectExtension.select` | a listener called only when a selected value changes; from `package:scopo/listenable.dart` |
 | `ListenableSelector` | the widget form of that selector |
-| `ListenableView` | a read-only façade over a `Listenable` |
 | `StateAsNotifier` | a mixin that makes a `State` listenable |
 | `ProgressIterator`, `Progress` | step counting for an initialization |
 | `ScreenshotReplacer` | freezes a subtree into the image it last painted |
-| `CompareUtils` | four comparison functions with names |
 | `IsBuildingExtension` | is a build running, and how to wait for the end of it |
 
 ## Listening to a Listenable
@@ -75,11 +73,6 @@ ListenableSelector<Counter, int>(
 The `child` it takes is passed back to `builder` untouched, the standard way of
 keeping a subtree out of the rebuild.
 
-`ListenableView` wraps a `Listenable` so that only `addListener` and
-`removeListener` are reachable — hand it out when the subtree may listen but
-must not notify. `ScopeStateModelView` in the `ScopeNotifier` topic is the same
-idea applied to a state model.
-
 `StateAsNotifier` goes the other way: mix it into a `State` and the state
 itself becomes a `Listenable`, with a `notifyListeners()` for its own use. The
 `ChangeNotifier` behind it is created on the first listener and disposed of
@@ -138,12 +131,7 @@ the child has been unmounted, not when the replacement is merely scheduled: by
 then every `dispose` in the child's subtree has run, so the caller can release
 what those states were still using.
 
-## The two small ones
-
-`CompareUtils` is `equals`, `notEquals`, `identical` and `notIdentical` as
-named functions, for the places that take a comparison as a parameter —
-`shouldNotify:` above, among others — where a tear-off reads better than a
-lambda.
+## IsBuildingExtension
 
 `IsBuildingExtension` extends `SchedulerBinding`. `isBuilding` says whether a
 build is running, and `runOutsideBuild(action)` runs the action now if it is

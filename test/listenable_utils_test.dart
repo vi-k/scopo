@@ -481,10 +481,10 @@ void main() {
       );
     });
 
-    // `compare` answers "did it change?", so the comparison for a value that
-    // is replaced rather than mutated is `notIdentical` -- `identical` reports
-    // the opposite of what it is asked.
-    test('notIdentical is the compare for a value that is replaced', () {
+    // `shouldNotify` answers "did it change?", so the comparison for a value
+    // that is replaced rather than mutated is `!identical` -- `identical`
+    // reports the opposite of what it is asked.
+    test('!identical is the compare for a value that is replaced', () {
       final notifier = _Model();
       addTearDown(notifier.dispose);
       final seen = <_Box>[];
@@ -492,7 +492,7 @@ void main() {
       notifier.select(
         (model) => model.box,
         (model, box) => seen.add(box),
-        shouldNotify: CompareUtils.notIdentical,
+        shouldNotify: (a, b) => !identical(a, b),
       );
 
       // ignore: cascade_invocations
@@ -505,27 +505,6 @@ void main() {
 
       notifier.touch();
       expect(seen, hasLength(1), reason: 'the same object is not');
-    });
-  });
-
-  group('ListenableView', () {
-    test('passes subscriptions through to the listenable it wraps', () {
-      final notifier = ChangeNotifier();
-      addTearDown(notifier.dispose);
-      var calls = 0;
-
-      final view = ListenableView(notifier);
-      void listener() => calls++;
-
-      view.addListener(listener);
-      // ignore: invalid_use_of_protected_member, invalid_use_of_visible_for_testing_member
-      notifier.notifyListeners();
-      expect(calls, 1);
-
-      view.removeListener(listener);
-      // ignore: invalid_use_of_protected_member, invalid_use_of_visible_for_testing_member
-      notifier.notifyListeners();
-      expect(calls, 1);
     });
   });
 

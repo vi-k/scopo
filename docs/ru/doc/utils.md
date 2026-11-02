@@ -1,6 +1,6 @@
 # utils
 
-> Перевод `doc/utils.md` (blob `27f8a15556639ff2006ab826f18d54bd1d0826bf`).
+> Перевод `doc/utils.md` (blob `d00ead14770559d695ed433e4b360835f903414f`).
 > Правится в том же коммите, что и оригинал; проверка — `sh docs/ru/check.sh`.
 
 Хелперы, которые едут вместе с пакетом, но не принадлежат ни одному семейству
@@ -13,11 +13,9 @@
 | `ListenableListenExtension.listen` | подписка на `Listenable` в стиле `Stream`; из `package:scopo/listenable.dart` |
 | `ListenableSelectExtension.select` | слушатель, который зовут только при изменении выбранного значения; из `package:scopo/listenable.dart` |
 | `ListenableSelector` | виджетная форма того же селектора |
-| `ListenableView` | фасад только для чтения над `Listenable` |
 | `StateAsNotifier` | миксин, делающий `State` слушаемым |
 | `ProgressIterator`, `Progress` | счёт шагов инициализации |
 | `ScreenshotReplacer` | замораживает поддерево в изображение, которое оно нарисовало последним |
-| `CompareUtils` | четыре функции сравнения с именами |
 | `IsBuildingExtension` | идёт ли сейчас сборка и как дождаться её конца |
 
 ## Слушать Listenable
@@ -79,11 +77,6 @@ ListenableSelector<Counter, int>(
 Принятый им `child` возвращается в `builder` нетронутым — обычный способ
 удержать поддерево вне перестроения.
 
-`ListenableView` заворачивает `Listenable` так, что доступны только
-`addListener` и `removeListener`: отдавайте его, когда поддереву можно слушать,
-но нельзя уведомлять. `ScopeStateModelView` из темы `ScopeNotifier` — та же
-идея применительно к модели состояния.
-
 `StateAsNotifier` работает в обратную сторону: подмешайте его в `State`, и само
 состояние становится `Listenable` со своим `notifyListeners()`. Стоящий за ним
 `ChangeNotifier` создаётся на первом слушателе и утилизируется вместе
@@ -141,11 +134,7 @@ ScreenshotReplacer(
 отработали все `dispose` в поддереве ребёнка, и вызывающий может освободить то,
 чем эти состояния ещё пользовались.
 
-## Два маленьких
-
-`CompareUtils` — это `equals`, `notEquals`, `identical` и `notIdentical`
-именованными функциями, для мест, принимающих сравнение параметром (в том числе
-для `shouldNotify:` выше), где tear-off читается лучше лямбды.
+## IsBuildingExtension
 
 `IsBuildingExtension` расширяет `SchedulerBinding`. `isBuilding` говорит,
 идёт ли сейчас сборка, а `runOutsideBuild(action)` выполняет действие

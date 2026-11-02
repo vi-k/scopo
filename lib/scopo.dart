@@ -41,7 +41,6 @@ export 'src/environment/scope_config.dart'
         ScopePrintObserver,
         ScopeTimeout;
 export 'src/scope/scope.dart';
-export 'src/utils/compare_utils.dart';
 // The rebuild counter beside it is the package's own bookkeeping: written by
 // `ScopeWidgetElementBase`, read by `isBuilding`, and no business of a
 // consumer.
@@ -50,7 +49,6 @@ export 'src/utils/is_building.dart' show IsBuildingExtension;
 // `package:scopo/listenable.dart`: extensions on the framework's own type meet
 // those of every other package that has one, and the import is the choice.
 export 'src/utils/listenable/listenable_selector.dart';
-export 'src/utils/listenable/listenable_view.dart';
 export 'src/utils/listenable/state_as_notifier.dart';
 export 'src/utils/progress_iterator/progress_iterator.dart';
 export 'src/utils/screenshot_replacer.dart';

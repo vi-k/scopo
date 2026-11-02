@@ -29,7 +29,7 @@ final class ListenableSelector<L extends Listenable, T extends Object?>
   /// Decides whether the selected value changed; `!=` when omitted.
   ///
   /// `true` means changed, so the comparison for a value that is replaced
-  /// rather than mutated is `CompareUtils.notIdentical`.
+  /// rather than mutated is `(a, b) => !identical(a, b)`.
   final bool Function(T previous, T current)? shouldNotify;
 
   /// Builds the subtree from the selected value.

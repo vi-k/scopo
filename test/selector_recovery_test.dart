@@ -69,7 +69,7 @@ void main() {
         final previous = FlutterError.onError;
         FlutterError.onError = (details) => reported.add(details.exception);
         try {
-          model.setError(failure, StackTrace.current);
+          model.setError(failure);
           await tester.pump();
         } finally {
           FlutterError.onError = previous;
@@ -108,8 +108,31 @@ void main() {
   }
 }
 
-final class _RecoverableCounter extends ScopeStateWithErrorNotifier<int> {
+/// A notifier whose `state` throws after [setError] until the next [update].
+final class _RecoverableCounter extends ScopeStateNotifier<int> {
   _RecoverableCounter() : super(0);
 
+  Exception? _error;
+
   int get constant => 42;
+
+  @override
+  int get state {
+    if (_error case final error?) {
+      throw error;
+    }
+
+    return super.state;
+  }
+
+  void setError(Exception error) {
+    _error = error;
+    notifyListeners();
+  }
+
+  @override
+  void update(int value) {
+    _error = null;
+    super.update(value);
+  }
 }

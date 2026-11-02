@@ -786,6 +786,29 @@ void main() {
             '`buildChild` and every run of every selector go through this',
       );
     });
+
+    testWidgets('cannot be cast back to the notifier that writes it', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        const Directionality(
+          textDirection: TextDirection.ltr,
+          child: _ReadyRaceScope(),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      final element =
+          tester.element(find.byType(_ReadyRaceScope))
+              as _ReadyRaceScopeElement;
+
+      expect(
+        element.model,
+        isNot(isA<ScopeStateNotifier<AsyncScopeState>>()),
+        reason: 'only the scope writes its state',
+      );
+      expect(element.model.state, isA<AsyncScopeReady>());
+    });
   });
 
   group('a child scope moved with a GlobalKey', () {

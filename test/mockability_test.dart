@@ -24,10 +24,6 @@ void main() {
     // Ours.
     expect(_MockObserver(), isA<ScopeObserver>());
     expect(_MockNotifier(), isA<ScopeStateNotifier<int>>());
-    expect(_MockModelView(), isA<ScopeStateModelView<int>>());
-    expect(_MockErrorNotifier(), isA<ScopeStateWithErrorNotifier<int>>());
-    expect(_MockErrorModelView(), isA<ScopeStateWithErrorModelView<int>>());
-    expect(_MockListenableView(), isA<ListenableView<Listenable>>());
     expect(_MockHandle(), isA<ScopeDependencyHandle>());
 
     // And theirs, built on ours -- the half `base` used to take away.
@@ -121,15 +117,5 @@ class _MockAppDependencies extends _Mock implements _AppDependencies {}
 class _MockObserver extends _Mock implements ScopeObserver {}
 
 class _MockNotifier extends _Mock implements ScopeStateNotifier<int> {}
-
-class _MockModelView extends _Mock implements ScopeStateModelView<int> {}
-
-class _MockErrorNotifier extends _Mock
-    implements ScopeStateWithErrorNotifier<int> {}
-
-class _MockErrorModelView extends _Mock
-    implements ScopeStateWithErrorModelView<int> {}
-
-class _MockListenableView extends _Mock implements ListenableView<Listenable> {}
 
 class _MockHandle extends _Mock implements ScopeDependencyHandle {}

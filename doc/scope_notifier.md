@@ -93,19 +93,13 @@ releases whatever the old one owned.
 
 ## State models
 
-Six types in this family exist for scopes whose state is a single immutable
-value that changes over time — a trio, and the same trio with a failed state
-beside the value. `AsyncScope` is built on the first three; the second three
-are offered for a family of your own:
+Two types in this family exist for scopes whose state is a single immutable
+value that changes over time. `AsyncScope` is built on them:
 
 | type | what it is |
 | --- | --- |
 | `ScopeStateModel<S>` | a `Listenable` with a `state` of type `S` — the read side |
 | `ScopeStateNotifier<S>` | a `ChangeNotifier` implementing it, with `update(S)` |
-| `ScopeStateModelView<S>` | an unmodifiable view of a notifier |
-| `ScopeStateWithErrorModel<S>` | the read side, plus a failed state |
-| `ScopeStateWithErrorNotifier<S>` | its notifier, with `update(S)` and `setError` |
-| `ScopeStateWithErrorModelView<S>` | an unmodifiable view of that notifier |
 
 `update(S value)` notifies only when the value actually changed, and what
 "changed" means is a method you can override:
@@ -124,37 +118,11 @@ The default `shouldNotify` returns `true` — every `update` notifies. That is
 the safe default for a mutable object being re-assigned; override it when the
 state is a value type and repeated equal updates are common.
 
-`asUnmodifiable()` wraps a notifier into a `ScopeStateModelView`, which
-forwards `state`, `addListener` and `removeListener` and nothing else. Hand
-that to the subtree when the state must be readable but not settable from
-below.
-
-The error-carrying pair is the interesting one, and nothing in the package uses
-it. `setError` stores the error with its stack trace, `hasError` reports it —
-and reading `state` afterwards **rethrows** that error with its original stack
-trace instead of returning a value, so a builder that reads `state` fails
-loudly on a scope that has failed rather than rendering a stale value.
-
-A failure is not terminal, though: `update` puts it down as it stores the new
-state. A state handed over is a state that can be read, so recovering is what
-an update after `setError` means, and there is nothing else it could mean. The
-listeners hear about it even when the value is the one from before the
-failure — `shouldNotify` weighs one value against another, and this change is
-between a state that throws and one that does not.
-
-```dart
-model
-  ..setError(failure, stackTrace)   // `state` throws from here on
-  ..update(recovered);              // and stops: `hasError` is false again
-```
-
-That is not how the asynchronous families model a failure. They hold an
-ordinary `ScopeStateNotifier` and put the failure *in* the state, as an
-`AsyncScopeError` beside `AsyncScopeWaiting`, `AsyncScopeProgress` and
-`AsyncScopeReady`: reading `AsyncScope.of(context, listen: true).state` never
-throws, and `hasError` is derived from what the state is. Both shapes work;
-which one to pick depends on whether a failed scope still has something to
-show.
+A failure fits in the state as one more value. That is how the asynchronous
+families model it: `AsyncScopeError` stands beside `AsyncScopeWaiting`,
+`AsyncScopeProgress` and `AsyncScopeReady`, so reading
+`AsyncScope.of(context, listen: true).state` never throws, and `hasError` is
+derived from what the state is.
 
 ## Where to go next
 

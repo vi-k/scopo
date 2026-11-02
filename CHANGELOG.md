@@ -11,6 +11,19 @@
   abstract members, so it could not be mixed in outside the package; a
   dependency of your own implements `ScopeDependency`, as before.
   `ScopeDependencyState.throwNoErrors` was an internal helper.
+* **Breaking:** nine types and one method are gone, each covered by the
+  language or by another name. `ScopeWaitingBuilder`, `ScopeProgressBuilder`
+  and `ScopeErrorBuilder` named function types that no scope parameter took:
+  write the function type in place. `ScopeStateWithErrorModel`,
+  `ScopeStateWithErrorNotifier` and `ScopeStateWithErrorModelView` were a
+  notifier whose `state` throws after `setError`, and nothing in the package
+  used it; a failure goes in the state as one more value, the way
+  `AsyncScopeError` does. `ScopeStateModelView` and
+  `ScopeStateNotifier.asUnmodifiable()` go with them: the read-only view the
+  asynchronous scopes hand out as their `model` is private now. `CompareUtils`
+  held four comparisons a lambda writes as briefly — for a value that is
+  replaced, `shouldNotify: (a, b) => !identical(a, b)` — and `ListenableView` a
+  `Listenable` that a notifier typed as `Listenable` already is.
 * **Breaking:** six names now say what they do.
   `AsyncScopeContext.isInitialized` is `isReady`: it is true once the scope is
   `AsyncScopeReady`. The state of a `LiteScope` or a `Scope` keeps its own
