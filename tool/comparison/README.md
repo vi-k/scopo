@@ -41,7 +41,7 @@ of the published package (`.pubignore`).
 
 ## scopo from the working tree
 
-Both pin scopo to 0.21.0 from pub.dev, the version the README table describes.
+Both pin scopo to 1.0.0 from pub.dev, the version the README table describes.
 To run them against the working tree instead, put a `pubspec_overrides.yaml`
 (ignored by git) next to `pubspec.yaml` and run `pub get` again:
 

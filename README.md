@@ -21,11 +21,11 @@ refresh, a new key — while the previous one is still closing what it opened.
 Here is what happens in those two moments, with the screen written the way each
 package's documentation shows. The code is in the repository, under
 [tool/comparison](https://github.com/vi-k/scopo/tree/main/tool/comparison); the
-versions are those of October 2026.
+versions are those of November 2026.
 
 | package | left while the database is opening | re-created at once | released on the way out |
 | --- | --- | --- | --- |
-| scopo 0.21.0 | the database is closed as soon as it arrives; the session is never started | with `scopeKey`, the old database is closed before the new one opens; without it, both are open at once | the session, then the database, each awaited |
+| scopo 1.0.0 | the database is closed as soon as it arrives; the session is never started | with `scopeKey`, the old database is closed before the new one opens; without it, both are open at once | the session, then the database, each awaited |
 | flutter_riverpod 3.4.3 | the database stays open, unless the provider checks `ref.mounted` after the `await` | a global provider hands the new screen the same instance; a scoped one opens a second beside it | the database starts closing before the session has closed |
 | get_it 9.3.0 + watch_it 2.5.0 | the database stays open, and a `StateError` reaches the zone | both are open at once | the session, then the database |
 | yx_scope_flutter 1.2.0 | the opening runs to the end, session included, and then both are closed | both are open at once | the session, then the database |

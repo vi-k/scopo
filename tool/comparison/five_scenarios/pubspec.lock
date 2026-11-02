@@ -13,10 +13,10 @@ packages:
     dependency: transitive
     description:
       name: async_job
-      sha256: "317e8d8a2ed1fec40c60e6df73569945485465072be4a253d75216c473c0d464"
+      sha256: "30c0a627fdd3aea1984b4409e0e0ed3910ce73bf5befd51c64ed2593972ba915"
       url: "https://pub.dev"
     source: hosted
-    version: "0.6.0"
+    version: "1.0.0"
   boolean_selector:
     dependency: transitive
     description:
@@ -215,10 +215,10 @@ packages:
     dependency: "direct main"
     description:
       name: scopo
-      sha256: "0a2fcf3db4d82fe3daeb9719d3e92edc64a211f927ae3aa29590bd82bcaf9160"
+      sha256: "368da8617d724b8d6f7460787b2329fb8c15987797ed7b16eb2fbbb81ccbadca"
       url: "https://pub.dev"
     source: hosted
-    version: "0.21.0"
+    version: "1.0.0"
   sky_engine:
     dependency: transitive
     description: flutter

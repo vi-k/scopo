@@ -5,7 +5,7 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
-  scopo: 0.21.0
+  scopo: 1.0.0
   cobalt: 1.9.2
   cobalt_flutter: 1.9.2
   flutter_riverpod: 3.4.3
