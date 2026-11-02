@@ -238,7 +238,9 @@ Python-инструментов, `dart-format` (0 changed) и манифест �
 ## Архив
 
 Законченное до 2026-11-02 —
-`docs/records/2026-11/2026-11-02-handoff-archive.md`. Законченное до 2026-10-25 —
+`docs/records/2026-11/2026-11-02-handoff-archive.md`.
+
+Законченное до 2026-10-25 —
 `docs/records/2026-10/2026-10-25-handoff-archive.md`. Законченное
 до 2026-10-24 — `docs/records/2026-10/2026-10-24-handoff-archive.md`.
 Законченное до 2026-10-23 —
