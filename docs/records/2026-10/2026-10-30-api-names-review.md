@@ -1,11 +1,12 @@
 # Проход по именам перед 1.0
 
-> **Состояние на 2026-11-01:** волны 1–4 «Предлагаемого порядка» сделаны
-> и влиты в `main`: `3b0b890`, `b1e3cd1`, `97ba21e`, `309e05a`, выходят
-> в 0.22.0. Вердикты — в конце каждой сделанной находки. Пятая волна
-> открыта: Б5–Б8, В1–В4, Г3, Г5–Г7 владелец не одобрил, они ждут решения.
-> Б9 не подтвердилась (2026-11-01): список реэкспорта не сокращён, в него
-> добавлен `ChainCancelReason`.
+> **Состояние на 2026-11-02:** все пять волн «Предлагаемого порядка» сделаны и
+> влиты в `main`, выходят в 0.22.0. Волны 1–4: `3b0b890`, `b1e3cd1`, `97ba21e`,
+> `309e05a`. Волна 5: `842e85e`, `7c21c9e`, `ee4e968`, `659bc30`, `23fce5b`,
+> `cd0c1df`; Б7, В4 и Г5 не взяты по решению владельца. Б9 не подтвердилась
+> (2026-11-01): список реэкспорта не сокращён, в него добавлен
+> `ChainCancelReason`. Вердикты — в конце каждой находки, над которой велась
+> работа.
 > **Что это:** второй сплошной проход по публичным именам пакета — перед
 > заморозкой API в 1.0.0: что врёт, что спорит с соседним, что публично зря.
 > **Связанные записи:** `2026-08-18-naming-review.md` (первый проход, его
@@ -236,6 +237,15 @@ README:904) читается как «если не направлено наб�
 к `Object?` без параметра типа или удалить вместе с ними; `ScopeInitCallback`
 оставить. Цена: по 1 в `lib`, одна фраза в `doc`, 3 места в демо.
 
+**Вердикт: исправлено, с уточнением к находке.** Волна 5, `842e85e`. Удалены
+все три строителя: `ScopeWaitingBuilder`, `ScopeProgressBuilder`
+и `ScopeErrorBuilder`; `ScopeInitCallback` остался. Поле демо
+`App.progressBuilder` пишет тип на месте, с `String? progress` и без
+`covariant`. Находка ошибалась в одном: `Widget?` в пакете есть, его отдаёт
+`buildOnWaiting` каждого семейства, начиная с `ScopeBase.buildOnWaiting`.
+Спорными эти typedef'ы делал не тип возврата, а то, что их не брала ни одна
+сигнатура.
+
 **Б6. Представления `ScopeStateModelView` и `ScopeStateWithErrorModelView`.**
 `scope_state_model.dart:55`, `scope_state_with_error_model.dart:95`. Наружу их
 выводит только тип возврата `asUnmodifiable()`. Прецедент в самом пакете:
@@ -245,6 +255,17 @@ README:904) читается как «если не направлено наб�
 `ScopeStateWithError*` `doc/scope_notifier.md:132` сам называет неиспользуемой
 и советует держать сбой внутри состояния; её можно убрать целиком или
 превратить в рецепт в документе. Это вопрос к владельцу, не находка.
+
+**Вердикт: исправлено шире находки.** Волна 5, `842e85e`. По решению владельца
+тройка `ScopeStateWithErrorModel`, `ScopeStateWithErrorNotifier`,
+`ScopeStateWithErrorModelView` удалена целиком, а из публичного API ушли
+и `ScopeStateModelView`, и сам `asUnmodifiable()`. Обёртка от понижающего
+приведения осталась приватной: `_AsyncScopeModelView`
+в `async_scope_model.dart`, его строит ядро асинхронного скоупа. Тест «cannot
+be cast back to the notifier that writes it» в `test/async_scope_test.dart`
+держит, что модель из контекста к нотифаеру обратно не приводится. Находка
+ошибалась насчёт документа: `doc/scope_notifier.md` не советовал держать сбой
+в состоянии, он называл рабочими обе формы и оставлял выбор читателю.
 
 **Б7. Верх двух веток лестницы: `ScopeCore`/`ScopeElementBase`/
 `ScopeCoreState` и `AsyncControllerScopeCore`/`…ElementBase`.**
@@ -257,6 +278,11 @@ README:904) читается как «если не направлено наб�
 семейства есть слой Core», и пропадает путь «свой элемент для полного `Scope`».
 Уверенность средняя, решение владельца.
 
+**Вердикт: не взято по решению владельца.** Правило «у каждого семейства есть
+Core» дороже пяти имён, `ScopeCore*` и `AsyncControllerScopeCore*` остались.
+После В2 их элементы зовутся `ScopeCoreElement`
+и `AsyncControllerScopeCoreElement`.
+
 **Б8. `CompareUtils` и `ListenableView`.** `compare_utils.dart:11`,
 `listenable_view.dart:4`. Оба внутри пакета не используются; `CompareUtils` —
 четыре однострочных лямбды, которые дартдок `select` и так показывает в строку;
@@ -264,6 +290,11 @@ README:904) читается как «если не направлено наб�
 / 2 / 0 / 13 / 0 и 2 / 2 / 0 / 4 / 0. Уверенность низкая: обе вещи
 документированы как утилиты, и удалять их — решение о составе пакета,
 а не об именах.
+
+**Вердикт: исправлено.** Волна 5, `842e85e`. `CompareUtils` и `ListenableView`
+удалены вместе с файлами и `test/compare_utils_test.dart`. Дартдок
+`ListenableSelector.shouldNotify` показывает сравнение по идентичности
+в строку: `(a, b) => !identical(a, b)`.
 
 **Б9. Реэкспорт `async_job`: пять самых слабых имён.** Правило списка
 из `2026-10-23-async-job-0.3-surface-design.md` — имя в списке, только если оно
@@ -324,6 +355,18 @@ ready branch, and this scope is ${model.state}» — оба смысла в од
 часть обращений `.state`. Минимум, если дорого, — переписать то исключение
 и подсказку в `ide/scopo.code-snippets:483`.
 
+**Вердикт: исправлено шире находки.** Волна 5, `7c21c9e`. `AsyncScopeState`
+стал `AsyncScopeStatus`, `AsyncScopeContext.state` — `status`, `buildOnState` —
+`buildOnStatus`, метка диагностики — `status`. По тому же правилу переименована
+фаза зависимости, смысл (г): `ScopeDependencyState` стал
+`ScopeDependencyStatus`, `ScopeDependency.state` — `status`,
+`stateToString()` — `statusToString()`. Исключение в `lite_scope_core.dart`
+теперь говорит «the status of this scope is …». `ScopeStateModel`,
+`ScopeStateNotifier`, `model.state` и наследники `State` не тронуты: это смыслы
+(а) и (в). Правило «State — объект `State` или значение модели, фаза жизненного
+цикла — Status» записано в `AGENTS.md` §7; строки миграции — в таблице «Coming
+from 0.21.x» в `doc/debug.md` (`23fce5b`).
+
 **В2. `XElementBase` против `XCoreState` в паре с одним `XCore`.** В семействе
 `LiteScope` — `LiteScopeCore`, `LiteScopeElementBase`, `LiteScopeCoreState`;
 так же у `Scope`. При этом `Base` значит два уровня: `AsyncScopeBase` — слой
@@ -334,6 +377,12 @@ ready branch, and this scope is ${model.state}» — оба смысла в од
 тройкой `XCore`/`XCoreElement`/`XCoreState`. Цена всех восьми: около 95 / 4 / 0
 / 45 / 4; пишут эти имена только авторы своих Core.
 
+**Вердикт: исправлено.** Волна 5, `ee4e968`. Все восемь `XElementBase` стали
+`XCoreElement`, и Core приходит тройкой `XCore` / `XCoreElement` /
+`XCoreState`. Приватный `_LiteScopeCoreElement` переименован
+в `_LiteScopeReadyElement`, чтобы не стоять в шаге от публичного
+`LiteScopeCoreElement`.
+
 **В3. `ScopeContext` выглядит контекстом семейства `Scope`.** `base.dart:137`.
 `ScopeModelContext`, `AsyncScopeContext`, `AsyncDataScopeContext`,
 `AsyncControllerScopeContext` — интерфейс чтения своего семейства,
@@ -341,6 +390,10 @@ ready branch, and this scope is ${model.state}» — оба смысла в од
 Соседи по корню — `ScopeInheritedWidget` и `ScopeInheritedElement`. Предлагаю
 `ScopeInheritedContext`. Цена: 87 / 7 / 0 / 1 / 0, почти всё — механические
 `ScopeContext.of<…>` в фасадах. Уверенность ниже средней.
+
+**Вердикт: исправлено.** Волна 5, `ee4e968`. `ScopeContext` стал
+`ScopeInheritedContext`, рядом с `ScopeInheritedWidget`
+и `ScopeInheritedElement`.
 
 **В4. `ScopeModelBase` и `ScopeNotifierBase` — единственные `XBase` без
 переопределяемых хуков.** `create` и `dispose` у них — поля конструктора,
@@ -350,6 +403,10 @@ ready branch, and this scope is ${model.state}» — оба смысла в од
 `createModel`/`disposeModel` хуками; это смена формы, а не имени, и нынешнюю
 форму защищает правило «присваиваемый колбэк — короткий глагол». Уверенность
 низкая.
+
+**Вердикт: не взято по решению владельца.** `create` и `dispose` остаются
+полями конструктора: на одном классе два режима владения, `create:` и `.value`,
+и хуки в режиме `.value` были бы бессмысленны.
 
 **Проверено и ровно:** голые `LiteScope` и `Scope` против `ScopeWidgetBase`
 (голый `ScopeWidget` спорил бы с общим термином «scope widget» и корнем
@@ -388,6 +445,10 @@ be rebuilt on every notification». Предлагаю `rebuildsOnNotify`. Це�
 (у Flutter тоже `Image.errorBuilder`). Цена: 14 / 3 / 0 / 14 / 1. Уверенность
 средняя: из двух ревьюеров один за, другой оставил бы.
 
+**Вердикт: исправлено.** Волна 5, `7c21c9e`. `AsyncScopeFailed`, как
+`ScopeDependencyInitFailed`; `buildOnError`, `errorBuilder`, `hasError`
+и `error` не тронуты.
+
 **Г4. `count` значит две вещи.** У `ScopeDependency` — число шагов
 (`scope_dependency.dart:29`), у групп с ошибками — число ошибок
 (`scope_dependency_state.dart:36`). Предлагаю `stepCount` и `errorCount`;
@@ -401,10 +462,18 @@ be rebuilt on every notification». Предлагаю `rebuildsOnNotify`. Це�
 зовётся `progress`. Предлагаю `reportProgress`. Цена высокая: около 4 / 16 / 3
 / 23 / 9. Уверенность низкая — имя короткое и привычное.
 
+**Вердикт: не взято по решению владельца.** `ctx.progress` остаётся: это
+словарь `JobContext` ядра (`check`, `log`), а имя стоит примерно в семидесяти
+местах примеров и документов.
+
 **Г6. `ProgressIterator` — не `Iterator`.** `progress_iterator.dart:26`;
 ни `moveNext`, ни `current` — счётчик шагов. В августе (N19) правили его члены,
 имя типа не обсуждали. Возможное имя — `ProgressCounter` (`Stepper` занят
 виджетом Material). Цена: 5 / 7 / 1 / 10 / 1. Уверенность низкая.
+
+**Вердикт: исправлено, с другим именем.** Волна 5, `659bc30`. Владелец выбрал
+`ProgressTracker`, а не `ProgressCounter`; файл — `progress_tracker.dart`,
+переменные в примерах — `tracker`.
 
 **Г7. Правило колбэков в тексте уже, чем на деле.** Нарушений правила
 «присваиваемый колбэк — глагол, хук — `onX`» нет, если «присваиваемый» значит
@@ -414,6 +483,13 @@ be rebuilt on every notification». Предлагаю `rebuildsOnNotify`. Це�
 `AsyncScope(onMount:, onUnmount:)`, `ScreenshotReplacer.onCompleted`. Предлагаю
 дописать в правило, что событийный параметр конструктора — `onX`. Имена
 не меняются.
+
+**Вердикт: исправлено шире находки.** Волна 5, `cd0c1df`. Правило переписано
+по смыслу колбэка, а не по способу его передачи: работа за скоуп — глагол,
+событие — `onX`, строитель виджета — `builder`, `xBuilder` или `buildOnX`. Поле
+это, параметр конструктора или переопределяемый метод — на имя не влияет.
+Правило перенесено в `AGENTS.md` §7 к правилу State/Status, в `docs/handoff.md`
+осталась ссылка. Имена в коде не менялись.
 
 **Проверено и оправдано:** `ScopeTimeout.none` (как `Timeout.none`
 в `package:test`), `maxRetries` (дартдок совпадает с именем),

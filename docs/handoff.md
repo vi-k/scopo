@@ -1,6 +1,6 @@
 # Состояние проекта
 
-> Обновлено: 2026-11-01. Файл поддерживается агентом и переписывается по ходу
+> Обновлено: 2026-11-02. Файл поддерживается агентом и переписывается по ходу
 > работы — это снимок «здесь и сейчас», а не история и не список пожеланий
 > (он в `docs/backlog.md`). История — в `docs/records/`; историческая часть
 > самого этого файла вынесена шесть раз: 2026-08-30
@@ -15,51 +15,24 @@
 
 1. Прочитай этот файл целиком, потом `docs/backlog.md`.
 2. Сверься: `git log --oneline -5`, `git status`.
-3. **Сейчас (2026-11-01): пятая волна прохода по именам — владелец решает
-   пункты по порядку**, по слову «давай по пятой волне по порядку». Решения
-   копятся здесь, правки — одной волной в копии
-   `.claude/worktrees/names-wave-5` после последнего пункта. Порядок: Б5, Б6,
-   Б7, Б8, В1, В2, В3, В4, Г3, Г5, Г6, Г7. Решено:
-   - Б5 — удалить `ScopeWaitingBuilder`, `ScopeProgressBuilder`,
-     `ScopeErrorBuilder`; `ScopeInitCallback` оставить; поле демо
-     `App.progressBuilder` — тип на месте, `String? progress`.
-   - Б6 — удалить тройку `ScopeStateWithErrorModel`,
-     `ScopeStateWithErrorNotifier`, `ScopeStateWithErrorModelView` целиком;
-     из публичного API убрать и `ScopeStateModelView`, и метод
-     `ScopeStateNotifier.asUnmodifiable()`: обёртка от понижающего приведения
-     остаётся приватным классом при `_AsyncScopeNotifier`.
-   - Б7 — оставить `ScopeCore*` и `AsyncControllerScopeCore*` как есть:
-     правило «у каждого семейства есть Core» дороже пяти имён.
-   - Б8 — удалить `CompareUtils` и `ListenableView`; дартдок
-     `ListenableSelector.shouldNotify` советует `(a, b) => !identical(a, b)`.
-   - В1 — `AsyncScopeState` → `AsyncScopeStatus`, `.state` → `.status`,
-     `buildOnState` → `buildOnStatus`; ради того же правила
-     `ScopeDependencyState` → `ScopeDependencyStatus`,
-     `ScopeDependency.state` → `.status`. Правило в `AGENTS.md` §7: State —
-     объект `State` Flutter или значение модели, фаза жизненного цикла —
-     Status. `*State` наследников `State`, `createState`, `wrapState`,
-     `ScopeStateModel`/`ScopeStateNotifier` и `model.state` не трогать.
-   - В2 — восемь `XElementBase` → `XCoreElement` (тройка `XCore` /
-     `XCoreElement` / `XCoreState`); приватный `_LiteScopeCoreElement` →
-     `_LiteScopeReadyElement`.
-   - В3 — `ScopeContext` → `ScopeInheritedContext` (тройка базы с
-     `ScopeInheritedWidget` и `ScopeInheritedElement`).
-   - В4 — оставить `create`/`dispose` полями конструктора: два режима
-     владения (`create:` и `.value`) на одном классе, хуки в `.value` были бы
-     бессмысленны.
-   - Г3 — `AsyncScopeError` → `AsyncScopeFailed`; `buildOnError`,
-     `errorBuilder`, `hasError`, `error` не трогать.
-   - Г5 — `ctx.progress` оставить: словарь `JobContext` (`check`, `log`),
-     около 70 мест в примерах и документах.
-   - Г6 — `ProgressIterator` → `ProgressTracker`, файл
-     `progress_tracker.dart`, переменные в примерах — `tracker`.
-   - Г7 — правило колбэков переписать по смыслу (работа — глагол, событие —
-     `onX`, строитель — `builder`/`xBuilder`/`buildOnX`) и перенести
-     в `AGENTS.md` §7 к правилу State/Status; имена не меняются.
+3. **Сейчас (2026-11-02): пятая волна прохода по именам сделана и влита
+   в `main`, не отправлено.** Владелец решал пункты по порядку, по слову «давай
+   по пятой волне по порядку»; решения и коммиты — вердиктами в конце находок
+   в `docs/records/2026-10/2026-10-30-api-names-review.md`. Коммиты: `842e85e`
+   (удалены `ScopeWaitingBuilder`, `ScopeProgressBuilder`, `ScopeErrorBuilder`,
+   тройка `ScopeStateWithError*`, `ScopeStateModelView` вместе
+   с `asUnmodifiable()`, `CompareUtils` и `ListenableView`), `7c21c9e`
+   (`AsyncScopeStatus`, `.status`, `buildOnStatus`, `ScopeDependencyStatus`,
+   `statusToString()`, `AsyncScopeFailed`), `ee4e968` (`XCoreElement`,
+   `ScopeInheritedContext`), `659bc30` (`ProgressTracker`), `23fce5b` (строки
+   в таблице «Coming from 0.21.x» в `doc/debug.md`), `cd0c1df` (правило
+   колбэков в `AGENTS.md` §7). Б7, В4 и Г5 не взяты по решению владельца. Всё
+   ломающее — в разделе 0.22.0 `CHANGELOG.md`.
 
-   Все двенадцать решены 2026-11-02; волна в работе. Порядок коммитов:
-   удаления (Б5, Б6, Б8), Status и `AsyncScopeFailed` (В1, Г3), элементы
-   и контекст (В2, В3), `ProgressTracker` (Г6), правила и вердикты (Г7).
+   Дальше к 1.0.0 — правило версий 1.x в `AGENTS.md`: требует ли новая минорная
+   версия ядра минорного или мажорного выпуска scopo. Версия в `pubspec.yaml`
+   всё ещё 0.21.2; к выпуску 1.0.0 раздел `0.22.0` в `CHANGELOG.md` придётся
+   переименовать.
 
    Перед этим Б9 закрыта и раздел о причинах отмены написан, влито в `main`,
    не отправлено, по ответу владельца на три предложения («1 ок, 2
@@ -98,9 +71,7 @@
    (`ScopeDependencyInitFailed`, группы `Any*` приватные, API ошибок
    на `ScopeDependencyState`, `errorCount`, `stepCount`). Всё ломающее —
    в разделе 0.22.0 `CHANGELOG.md`; версия в `pubspec.yaml` не поднята, выпуска
-   не было. Пятая волна — Б5–Б8, В1–В4, Г3, Г5–Г7 — владелец не одобрил: они
-   открыты и ждут его решения. Дальше по порядку к 1.0.0 — решения по пятой
-   волне, потом правило версий 1.x в `AGENTS.md`.
+   не было. Пятая волна сделана после — см. выше.
 
    Перед этим записи `docs/records/` разложены по месяцам, по слову владельца
    «надо убрать нумерацию из имен документов» и выбору «переименовать все
@@ -343,12 +314,12 @@ CI: `.github/workflows/ci.yml`, `gate` на полу, `ceiling` на stable
 
 ## Проверки
 
-Последний прогон — гейт §6 на Flutter 3.38.1 и `async_job` 1.0.0 (2026-11-01,
-в копии, Б9 и раздел о причинах отмены): **831 тест**; демо **10**, quickstart
-**1**; четыре `analyze` — `No issues found!`; format — 131 файл, 0 changed;
-dartdoc — 0 warnings, 0 errors; переводы актуальны: **17**;
-`tool/check_doc_examples.dart` — 116 PASS, 8 SKIP, 0 FAIL; публикационный
-dry-run — 0 warnings. Тесты комплекта `tool/consumer_validation`
+Последний прогон — гейт §6 на Flutter 3.38.1 и `async_job` 1.0.0 (2026-11-02,
+в копии, пятая волна прохода по именам): **822 теста**; демо **10**, quickstart
+**1**; четыре `analyze` и `analyze` по `tool/` — `No issues found!`; format —
+127 файлов, 0 changed; dartdoc — 0 warnings, 0 errors; переводы актуальны:
+**17**; `tool/check_doc_examples.dart` — 115 PASS, 8 SKIP, 0 FAIL;
+публикационный dry-run — 0 warnings. Тесты комплекта `tool/consumer_validation`
 не прогонялись.
 
 Полный гейт — `AGENTS.md` §6, плюс `fvm flutter test` из `example/scopo_demo`.
