@@ -51,6 +51,8 @@
      `errorBuilder`, `hasError`, `error` не трогать.
    - Г5 — `ctx.progress` оставить: словарь `JobContext` (`check`, `log`),
      около 70 мест в примерах и документах.
+   - Г6 — `ProgressIterator` → `ProgressTracker`, файл
+     `progress_tracker.dart`, переменные в примерах — `tracker`.
 
    Перед этим Б9 закрыта и раздел о причинах отмены написан, влито в `main`,
    не отправлено, по ответу владельца на три предложения («1 ок, 2
