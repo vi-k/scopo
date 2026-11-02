@@ -40,3 +40,6 @@ build/
 
 # Local dependency overrides: a path to an unpublished sibling, never committed.
 pubspec_overrides.yaml
+
+# The owner's local notes, not part of the repository.
+/TODO.md
